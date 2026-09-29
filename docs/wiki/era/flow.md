@@ -130,6 +130,9 @@
    發生時設 `FLAG:45` 並經 `イベントから派生する特殊戦闘/●イベント戦闘_襲撃共通.ERB`:178 `BEGIN TRAIN`。
 8. `FLAG:45 == 0` → `BEGIN SHOP`（回到第 3 節）。
 
+各行動對狀態的影響、開局狀態下各夜間事件是否觸發：見 `actions.md`（S04）。注意 `@EVENTSHOP` 的 `PARASITE`
+（`FORCE_深夜の寄生触手暴走.ERB`:8–9）會把 `FLAG:799` 覆寫成 `CHARANUM-1`，由 `SHOW_SHOP`:20 歸 0。
+
 ## 7. 戰鬥（TRAIN）
 
 結構另見 `battle-overview.md`。出口一律 `BEGIN AFTERTRAIN` → `@EVENTEND`（經驗、金錢、修練P、

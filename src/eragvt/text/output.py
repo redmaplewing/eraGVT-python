@@ -280,6 +280,17 @@ class TextOutput:
         self._resolve_pending()
         self._parts.append(Part([Segment(label, self._color, self._bold)], value))
 
+    def print_lc(self, text: str) -> None:
+        """PRINTLC：左寄せ列。`PRINTCの文字数:25`（emuera.config）に対し、cp932 バイト数で 26 まで空白を補う
+        （GameView/EmueraConsole.Print.cs@CreateTypeCString:383–425）。改行しない。
+        DEVIATION: 原作はさらにフォント幅で末尾空白を削るが、ここでは等幅前提でバイト数のみ（表示のみの差）。"""
+        if not text:
+            return  # PrintC:364–365
+        n = len(text.encode("cp932", errors="replace"))
+        if n < 26:
+            text += " " * (26 - n)
+        self.print(text)
+
     def printl(self, text: str = "") -> None:
         """PRINTL：輸出後換行。"""
         self.print(text)

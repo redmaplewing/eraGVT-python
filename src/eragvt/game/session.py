@@ -6,7 +6,7 @@ Web（`eragvt.web`）はこのクラスに数値入力を渡し、`screen()` を
 
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Callable, Generator
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
@@ -16,7 +16,9 @@ from ..state import GameRng, GameState
 from ..state.savefile import GameIdentity, SaveFormatError, load_from_file, read_save_comment, save_to_file
 from ..text import Line, NarrationService, NullNarrationService, TextOutput
 from . import shop
+from .action import Ctx
 from .opening import event_first
+from .turnend import run_turn
 
 AUTOSAVE_INDEX = 99  # SystemProc:805
 SAVE_DATA_NOS = 20  # emuera.config「表示するセーブデータ数:20」
@@ -28,7 +30,8 @@ class Phase(str, Enum):
     TITLE = "title"
     SHOP = "shop"
     ACTION_CONFIRM = "action_confirm"
-    ACTION_MAIN = "action_main"  # S04 で実装。ここで停止する
+    TURN = "turn"  # ACTION_MAIN〜TURNEND 中の INPUT 待ち
+    HALTED = "halted"  # 未移植の処理に到達して停止（タイトルに戻るしかない）
     SAVE_SELECT = "save_select"
     SAVE_OVERWRITE = "save_overwrite"
     LOAD_SELECT = "load_select"
@@ -55,6 +58,7 @@ class GameSession:
         self._confirm_kind = ""
         self._save_target = -1
         self._load_from_title = False
+        self._turn: Generator[None, int, None] | None = None
         self.begin_title()
 
     # --- 画面 -------------------------------------------------------------------
@@ -78,7 +82,8 @@ class GameSession:
             Phase.TITLE: self._title_input,
             Phase.SHOP: self._shop_input,
             Phase.ACTION_CONFIRM: self._action_confirm_input,
-            Phase.ACTION_MAIN: self._action_main_input,
+            Phase.TURN: self._turn_input,
+            Phase.HALTED: self._halted_input,
             Phase.SAVE_SELECT: self._save_select_input,
             Phase.SAVE_OVERWRITE: self._save_overwrite_input,
             Phase.LOAD_SELECT: self._load_select_input,
@@ -184,13 +189,37 @@ class GameSession:
             self._show_shop()  # RETURN 0 → @USERSHOP 終了 → @SHOW_SHOP
 
     def _begin_action_main(self) -> None:
-        # JUMP ACTION_MAIN（SHOP.ERB:557）。S04 で実装。
-        self.out.printl()
-        self.out.printl("行動開始！（ACTION_MAIN は S04 で実装予定。ここで停止します）")
-        self.phase = Phase.ACTION_MAIN
+        """JUMP ACTION_MAIN（SHOP.ERB:557）→ 各キャラの行動 → @EVENTTURNEND → BEGIN SHOP。"""
+        assert self.state is not None
+        self._turn = run_turn(Ctx(self.state, self.data, self.out, self.narration))
+        self._advance_turn(None)
 
-    def _action_main_input(self, value: int) -> None:
-        self.out.printl("（ACTION_MAIN 未實作）")
+    def _turn_input(self, value: int) -> None:
+        self._advance_turn(value)
+
+    def _advance_turn(self, value: int | None) -> None:
+        assert self._turn is not None
+        try:
+            if value is None:
+                next(self._turn)
+            else:
+                self._turn.send(value)
+        except StopIteration:
+            # BEGIN SHOP（EVENTTURNEND 実行中の SystemState は Normal：SystemProc@beginTurnend:609–611）
+            # → calledWhenNormal = true（Process.State.cs@Begin:271–273）→ オートセーブあり（SystemProc:633）
+            self._turn = None
+            self.begin_shop(called_when_normal=True)
+            return
+        except NotImplementedError as exc:
+            self._turn = None
+            self.out.printl()
+            self.out.printl(f"（未實作のため停止しました：{exc}）")
+            self.phase = Phase.HALTED
+            return
+        self.phase = Phase.TURN
+
+    def _halted_input(self, value: int) -> None:
+        self.out.printl("（未實作のため停止中。「タイトルに戻る」で再開してください）")
 
     # --- SAVEGAME / LOADGAME（SystemProc:782–990）-------------------------------
 

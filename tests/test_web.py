@@ -85,3 +85,39 @@ def test_load_empty_slot_and_back_to_title(client):
     assert "データがありません" in texts(s)
     s = c.post("/api/input", json={"value": 100}).json()
     assert s["phase"] == "title"
+
+
+def test_full_turn_rest_back_to_shop(client):
+    """開局 → 全員休憩（EVENTFIRST:165 で初期値が 予定_休憩）→ [100][9] → 1 ターン後 SHOP（夜）→ 再度 [100] → 翌日昼。"""
+    c, app, save_dir = client
+    c.post("/api/input", json={"value": 0})
+    s = c.post("/api/input", json={"value": 100}).json()  # USERSHOP_ACTION_CONFIRM の確認
+    assert s["phase"] == "action_confirm"
+    s = c.post("/api/input", json={"value": 9}).json()  # [9] → FLAG:40 = 2（出撃なし）→ JUMP ACTION_MAIN
+    assert s["phase"] == "shop"
+    st = app.state.session.state
+    assert (st.day[0], st.time) == (1, 1)  # SHOP_TURNEND.ERB:172
+    assert st.flag[799] == 0  # SHOW_SHOP:20
+    assert any("[🌙夜]" in x for x in texts(s))
+    auto = json.loads((save_dir / "save99.json").read_text(encoding="utf-8"))
+    assert auto["state"]["time"] == 1  # BEGIN SHOP（Normal から）→ オートセーブ
+    s = c.post("/api/input", json={"value": 100}).json()  # FLAG:40 = 2 → 確認なし（SHOP.ERB:503–557）
+    assert s["phase"] == "shop"
+    assert (st.day[0], st.time, st.money) == (2, 0, 4900)
+
+
+def test_training_input_and_unported_halt(client):
+    c, app, _ = client
+    c.post("/api/input", json={"value": 0})
+    c.post("/api/input", json={"value": 102})  # 紅葉 → 鍛錬
+    c.post("/api/input", json={"value": 100})
+    s = c.post("/api/input", json={"value": 9}).json()
+    assert s["phase"] == "turn"  # ACTION_TRAINING.ERB:70 INPUT 待ち
+    assert {0, 3, 9}.issubset(buttons(s))
+    s = c.post("/api/input", json={"value": 3}).json()  # 筋トレ
+    assert s["phase"] == "shop"
+    assert app.state.session.state.charas[1].cflag[101] == 3
+    c.post("/api/input", json={"value": 101})  # 紅葉 → 出撃（S05）
+    s = c.post("/api/input", json={"value": 100}).json()
+    assert s["phase"] == "halted"
+    assert any("未實作" in x for x in texts(s))

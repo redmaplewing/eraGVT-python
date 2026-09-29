@@ -186,9 +186,13 @@ def lb(out: TextOutput) -> None:
 
 
 def event_shop(state: GameState, data: GameData, out: TextOutput, narration: NarrationService) -> None:
-    """`インターミッション画面/SHOP_TURNEND.ERB@EVENTSHOP`:141–。初日（DAY == 0）の分岐のみ。"""
+    """`インターミッション画面/SHOP_TURNEND.ERB@EVENTSHOP`:141–。通常ターン（DAY != 0）は `turnend.event_shop_normal`。"""
     if state.day[0] != 0:
-        raise NotImplementedError("EVENTSHOP の通常ターン分岐（:158–）は S04")
+        from .action import Ctx
+        from .turnend import event_shop_normal
+
+        event_shop_normal(Ctx(state, data, out, narration))
+        return
     state.day[0] = 1
     state.time = 0
     state.flag[64] = 0
