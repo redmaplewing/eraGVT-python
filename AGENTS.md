@@ -17,10 +17,23 @@
 
 ## 鐵則
 
-- `source/` **永遠唯讀**。不改、不重新編碼、不移動。
+- `source/` 與 `reference/` **永遠唯讀**。不改、不重新編碼、不移動。
 - 文件主語言繁體中文；日文只保留在原名、路徑、函式名、字串 key。
-- 不確定的事寫進 `docs/wiki/bridge/unresolved.md`，不要硬猜成定論。
 - 引用原作一律寫 `檔案路徑@函式名`，例如 `ERB/インターミッション画面/SHOP.ERB@USERSHOP`。
+
+## 查證規則（不准用猜的）
+
+- **Emuera 引擎行為**（系統流程順序、BEGIN 時重置什麼、存檔包含什麼、CSV 怎麼解析、命令語意、按鈕規則…）
+  一律查 `reference/emuera-1824/` 原始碼確認，並在 wiki／程式註解／測試裡附 `reference/...cs:行號`。
+  查詢入口見 `reference/README.md`。**禁止**用「eramaker 慣例」「應該是」「印象中」當依據。
+- **原作邏輯**一律查 ERB 原文確認。全域搜尋用精確 pattern（例如 `(?<![A-Za-z_])TFLAG\s*:\s*0(?![0-9])`，
+  `LC_ALL=C.UTF-8 grep -P`），**不要**對大量結果接 `head` 截斷後就下「找不到」的結論——
+  先看總筆數（`grep -c` 或 `| wc -l`）。
+- 真的查不到才能寫進 `docs/wiki/bridge/unresolved.md`，並寫明「已查過哪些地方」。
+  查不到的事**不得**當成已定規則寫進程式或測試；需要先做時，程式裡標 `# UNVERIFIED:` 並在 session 報告列出。
+- **與原作不同的簡化或改動**（包括「比原作多存一些也無害」「用近似規則就好」）都不能自己決定。
+  若非做不可，程式標 `# DEVIATION:`，記入 `docs/wiki/bridge/deviations.md`，並在 session 結束報告的
+  「需要使用者決定」段落列出，由使用者拍板。
 
 ## 治理：刻意保持輕量（繼承 tohoTW 的教訓）
 
@@ -62,6 +75,7 @@ tohoTW(PY) 的 log／checklist／index 各膨脹到 450–700KB，每個 session
 
 1. `pytest` 全綠（貼出摘要行）。
 2. 更新 `docs/STATUS.md`（仍 ≤150 行）。
-3. 有新的未決事項 → `docs/wiki/bridge/unresolved.md`。
-4. 確認 `git status` 沒有動到 `source/`。
+3. 有新的未決事項 → `docs/wiki/bridge/unresolved.md`；有偏離原作 → `deviations.md`。
+4. 確認 `git status` 沒有動到 `source/`、`reference/`。
 5. commit（訊息結尾照 system 指示加 Co-Authored-By）並 push。
+6. 最後回報分三段：「做了什麼」「已查證的依據」「需要使用者決定（UNVERIFIED／DEVIATION）」。

@@ -22,7 +22,7 @@
 
 ## 下一步
 
-- **S03**：新遊戲 + SHOP（規格待寫 `docs/sessions/S03-*.md`）。建議內容：
+- **S03**：查證補課 + 新遊戲 + SHOP → 規格 `docs/sessions/S03-newgame-shop.md`。以下為 S02 留下的範圍細項：
   1. **開局最小路徑**（翻 `ゲーム内_イベント発生/オープニング処理.ERB@EVENTFIRST`，跳過角色製作與序章）：
      `GameState.new` → `TIME=1`、`MONEY=5000`、`ITEM:100/200/201/202/299/300/401=1`（:48–59）；
      模式固定 NORMAL：`FLAG:0 = MODE_OPTIONS[NORMAL]`、`FLAG:852=5000`；`FLAG:50=FLAG:51=1`；
@@ -42,5 +42,7 @@
 
 ## 已知問題
 
-- 未決事項見 `docs/wiki/bridge/unresolved.md`；最重要的是戰鬥回合數 `TFLAG:0` 的遞增處（S05 前要解）。
+- 2026-09-29 加入 Emuera 1.824 原始碼 `reference/emuera-1824/`；S01／S02 的 Emuera 推測項目待 S03 Part 0 查證修正（見 `unresolved.md`）。
+- `TFLAG:0` 遞增處已找到（`BATTLE_COM_AFTER.ERB@SOURCE_CHECK`:1317）。
+- 偏離原作之處一律登記 `docs/wiki/bridge/deviations.md` 待使用者決定。
 - 原作 CSV 有兩處瑕疵（Chara299 `100.`、Chara998 佔位符），載入器已容錯並記警告。
