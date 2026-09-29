@@ -4,45 +4,32 @@
 
 ## 已完成
 
-- 建立 repo，`source/earGVP/` 原作基線入庫（唯讀）。AGENTS.md、PLAN.md。
-- **S01**：原作分析 + 專案骨架。
-  - era 事實 wiki：`docs/wiki/era/flow.md`、`variables.md`、`csv.md`、`battle-overview.md`。
-  - `pyproject.toml`（src layout）、`src/eragvt/`；`python -m eragvt --check-data` 載入全部原作 CSV 並列摘要。
-  - `eragvt.data.load_game_data()`：12 張名稱表、Item（含價格）、Str 初期值、GameBase／VariableSize／_Replace、
-    77 名角色 CSV（遞迴、BOM 有無、CRLF/LF、名稱索引、64 位元 RELATION）。
-  - `tests/`：59 個 table-driven 測試，expected 由 CSV 原文手抄。
-- **S02**：核心狀態模型（設計見 `docs/wiki/python/state.md`）。
-  - `eragvt.state`：`IntArray`／`StrArray`（稀疏，未設定 = 0／""）、`Character.from_def`（= ADDCHARA）、
-    `GameState`（MASTER = index 0 的 Chara999；`add_chara`／`del_chara`／`swap_chara`；`temp` 與 `rng` 不存檔）、
-    `GlobalState`（GLOBAL 系，另一檔）、`GameRng`／`FixedRng`、主流程常數 Enum（附來源行號）。
-  - 存讀檔：版本化 JSON（`eragvt-save` v1／`eragvt-global` v1），存→讀→存逐位元組一致；migration 掛點。
-  - `eragvt.text`：`TextOutput`（PRINT 系列 → `Line`/`Segment`，含顏色、粗體、按鈕、等待、DRAWLINE、CLEARLINE）、
-    `NarrationService` Protocol + `NullNarrationService`。
-  - `--check-data` 追加「開局狀態（MASTER+301/302/303）存讀檔」檢查。測試共 127 個。
+- 建立 repo，`source/earGVP/` 原作基線入庫（唯讀）；`reference/emuera-1824/` 引擎原始碼（查證用）。
+- **S01**：原作分析 wiki（`docs/wiki/era/`）＋ `src/eragvt` 骨架、CSV 載入器。
+- **S02**：狀態模型（`eragvt.state`）、版本化 JSON 存讀檔、文字輸出層、`NarrationService`。設計：`docs/wiki/python/state.md`。
+- **S03**：查證補課 + 新遊戲 + SHOP Web。
+  - Part 0：unresolved「Emuera 規格」全部對照引擎原始碼（僅剩無 BOM 檔編碼一項待實機確認）。修正：CSV 解析（省略／無法解析 → 1、
+    不 trim、`;` 不處理、番号重複保留先者、JUEL 名稱查 palam）、存檔範圍（TFLAG 存、TCVARn 不存、遊戲代碼／版本檢查）、
+    新遊戲 [0, 999]＋TARGET=1、`_Replace.csv`、自動按鈕（移植 ButtonStringCreator）、DAY 改為陣列、flow.md 引擎流程。
+  - Part 1：`eragvt.game.opening`（EVENTFIRST 最小路徑：NORMAL＋特装戦隊 301–303，含 CHARA_MAKE_FINALIZE×2、LEVELSTATUS、
+    CSVFIX、武器解碼、SET_LIMIT_DAY、RESEARCH_QUOTA）。
+  - Part 2：`eragvt.game.shop`／`session`、`eragvt.web`（FastAPI＋Jinja2）。`python -m eragvt` 可在瀏覽器開新遊戲、
+    看 SHOP、預約 101–108、切換操作角色、一括設定、存讀檔（0–19＋自動存檔 99）。測試共 227 個。
 
 ## 下一步
 
-- **S03**：查證補課 + 新遊戲 + SHOP → 規格 `docs/sessions/S03-newgame-shop.md`。以下為 S02 留下的範圍細項：
-  1. **開局最小路徑**（翻 `ゲーム内_イベント発生/オープニング処理.ERB@EVENTFIRST`，跳過角色製作與序章）：
-     `GameState.new` → `TIME=1`、`MONEY=5000`、`ITEM:100/200/201/202/299/300/401=1`（:48–59）；
-     模式固定 NORMAL：`FLAG:0 = MODE_OPTIONS[NORMAL]`、`FLAG:852=5000`；`FLAG:50=FLAG:51=1`；
-     `FLAG:3` = BOSS 數（`COMMON_TENTACLE_DATA.ERB@GET_BOSS_ERB_NUM` = `触手データ/ボス触手/TENTACLE_BOSS_n` 連號數，現為 7）、
-     `FLAG:4=1`、`FLAG:100` 低 FLAG:3 位全 SETBIT；
-     預設隊伍 `初期セット/0_特捜戦隊.ERB@SHOKISET_SELECT_0`（FLAG:5/7、SAVESTR:10/12、ADDCHARA 301–303、`FLAG:8+=3`）
-     與 `SHOKISET.ERB@SHOKISET_CSVFIX` → `FIRSTSETTING_CHARA_CSVFIX`（需讀）；
-     `CHARA_MAKE_DEFAULT.ERB@CHARA_MAKE_FINALIZE`:221 的必要部分（`CFLAG:240 = index`、MAXBASE 射精／噴乳 < 1 → 10000）；
-     `CFLAG:6` 口上番號（:143–166）、`CFLAG:100 = 予定_休憩`、`SET_LIMIT_DAY`（:411，NORMAL → `FLAG:2 = 11`）、
-     `CFLAG:999 = 1`（index ≤ 6）、裝備衣裝登記 ITEM（:269–283）、`FLAG:41 = 1`、`RESEARCH_QUOTA`。
-     `CONFIG_INIT`／`HEROINE_PRESET`／`UPDATE` 先讀再決定是否納入。
-  2. `@EVENTSHOP` 的 `DAY == 0` 分支（`SHOP_TURNEND.ERB`:147–156）→ 進 SHOP。
-  3. **SHOP Web UI**：FastAPI + Jinja2；後端持有 `GameState` + `TextOutput`，`@SHOW_SHOP` 輸出成 `Line` 列表渲染，
-     按鈕送回數字 → `@USERSHOP` 分派（先做：切換 TARGET、101–108 行動預約、100 確認（先停在「將執行 ACTION_MAIN」）、
-     200/300 存讀檔接 `state.savefile`）。其餘選單項目顯示但標「未實作」。
-  4. 相性（RELATION）轉換的調查與實作（unresolved）。
+- **使用者決定**：`docs/wiki/bridge/deviations.md` 各項（特別是「亂數」「身體資料生成」「FLASHNEWS」「[1]はい 會中斷」）。
+- **S04**：行動執行 + 回合結束（規格待寫）。建議範圍：
+  1. `ゲーム内_行動実行処理/ACTION.ERB@ACTION_MAIN`:6–175（一次處理一名角色）＋`REST`、`TRAINING` 兩種行動先做；
+     其餘行動（出撃→TRAIN 屬 S05；活動／防衛／支援／情報／自由）先以 `NotImplementedError` 或 DEVIATION 佔位。
+  2. `インターミッション画面/SHOP_TURNEND.ERB@EVENTTURNEND`:3–139 的主幹（`JUMP ACTION_MAIN` 迴圈、SET_PARTYMEMBER、
+     ENDING 判定骨架、RECALC_PARTYMEMBER、夜間事件依 config 開關；未移植者列 deviations）。
+  3. `@EVENTSHOP` 的一般分岐（:158–215：晝夜切換、RECOVERY_OVER_TIME、日期推進、CALC_INCOME_EXPEND、新聞 FLAG:60、
+     CHECK_SHIELD_ALL）。session 需支援「行動 → TURNEND → BEGIN SHOP（一般狀態 → 自動存檔）」。
+  4. Web：[100] 確認後實際跑完一回合回到 SHOP。
 
 ## 已知問題
 
-- 2026-09-29 加入 Emuera 1.824 原始碼 `reference/emuera-1824/`；S01／S02 的 Emuera 推測項目待 S03 Part 0 查證修正（見 `unresolved.md`）。
-- `TFLAG:0` 遞增處已找到（`BATTLE_COM_AFTER.ERB@SOURCE_CHECK`:1317）。
-- 偏離原作之處一律登記 `docs/wiki/bridge/deviations.md` 待使用者決定。
-- 原作 CSV 有兩處瑕疵（Chara299 `100.`、Chara998 佔位符），載入器已容錯並記警告。
+- 未決：`docs/wiki/bridge/unresolved.md`；偏離：`docs/wiki/bridge/deviations.md`（尚未經使用者裁決）。
+- 無 BOM 的 7 個角色 CSV 在原版 1.824 會以 Shift-JIS 讀（亂碼）；本程式以 UTF-8 讀，可能是 +v10 差異，待實機確認。
+- 開局僅支援「NORMAL＋特装戦隊」；其他初期セット／自訂角色會 `NotImplementedError`。

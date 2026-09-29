@@ -96,13 +96,17 @@ class _Sparse(Generic[V]):
 
     @staticmethod
     def _check_key(key: Key) -> Key:
+        # IntEnum の索引（`Base.HP` など）は純 int に正規化。bool は拒否。
+        def ok(k: object) -> bool:
+            return isinstance(k, int) and not isinstance(k, bool) and k >= 0
+
         if isinstance(key, tuple):
-            if len(key) != 2 or any(type(k) is not int or k < 0 for k in key):
+            if len(key) != 2 or not all(ok(k) for k in key):
                 raise IndexError(f"索引不合法：{key!r}")
-            return key
-        if type(key) is not int or key < 0:
+            return (int(key[0]), int(key[1]))
+        if not ok(key):
             raise IndexError(f"索引不合法：{key!r}")
-        return key
+        return int(key)
 
 
 class IntArray(_Sparse[int]):

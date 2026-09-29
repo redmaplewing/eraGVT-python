@@ -13,7 +13,7 @@ from .sparse import IntArray, StrArray
 class Character:
     """era 角色變數。陣列一律稀疏：未設定讀為 0／空字串。
 
-    欄位名稱＝era 變數名小寫。`tcvarn` 是 `ERB/DIM.ERH`:9 的 `#DIM CHARADATA TCVARn`，隨角色存檔。
+    欄位名稱＝era 變數名小寫。`tcvarn` 是 `ERB/DIM.ERH`:9 的 `#DIM CHARADATA TCVARn`（不存檔）。
     CDFLAG 為 2 維，索引用 `(第一維, 第二維)`。
     """
 
@@ -66,9 +66,16 @@ class Character:
             cstr=StrArray(d.cstr),
         )
 
+    # 不存檔的欄位：TCVARn 是 `#DIM CHARADATA`（無 SAVEDATA），Emuera 不存
+    # （GameProc/UserDefinedVariable.cs:26、150–152；文字存檔下 CHARADATA 不能加 SAVEDATA，:315–320）。
+    # 讀檔後角色是新建的，TCVARn 為 0（VariableEvaluator.cs@LoadFromStream:2178–2184）。
+    NOT_SAVED = frozenset({"tcvarn"})
+
     def to_json(self) -> dict[str, Any]:
         out: dict[str, Any] = {}
         for f in fields(self):
+            if f.name in self.NOT_SAVED:
+                continue
             value = getattr(self, f.name)
             out[f.name] = value.to_json() if isinstance(value, (IntArray, StrArray)) else value
         return out
@@ -77,7 +84,7 @@ class Character:
     def from_json(cls, obj: dict[str, Any]) -> Character:
         kwargs: dict[str, Any] = {}
         for f in fields(cls):
-            if f.name not in obj:
+            if f.name not in obj or f.name in cls.NOT_SAVED:
                 continue  # 舊版存檔缺欄位 → 預設值
             value = obj[f.name]
             if f.name == "cstr":

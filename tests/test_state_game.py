@@ -22,7 +22,14 @@ from eragvt.state import (
     load_save,
 )
 from eragvt.state.constants import ActionPlan, CharaState, GameMode, GameOption, MODE_OPTIONS
-from eragvt.state.savefile import dump_global, load_global, load_global_file, save_to_file, load_from_file
+from eragvt.state.savefile import (
+    GameIdentity,
+    dump_global,
+    load_from_file,
+    load_global,
+    load_global_file,
+    save_to_file,
+)
 
 
 @pytest.fixture(scope="module")
@@ -31,8 +38,11 @@ def data():
 
 
 def opening_state(data, seed=1):
-    """S03 開局要用的狀態：MASTER + 特捜戦隊 301/302/303（初期セット/0_特捜戦隊.ERB:25–29）。"""
+    """MASTER（999）+ 特捜戦隊 301/302/303 の ADDCHARA 直後（初期セット/0_特捜戦隊.ERB:25–29）。
+    角色製作完成處理前的狀態；完整開局見 tests/test_opening.py。"""
     st = GameState.new(data, rng=GameRng(seed))
+    st.swap_chara(0, 1)
+    st.del_chara(1)
     for no in (301, 302, 303):
         st.add_chara(data, no)
     return st
@@ -41,11 +51,14 @@ def opening_state(data, seed=1):
 # --- 角色列表 ---------------------------------------------------------------
 
 
-def test_new_state_has_only_master(data):
+def test_new_state_follows_end_openning(data):
+    # Process.SystemProc.cs@endOpenning:201–206：ResetData → CSV 番号(ファイル名)0 → 最初からいるキャラ(999)
     st = GameState.new(data)
-    assert st.charanum == 1
-    assert st.master.no == 999 and st.master.name == "ダミー"  # Chara999ダミー.CSV:1–2
-    assert st.master.base[0] == 1000  # :4 基礎,0,1000
+    assert [c.no for c in st.charas] == [0, 999]
+    assert st.charas[1].name == "ダミー"  # Chara999ダミー.CSV:2
+    assert st.charas[1].base[0] == 1000  # :4 基礎,0,1000
+    # VariableData.cs@SetDefaultValue:644–647
+    assert (st.target, st.assi) == (1, -1)
 
 
 def test_opening_party_order(data):
@@ -127,7 +140,8 @@ def test_constants_match_source():
 
 def _mutated_state(data):
     st = opening_state(data)
-    st.day, st.time, st.money, st.target = 3, 1, 5000, 1
+    st.day[0], st.time, st.money, st.target = 3, 1, 5000, 1
+    st.day[1] = 2
     st.flag[852] = 5000  # 防衛力（オープニング処理.ERB:76）
     st.flag.set_bit(100, 2)
     st.item[100] = 1
@@ -136,7 +150,6 @@ def _mutated_state(data):
     st.mob_flag[(0, 3)] = 100
     st.charas[1].cflag[100] = ActionPlan.SORTIE  # IntEnum 直接寫入
     st.charas[1].cdflag[(1, 300)] = 5
-    st.charas[2].tcvarn[12] = 4
     st.charas[3].talent[0] = -1
     st.temp.turn_limit = 50  # 不存
     return st
@@ -155,6 +168,42 @@ def test_roundtrip_bytes_identical(data):
     assert raw1 == raw2
     assert st2 == st
     assert comment == "1日目 夜"
+
+
+def test_tcvarn_not_saved(data):
+    # `#DIM CHARADATA TCVARn`（SAVEDATA なし）は保存されない（UserDefinedVariable.cs:26、150–152）
+    st = _mutated_state(data)
+    st.charas[2].tcvarn[12] = 4
+    obj = json.loads(dump_save(st))
+    assert "tcvarn" not in obj["state"]["charas"][2]
+    st2, _ = load_save(dump_save(st))
+    assert st2.charas[2].tcvarn[12] == 0
+
+
+def test_tflag_is_saved(data):
+    # TFLAG = 0x04 < __COUNT_SAVE_INTEGER_ARRAY__(0x3C)（VariableCode.cs:38、84）→ 保存される
+    st = _mutated_state(data)
+    st.tflag[0] = 7
+    st2, _ = load_save(dump_save(st))
+    assert st2.tflag[0] == 7
+
+
+def test_game_identity_checked_on_load(data):
+    ident = GameIdentity.from_data(data)
+    assert (ident.code, ident.version) == (891216222, 408)  # GameBase.csv
+    raw = dump_save(_mutated_state(data), identity=ident)
+    st, _ = load_save(raw, identity=ident)
+    assert st.temp.last_load_version == 408
+    other = GameIdentity(code=1, version=408, version_defined=True)
+    with pytest.raises(SaveFormatError):
+        load_save(raw, identity=other)
+    # コード 0 のセーブはどのゲームでも読める（GameBase.cs:43–44）
+    load_save(dump_save(_mutated_state(data)), identity=other)
+    # 「バージョン違い認める」未定義 → ScriptCompatibleMinVersion = -1 ≦ 任意 → 読める（GameBase.cs:21、52）
+    load_save(raw, identity=GameIdentity(code=891216222, version=409, version_defined=True))
+    strict = GameIdentity(code=891216222, version=410, version_defined=True, compatible_min_version=409)
+    with pytest.raises(SaveFormatError):
+        load_save(raw, identity=strict)
 
 
 def test_temp_and_rng_not_saved(data):

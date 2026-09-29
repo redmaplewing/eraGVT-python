@@ -8,7 +8,7 @@
 
 | 變數 | 範圍 | 本作用途 | 名稱來源 |
 |---|---|---|---|
-| `DAY` / `TIME` | 全域 | 日數；TIME 0=晝 1=夜，`@EVENTSHOP` 以 `INVERTBIT TIME,0` 切換（`SHOP_TURNEND.ERB`:173） | — |
+| `DAY` / `TIME` | 全域 | DAY 是陣列：`DAY:0` 日數、`DAY:1` 殲滅猶予延長日數（`BATTLE_TRAIN_AFTER.ERB`:323–330、`SHOP.ERB@SHOP_INTERMISSON_HEADER`:391–）、`DAY:2` 半日通算（`ENDING.ERB`:747）；TIME 0=晝 1=夜，`@EVENTSHOP` 以 `INVERTBIT TIME,0` 切換（`SHOP_TURNEND.ERB`:173） | — |
 | `MONEY` | 全域 | 資金，開局 5000（`オープニング処理.ERB`:49） | — |
 | `FLAG` | 全域 | 遊戲進度、設定、戰鬥中敵方資料（§3） | 一覧:2 |
 | `ITEM` | 全域 | **衣裝持有**（1=已擁有），不是消耗品 | `Item.csv` |
@@ -38,7 +38,7 @@
 
 | 變數 | 行 | 存檔 | 用途 |
 |---|---:|---|---|
-| `TCVARn`（CHARADATA, 300） | 9 | 隨角色 | 戰鬥用角色暫存（§5）。戰鬥開始時手動 `VARSET`（`BATTLE_TRAIN.ERB` `@EVENTTRAIN`） |
+| `TCVARn`（CHARADATA, 300） | 9 | **否** | 戰鬥用角色暫存（§5）。CHARADATA 但沒有 SAVEDATA，不存檔（`reference/emuera-1824/Emuera/GameProc/UserDefinedVariable.cs`:26、150–152）。戰鬥開始時手動 `VARSET`（`BATTLE_TRAIN.ERB@EVENTTRAIN`） |
 | `RANDCHOOSE_NUM` | 13 | 否 | 亂數選取工作區 |
 | `COMMON_PALAM`（100） | 16 | 否 | 戰鬥中 PALAM 值傳遞 |
 | `COMMON_EXP`（100） | 18 | 否 | 幽閉處理的值傳遞 |
@@ -56,7 +56,11 @@
 `ゲーム内_イベント発生/イベントから派生する特殊戦闘/DIM.ERH`:3 `特殊戦闘シチュエーション`、
 `特別活動/SEISAN_*.ERH`（特別活動報酬表）、`ヒロイン関連/ステータス画面/SHOW_STATUS.ERH`。
 
-**翻寫注意**：非 SAVEDATA 的變數 Emuera 不存檔；S02 存檔設計只需保存 era 內建存檔變數 + `TCVARn` + `SHIELD` + `MOB_FLAG`。
+**存檔範圍（已查證）**：內建整數陣列 0x00–0x3B（DAY MONEY ITEM FLAG **TFLAG** UP … TARGET ASSI … TIME … A–Z）、
+SAVESTR、TSTR、RANDDATA，角色的內建變數全部（含 CSTR、CDFLAG、NICKNAME 等擴充），以及 SAVEDATA 的 `#DIM`
+（`SHIELD`、`MOB_FLAG`）。**TCVARn 不存**。依據 `reference/emuera-1824/Emuera/GameData/Variable/VariableCode.cs`:31–175、
+`VariableData.cs@SaveToStream`:663、`@SaveToStreamExtended`:689、`CharacterData.cs@SaveToStream`:289。
+讀檔時非存檔變數回到預設值（`VariableEvaluator.cs@LoadFromStream`:2172–2173）。
 
 主要常數（`DIM.ERH`）：`パーティ人数最大値 = 6`（:24）、`登録最大人数 = 30`（:25）、`強制休憩体力 = 500`（:26）；
 遊戲模式 `MODE_*`（:40–47）與選項位元 `OPTION_*`（:60–70），模式→選項對照 `モードオプション`（:83〜）；

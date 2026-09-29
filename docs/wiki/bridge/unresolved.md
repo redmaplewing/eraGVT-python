@@ -1,24 +1,26 @@
 # 未決問題
 
-格式：`- [ ] 問題（來源：檔案@函式）— 目前的推測／需要誰決定`
+格式：`- [ ] 問題（來源：檔案@函式）— 目前的推測／已查過哪些地方`
+引擎原始碼路徑相對 `reference/emuera-1824/Emuera/`。
 
-## Emuera 規格（需對照 Emuera 原始碼或實機）
+## Emuera 規格
 
-- [x] DOTRAIN 內部順序 — **已由引擎原始碼確認**（`reference/emuera-1824/Emuera/GameProc/Process.SystemProc.cs`:430–485）：`@EVENTCOM` → `@COMn` → 若 `RESULT != 0` 才 `@SOURCE_CHECK` → SOURCE 清空（`UpdateAfterSourceCheck`）→ `@EVENTCOMEND`。**`@COMn` 回傳 RESULT 0 時跳過 SOURCE_CHECK 與 EVENTCOMEND**（原推測未涵蓋）。BEGIN TRAIN 時 TFLAG/TSTR 全清零（`VariableEvaluator.cs@UpdateInBeginTrain`:1422）。
-- [ ] SHOP 階段 `@EVENTSHOP` 呼叫時機、TURNEND 無 BEGIN 時的去向 — 查 `Process.SystemProc.cs@beginTurnend`/`beginShop`（:602–640）。
-- [ ] 角色 CSV 省略值時（`素質,0,;処女`）預設為 1；非素質欄位省略值是否也是 1（來源：`src/eragvt/data/csv_loader.py@_apply_chara_row`）— 目前一律當 1；原作只有素質省略值。
-- [ ] `CSV/Chara/Chara299.CSV`:17–19 `フラグ,40,100.`（尾端句點）Emuera 怎麼讀 — 目前當 100。
-- [ ] `CSV/Chara/Chara998_AA表示.CSV` 的 `基礎,40,xx`、`素質,200,変身能力` Emuera 是略過、當 0、還是報錯 — 目前略過並記警告；998 是範本／AA 顯示用，應不影響遊戲。
-- [ ] `_Replace.csv` `BAR文字1, `（值是一個半形空白）是否被 Emuera trim 成空字串 — 影響狀態列的長條顯示，Web 版可自訂，優先度低。
-
-- [x] Emuera 新遊戲時的初始角色列表 — **已確認**（`Process.SystemProc.cs@endOpenning`:197–209）：`ResetData` → 加入 CSV 番號 0（本作 `Chara000汎用キャラ(女性)`）→ 若 `GameBase.csv`「最初からいるキャラ」>0 再加入（本作 999）→ 呼叫 `@EVENTFIRST`。原作再 `SWAPCHARA 0,1`／`DELCHARA 1` 後只剩 999，與 S02 `GameState.new` 結果一致。TARGET／ASSI 初始值仍待查 `ResetData`。
-- [ ] Emuera 存檔實際包含哪些內建變數 — S02 以推測決定（含 TFLAG），**屬未查證**。待查 `VariableCode.cs` 存檔旗標與 `VariableData.cs` 存檔實作後照原作修正（`VariableCode.cs`:38 TFLAG 無存檔旗標，初步看**不存**）。
-- [ ] Emuera 自動按鈕（`[n]` 文字）的精確範圍規則（來源：`src/eragvt/text/output.py@split_buttons`）— 目前「到下一個 `[n]` 或字串尾」；Web 版以可用為準，不必完全重現。
+- [x] DOTRAIN 內部順序 — `GameProc/Process.SystemProc.cs@doTrain`:430–485：`@EVENTCOM` → `@COMn` → `RESULT != 0` 時才 `@SOURCE_CHECK` → SOURCE 清空 → `@EVENTCOMEND`。BEGIN TRAIN 時 TFLAG/TSTR 清零（`GameData/Variable/VariableEvaluator.cs@UpdateInBeginTrain`:1422）。TRAIN 的輸入若是可用指令番號會直接 DOTRAIN，不經 `@USERCOM`（SystemProc@trainWaitInput:395–427）。
+- [x] SHOP／TURNEND 的流程 — SystemProc@beginShop:614–628（EVENTSHOP）→ @endCallEventShop:630–640（自動存檔）→ @endAutoSave:670–680（SHOW_SHOP）；@USERSHOP 後回到 SHOW_SHOP（@endCallEventBuy:737–755）；@beginTurnend:602–612 只呼叫 EVENTTURNEND，沒有 BEGIN 就結束會報「予期しないスクリプト終端」（@endNormal:993–996），**不會**自動進 SHOP。已更新 `docs/wiki/era/flow.md` §0。
+- [x] 角色 CSV 省略值 — 省略或無法解析一律 1，不限素質（`GameData/ConstantData.cs`:1276–1277）。已照改 `csv_loader`。
+- [x] `フラグ,40,100.` — `tryToInt64` 讀到非數字即停止 → 100（`ConstantData.cs@tryToInt64`:1064–1104、`Sub/LexicalAnalyzer.cs@ReadInt64`:133）。
+- [x] `基礎,40,xx`／`素質,200,変身能力` — 值無法解析 → 1（同上 :1276–1277），**不是**略過。已照改。
+- [x] `_Replace.csv` `BAR文字1, ` — 值 trim 後為空 → 該行不生效，BAR 字元維持預設 `*`（`Config/ConfigData.cs@LoadReplaceFile`:539–551、:129）。
+- [x] 新遊戲的初始角色列表 — SystemProc@endOpenning:197–209：`ResetData` → 依檔名番號加入角色 0 → 加入「最初からいるキャラ」（999）→ `@EVENTFIRST`。`GameState.new` 已照此建立 [0, 999]。
+- [x] TARGET／ASSI 初始值 — `ResetData` → `SetDefaultValue` 設 TARGET=1、ASSI=-1（`GameData/Variable/VariableData.cs`:644–647）。
+- [x] 存檔包含哪些變數 — 內建整數陣列 0x00–0x3B（含 **TFLAG**）、SAVESTR、TSTR、RANDDATA、角色全部內建變數、SAVEDATA 的 `#DIM`；`#DIM CHARADATA`（無 SAVEDATA）的 **TCVARn 不存**（`VariableCode.cs`:31–175、`VariableData.cs`:663–760、`CharacterData.cs`:289–350、`GameProc/UserDefinedVariable.cs`:150–152、315–320）。已改 `Character` 不存 TCVARn。RANDDATA 雖會存，但只在 `INITRAND`／`DUMPRAND` 使用（`GameProc/Function/Instraction.Child.cs`:1252、1266），本作 ERB 沒用到（grep 0 件）。
+- [x] 自動按鈕 `[n]` 的範圍 — 已移植 `GameView/ButtonStringCreator.cs@syn`:35–167 與 `PrintStringBuffer.cs@fromCssToButton`:275（換行時整行判定；只有 1 個 `[n]` 時整段都是按鈕）。
+- [ ] 無 BOM 的 UTF-8 角色 CSV（`_ADD/Chara160–163`、`Chara18xx_New Generation/CHARA1805–1807`）— 原版 1.824 以 Shift-JIS 解碼（`Sub/EraStreamReader.cs`:42 `new StreamReader(stream, Config.Encode)`、`Config/Config.cs`:17 SHIFT-JIS），這 7 檔會亂碼、連 `番号` 都讀不到；本作附的是 `Emuera1824+v10.exe`，**可能是 +v10 差異**（自動判別 UTF-8）。目前以 UTF-8 讀（`csv_loader.read_enabled_lines`，`# UNVERIFIED`）。需要時請在實機確認這些角色能否出現。
 
 ## 原作邏輯
 
-- [x] `TFLAG:0`（戰鬥回合數）遞增處 — **已找到**：`ゲーム内_戦闘処理/BATTLE_COM_AFTER.ERB@SOURCE_CHECK`:1313–1318，先制攻擊中（`TFLAG:24 > 0`）扣 `TFLAG:24`，否則 `TFLAG:0 += 1`；戰鬥開始前由各イベント戦闘共通檔設 `-1`（例 `●イベント戦闘_襲撃共通.ERB`:127）。之前「ERB 內沒有遞增」的結論是錯的：grep 結果被 `WAITFLAG:0` 擠滿後用 `head` 截斷而漏看。
+- [x] `TFLAG:0`（戰鬥回合數）遞增處 — `ゲーム内_戦闘処理/BATTLE_COM_AFTER.ERB@SOURCE_CHECK`:1313–1318（先制攻擊中扣 `TFLAG:24`，否則 `TFLAG:0 += 1`）。
 - [ ] 一覧:594 說回合上限在 `TCVARn:13`，程式實際用 `ERB/DIM.ERH`:280 `ターン上限` — 以程式為準。
 - [ ] 雜魚／クズ市民戰在體力・氣力・性耐性全 0 時的結束路徑（`BATTLE_COM_AFTER.ERB@SOURCE_CHECK`:955 排除 MOB/CITIZEN）— S05 調查。
-- [ ] 角色 CSV `相性,對方番号,值` 如何轉成以 `CFLAG:240`（固有番號）為索引的 RELATION（來源：`●GVTフラグ一覧.txt`:741）— 轉換處未調查，S03 開局時需要。
+- [x] 角色 CSV `相性` 的轉換 — 只在 `HEROINE_PRESET` 選 `[30]` 時經 `SYSTEM/キャラメイキング関連/FIRSTSETTING_CONVERTCSV.ERB@CONVERT_RELATION`:3–23 把「CSV 番号索引」複製到「登錄 index 索引」（index = `CFLAG:240`）。直接開始遊戲時不轉換。引擎本身 RELATION 的索引是 CSV 番号（`VariableCode.cs`:146）。
 - [ ] `DIM.ERH`:20 `GFLAG`（「全領域参照用」）用途未調查。

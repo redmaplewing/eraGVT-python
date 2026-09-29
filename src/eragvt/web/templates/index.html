@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>eraGVT</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body{% if screen.background %} style="background: {{ screen.background }}"{% endif %}>
+<main id="console">
+{% for line in screen.lines %}
+  {% if line.kind == "drawline" %}
+  <div class="line drawline"></div>
+  {% else %}
+  <div class="line align-{{ line.align }}{% if line.wait %} wait{% endif %}">
+    {%- for part in line.parts -%}
+      {%- if part.button is not none -%}
+      <form method="post" action="/input" class="btn"><button type="submit" name="value" value="{{ part.button }}">
+        {%- for seg in part.segments -%}<span style="{% if seg.color %}color: {{ seg.color }};{% endif %}{% if seg.bold %}font-weight: bold;{% endif %}">{{ seg.text }}</span>{%- endfor -%}
+      </button></form>
+      {%- else -%}
+        {%- for seg in part.segments -%}<span style="{% if seg.color %}color: {{ seg.color }};{% endif %}{% if seg.bold %}font-weight: bold;{% endif %}">{{ seg.text }}</span>{%- endfor -%}
+      {%- endif -%}
+    {%- endfor -%}&#8203;</div>
+  {% endif %}
+{% endfor %}
+</main>
+<footer>
+  <form method="post" action="/input" id="input-form">
+    <input type="number" name="value" id="value" autofocus autocomplete="off" required>
+    <button type="submit">入力</button>
+  </form>
+  <form method="post" action="/restart" class="restart"><button type="submit">タイトルに戻る</button></form>
+</footer>
+<script src="/static/app.js"></script>
+</body>
+</html>

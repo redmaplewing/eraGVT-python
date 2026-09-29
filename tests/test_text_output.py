@@ -1,3 +1,7 @@
+"""文字輸出層。按鈕判定的 expected 由 reference/emuera-1824/Emuera/GameView/ButtonStringCreator.cs 推導。"""
+
+import pytest
+
 from eragvt.text import NullNarrationService, Segment, TextOutput, split_buttons
 
 
@@ -43,29 +47,65 @@ def test_color_and_bold():
     o.reset_color()
     o.set_bold(False)
     o.printl("!")
-    segs = o.lines[0].segments
-    assert segs[0] == Segment("撤退", "#00ff96", True)
-    assert segs[1] == Segment("!", None, False)
+    segs = o.lines[0].parts[0].segments
+    assert segs == [Segment("撤退", "#00ff96", True), Segment("!", None, False)]
 
 
-def test_auto_buttons_shop_menu():
-    # インターミッション画面/SHOP.ERB:154 `PRINT [110]ステータス表示 `
-    segs = split_buttons("[110]ステータス表示 [111]キャラの強化")
-    assert [(s.text, s.button) for s in segs] == [("[110]ステータス表示 ", 110), ("[111]キャラの強化", 111)]
+@pytest.mark.parametrize(
+    ("text", "expected"),
+    [
+        # ボタン 0 個 → 1 単位、選択不可
+        ("ただの文字列", [("ただの文字列", None)]),
+        # 1 個 → 行全体が 1 つのボタン（syn:73–81）
+        ("選択：[ 0]いいえ", [("選択：[ 0]いいえ", 0)]),
+        # 説明が右だけ → 各 [n] の直前で切る（alignmentRight）
+        ("[110]ステータス表示 [111]キャラの強化", [("[110]ステータス表示 ", 110), ("[111]キャラの強化", 111)]),
+        # lex の例（ButtonStringCreator.cs:222–224）
+        ("[1] あ [2] いうえ ", [("[1] あ ", 1), ("[2] いうえ ", 2)]),
+        # 説明が左右両方 → 2 文字以上の空白で区切る（alignmentEtc）
+        ("a [1] b  c [2] d", [("a [1] b", 1), ("  c [2] d", 2)]),
+        # 説明が左だけ → [n] の直後で切る（alignmentLeft）
+        ("はい[0] いいえ[1]", [("はい[0]", 0), (" いいえ[1]", 1)]),
+        # 数字でない [] はボタンにならない
+        ("[A] [B]", [("[A] [B]", None)]),
+        # [ の入れ子 → 解析不能で 1 単位
+        ("[[1]]", [("[[1]]", None)]),
+    ],
+)
+def test_split_buttons(text, expected):
+    assert split_buttons(text) == expected
 
 
-def test_auto_button_with_prefix_and_spaces():
-    segs = split_buttons("選択：[ 0]いいえ")
-    assert [(s.text, s.button) for s in segs] == [("選択：", None), ("[ 0]いいえ", 0)]
+def test_buttons_decided_over_whole_line_across_prints_and_colors():
+    # PRINT を複数回・色違いで出しても、改行時に行全体で判定（PrintStringBuffer.cs@fromCssToButton:275）
+    o = TextOutput()
+    o.print("[101]出撃する　")
+    o.set_color("#ff0000")
+    o.print("[102]鍛錬する")
+    o.printl()
+    parts = o.lines[0].parts
+    assert [(p.text, p.button) for p in parts] == [("[101]出撃する　", 101), ("[102]鍛錬する", 102)]
+    assert parts[1].segments[0].color == "#ff0000"
+
+
+def test_button_boundary_splits_styled_segment():
+    o = TextOutput()
+    o.print("[1]あ [2]")
+    o.set_color("#00ff00")
+    o.print("い")
+    o.printl()
+    parts = o.lines[0].parts
+    assert parts[1].segments == [Segment("[2]", None, False), Segment("い", "#00ff00", False)]
 
 
 def test_print_plain_and_explicit_button():
     o = TextOutput()
+    o.print("[5]は押せる")  # PRINTPLAIN の前に確定
     o.print_plain("[1]は押せない")
     o.button("はい", 1)
     o.printl()
-    segs = o.lines[0].segments
-    assert segs[0].button is None and segs[1].button == 1
+    assert o.lines[0].buttons == [("[5]は押せる", 5), ("はい", 1)]
+    assert o.lines[0].parts[1].button is None
 
 
 def test_clearline_and_drain():
@@ -85,9 +125,10 @@ def test_line_to_json():
     o = TextOutput()
     o.printl("[1]はい")
     assert o.lines[0].to_json() == {
-        "segments": [{"text": "[1]はい", "color": None, "bold": False, "button": 1}],
+        "parts": [{"segments": [{"text": "[1]はい", "color": None, "bold": False}], "button": 1}],
         "kind": "text",
         "wait": False,
+        "align": "left",
     }
 
 

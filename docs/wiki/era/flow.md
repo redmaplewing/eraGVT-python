@@ -8,21 +8,25 @@
 
 ## 0. Emuera 階段（BEGIN）與事件函式
 
-原作沒有自訂 `@SYSTEM_TITLE`，標題畫面用 Emuera 預設（`GameBase.csv` 的タイトル）。
-遊戲流程靠 Emuera 內建的「階段」切換，ERB 用 `BEGIN 階段名` 跳轉：
+以下全部對照引擎原始碼 `reference/emuera-1824/Emuera/GameProc/Process.SystemProc.cs`（下稱 SystemProc）確認。
+原作沒有自訂 `@SYSTEM_TITLE`，標題畫面用 Emuera 預設（SystemProc@beginTitle:133–188：GameBase.csv 的タイトル／
+バージョン（`0.408`）／作者／(製作年)／追加情報，選項 `[0] 最初からはじめる`、`[1] ロードしてはじめる`）。
 
-| 階段 | Emuera 呼叫的事件函式（依序） | 原作位置 |
+| 階段 | 引擎呼叫的事件函式（依序） | 原作位置 |
 |---|---|---|
-| FIRST（新遊戲） | `@EVENTFIRST` | `ゲーム内_イベント発生/オープニング処理.ERB@EVENTFIRST`（:19） |
-| LOADGAME 後 | `@EVENTLOAD` | `ゲーム内_イベント発生/オープニング処理.ERB@EVENTLOAD`（:4） |
-| SHOP | `@EVENTSHOP` → 迴圈 {`@SHOW_SHOP` → 輸入 → `@USERSHOP`} | `インターミッション画面/SHOP_TURNEND.ERB@EVENTSHOP`（:141）、`インターミッション画面/SHOP.ERB@SHOW_SHOP`（:5）、`@USERSHOP`（:192） |
-| TRAIN（戰鬥） | `@EVENTTRAIN` → 迴圈 {`@SHOW_STATUS` → `@SHOW_USERCOM` → 輸入 → `@USERCOM`} | `ゲーム内_戦闘処理/BATTLE_TRAIN.ERB@EVENTTRAIN`（:4）、`BATTLE_SHOW_STATUS.ERB@SHOW_STATUS`（:3）、`BATTLE_COM.ERB@SHOW_USERCOM`（:4）、`@USERCOM`（:572） |
-| DOTRAIN n | `@EVENTCOM` → `@COMn` → `@SOURCE_CHECK` → `@EVENTCOMEND` | `BATTLE_COM.ERB@EVENTCOM`（:666）、`戦闘コマンド(ヒロイン)/COMF*.ERB@COMn`、`BATTLE_COM_AFTER.ERB@SOURCE_CHECK`（:2）、`BATTLE_COM.ERB@EVENTCOMEND`（:685） |
-| AFTERTRAIN | `@EVENTEND` | `ゲーム内_戦闘処理/BATTLE_TRAIN_AFTER.ERB@EVENTEND`（:2），結尾 `BEGIN TURNEND`（:536） |
-| TURNEND | `@EVENTTURNEND` | `インターミッション画面/SHOP_TURNEND.ERB@EVENTTURNEND`（:3） |
+| 新遊戲 | `ResetData` → 依**檔名番號**加入角色 0（Chara000）→ 加入「最初からいるキャラ」999 → `@EVENTFIRST`（SystemProc@endOpenning:197–209、@beginFirst:233–242） | `ゲーム内_イベント発生/オープニング処理.ERB@EVENTFIRST`（:19） |
+| LOADGAME 後 | `@SYSTEM_LOADEND`（無）→ `@EVENTLOAD` → 沒有 BEGIN 就直接 `@SHOW_SHOP`（**不**呼叫 EVENTSHOP、不自動存檔）（@beginDataLoaded:757–780） | `オープニング処理.ERB@EVENTLOAD`（:4） |
+| SHOP | `@EVENTSHOP` → 自動存檔（`オートセーブを行なう:YES` 且 BEGIN SHOP 是在一般狀態下呼叫時；99 號、`@SAVEINFO` 產生說明）→ 迴圈 {`@SHOW_SHOP` → 輸入 → `@USERSHOP`}（@beginShop:614–628、@endCallEventShop:630–640、@beginAutoSave:642–654、@endAutoSave:670–680、@shopWaitInput:691–735） | `インターミッション画面/SHOP_TURNEND.ERB@EVENTSHOP`（:141）、`SHOP.ERB@SHOW_SHOP`（:5）、`@USERSHOP`（:192） |
+| TRAIN（戰鬥） | `UpdateInBeginTrain`（TFLAG/TSTR 清零）→ `@EVENTTRAIN` →（NEXTCOM）→ 迴圈 {`@SHOW_STATUS` → 對 Train.csv 每個指令 `@COM_ABLEn` → `@SHOW_USERCOM` → 輸入}（@beginTrain:249–264、@endCallEventTrain:266–293、@endCallComAbleXX:314–370） | `ゲーム内_戦闘処理/BATTLE_TRAIN.ERB@EVENTTRAIN`（:4）、`BATTLE_SHOW_STATUS.ERB@SHOW_STATUS`（:3）、`BATTLE_COM.ERB@SHOW_USERCOM`（:4） |
+| TRAIN 輸入 | 輸入值是「有名稱且 COM_ABLE 非 0」的指令番號 → 直接 DOTRAIN；否則 `RESULT = 輸入值` → `@USERCOM`（@trainWaitInput:395–427） | `BATTLE_COM.ERB@USERCOM`（:572） |
+| DOTRAIN n | `@EVENTCOM` → `@COMn` → **`RESULT != 0` 時**才 `@SOURCE_CHECK` → SOURCE 清空 → `@EVENTCOMEND`（@doTrain:430–485） | `BATTLE_COM.ERB@EVENTCOM`（:666）、`戦闘コマンド(ヒロイン)/COMF*.ERB@COMn`、`BATTLE_COM_AFTER.ERB@SOURCE_CHECK`（:2）、`BATTLE_COM.ERB@EVENTCOMEND`（:685） |
+| AFTERTRAIN | `@EVENTEND`（@beginAfterTrain:524–534） | `ゲーム内_戦闘処理/BATTLE_TRAIN_AFTER.ERB@EVENTEND`（:2），結尾 `BEGIN TURNEND`（:536） |
+| TURNEND | `@EVENTTURNEND`（@beginTurnend:602–612）。**沒有 BEGIN 就結束會是錯誤**「予期しないスクリプト終端」（@endNormal:993–996），不會自動進 SHOP | `インターミッション画面/SHOP_TURNEND.ERB@EVENTTURNEND`（:3） |
 
-DOTRAIN 內部順序是 Emuera／eramaker 規格，不是原作寫的（見 unresolved）。
-原作的 `@EVENTSAVE`、`@EVENTBUY`、`@CALLTRAINEND` 皆未定義。
+- `@EVENTSHOP` 執行中呼叫的 BEGIN 會被延後到自動存檔之後才生效（`GameProc/Process.State.cs@Begin`:262–266、SystemProc@endAutoSave:670–675）。
+- `@USERSHOP` 結束（沒有 BEGIN）→ 再次 `@SHOW_SHOP`（@endCallEventBuy:737–755）。本作 `_Replace.csv` 販売アイテム数 0，所有輸入都交給 `@USERSHOP`。
+- 函式自然結束（沒寫 RETURN）時 `RESULT = 0`（`GameProc/Process.ScriptProc.cs`:61–67）。
+- 原作的 `@EVENTSAVE`、`@EVENTBUY`、`@CALLTRAINEND`、`@SYSTEM_AUTOSAVE`、`@SYSTEM_LOADEND` 皆未定義。
 
 ## 1. 新遊戲：`@EVENTFIRST`（オープニング処理.ERB）
 
@@ -44,18 +48,29 @@ DOTRAIN 內部順序是 Emuera／eramaker 規格，不是原作寫的（見 unre
 | 269–283 | 角色裝備中的衣裝（`CFLAG:40–43`、`EQUIP:600–699`）登記為持有 |
 | 286–292 | `FLAG:41 = 1`、`CALL RESEARCH_QUOTA`、`CALL UPDATE`、**`BEGIN SHOP`** |
 
+**開局要點（S03 翻寫時確認，程式：`src/eragvt/game/opening.py`）**
+- `CHARA_MAKE_FINALIZE` 會執行兩次：角色製作選單 `[1000]`（`SYSTEM/キャラメイキング関連/CHARA_MAKE.ERB`:210）
+  與 EVENTFIRST:135。第二次以第一次的 BASE 當「体力基礎」再算一次 `LEVELSTATUS`，所以開局的最大體力等
+  是「升級公式套兩次」的結果（例：Chara301 體力 CSV 1400 → 2006 → 2787）。
+- 角色 CSV 的 `相性`（RELATION，索引＝對方 CSV 番号）只有在 `HEROINE_PRESET` 選 `[30]` 時才經
+  `SYSTEM/キャラメイキング関連/FIRSTSETTING_CONVERTCSV.ERB@CONVERT_RELATION`:3–23 轉成以登錄 index 為索引；
+  直接開始遊戲時維持 CSV 原值。
+- `CFLAG:240`（固有番號）= 登錄 index（CHARA_MAKE_DEFAULT.ERB:242–243）。
+
 預設隊伍（初期セット）：`SYSTEM/キャラメイキング関連/初期セット/*.ERB@SHOKISET_SELECT_n` 以
 `ADDCHARA <CSV番号>` 加入 CSV 角色，例如 `0_特捜戦隊.ERB@SHOKISET_SELECT_0` 加 301/302/303，
 之後 `CALL SHOKISET_CSVFIX`（`SHOKISET.ERB`:96）。由 `SHOKISET.ERB@CHARA_MAKE_FINALIZE_KAI` 選單呼叫。
 
 ## 2. 讀檔：`@EVENTLOAD`
 
-`CALL UPDATE`（`バージョン間互換処理.ERB@UPDATE`:95，存檔版本升級）；`FLAG:999` 決定背景色；
-`FLAG:64 > 0`（已通關）則 `JUMP ENDING`。之後 Emuera 回到存檔時的 SHOP 階段。
+`CALL UPDATE`（`バージョン間互換処理.ERB@UPDATE`:95，存檔版本升級；全部是 `LASTLOAD_VERSION < n`（n ≦ 408）的分岐，
+版本 408 的存檔不會改動狀態）；`FLAG:999` 決定背景色；`FLAG:64 > 0`（已通關）則 `JUMP ENDING`。
+之後直接 `@SHOW_SHOP`（見 §0）。
 
 ## 3. 回合開始：`@EVENTSHOP`（SHOP_TURNEND.ERB:141）
 
 - `DAY == 0`（剛開局）：`DAY = 1`、`TIME = 0`、`FLAG:64 = FLAG:799 = 0`、`TARGET = 1`，`JUMP SHOW_SHOP`。
+  EVENTSHOP 回來後引擎還會自動存檔並**再呼叫一次** `@SHOW_SHOP`（§0），因此開局 SHOP 畫面實際畫兩次（中間有 `@LB` 清畫面）。
 - 其餘：`PARASITE`、`SMALL_TENTACLE_HANTEI`（config）、`BIRTH_AUTO_RANDOM`；`FLAG:41 = FLAG:43 = 0`；
   `INVERTBIT TIME, 0`（晝夜切換，TIME 0=晝 1=夜）；`CALL RECOVERY_OVER_TIME`（:591）；
   `TIME == 0` 時 `DAY += 1` 並 `CALL CALC_INCOME_EXPEND`（:771）；新聞 `FLAG:60`；`CHECK_SHIELD_ALL`；
@@ -71,7 +86,7 @@ DOTRAIN 內部順序是 Emuera／eramaker 規格，不是原作寫的（見 unre
 |---|---|
 | 1..CHARANUM-1 | 切換操作角色 `TARGET` |
 | 50 | `SHOP_ORGANIZE_PARTY`（隊伍編成） |
-| 100 | `USERSHOP_ACTION_CONFIRM`（:503）→ 確認後 **`JUMP ACTION_MAIN`** |
+| 100 | `USERSHOP_ACTION_CONFIRM`（:503）→ 確認後 **`JUMP ACTION_MAIN`**。確認的 `SELECTCASE` 只有 `CASE 9`，其餘（含 `[1]はい`）都 `RETURN 0` 中斷（:521–532） |
 | 101–108 | `USERSHOP_SET_ACTION, RESULT, FLAG:9`：設定 `CFLAG:100`（行動預約，常數見 variables.md） |
 | 110 / 111 / 112 / 113 / 120 | 狀態、強化、衣裝設定、醫務室、衣裝購入 |
 | 130 / 150 / 160 | 狀況確認、設施擴張、行程設定 |

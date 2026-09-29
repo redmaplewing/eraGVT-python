@@ -10,9 +10,6 @@ from .character import Character
 from .rng import GameRng
 from .sparse import IntArray, StrArray
 
-# GameBase.csv `最初からいるキャラ,999`
-DEFAULT_MASTER_NO = 999
-
 
 @dataclass
 class TempVars:
@@ -22,20 +19,30 @@ class TempVars:
     max_palam: IntArray = field(default_factory=IntArray)  # MAX_PALAM（:138）
     common_palam: IntArray = field(default_factory=IntArray)  # COMMON_PALAM（:16）
     battle_situation: str = ""  # 特殊戦闘シチュエーション（イベントから派生する特殊戦闘/DIM.ERH:3）
+    # era LASTLOAD_VERSION：新遊戲 -1、讀檔後 = 存檔的遊戲版本（VariableData.cs:48、653；VariableEvaluator.cs:2174）
+    last_load_version: int = -1
 
 
 @dataclass
 class GameState:
     """一份存檔的內容。欄位名＝era 變數名小寫。
 
-    存檔範圍：era 內建存檔變數 + `SHIELD`（DIM.ERH:155 SAVEDATA）+ `MOB_FLAG`（:169 SAVEDATA，
-    2 維，索引 `(分類, 番號)`）。`temp` 與 `rng` 不存。
+    存檔範圍（reference/emuera-1824/Emuera/GameData/Variable/VariableCode.cs:31–118、
+    VariableData.cs@SaveToStream:663 / @SaveToStreamExtended:689）：內建整數陣列中 0x00–0x3B 的存檔區
+    （DAY MONEY ITEM FLAG TFLAG … TARGET ASSI … TIME …）+ SAVESTR + SAVEDATA 的 `#DIM`
+    （`SHIELD`：DIM.ERH:155、`MOB_FLAG`：:169，2 維索引 `(分類, 番號)`）+ 全部角色。
+    本類別只建模本作用得到的存檔變數；未建模的存檔變數一律是 0，存不存結果相同。
+    `temp`（非 SAVEDATA 的 `#DIM`）與 `rng` 不存；讀檔時 Emuera 會把它們重設為預設值
+    （VariableEvaluator.cs@LoadFromStream:2172–2173 → VariableData.cs@SetDefaultLocalValue:514）。
     """
 
-    day: int = 0
+    # DAY は配列：DAY:0 = 日数、DAY:1 = 殲滅猶予の延長日数、DAY:2 = 半日単位の通算
+    # （インターミッション画面/SHOP.ERB:411、ゲーム内_イベント発生/エンディング/ENDING.ERB:747 など）
+    day: IntArray = field(default_factory=IntArray)
     time: int = 0  # 0 = 晝、1 = 夜
     money: int = 0
-    target: int = 0
+    # ResetData 後 TARGET=1、ASSI=-1（VariableData.cs@SetDefaultValue:644–647）
+    target: int = 1
     assi: int = -1
     flag: IntArray = field(default_factory=IntArray)
     tflag: IntArray = field(default_factory=IntArray)
@@ -53,14 +60,17 @@ class GameState:
 
     @classmethod
     def new(cls, data: GameData, rng: GameRng | None = None) -> GameState:
-        """新遊戲的初始狀態：角色列表只有 MASTER（Chara999 ダミー）。
+        """標題選「最初からはじめる」後、呼叫 `@EVENTFIRST` 前的狀態
+        （Process.SystemProc.cs@endOpenning:197–209）：`ResetData` 後依檔名番號加入角色 0，
+        再加入 GameBase.csv「最初からいるキャラ」（本作 999）。
 
-        原作 `@EVENTFIRST` 以 `SWAPCHARA 0, 1` / `DELCHARA 1` 達成同樣結果
-        （`ゲーム内_イベント発生/オープニング処理.ERB`:63–64）。
+        原作 `@EVENTFIRST` 接著 `SWAPCHARA 0, 1`／`DELCHARA 1` 只留下 999（見 `eragvt.game.opening`）。
         """
-        master_no = int(data.game_base.get("最初からいるキャラ", [DEFAULT_MASTER_NO])[0])
         state = cls(rng=rng or GameRng())
-        state.add_chara(data, master_no)
+        state.add_chara_from_csv_no(data, 0)
+        default_chara = data.game_base_int("最初からいるキャラ", 0)
+        if default_chara > 0:
+            state.add_chara_from_csv_no(data, default_chara)
         return state
 
     @property
@@ -77,10 +87,21 @@ class GameState:
         return self.charas[self.target]
 
     def add_chara(self, data: GameData, no: int) -> Character:
-        """era `ADDCHARA 番号`：加到列表尾端。"""
+        """era `ADDCHARA 番号`：加到列表尾端（VariableEvaluator.cs@AddCharacter:1026）。"""
         if no not in data.charas:
             raise KeyError(f"沒有番号 {no} 的角色 CSV")
         chara = Character.from_def(data.charas[no])
+        self.charas.append(chara)
+        return chara
+
+    def add_chara_from_csv_no(self, data: GameData, csv_no: int) -> Character:
+        """依檔名番號加入角色；找不到時加入空角色（VariableEvaluator.cs@AddCharacterFromCsvNo:1044–1052）。"""
+        for d in data.charas.values():
+            if d.csv_no == csv_no:
+                chara = Character.from_def(d)
+                break
+        else:
+            chara = Character(no=0)
         self.charas.append(chara)
         return chara
 
@@ -98,7 +119,7 @@ class GameState:
 
     def to_json(self) -> dict[str, Any]:
         return {
-            "day": self.day,
+            "day": self.day.to_json(),
             "time": self.time,
             "money": self.money,
             "target": self.target,
@@ -115,7 +136,7 @@ class GameState:
     @classmethod
     def from_json(cls, obj: dict[str, Any], rng: GameRng | None = None) -> GameState:
         return cls(
-            day=obj["day"],
+            day=IntArray.from_json(obj["day"]),
             time=obj["time"],
             money=obj["money"],
             target=obj["target"],
