@@ -38,7 +38,7 @@
 | # | 階段 | 成果 | 模型 |
 |---|---|---|---|
 | S01 | 原作分析 + 專案骨架 | era 事實 wiki（變數、CSV、流程）、`src/eragvt` 骨架、CSV 載入器與測試 | O |
-| S02 | 核心狀態模型 | 全域/角色變數模型、角色實體、JSON 存讀檔、文字輸出層 | O |
+| S02 | 核心狀態模型 | 全域/角色變數模型（稀疏 dict + 常數 Enum）、由 `CharaDef` 建角色（MASTER=Chara999）、JSON 存讀檔（只存 SAVEDATA/CHARADATA）、文字輸出層、`NarrationService` 介面佔位（細項見 STATUS） | O |
 | S03 | 新遊戲 + SHOP | EVENTFIRST 最小路徑（預設角色、跳過完整角色製作）、SHOP 主選單 Web UI | O |
 | S04 | 行動執行 + 回合結束 | ACTION 各類、TURNEND（日期、flag 重置）、結局判定骨架 | O |
 | S05 | 戰鬥核心 | 遭遇、行動順序、指令選擇/判定、PALAM 計算、戰後處理 | O |

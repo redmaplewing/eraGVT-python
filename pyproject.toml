@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "eragvt"
+version = "0.1.0"
+description = "eraGVT（Emuera/ERB）的 Python + HTML 手工翻寫版"
+requires-python = ">=3.10"
+dependencies = [
+    "fastapi",
+    "jinja2",
+    "uvicorn",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "httpx",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
