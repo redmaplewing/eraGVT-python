@@ -71,9 +71,27 @@ tohoTW(PY) 的 log／checklist／index 各膨脹到 450–700KB，每個 session
   收尾時 `git fetch origin && git rebase origin/main`（只 rebase 自己尚未推上 main 的 commit），
   再 `git push origin HEAD:main`（一般 fast-forward push，不可 force）。
   若平台拒絕推 `main`，就照平台允許的分支推，並在報告第一行寫明「未能推上 main」，由本機代理合併。
-- 每個 S 階段開一個**新的**雲端 session（不要在同一個 session 連做多個階段：對話越長，每一步重讀的上下文越貴）。
+- 不要在同一段對話裡直接連做多個階段（對話越長，每一步重讀的上下文越貴）；要連做就用下方「自主推進模式」，每階段交給全新子 agent。
 - 不 force-push、不改寫歷史、不刪分支，除非使用者明確要求。
 - 子 agent 改完檔案，自己用 `git status`／`git diff --stat` 核對範圍，不要只信它的自述。
+
+## 自主推進模式（使用者說「自主推進」時）
+
+一個雲端 session 連續完成多個階段，不需要使用者在中間傳話。主 session 只當**指揮**，保持自己的上下文精簡：
+
+1. 讀 `docs/STATUS.md`，確定下一階段 Sxx。若 `docs/sessions/Sxx-*.md` 不存在，先依 PLAN 與 STATUS 寫規格（≤60 行）。
+2. 用 Agent 工具開**一個全新子 agent** 執行該規格（prompt 只給：讀 AGENTS.md → 執行哪份規格 → 收尾清單 1–4，
+   不要 push，最後回報三段）。主 session **不要**自己讀原作或寫產品程式碼。
+3. 子 agent 回來後，主 session 驗收：
+   - 自己跑 `pytest`，看 `git status`／`git diff --stat`（不信子 agent 自述）；確認 `source/`、`reference/` 未動。
+   - 抽查 diff 裡有無憑推測的引擎行為、未標記的 DEVIATION／UNVERIFIED。有問題就開新子 agent 修正同一階段。
+4. 通過 → commit、推上 `main`，在 STATUS 寫下一階段，再回到 1。
+5. **停止條件**（停下並向使用者回報）：
+   - 完成使用者指定的最後一個階段（未指定則到 PLAN 的 S06 垂直切片為止）；
+   - 真正的 blocker、需要重大產品決策、或某偏離已嚴重到無法推進（見 `deviations.md` 使用者裁決）；
+   - 同一階段修正兩輪仍驗收不過。
+6. 每完成一階段，在對話裡留一行進度（階段、測試數、commit），讓使用者隨時可看。
+   最終報告：每階段一段「做了什麼／需要使用者決定」，並提醒使用者去看額度頁。
 
 ## 完成一個 session 的收尾清單
 
