@@ -143,9 +143,11 @@ def test_training_short_range_and_sengiup(ctx):
     assert c.exp[5] == 22
     t = texts(ctx.out)
     assert "近距離戦闘が上達した（＋7）" in t
-    # SENGIUP（コモン関数.ERB:675–）：ABL 0 → 25、近距離得意 && ARG:1 == 0 → TIMES 0.9 → 22。22 >= 22
-    assert c.abl[30] == 1
-    assert "紅葉の近距離Lvが上がった" in t
+    # SENGIUP（コモン関数.ERB:675–）：ABL 0 → 25。:714 `近距離得意 && ARG:1 == 0 || … && ARG:1 == 2` は
+    # && と || が同順位・左結合（reference/emuera-1824/Emuera/GameData/Expression/OperatorCode.cs:33–34、
+    # ExpressionParser.cs:502–506）なので末尾の `&& ARG:1 == 2` が偽 → TIMES 0.9 は掛からず 25。22 < 25 → 上がらない
+    assert c.abl[30] == 0
+    assert "紅葉の近距離Lvが上がった" not in t
 
 
 def test_training_levelup(ctx, data):

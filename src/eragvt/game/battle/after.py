@@ -1,13 +1,13 @@
 """戦闘終了処理：`ゲーム内_戦闘処理/BATTLE_TRAIN_AFTER.ERB@EVENTEND`:2–536（路徑相對 `source/earGVP/ERB/`）。
 
 TFLAG:98 は戦闘の結果（0＝時間切れ／撤退、1＝勝利、2＝敗北）。設定箇所は BATTLE_COM_AFTER.ERB:129（勝利）、
-:852／:973（敗北）のみ。敗北（幽閉）は source_check.py で停止するので、ここに来るのは 0 と 1。
+:852／:973（敗北）のみ。
 """
 
 from __future__ import annotations
 
 from ...state.constants import ActionPlan, GameOption
-from ..action import Ctx, Step, config_check_event, get_exp, get_syuren, print_callname, print_transcallname
+from ..action import Ctx, Step, config_check_event, config_check_prison, get_exp, get_syuren, print_callname, print_transcallname
 from ..chara_common import is_female
 from ..era import div, limit, times
 from ..opening import game_option
@@ -15,7 +15,7 @@ from ..shop import charanum_safe, check_gameover
 from ..tentacle import enemy_type_check, tentacle_survive_num
 from .ablup import ablup
 from .cloth import cloth_battle_hosei, cloth_battle_sethp, refresh_cloth_data
-from .core import PALAM_END, get_battle_situation, is_hole, mark, percent_cal, t, tc, tentacle_level
+from .core import PALAM_END, config_check_balance, get_battle_situation, is_hole, mark, percent_cal, t, tc, tentacle_level
 from .encount import get_exp_battle, get_kakera, get_money, research_progress, support_heal
 from .func import transform
 
@@ -118,11 +118,43 @@ def self_check(ctx: Ctx, who: int) -> int:
     return 1 if local >= 15 else 0
 
 
+def subevent_release_ecstasy(ctx: Ctx) -> None:
+    """`SUBEVENT_BATTLEE.ERB@SUBEVENT_RELEASE_ECSTASY`:163–226。"""
+    from .palam import calc_ecstasy, message_sex_ecstasy_single
+
+    st, data, out = ctx.state, ctx.data, ctx.out
+    c = tc(ctx)
+    if c.tcvarn[40] <= 0:
+        return
+    c.nowex.clear()  # :169 VARSET NOWEX
+    for i in range(4):  # :170–173 FOR LCOUNT, 0, 感覚数（DIM.ERH:154 感覚数 = 4）
+        c.nowex[i] = calc_ecstasy(ctx, i, 0)
+    local = sum(1 for i in range(4) if c.nowex[i] > 0)  # :176–180
+    zecchou = data.index_of("EXP", "絶頂経験")
+    for i in range(4):  # :181–188 JUEL:快Ｃ〜快Ｂ = 0〜3
+        c.exp[zecchou] += c.nowex[i] * local
+        c.juel[i] += 1000 * c.nowex[i] * local
+    c.exp[data.index_of("EXP", "露出快楽経験")] += local  # :190
+    if c.nowex[0] + c.nowex[1] + c.nowex[2] + c.nowex[3]:  # :192–223
+        out.printl()
+        if st.tflag[98] != 2:  # 地の文/MESSAGE_SUBEVENT.ERB@MESSAGE_SUBEVENT_BATTLE_RELEASE_ECSTASY:174–181
+            out.set_bold(True)
+            out.printl("絶頂解放")
+            out.set_bold(False)
+            out.printl(f"医療班に回収された{print_transcallname(st, st.target)}は、絶頂を阻害している成分を中和する薬を投与され、")
+            out.printl("医師や看護師たちに見られる中で望まぬ絶頂を迎えた・・・")
+            out.printl()
+        for i in range(4):
+            if c.nowex[i] >= 1:
+                message_sex_ecstasy_single(ctx, i, c.nowex[i])
+    c.tcvarn[40] = 0  # :224
+
+
 def subevent_battleend(ctx: Ctx) -> None:
     """`SUBEVENT_BATTLEE.ERB@SUBEVENT_BATTLEEND`:6–13。"""
     st = ctx.state
     if tc(ctx).tcvarn[40] > 0:
-        raise NotImplementedError("絶頂禁止の解放（SUBEVENT_RELEASE_ECSTASY）は未移植")
+        subevent_release_ecstasy(ctx)
     if st.tflag[98] in (0, 1):
         # SELF_BATTLEEND（FORCE_夜間自慰.ERB:65–72）
         if self_check(ctx, st.target) == 1:
@@ -177,6 +209,49 @@ def douga_ryusutu(ctx: Ctx, arg: int) -> None:
 
 def _tofull(n: int) -> str:
     return str(n).translate(str.maketrans("0123456789-", "０１２３４５６７８９－"))
+
+
+def _event_end_lose(ctx: Ctx) -> None:
+    """:335–422 敗北時（TFLAG:98 == 2）。"""
+    st, data, out = ctx.state, ctx.data, ctx.out
+    c = tc(ctx)
+    level = c.abl[data.index_of("ABL", "レベル")]
+    get_syuren(ctx, 40 + c.ex[99] * 4)  # :337
+    local = div(250 * tentacle_level(st), level + 2) + st.rng.rand(10)  # :339
+    if st.flag[73] > 0:
+        local = div(local, 8)
+    get_exp(ctx, min(local, 750))  # :344
+    local = (tentacle_level(st) + 65 - st.flag[52] * 5) * (st.tflag[0] - 50) - 200 - st.rng.rand(51)  # :348
+    st.flag[852] += local
+    if st.flag[852] < 0:
+        st.flag[852] = 0
+    result = abs(local)  # :352 `ABS LOCAL`：式中関数を命令として使うと RESULT に代入（Instraction.Child.cs:390–409）
+    if st.flag[73] > 0:  # :355–364
+        result = div(result, 8)
+        for i in range(1, st.charanum):
+            if st.charas[i].cflag[71] == -1:
+                st.charas[i].cflag[71] = 1
+        local = st.charanum  # FOR LOCAL,1,CHARANUM の終了後 LOCAL は CHARANUM（以下の IF LOCAL < 0 は偽）
+    out.print(f"防衛力が{result}")  # :366–372
+    out.printl("低下した" if local < 0 else "上昇した")
+    out.printl()
+    st.flag[853] -= 3  # :374–376（下限の補正なし：原作どおり）
+    out.printl("人気度が3低下した")
+    if st.flag[45] > 0:  # :379–390
+        raise NotImplementedError("イベント戦の特殊ミッション判定は未移植")
+    ninsin_check_after(ctx)  # :393
+    if c.cflag[0] > 0:  # :397–410
+        if (t(ctx, c, "変身時ＴＳ") > 0 and config_check_prison(st, 0) > 0) or st.flag[73] > 0:
+            pass
+        elif config_check_balance(st, 6) == 0:
+            transform(ctx, 0)
+    else:
+        transform(ctx, 0)
+        event_battle_reset_costume(ctx, st.target)
+    _transform_enemy_off(ctx)  # :413–414
+    if (enemy_type_check(st, "BOSS") == 1 or enemy_type_check(st, "LASTBOSS") >= 1) and st.flag[47] > st.flag[46]:
+        st.flag[47] = div(st.flag[47] - st.flag[46], 4) + st.flag[46]  # :418–419
+    c.cflag[23] = 0  # :421
 
 
 def event_end(ctx: Ctx) -> Step:
@@ -262,8 +337,8 @@ def event_end(ctx: Ctx) -> Step:
         event_battle_reset_costume(ctx, st.target)
         if game_option(st, GameOption.ENDLESS):  # :311–333
             raise NotImplementedError("エンドレスモードの期日短縮は未移植")
-    elif st.tflag[98] == 2:  # :335–422
-        raise NotImplementedError("敗北後処理（EVENTEND:335–422）は未移植")
+    elif st.tflag[98] == 2:  # :335–422 敗北
+        _event_end_lose(ctx)
     # :425–440 勝てなかったボスの蓄積ダメージと解析度を保持
     if enemy_type_check(st, "BOSS") == 1 and st.tflag[98] != 1:
         n = st.flag[11]

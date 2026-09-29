@@ -97,16 +97,34 @@ def config_check_maniac(state: GameState, n: int) -> int:
     return 1 - int(state.flag.get_bit(850, n))
 
 
-def kojo_root(ctx: Ctx, code: str) -> int:
-    """`TRYCALLFORM KOJO_ROOT(CFLAG:6, code)`（口上/口上システム関係/KOJO_ROOT.ERB）の TARGET 分。
+_KOJO_SHIELD_CODES = (
+    # KOJO_ROOT.ERB:23–39：部位結界（BASE:30〜33）が残っているときに口上を出さない code（STRFIND の部分一致）
+    (30, ("SEX_COM0", "SEX_COM1", "SPCOM0")),
+    (31, ("SEX_COM2", "SEX_COM3", "SPCOM1")),
+    (32, ("SEX_COM4", "SEX_COM5", "SPCOM2")),
+    (33, ("SEX_COM6", "SEX_COM7", "SPCOM3", "SPCOM5")),
+)
+
+
+def kojo_root(ctx: Ctx, code: str, force_print: int = 0) -> int:
+    """`TRYCALLFORM KOJO_ROOT(CFLAG:6, code, FORCEPRINT)`（口上/口上システム関係/KOJO_ROOT.ERB）の TARGET 分。
 
     DEVIATION: 口上本文は未移植（deviations.md「口上」）。NarrationService が None を返したら
     「口上が見つからない」として RETURN -1（:54–58）。状態への影響は FLAG:62 = 0（"OTHER_" を含まない code、
-    :50／:71）と FLAG:900 = 0（:57／:88）。気絶・結界による早期 RETURN（:17–39）は TCVARn:12 と SEX_COM 系 code
-    のみなのでここで扱う code には該当しない（TCVARn は戦闘外 0）。
+    :50／:71）と FLAG:900 = 0（:57／:88）。
+    :17–21 気絶中（TCVARn:12 & 1）で FORCEPRINT が 0 なら FLAG:900 = 0、RETURN 0（FLAG:62 は触らない）。
+    :23–39 部位結界が残っていて code が該当する性コマンドなら同様に RETURN 0（STRFIND は部分一致なので
+    "SEX_COM1" は "SEX_COM10"〜"SEX_COM19" にも一致する：原作どおり）。
     """
     st = ctx.state
     c = st.target_chara
+    if (c.tcvarn[12] & 1) and not force_print:
+        st.flag[900] = 0
+        return 0
+    for base_no, codes in _KOJO_SHIELD_CODES:
+        if c.base[base_no] > 0 and any(k in code for k in codes):
+            st.flag[900] = 0
+            return 0
     if "OTHER_" in code:
         raise NotImplementedError(f"KOJO_ROOT の OTHER_ 系（{code}）は未移植")
     text = ctx.narration.narrate(c.cflag[6], code, None)
@@ -689,10 +707,12 @@ def sengiup(ctx: Ctx, who: int, kind: int) -> None:
     t = lambda n: talent(data, c, n)  # noqa: E731
     near, mid, far = t("近距離得意") == 1, t("中距離得意") == 1, t("遠距離得意") == 1
     near_n, mid_n, far_n = t("近距離苦手") == 1, t("中距離苦手") == 1, t("遠距離苦手") == 1
-    # :714–729（&& は || より優先）
-    if near and kind == 0 or mid and kind == 1 or far and kind == 2:
+    # :714–717 `A && k0 || B && k1 || C && k2`：&& と || は同順位・左結合
+    # （reference/emuera-1824/Emuera/GameData/Expression/OperatorCode.cs:33–34、ExpressionParser.cs:502–506）
+    # なので ((((A && k0) || B) && k1) || C) && k2 と評価される（原作どおり）
+    if (((near and kind == 0) or mid) and kind == 1 or far) and kind == 2:
         need = times(need, "0.9")
-    if near_n and kind == 0 or mid_n and kind == 1 or far_n and kind == 2:
+    if (((near_n and kind == 0) or mid_n) and kind == 1 or far_n) and kind == 2:
         need = times(need, "1.1")
     if near and kind != 0:
         need = times(need, "1.05")

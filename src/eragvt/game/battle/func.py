@@ -17,6 +17,7 @@ from .core import (
     HAIRAN,
     HATUJOU,
     KIZETU,
+    MAHI,
     P_EX_HANGEKI,
     P_HANGEKI,
     percent_cal,
@@ -515,3 +516,100 @@ def is_akuoti(ctx: Ctx) -> bool:
 
 def kojo(ctx: Ctx, code: str) -> int:
     return kojo_root(ctx, code)
+
+
+def state_change_ex(ctx: Ctx, arg: int) -> None:
+    """`ヒロイン関連/CHARA_STATE_CHANGE.ERB@STATE_CHANGE_EX, ARG`:54–121（絶頂による恍惚・気絶・腰くだけ）。"""
+    from .core import KOSHIKUDAKE, KOUKOTSU, tentacle_access
+
+    st = ctx.state
+    c = tc(ctx)
+    v = c.tcvarn
+    rand = st.rng.rand
+    if c.cflag[1] == 2:
+        return
+    total = sum(c.abl[i] for i in range(4))  # :59–61 LOCAL:1
+    count = 0
+    # :63–78 恍惚（GOTO SKIP_1 で飛ばす条件は左から評価。祝福の RAND は `&&` の短絡）
+    if not t(ctx, c, "闘争本能") > 0 and not (t(ctx, c, "祝福") > 0 and arg < 100 and rand(2) == 0):
+        if (rand(100) < min(arg * arg * 4 + total * 4, 75) or (v[12] & HATUJOU)) and (v[12] & KIZETU) == 0 and (
+            v[12] & KOUKOTSU
+        ) == 0:
+            _state_on_nowait(ctx, "は絶頂の余韻で", "恍惚", (255, 182, 193), "としている！", KOUKOTSU)
+            count += 1
+    # :81–102 気絶
+    if not (t(ctx, c, "祝福") > 0 and arg < 100 and rand(2) == 0):
+        name = str(tentacle_access(ctx, "GETNAME"))
+        if rand(100) < arg * arg * 8 and (v[12] & KIZETU) == 0 and (v[12] & KOUKOTSU) == 0 and name != "Ｈ触手":
+            _state_on_nowait(ctx, "は激しい絶頂によって", "気絶", (250, 180, 50), "した！", KIZETU)
+            _kizetu_menu(ctx)
+            count += 1
+    # :105–118 腰くだけ
+    if not (t(ctx, c, "祝福") > 0 and arg < 100 and rand(2) == 0):
+        if rand(100) < arg * arg * 12 + 5 and (v[12] & KOSHIKUDAKE) == 0:
+            _state_on_nowait(ctx, "は", "腰くだけ", (150, 0, 250), "になってしまった！", KOSHIKUDAKE)
+            count += 1
+    if count > 0:
+        ctx.out.printw()
+
+
+def _state_on_nowait(ctx: Ctx, head: str, name: str, color: tuple[int, int, int], tail: str, bit: int) -> None:
+    """`_state_on` の PRINTW なし版（STATE_CHANGE_EX／DENGEKI は最後にまとめて PRINTW）。"""
+    st = ctx.state
+    out = ctx.out
+    out.print(f"{print_transcallname(st, st.target)}{head}")
+    out.set_bold(True)
+    out.set_color(color)
+    out.print(f"[{name}]")
+    out.reset_color()
+    out.set_bold(False)
+    out.printl(tail)
+    tc(ctx).tcvarn[12] |= bit
+
+
+def state_change_dengeki(ctx: Ctx, arg: int = 100) -> None:
+    """`@STATE_CHANGE_DENGEKI(ARG=100)`:125–177。"""
+    st = ctx.state
+    c = tc(ctx)
+    v = c.tcvarn
+    rand = st.rng.rand
+    count = 0
+    if rand(100) > arg:
+        return
+    if c.cflag[1] == 2:
+        return
+    skip2 = False
+    if t(ctx, c, "生粋の戦士") > 0:  # GOTO SKIP_1（気絶判定を飛ばす）
+        pass
+    elif t(ctx, c, "祝福") > 0 and rand(2) == 0:  # GOTO SKIP_2（両方飛ばす）
+        skip2 = True
+    elif v[200] > 0:
+        skip2 = True
+    elif rand(100) < 10 and (v[12] & KIZETU) == 0:
+        _state_on_nowait(ctx, "は電流のショックで", "気絶", (250, 180, 50), "した！", KIZETU)
+        _kizetu_menu(ctx)
+        count += 1
+    if not skip2:  # $SKIP_1（:158）
+        if not (t(ctx, c, "祝福") > 0 and rand(2) == 0):
+            if rand(100) < 75 and (v[12] & MAHI) == 0:
+                _state_on_nowait(ctx, "は全身が", "麻痺", (250, 250, 0), "した！", MAHI)
+                count += 1
+    if count > 0:
+        ctx.out.printw()
+
+
+def state_change_mahi(ctx: Ctx, arg: int) -> None:
+    """`@STATE_CHANGE_MAHI, ARG`:180–203。"""
+    st = ctx.state
+    c = tc(ctx)
+    if c.tcvarn[12] & MAHI:
+        return
+    if c.cflag[1] == 2:
+        return
+    if t(ctx, c, "祝福") > 0 and arg < 100 and st.rng.rand(2) == 0:
+        return
+    if c.tcvarn[200] > 0:
+        return
+    if st.rng.rand(100) > arg:
+        return
+    _state_on(ctx, "は全身が", "麻痺", (250, 250, 0), "してしまった！", MAHI)

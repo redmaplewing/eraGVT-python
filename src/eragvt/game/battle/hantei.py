@@ -73,7 +73,7 @@ def act_hantei_chara_to_tentacle(ctx: Ctx, kind: str) -> tuple[int, int]:
     c = tc(ctx)
     v = c.tcvarn
     if kind == "HURIHODOKU":
-        raise NotImplementedError("振り解く判定（拘束中）は S06")
+        return _hurihodoku(ctx)
     _need_tentacle(ctx)
     l0 = _stamina(ctx)
     if v[12] & MAHI:
@@ -169,6 +169,110 @@ def act_hantei_chara_to_tentacle(ctx: Ctx, kind: str) -> tuple[int, int]:
         l5 += 25
     if v.get_bit(216, 1) and t(ctx, c, "空中苦手"):
         l5 -= get_air_strike(ctx, 3)
+    if v[2] == P_HANGEKI:
+        l5 += 10
+    if v[2] == P_EX_HANGEKI:
+        l5 += 20
+    if v.get_bit(217, 0):
+        raise NotImplementedError("バースト攻撃（COM17）の命中補正は未移植")
+    if l5 < 0:
+        l5 = 0
+    if st.rng.rand(100) < l5:
+        return 1, l5
+    return 0, l5
+
+
+def _hurihodoku(ctx: Ctx) -> tuple[int, int]:
+    """`ACT_HANTEI_CHARA_TO_TENTACLE, "HURIHODOKU"`（:12–113、:230–307、:331–413 の HURIHODOKU 以外を除く部分）。"""
+    from .func import calc_chisei_shien
+
+    st = ctx.state
+    c = tc(ctx)
+    v = c.tcvarn
+    _need_tentacle(ctx)
+    l0 = _stamina(ctx)
+    if v[12] & MAHI:
+        l0 = div(l0, 2)
+    if c.cflag[1] == 2:
+        l0 = 100
+    l1 = _enemy_hp_bonus(ctx, (100, 105, 110), 2)
+    l2 = c.maxbase[11]  # :41 MAXBASE:防御
+    if v.get_bit(3, 1):
+        l2 *= 2
+    chisei = div(c.maxbase[13], 4)
+    if t(ctx, c, "小柄") == 1:
+        l2 = times(l2, "0.90")
+    if t(ctx, c, "長身") == 1:
+        l2 = times(l2, "1.05")
+    if st.flag[73] > 0:
+        l2 = min(l2, correction_trans(ctx, l2))
+    else:
+        l2 = correction_trans(ctx, l2)
+    l2 = div(l2 * cloth_battle_hosei(ctx, "BOUGYO"), 100)
+    chisei = div(chisei * cloth_battle_hosei(ctx, "CHISEI"), 100)
+    l2 = shinkyou_check(ctx, "BOUGYO", l2)
+    chisei = shinkyou_check(ctx, "CHISEI", chisei)
+    chisei += calc_chisei_shien(ctx, 1)
+    chisei = div(chisei * 2 * (100 - l0), 100)
+    if st.flag[73] > 0:
+        raise NotImplementedError("クズ市民戦の振り解く判定は未移植")
+    l3 = int(tentacle_access(ctx, "BINSYOU"))
+    if st.tflag[2] >= 1 and st.flag[73] == 0:
+        l3 = times(l3, "0.25")
+    if st.flag[999] == 1:
+        raise NotImplementedError("デバッグ表示は未移植")
+    l4 = correction_binsyou(percent_cal(l2, l3))
+    l5 = div(l0 * l1 * l4, 10000)
+    if l5 < 20:  # :232–233
+        l5 = 20
+    l5 += min(div(chisei, 15), 30)  # :236–238（FLAG:73 == 0）
+    # DEVIATION: :241／:245 の `LOCAL:O`（英字 O）は定義のない識別子で、reference/emuera-1824 では実行時に
+    # CodeEE（Process.ScriptProc.cs:38–42 → ArgumentParser.cs:52–58、ExpressionParser.cs:264–269／
+    # IdentifierDictionary.cs:645）になり、原作ではこの行に来るとエラーで止まる。LOCAL:0（体力気力の残量）の
+    # 誤記とみなして LOCAL:0 で判定する（deviations.md「振り解く判定の LOCAL:O」、要裁決）。
+    if l5 <= 45 and l0 > 49:
+        l5 = 45
+    if l5 <= 60 and l0 > 74:
+        l5 = 60
+    l5 = div(l5 * 100, int(tentacle_access(ctx, "HOLD")))  # :249–252
+    if v[2] in (3, 200):  # 体勢：耐える／暴れる防御
+        l5 += 20
+    if v[2] == 6:  # 睨みつける
+        l5 += 10
+    if st.temp.prevcom == 40:
+        l5 += 40
+    if v[2] == 201:  # 暴れる失敗
+        l5 -= 10
+    if l5 > 80:
+        l5 = 80
+    if v.get_bit(3, 1):
+        l5 += 35
+    if st.flag[903]:
+        l5 += 10
+    elif st.flag[908]:
+        l5 -= 10
+    if t(ctx, c, "剛腕") > 0:
+        l5 += 10
+    if t(ctx, c, "小さな体躯") > 0:
+        l5 -= 10
+    koukotsu = v[12] & 64
+    if koukotsu:
+        l5 -= 10
+    if st.tflag[2] >= 1 and not koukotsu:
+        l5 = 100  # :293–296（FLAG:73 == 0）
+    if l5 < 10:
+        l5 = 10
+    # :331–365 共通の補正（HURIHODOKU 以外の条件が付いたものを除く）
+    l5 += cloth_battle_hosei(ctx, "HIT")
+    if t(ctx, c, "攻勢構築") > 0:
+        l5 += 6
+    if t(ctx, c, "秘められし力") > 0 and percent_cal(c.base[0] + c.base[1], c.maxbase[0] + c.maxbase[1]) <= 25:
+        l5 += 12
+    if t(ctx, c, "心眼") > 0:
+        l5 += 3
+    if t(ctx, c, "共生") > 0:
+        l5 += 2
+    cloth_battle_hosei(ctx, "AIRPLUS", st.target)  # :355（結果は HURIHODOKU では使わない）
     if v[2] == P_HANGEKI:
         l5 += 10
     if v[2] == P_EX_HANGEKI:
@@ -485,6 +589,17 @@ def damage(ctx: Ctx, kind: str) -> int:
                 l0 = times(l0, f)
         if tt("近距離得意") and tt("中距離得意") and tt("遠距離得意"):
             l0 = times(l0, tab[6])
+    elif kind == "ABARERU":  # :1353–1377
+        l0 = shinkyou_check(ctx, "KOUGEKI", l5)
+        if enemy_type_check(st, "MOB") == 1:
+            l0 = times(l0, "0.125")
+        else:
+            l0 = times(l0, "1.00")  # FLAG:111 == 0
+        l1 = div(int(tentacle_access(ctx, "BOUGYO")), 2)
+        if st.tflag[2] >= 1:
+            l1 = times(l1, "0.50")
+        if v.get_bit(3, 0):
+            l1 *= 2
     elif kind == "CHARA":
         l0 = int(tentacle_access(ctx, "KOUGEKI"))
         if st.tflag[2] >= 1:

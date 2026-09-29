@@ -5,12 +5,15 @@
 
 from __future__ import annotations
 
+from collections.abc import Generator
+
 from ..action import Ctx, config_check_maniac, kojo_root, print_callname, print_transcallname
 from ..chara_common import is_male
-from ..era import div
+from ..era import div, isqrt
 from ..opening import game_option
 from ...state.constants import GameOption
-from ..tentacle import enemy_type_check
+from ..tentacle import enemy_type_check, get_lastboss_phase
+from .func import state_change_kizetu
 from .cloth import cloth_battle_damage, cloth_battle_hosei, cloth_check, refresh_cloth_data
 from .core import (
     BETOBETO,
@@ -52,7 +55,8 @@ def _fatigue_line(ctx: Ctx) -> None:
     ctx.out.printl(f"{print_callname(st, st.target)}の身体の底に疲労が蓄積した……（＋{full}）")
 
 
-def source_check(ctx: Ctx) -> None:
+def source_check(ctx: Ctx) -> Generator[None, int, None]:
+    """`@SOURCE_CHECK`。敵の行動（拘束中の AUTO_V_DEFENCE）に INPUT があるのでジェネレータ。"""
     st = ctx.state
     c = tc(ctx)
     v = c.tcvarn
@@ -115,8 +119,7 @@ def source_check(ctx: Ctx) -> None:
     out.printl()
     if not v.get_bit(216, 1):
         st.tflag.set_bit(11, 3, False)
-    if v[2] in (P_ABARE_GUARD, P_ABARE_FAIL, P_ABARE_CRIT):
-        raise NotImplementedError("暴れる（拘束中）の追加処理は S06")
+    _abareru(ctx)  # :730–802
     if st.tflag[1] == 1:  # :806–830
         if v[12] & KYOUKOUSOKU:
             v[12] -= KYOUKOUSOKU
@@ -133,7 +136,7 @@ def source_check(ctx: Ctx) -> None:
         select_tentacle_action(ctx)
         palam_cal(ctx, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
     else:
-        enemy_action(ctx)
+        yield from enemy_action(ctx)
         if v[2] in (P_HANGEKI, P_EX_HANGEKI, P_HANGEKI_OK):
             v[2] = P_NORMAL
     if v[12] & KYOUKOUSOKU:
@@ -150,13 +153,15 @@ def source_check(ctx: Ctx) -> None:
         if enemy_type_check(st, "BOSS") == 1 and st.flag[11] == 6 and 0 <= st.tflag[23] < 100:
             st.tflag[23] = 100
             cancel_lose = 1
-        if cancel_lose > 0:
-            raise NotImplementedError("強拘束／丸飲み準備中の敗北遅延（STATE_CHANGE_KIZETU 以降）は S06")
-        _battle_lose(ctx)
+        if cancel_lose > 0:  # :963–965
+            state_change_kizetu(ctx, 100)
+        else:
+            _battle_lose(ctx)
     # :1104–1131 時間切れ
     if c.base[0] == 0 and c.base[1] == 0 and c.base[2] == 0 and cancel_lose > 0:
-        raise NotImplementedError("強拘束中の時間切れ遅延は S06")
-    if (st.temp.turn_limit != -1 and st.tflag[0] >= st.temp.turn_limit) or (st.flag[73] > 0 and v[0] != 0):
+        state_change_kizetu(ctx, 100)  # :1106
+        st.tflag[0] -= 1  # :1108
+    elif (st.temp.turn_limit != -1 and st.tflag[0] >= st.temp.turn_limit) or (st.flag[73] > 0 and v[0] != 0):
         _timeup(ctx)
     st.tflag[18] = 0  # :1135
     # :1139–1143 オート振り解き
@@ -165,16 +170,23 @@ def source_check(ctx: Ctx) -> None:
     else:
         st.tflag[22] = 1
     _hatujou_to_hairan(ctx)
-    if st.temp.selectcom == 103:
-        raise NotImplementedError("素股焦らしの次ターン行動指定は S06")
+    # :1151–1161 素股焦らしの次ターン行動指定（`SELECTCOM == 103 && TFLAG:17 < 0 && RAND:100 < 95`：短絡）
+    if st.temp.selectcom == 103 and st.tflag[17] < 0 and st.rng.rand(100) < 95:
+        from .sexcom import boss_reaction_ref
+
+        if enemy_type_check(st, "MOB") == 1 or enemy_type_check(st, "CITIZEN") == 1 or get_lastboss_phase(st) >= 1:
+            raise NotImplementedError("ラスボス／雑魚敵の REACTION_REF は未移植")
+        r = boss_reaction_ref(ctx, st.flag[11], 1)
+        if r >= 0:
+            st.tflag[17] = r
     _state_turnend(ctx)
     # :1303–1310 発情による敗北
     if c.base[0] == 0 and c.base[1] == 0 and c.base[2] == 0 and st.flag[13] > 0 and (
         enemy_type_check(st, "MOB") == 0 and enemy_type_check(st, "CITIZEN") == 0
     ):
-        if cancel_lose == 0:
+        if cancel_lose == 0:  # :1304–1305 GOTO BATTLE_LOSE
             _battle_lose(ctx)
-        raise NotImplementedError("強拘束中の敗北遅延は S06")
+        state_change_kizetu(ctx, 100)  # :1308
     # :1313–1318
     if st.tflag[24] > 0:
         st.tflag[24] -= 1
@@ -182,6 +194,18 @@ def source_check(ctx: Ctx) -> None:
         st.tflag[0] += 1
     st.temp.ex_com = 0
     st.temp.sh_com = 0
+
+
+def source_check_jump(ctx: Ctx) -> None:
+    """`PALAM_UP.ERB`:355–356 `JUMP SOURCE_CHECK`（FLAG:13 <= 0 の搾精撃破）。JUMP 先から戻ると呼び出し元も
+    即 RETURN する（reference/emuera-1824/Emuera/GameProc/Process.State.cs:370–378）。FLAG:13 <= 0 なので
+    SOURCE_CHECK は必ず勝利処理（:117–436）の `BEGIN AFTERTRAIN` に達し、入力待ちには到達しない。"""
+    gen = source_check(ctx)
+    try:
+        next(gen)
+    except StopIteration:
+        return
+    raise RuntimeError("JUMP SOURCE_CHECK が入力待ちに到達した")
 
 
 def _victory(ctx: Ctx) -> None:
@@ -425,9 +449,143 @@ def _motion_by_command(sel: int, local: int) -> int:
 
 
 def _battle_lose(ctx: Ctx) -> None:
-    """:969–1095 `$BATTLE_LOSE` 以降（敗北 → 幽閉）。"""
-    # DEVIATION ではなく未移植：敗北後の幽閉（CFLAG:0 = 1 等）以降は PRISON 系の処理が未移植なので停止する。
-    raise NotImplementedError("戦闘敗北（幽閉：BATTLE_COM_AFTER.ERB:969–1095）は未移植")
+    """:969–1095 `$BATTLE_LOSE` 以降（敗北 → 幽閉：CFLAG:0 = 1）。最後に `BEGIN AFTERTRAIN`。"""
+    from ..action import config_check_prison
+    from .core import chinobun, is_hole
+
+    st = ctx.state
+    c = tc(ctx)
+    out = ctx.out
+    name = print_transcallname(st, st.target)
+    if enemy_type_check(st, "AKUOTI") == 1:
+        raise NotImplementedError("悪堕ちキャラへの敗北（BATTLE_COM_AFTER.ERB:980–981、1044–1087）は未移植")
+    out.printw()  # :971
+    st.tflag[98] = 2  # :973
+    out.printl()
+    out.print("戦闘結果：敗北 -")
+    tentacle_access(ctx, "NAME")
+    out.printl("の殲滅失敗")
+    out.printl()
+    if t(ctx, c, "主観視点") > 0:
+        out.printl(f"{name}は力尽きてしまった・・・")
+    else:
+        out.printl(f"{name}は力尽きた")
+    out.printl()
+    if not game_option(st, GameOption.ENDLESS):  # :997–998
+        st.day[1] += div(c.abl[ctx.data.index_of("ABL", "レベル")], 2) + 7
+    if config_check_maniac(st, 10) == 1:  # :1001–1010
+        progress = div(c.cflag[32], 10000000000000000)  # CHARA_TATTOO.ERB@TATTOO_ACCESS "PROGRESS_VAR":171–172
+        if progress:
+            local = min(progress, 75)
+            c.cflag[30] = div(_check_contamination(ctx) * local, 100)
+    else:
+        c.cflag[30] = 0
+    exp_idx = ctx.data.index_of("EXP", "幽閉経験")
+    abn_idx = ctx.data.index_of("EXP", "異常経験")
+    if not is_hole(ctx, st.target) and t(ctx, c, "変身時ＴＳ") < 1 and config_check_prison(st, 0) == 0:  # :1013–1029
+        c.cflag[0] = 9
+        c.cflag[20] = st.flag[10]
+        c.cflag[21] = st.flag[11]
+        out.printl(f"オトコである{name}はそのままトドメを刺され、")
+        out.printl(f"{ctx.data.str_defaults.get(2500, '')}に取り込まれていってしまった・・・")
+        out.printw()
+        out.printw(f"{name}はロストしました")
+    else:  # :1031–1043（FLAG:110 == 0）
+        c.cflag[0] = 1
+        c.cflag[20] = st.flag[10]
+        c.cflag[21] = st.flag[11]
+        # MESSAGE_BATTLE_END_LOSS（地の文/MESSAGE_BATTLE.ERB:1815–1863、LOSE_SITUATION を含む。状態変化なし）
+        chinobun(ctx, "MESSAGE_BATTLE_END_LOSS")
+        kojo_root(ctx, "BATTLE_END_LOSS")
+        out.wait()  # :1863 FORCEWAIT
+    if c.exp[exp_idx] == 0:
+        c.exp[abn_idx] += 1
+    c.exp[exp_idx] += 1
+    if c.cflag[0] in (1, 9, 4):  # :1091–1092
+        st.flag[799] -= 1
+    raise BeginAfterTrain()  # :1095
+
+
+def _check_contamination(ctx: Ctx) -> int:
+    """`ゲーム内_イベント発生/敗北幽閉中イベント/PRISON.ERB@CHECK_CONTAMINATION`:430–443。"""
+    from ..action import config_check_prison
+
+    st = ctx.state
+    c = tc(ctx)
+    a = lambda n: abl(ctx, c, n)  # noqa: E731
+    l1 = 260 + min(isqrt(max(c.base[52] - 60, 0) * 10) * 4, 340)
+    l1 -= (a("触手中毒") * 16 + a("従順") * 8 + a("欲望") * 8 + a("奉仕精神") * 8 + a("露出癖") * 2 + a("マゾっ気") * 2
+           + a("精液中毒") * 4 + a("噴乳中毒") * 4 + a("射精中毒") * 4)
+    if l1 < 160:
+        l1 = 160
+    if config_check_prison(st, 3) > 0:
+        l1 += t(ctx, c, "苗床化") * 80
+    if st.flag[904]:
+        l1 = div(l1 * 3, 4)
+    return l1
+
+
+def _abareru(ctx: Ctx) -> None:
+    """:730–802 暴れるの結果（体勢：暴れる防御／失敗／クリティカル）。"""
+    st = ctx.state
+    c = tc(ctx)
+    v = c.tcvarn
+    out = ctx.out
+    name = print_transcallname(st, st.target)
+    if v[2] == P_ABARE_GUARD:
+        out.set_bold(True)
+        out.printl("暴れる抵抗判定：成功")
+        out.set_bold(False)
+        out.print("拘束を振り解けなかったものの、")
+        tentacle_access(ctx, "NAME")
+        out.printl(f"は{name}の抵抗に虚を突かれ、体勢を崩している！")
+        out.printw()
+        st.tflag[1] = 1
+    elif v[2] == P_ABARE_FAIL:
+        out.set_bold(True)
+        out.printl("暴れる抵抗判定：失敗")
+        out.set_bold(False)
+        rand = st.rng.rand
+        if enemy_type_check(st, "BOSS") == 1 or enemy_type_check(st, "LASTBOSS") == 1:  # :750–769
+            if rand(7) == 0:
+                if t(ctx, c, "主観視点") > 0:
+                    out.printl(f"ガッチリ巻き付いた触手はびくともせず、{name}は己の無力を突き付けられた・・・")
+                else:
+                    out.printl(f"ガッチリ巻き付いた触手はびくともせず、{name}は己の無力に唇を噛み占めた・・・")
+            elif rand(6) == 0:
+                out.printl(f"触手を引き離そうとする{name}だが、ギリギリのところで力負けしてしまった・・・")
+            elif rand(5) == 0:
+                out.printl(f"絡み付いた触手を引き離そうとする{name}だが、数が多すぎてきりがない・・・")
+            else:
+                _abare_fail_common(ctx, name)
+        else:
+            _abare_fail_common(ctx, name)
+        out.printw()
+    elif v[2] == P_ABARE_CRIT:
+        out.set_bold(True)
+        out.printl("暴れる抵抗判定：クリティカル")
+        out.set_bold(False)
+        tentacle_access(ctx, "NAME")
+        out.printl(f"が思わぬ反撃に怯んだ隙に、{name}は拘束を抜け出した！")
+        out.printw()
+        v[0] = 2
+        st.tflag[4] = 0
+        st.tflag[1] = 1
+        v[8] = 1
+
+
+def _abare_fail_common(ctx: Ctx, name: str) -> None:
+    """:761–768／:771–779 の 4 択（RAND:4 → RAND:3 → RAND:2 の順に引く）。"""
+    rand = ctx.state.rng.rand
+    out = ctx.out
+    if rand(4) == 0:
+        out.printl(f"抵抗するも、{name}は手足を抑え込まれて身動きできなくなってしまった・・・")
+    elif rand(3) == 0:
+        out.printl(f"{name}は必死に抵抗するが、強引に組み伏せられてしまった・・・")
+    elif rand(2) == 0:
+        out.printl(f"{name}は強く締め上げられて、あまりの苦痛に思わず隙を晒してしまった・・・")
+    else:
+        out.printl(f"{name}は突然の愛撫に不意を突かれて、抵抗する力を弱めてしまった・・・")
 
 
 def _timeup(ctx: Ctx) -> None:
@@ -502,8 +660,38 @@ def _auto_untangle(ctx: Ctx) -> None:
     if st.flag[73] > 0:
         st.tflag[22] = 1
         return
-    if v[0] == 0:
-        raise NotImplementedError("オート振り解き（拘束中）は S06")
+    if v[0] == 0:  # :253–299
+        if st.tflag[22] > 0 or (v[12] & KYOUKOUSOKU):
+            st.tflag[22] = 1
+            return
+        from .restraint import msg_hurihodoku, msg_hurihodoku_success
+        from .hantei import act_hantei_chara_to_tentacle
+
+        out = ctx.out
+        name = print_transcallname(st, st.target)
+        if act_hantei_chara_to_tentacle(ctx, "HURIHODOKU")[0] == 1:
+            out.printl()
+            out.set_bold(True)
+            out.printl("オート振り解き")
+            out.set_bold(False)
+            msg_hurihodoku(ctx)
+            v[0] = 2
+            st.tflag[4] = 0
+            msg_hurihodoku_success(ctx)
+            v[8] = 1
+            st.tflag[1] = 0
+            st.tflag[16] = -1
+            st.tflag[17] = -1
+            st.tflag[20] = -1
+            tentacle_access(ctx, "NAME")
+            out.printl("は体勢を立て直している・・・")
+            out.printl()
+        else:
+            out.printl()
+            out.printl(f"{name}はがっちり拘束されて身動きできない・・・")
+            out.printl()
+            st.tflag[22] = 1
+        return
     st.tflag[22] = 0
 
 
@@ -564,8 +752,16 @@ def _state_turnend(ctx: Ctx) -> None:
                 c.base[1] = max(c.base[1] - local, 0)
         out.set_bold(False)
         c.palam[13] += local * 125
-    if v[12] & MAHI:
-        raise NotImplementedError("麻痺の持続判定は未移植")
+    rmax = 100 - 20 * (1 if c.cflag[43] == 508 else 0)
+    if v[12] & MAHI:  # :1210–1220（`(A && RAND < X) || B`：A が偽なら RAND を引かない）
+        if (v[104] > 0 and st.rng.rand(rmax) < max(25 - c.cflag[99] * 5 + v[104] * 5, 15)) or v[104] == -999:
+            out.printl(f"○ {name}の麻痺が治った！")
+            out.printl(f"　 {name}は[麻痺]状態から回復した！")
+            v[12] -= MAHI
+            v[104] = 0
+        else:
+            out.printl(f"× {name}は身体が麻痺して敏捷性がダウンしている…")
+            v[104] += 1
     if v[12] & BETOBETO:
         out.printl(f"× {name}に粘液が纏わり付いて離れない…")
         if c.cflag[1] > 0 and (v[23] > 0 or v[25] > 0):
@@ -584,13 +780,27 @@ def _state_turnend(ctx: Ctx) -> None:
             out.set_bold(False)
             out.printl()
             cloth_battle_damage(ctx, local, 1)
-    if (v[12] & KOSHIKUDAKE) and (v[12] & KIZETU) == 0:
-        raise NotImplementedError("腰くだけの持続判定は S06")
-    ki = percent_cal(c.base[1], c.maxbase[1])
-    if (v[12] & KOUKOTSU) and (v[12] & KIZETU) == 0:
-        raise NotImplementedError("恍惚の持続判定は S06")
-    v[107] = 0
-    _ = ki
+    if (v[12] & KOSHIKUDAKE) and (v[12] & KIZETU) == 0:  # :1245–1255
+        if (v[106] > 1 and st.rng.rand(rmax) < 60 + v[106] * 5) or v[106] == -999:
+            out.printl(f"○ {name}の脚の震えが止まった！")
+            out.printl(f"　 {name}は[腰くだけ]状態から回復した！")
+            v[12] -= KOSHIKUDAKE
+            v[106] = 0
+        else:
+            out.printl(f"× {name}は脚が震えて思うように動けない…")
+            v[106] += 1
+    ki = percent_cal(c.base[1], c.maxbase[1])  # :1257
+    if (v[12] & KOUKOTSU) and (v[12] & KIZETU) == 0:  # :1258–1270
+        if (v[107] > 1 and st.rng.rand(rmax) < div(ki, 4) + 35 + v[107] * 10) or v[107] == -999:
+            out.printl(f"○ {name}は気持ちを持ち直した！")
+            out.printl(f"　 {name}は[恍惚]状態から回復した！")
+            v[12] -= KOUKOTSU
+            v[107] = 0
+        else:
+            out.printl(f"× {name}は絶頂の余韻で力が入らない…")
+            v[107] += 1
+    else:
+        v[107] = 0
     if v[12] & KIZETU:
         if c.base[0] == 0 and c.base[1] == 0 and c.base[2] == 0:
             out.printl(f"× {name}の意識は朦朧としている…" if t(ctx, c, "主観視点") > 0 else f"× {name}の意識が戻る気配はない…")

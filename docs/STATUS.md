@@ -1,6 +1,6 @@
 # 現況（唯一真相，≤150 行）
 
-更新：2026-09-29（S05）
+更新：2026-09-29（S06）
 
 ## 已完成
 
@@ -36,26 +36,45 @@
     ボス遭遇需 探索度 FLAG:47 ≥ ノルマ FLAG:46（開局 28，出撃一次 +6〜9），故前幾次出撃不會遇到ボス。測試共 303 個。
 
 
+- **S06**：拘束與性攻擊。出撃 → 戰鬥 → 被拘束（性攻擊・拘束中指令）→ 脫出／勝利／時間切れ／撤退 → SHOP，或敗北 → 幽閉（停在 TURNEND）。
+  - `battle.enemy`：ENEMY_ACTION 拘束分岐（:969–1009、再行動・連續行動）；`sexcom`：SEX_COMABLE、SEX_COM0–20、SPCOM0–15、
+    SEX_COMEX(_RANDOM)、AUTO_V_DEFENCE（INPUT）、ボス 1–7 SEX_ROUTINE／REACTION_REF、ENEMY_ACTION_SEX_ROUTINE；`sexmsg`：性攻擊地の文
+    中的狀態變化（本文以「〈地の文：…〉」一行代替，deviations）；`gaping`（觸手サイズ・拡張度；CFLAG:34 = 0 時不動作）、
+    `syasei`（TENTACLE_SYASEI_UP／CHECK／POINT、SAKUSEI）、`ninsin`（受精判定到成立前）。
+  - `palam.palam_up` 全面移植（結界消耗、絶頂・我慢・懇願、キャラ射精／噴乳、體力氣力性耐性低下、刻印、JUMP SOURCE_CHECK）；
+    `source_check`：暴れる、拘束中自動振り解き、麻痺・腰くだけ・恍惚持續、BATTLE_LOSE（:969–1095 → 幽閉）；`hantei`：振り解く判定、
+    暴れる傷害；`cheers`：性攻擊時的觀眾反應；`after`：EVENTEND 敗北分岐（:335–422）、SUBEVENT_RELEASE_ECSTASY。
+  - `restraint`：COM_ABLE 8–15・40・44–47・70・100–104、COMF8–14・40・44–46・100–104；`train.show_usercom` 拘束分岐（:382–441）；
+    `commands`：COM6 背後に回る・7 見切り・16／17 切替・69 何もしない・71／72 EX ゲージ。
+  - 修正 S05：`message_branch_faith_down` 性抵抗分岐的文與旗標、`SENGIUP` 的 `&&`／`||` 優先順位（同順位・左結合）。
+  - 測試共 349 個（新增 `tests/test_battle_restraint.py`、Web 拘束戰→存讀檔 1 case）；Chromium 實機跑完拘束戰→SHOP。
+
 ## 下一步
 
-- deviations.md：使用者 2026-09-29 裁決「暫時維持現狀」。S05 新增 3 項（戰鬥停止分岐、身體資料 0 對戰鬥式的影響【需裁決】、
-  戰鬥畫面簡略），另在「原作行為」補列照翻的疑似 bug。
-- **S06：拘束與性攻擊**（規格待寫）。具體起點（路徑相對 `source/earGVP/ERB/ゲーム内_戦闘処理/`）：
-  1. 拘束後的敵行動：`ENEMY_ACTION.ERB` 拘束分岐 → `TENTACLE_BOSS_{n}_SEX_ROUTINE`（`触手データ/ボス触手/`）、
-     `戦闘コマンド(性攻撃)/`。現在停在 `battle/enemy.py` 的「拘束直後の性攻撃」`NotImplementedError`（隨機戰鬥幾回合就會遇到）。
-  2. 拘束中的指令：`COMABLE.ERB` 的 8–15・40・44–47・100–104、`SHOW_USERCOM` 拘束分岐（`BATTLE_COM.ERB`:382–441）、
-     `COMF8〜15`（振り解く・救出 等）。`battle/commands.py` 的 `_RESTRAINT_ONLY` 目前在拘束中會停止。
-  3. 絶頂・射精：`PALAM_UP.ERB` 的絶頂處理（`battle/palam.py` 目前遇到可能絶頂就停）、`TENTACLE_SYASEI.ERB`、`GAPING.ERB`。
-  4. 敗北：`BATTLE_COM_AFTER.ERB`:850–973 → 幽閉（`source_check._battle_lose` 停止中）與 `EVENTEND`:335–422。
-  5. 其餘指令 6・7・16・17・69–74（`commands.run_com`）、反擊（`HANGEKI_STYLE.ERB`）、バースト。
-  6. 之後：事件戰（襲撃／救援、`turnend._skip_event`）、拠点防衛、雜魚戰系統（CONFIG bit4）、ラスボス。
+- **S07：口上／地の文抽取管線**（PLAN.md）。抽取 `口上/`（148K 行）與 `地の文/` 成文字 catalog＋條件表，接上
+  `NarrationService`；S05／S06 以「〈地の文：…〉」代替的性攻擊地の文、`MESSAGE_BATTLE_END_LOSS` 等改由 catalog 輸出。
+  口上／地の文函式內的狀態變化已在 S06 以 Python 移植（`battle.sexmsg`），抽取時只取文字與條件。
+- deviations.md 新增（需裁決）：振り解く判定的 `LOCAL:O`（原作 1.824 會報錯停止，本作當 `LOCAL:0`）、性攻擊地の文代替顯示。
+- 之後：幽閉（PRISON／SHIFTBACK_CHARA）、妊娠（NINSIN_SUBMIT 以後）、反擊・バースト・ＳＰ系指令、事件戰、拠点防衛、雜魚戰、ラスボス。
+
+## S06 後仍會停止的分岐（`NotImplementedError` → Web 停止）
+
+隨機方針 250 場模擬（`GameRng` seed 0–249）中實際遇到的依頻度排序；其餘為程式中登記但罕見的分岐。
+- 敗北後：TURNEND `SET_PARTYMEMBER` 的 `SHIFTBACK_CHARA`、之後的 `PRISON_EVENT`（幽閉系統）。
+- 指令：73 ＳＰ變身、70 ＳＰバースト、74 ＳＰフルバースト、47 説得する（悪堕ち戰）、15 救出する；17 バースト攻擊切換後的
+  攻擊／命中／回避／傷害補正；反擊（[反撃]スタイル、`HANGEKI_TO_TENTACLE`）。
+- 受精成立（`NINSIN_HANTEI` 判定成功後的 NINSIN_SUBMIT 以降）、戰後妊娠判明（NINSIN_CHECK_AFTER）。
+- 強制自慰（ボス 7 的 SPCOM6 → `SELF_KIND`）、戰後自慰（SELF_BATTLEEND 成立時）。
+- 動画流出（撮影 bit TFLAG:21 立起時的 `DOUGA_RYUSUTU`）、戰後レイプ（AFTER_TRAIN_RAPE 成立時）。
+- 拡張度（CFLAG:34 != 0：開局固定路徑不會發生）、素股焦らし失敗的處女喪失（COMF103:125–175）、觸手服／觸手拘束具。
+- 悪堕ち／雜魚／クズ市民／ラスボス／事件戰／エンドレス、全滅エンド、デバッグ模式、`HATUJOU_TO_HAIRAN` 地の文。
 
 ## 已知問題
 
-- 未決：`docs/wiki/bridge/unresolved.md`；偏離：`docs/wiki/bridge/deviations.md`（尚未經使用者裁決）。
+- 未決：`docs/wiki/bridge/unresolved.md`；偏離：`docs/wiki/bridge/deviations.md`（整體「暫時維持」，S06 新增項待裁決）。
 - 無 BOM 的 7 個角色 CSV 在原版 1.824 會以 Shift-JIS 讀（亂碼）；本程式以 UTF-8 讀，可能是 +v10 差異，待實機確認。
 - 開局僅支援「NORMAL＋特装戦隊」；其他初期セット／自訂角色會 `NotImplementedError`。
-- 可玩範圍：休憩・鍛錬・出撃（戰鬥到被拘束為止）。其他行動、拘束後、11 日目夜的日數超過結局、救出／妊娠等狀態會進入
-  Web「停止」畫面（deviations）。
+- 可玩範圍：休憩・鍛錬・出撃（含被拘束的戰鬥；敗北後幽閉停止）。其他行動、11 日目夜的日數超過結局、救出／妊娠等狀態會進入
+  Web「停止」畫面（deviations、上一節）。
 - 身體資料（体重・胸の重量）為 0，戰鬥中女性角色敏捷被扣成 0、傷害 2 倍（deviations，需裁決）。
 - 襲撃／救援（DAY ≥ 3）與子触手襲来成立時只顯示「スキップ」訊息（deviations）。

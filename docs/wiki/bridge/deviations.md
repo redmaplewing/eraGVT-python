@@ -21,12 +21,18 @@ ERB 路徑相對 `source/earGVP/ERB/`。
 
 - [ ] **S04 未翻的行動會停止遊戲**：（出撃已於 S05 接上，戰鬥內的停止見下一項）特別活動、拠点防衛、戦闘支援（本體）、情報収集、自由行動在 `action_main` 丟 `NotImplementedError`，Web session 捕捉後進入「停止」狀態（只能按「タイトルに戻る」）。同樣停止的還有：ENDING（全ボス撃破／**11 日目夜的日數超過**）、救出直後、妊娠・育兒・幽閉・悪堕ち等 S04 無法產生的狀態、鍛錬排程（CFLAG:110）、戦闘基礎 Lv5 的變身能力獲得。（原作：`ゲーム内_行動実行処理/ACTION.ERB`:74–175 等；Python：`eragvt.game.action`、`eragvt.game.turnend`、`eragvt.game.session._advance_turn`）— 各自屬 S05 以後；影響範圍見 `docs/wiki/era/actions.md`。
 - [ ] **襲撃／救援、子触手襲来 會被跳過**：`RAID_HANTEI`（DAY ≥ 3 起依防衛力的亂數）與 `SMALL_TENTACLE_HANTEI`（夜、FLAG:44 > 0）判定成立時，原作會 `JUMP RAID_RESCUE／RAID_ATTACK`（戰鬥）或 `CALL SMALL_TENTACLE_ATTACK`；這裡只印「（未實作：…が発生しましたが、スキップします）」並當作沒發生。（原作：`ゲーム内_イベント発生/強制発生イベント/FORCE_襲撃or救援イベント発生.ERB`:94–105、`FORCE_深夜の子触手襲来.ERB`:48–53；Python：`eragvt.game.turnend.raid_hantei`／`small_tentacle_hantei`／`_skip_event`）— 通常遊玩一定會遇到，若改成停止則無法連續遊玩；戰鬥在 S05／S06 接上。
-- [ ] **S05 未移植的戰鬥分岐會停止遊戲**（S05 新增）：戰鬥中下列情況丟 `NotImplementedError` → Web「停止」。
-  未移植指令（只移植 0／201–203 變身、1–3 攻擊、4 防禦、5 距離をとる、99 ギブアップ、999 撤退；其餘如 6 背後に回る、
-  7 見切り、16 エアストライク、17 バースト、69–74 等照原作顯示，選了就停：`battle.commands.run_com` 的 `# DEVIATION:`）、
-  被拘束後的性攻擊（`ENEMY_ACTION` 拘束分岐）、反擊・バースト、敗北（幽閉）、ラスボス／悪堕ち／雜魚戰（有戰鬥）／事件戰、
-  勝利後的捕虜救出、戰後自慰／レイプ／動画流出／妊娠判明、部分素質取得（淫壷・女体受容・寄生ふたなり）、裏プロフィール。
-  （Python：`eragvt.game.battle.*` 各處 `raise NotImplementedError`）— 依 S05 規格「未移植分岐必須停止」；S06 起逐步接上。
+- [ ] **未移植的戰鬥分岐會停止遊戲**（S05 新增、S06 更新）：戰鬥中下列情況丟 `NotImplementedError` → Web「停止」。
+  S06 接上了拘束後的性攻擊、拘束中指令、絶頂／射精、敗北（→ 幽閉）與指令 6・7・16・17・69・71・72；
+  仍停止的一覽見 `docs/STATUS.md`「S06 後仍會停止的分岐」（ＳＰ變身／ＳＰバースト、バースト攻擊的效果、反擊、受精成立、
+  強制自慰、動画流出、幽閉後的 TURNEND、悪堕ち／雜魚／ラスボス、拡張度 CFLAG:34 != 0 等）。
+  （Python：`eragvt.game.battle.*` 各處 `raise NotImplementedError`、`battle.commands.run_com` 的 `# DEVIATION:`）
+  — 依規格「未移植分岐必須停止」。
+- [ ] **振り解く判定的 `LOCAL:O`**（S06 新增，**需裁決**）：`ゲーム内_戦闘処理/COMMON_BATTLE_HANTEI.ERB`:241／:245
+  `SIF LOCAL:5 <= 45 && LOCAL:O > 49` 的 `O` 是英文字母，全作沒有這個識別子（grep 僅此 2 處）。1.824 在執行到該行時
+  報錯停止（`GameProc/Process.ScriptProc.cs`:38–42、`GameData/Expression/ExpressionParser.cs`:264–269、
+  `GameData/IdentifierDictionary.cs`:645），而振り解く的％顯示（`PRINT_COMNAME.ERB`:6–13）每次都會經過這裡，
+  也就是原作（1.824）一被拘束就無法繼續。本作當作 `LOCAL:0`（體力氣力殘量％）的筆誤來判定。
+  （Python：`eragvt.game.battle.hantei._hurihodoku`）— 替代方案：照 1.824 停止（等同無法玩拘束），或確認 +v10 的行為。
 - [ ] **開局身體資料未生成對戰鬥的影響（既有「身體資料生成未移植」的後果，需裁決）**：BASE:体重(44)／胸の重量(48) 為 0，
   原作的「胸部重量ペナルティ」式 `LOCAL:2 -= LOCAL:2 * (1+胸の重量) / (1+体重)` 會把女性角色的敏捷整個扣成 0
   （`ゲーム内_戦闘処理/COMMON_BATTLE_HANTEI.ERB`:606–614 被弾判定、:1097–1105 撤退判定），`DAMAGE` 的巨乳ボーナス
@@ -53,6 +59,11 @@ ERB 路徑相對 `source/earGVP/ERB/`。
   這些函式內沒有代入與 RAND（grep 確認），不影響狀態。`[800]` ステータス畫面（`SHOW_STATUS_CHARA_SELECT`，5 頁）只顯示
   「未移植」一行。`SHOW_USERCOM` 只移植「不分類」版（`BATTLE_COM.ERB`:379–568，基本設定 FLAG:801 bit2 = 0），
   《危険度》的顏色照 `FORECAST_OUTPUT_SETCOLOR`。（Python：`eragvt.game.battle.train.show_status`／`show_usercom`／`usercom`）
+- [ ] **性攻擊的地の文**（S06 新增）：`地の文/MESSAGE_SEX*.ERB`、`MESSAGE_SEX_COMSP.ERB`、`MESSAGE_SEX_COMEX.ERB`、
+  射精・絶頂系（`MESSAGE_SEX.ERB`:764–1060 等）、敗北時 `MESSAGE_BATTLE_END_LOSS` 的本文不移植，改印一行
+  「〈地の文：函式名〉」（`eragvt.game.battle.core.chinobun`）。本文中的**狀態變化**（TFLAG:21 撮影 bit、FLAG:900、
+  SET_TENTACLE_SIZE_BY_MESSAGE、處女喪失、受精判定、TCVARn:25、CFLAG:206、氣絶 等）與 KOJO_ROOT 呼叫照原作位置移植
+  （`battle.sexmsg`）。只為選文句而抽的 RAND 不抽（RAND 次數不同，已含在「亂數」項）。— 地の文 catalog 由 S07 抽取管線處理。
 - [ ] **Web 停止狀態**：遇到未移植處理時顯示「（未實作のため停止しました：…）」並停住，是原作沒有的畫面（見上「S04 未翻的行動」）。
 
 ## 原作行為（照翻，但請留意）
@@ -63,6 +74,15 @@ ERB 路徑相對 `source/earGVP/ERB/`。
   （:668–671）；`_ABLUP` 的 `LOCAL:1 *= 135 / 100` 整數除法＝×1（`ヒロイン関連/ABL_UP_CHECK.ERB`:46–47）；
   `ABL_UP_1..3` 的中止條件把自己的感覺 Lv 算兩次（:1070 等）；`AFTER_TRAIN_RAPE` 消耗率的分母用 `BASE:性耐性`（戦闘イベント.ERB:992）。
 
+- S06 照原作移植的疑似 bug／容易誤讀處：`TENTACLE_SAKUSEI` 的 `ARG *= 135 / 100` 整數除法＝×1（`TENTACLE_SYASEI.ERB`:581）；
+  敗北時 `ABS LOCAL` 是「式中函式當命令用」→ 結果進 RESULT、LOCAL 不變（`reference/.../Instraction.Child.cs`:390–409），
+  クズ市民戰（FLAG:73 > 0）因 `FOR LOCAL,1,CHARANUM` 覆寫 LOCAL，防衛力下降也顯示「上昇した」（`BATTLE_TRAIN_AFTER.ERB`:347–371）；
+  `KOJO_ROOT` 的結界判定用 STRFIND 部分一致，`SEX_COM1` 也擋住 `SEX_COM10`〜`19`（`KOJO_ROOT.ERB`:23–39）；
+  `&&` 與 `||` 同優先順位・左結合（`OperatorCode.cs`:33–34、`ExpressionParser.cs`:502–506），不加括號的
+  `A && B || C && D` 是 `((A && B) || C) && D`：`MESSAGE_BATTLE.ERB`:852（引き剥がす失敗文）、`PALAM_UP.ERB`:254、
+  `コモン関数.ERB`:714／716（SENGIUP 的距離得意補正，S05 原本誤譯成 Python 的 and/or 優先順位，S06 修正：
+  實際上只有 ARG:1 == 2（遠距離）時才可能 ×0.9／×1.1）；`RAND:RESULT / 2` 是 `(RAND:RESULT) / 2`
+  （`ExpressionParser.cs@ReduceVariableArgument`:192–198，`COMF6.ERB`:73–88）。
 - `USERSHOP_ACTION_CONFIRM` 的確認只有 `CASE 9` 會開始行動，`[1]はい` 會中斷回到選單（`インターミッション画面/SHOP.ERB`:521–532）。看起來像原作 bug，目前照原作；要不要修正請決定。
 - `RECOVERY_OVER_TIME` 夜間的 `TALENT:夜魔の貴族` 與 `DAILY_POPULARITY_CHANGE` 的 `TALENT:変身時非処女`、`CFLAG:825` 沒有寫角色 index，實際看的是當下 TARGET（`インターミッション画面/SHOP_TURNEND.ERB`:610、:519、:569）。TARGET 為 TURNEND 時最後處理的角色。照原作。
 - `@EVENTSHOP` 的 `PARASITE` 會把 `FLAG:799`（行動中角色）覆寫成 `CHARANUM-1`（`FORCE_深夜の寄生触手暴走.ERB`:9），靠 `SHOW_SHOP`:20 歸 0 才不出錯。照原作。

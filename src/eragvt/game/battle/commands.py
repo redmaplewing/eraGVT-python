@@ -30,6 +30,7 @@ from .core import (
     percent_cal,
     print_distance,
     shinkyou_change,
+    shinkyou_check,
     t,
     tc,
     tentacle_access,
@@ -109,20 +110,10 @@ def com_able(ctx: Ctx, n: int) -> tuple[int, tuple[int, int, int] | None]:
         if n == 5 and get_battle_situation(st, "遠距離不可") == 1:
             return 0, None
         return (1 if guard else 0), None
-    if n == 11:  # :270–295
-        if not guard:
-            return 0, None
-        if v[12] & KIZETU:
-            return 1, None
-        if v[0] >= 1:
-            return 0, None
-        raise NotImplementedError("拘束中のコマンド表示は S06")
-    if n in _RESTRAINT_ONLY or n == 47:
-        if n == 47 and enemy_type_check(st, "AKUOTI") == 0:  # :716–718
-            return 0, None
-        if v[0] >= 1:
-            return 0, None
-        raise NotImplementedError("拘束中のコマンド表示は S06")
+    if n in _RESTRAINT_ONLY or n in (11, 47, 70):  # 拘束中専用（COM11／70 は気絶・非拘束時の分岐も含む）
+        from .restraint import com_able_restraint
+
+        return com_able_restraint(ctx, n)
     if n == 16:  # :390–419
         if v.get_bit(216, 0):
             color = (255, 255, 0)
@@ -153,10 +144,6 @@ def com_able(ctx: Ctx, n: int) -> tuple[int, tuple[int, int, int] | None]:
             if r == 1:
                 return 0, None
         return 1, None
-    if n == 70:  # :764–798
-        if v[0] > 0:
-            return 0, None
-        raise NotImplementedError("拘束中のコマンド表示は S06")
     if n in (71, 72):  # :802–871
         bit = 0 if n == 71 else 1
         if not v.get_bit(3, bit):
@@ -222,9 +209,15 @@ def print_comname(ctx: Ctx, n: int) -> None:
         label = ""
         if r:
             name = ctx.data.names["TRAIN"].get(n, "")
-            if name in ("振り解く", "引き剥がす"):
-                raise NotImplementedError("拘束中のコマンド表示は S06")
-            if n == 69 and (tc(ctx).tcvarn[12] & KIZETU):
+            if name == "振り解く":  # :6–13
+                from .restraint import label_hurihodoku
+
+                label = f"{name}({label_hurihodoku(ctx)}%)[{n:3d}]"
+            elif name == "引き剥がす":  # :14–24
+                from .restraint import label_hikihagasu
+
+                label = f"{name}({label_hikihagasu(ctx)}%)[{n:3d}]"
+            elif n == 69 and (tc(ctx).tcvarn[12] & KIZETU):
                 label = f"なすがまま[{n:3d}]"
             else:
                 label = f"{name}[{n:3d}]"
@@ -835,6 +828,178 @@ def com5(ctx: Ctx) -> ComGen:
     yield  # pragma: no cover
 
 
+def _tofull(n: int) -> str:
+    """`TOFULL`（半角→全角）。数値文字列のみ使う。"""
+    return str(n).translate(str.maketrans("0123456789-", "０１２３４５６７８９－"))
+
+
+def _move_prologue(ctx: Ctx) -> bool:
+    """COMF6／COMF7.ERB:3–22 共通：行動制限・空中フラグ・べとべとによる失敗。True なら RETURN 1。"""
+    st = ctx.state
+    c = tc(ctx)
+    v = c.tcvarn
+    out = ctx.out
+    if act_limit(ctx) == 1:
+        return True
+    attack_air_flag(ctx)
+    if (v[12] & BETOBETO) and st.rng.rand(100) < 50 and not v.get_bit(216, 1):
+        print_distance(ctx)
+        out.printl()
+        out.printl(f"{print_transcallname(st, st.target)}は脚を滑らせてしまった！")
+        out.printl("移動を伴う行動が失敗した！")
+        out.printw()
+        return True
+    st.tflag[30] = 0
+    st.tflag[31] = 0
+    return False
+
+
+def _gauge_up(ctx: Ctx, table: tuple[tuple[int, int], tuple[int, int], tuple[int, int]]) -> None:
+    """ゲージが増加：CFLAG:99 < 5／< 15／それ以外 で (基本値, RAND 幅)。"""
+    c = tc(ctx)
+    k = 0 if c.cflag[99] < 5 else 1 if c.cflag[99] < 15 else 2
+    c.tcvarn[6] += table[k][0] + ctx.state.rng.rand(table[k][1])
+
+
+def com6(ctx: Ctx) -> ComGen:
+    """`COMF6.ERB@COM6`:2–107 背後に回る。"""
+    st = ctx.state
+    c = tc(ctx)
+    v = c.tcvarn
+    out = ctx.out
+    rand = st.rng.rand
+    if _move_prologue(ctx):
+        return 1
+    _gauge_up(ctx, ((30, 16), (20, 11), (10, 6)))  # :27–33
+    v[0] = 1  # :36 距離を近に
+    print_distance(ctx)
+    out.printl()
+    st.tflag[99] += 1  # :42–45
+    if t(ctx, c, "空中浮遊") > 0:
+        st.tflag[99] += 1
+    # MESSAGE_BATTLE_CHARA_STEPIN（地の文/MESSAGE_BATTLE.ERB:603–607）
+    out.printl(f"{print_transcallname(st, st.target)}はあえて踏み込み、相手の背後に回った！")
+    kojo_root(ctx, "BATTLE_CHARA_STEPIN")
+    out.printw()
+    if enemy_type_check(st, "AKUOTI") == 1:  # :50–51
+        raise NotImplementedError("悪堕ちキャラの地の文（MESSAGE_OTHER_BATTLE_CHARA_STEPIN）は未移植")
+    l0 = div(c.maxbase[ctx.data.index_of("BASE", "知性")] * cloth_battle_hosei(ctx, "CHISEI"), 100)  # :54–58
+    l0 = shinkyou_check(ctx, "CHISEI", l0)  # :61–62
+    l1 = int(tentacle_access(ctx, "CHISEI"))  # :65–70（悪堕ちキャラは上で停止済み）
+    result = percent_cal(l0, l1)  # :72
+    # `RAND:RESULT / 2` は (RAND:RESULT) / 2：変数の `:` 引数は単項だけを読む
+    # （reference/emuera-1824/Emuera/GameData/Expression/ExpressionParser.cs@ReduceVariableArgument:192–198）
+    if rand(360) + 90 < result or st.tflag[10] == 4:  # :73–80
+        local = 500 + div(rand(result), 2)
+        st.tflag[3] += local
+        out.printl("相手は一瞬こちらを見失って取り乱した！")
+        out.printl(f"油断度＋（{_tofull(local)}）")
+        st.tflag[1] = 1
+    elif rand(240) + 60 < result:  # :81–87
+        local = 250 + div(rand(result), 2)
+        st.tflag[3] += local
+        out.printl("うまく相手を翻弄することができた！")
+        out.printl(f"油断度＋（{_tofull(local)}）")
+    elif rand(180) + 30 < result:  # :88–94
+        local = 100 + div(rand(result), 4)
+        st.tflag[3] += local
+        out.printl("相手のペースを乱した！")
+        out.printl(f"油断度＋（{_tofull(local)}）")
+    else:
+        out.printl("しかしうまくいかなかった・・・")
+    out.printl("EXゲージが大きく溜まった！")
+    if rand(100) < v[11] * v[11] or v[1] == 0:  # :100–105
+        if rand(2) == 0:
+            shinkyou_change(ctx, "KOUYOU")
+    else:
+        v[11] += 1
+    out.printl()
+    return 1
+    yield  # pragma: no cover
+
+
+def com7(ctx: Ctx) -> ComGen:
+    """`COMF7.ERB@COM7`:2–154 見切り。"""
+    st, data = ctx.state, ctx.data
+    c = tc(ctx)
+    v = c.tcvarn
+    out = ctx.out
+    if _move_prologue(ctx):
+        return 1
+    _gauge_up(ctx, ((20, 11), (15, 6), (5, 6)))  # :27–33
+    v[0] = 2  # :36 距離を中に
+    print_distance(ctx)
+    out.printl()
+    st.tflag[25] = 1  # :42 見切りフラグ
+    tt = lambda n: t(ctx, c, n)  # noqa: E731
+    l0 = c.maxbase[0] + div(c.base[11] * cloth_battle_hosei(ctx, "BOUGYO") * 2, 100)  # :50–51
+    if tt("溢れる生命力") > 0:
+        l0 = times(l0, "1.25")
+    l0 = times(l0, "0.27" if tt("回復早い") == 1 else "0.23" if tt("回復遅い") == 1 else "0.25")
+    if st.charas[st.flag[799]].talent[data.index_of("TALENT", "共生")] == 1:
+        l0 = times(l0, "1.02")
+    if c.base[1] == 0:
+        l0 = div(l0, 2)
+    for _ in range(max(c.cflag[99], 0)):  # :69–78
+        if l0 <= 1:
+            break
+        l0 = times(l0, "0.985" if tt("スタミナ") > 0 else "0.97")
+    if tt("スタミナ") > 0:  # :80–92
+        if c.cflag[99] < 5:
+            l0 = times(l0, "1.25")
+        elif c.cflag[99] < 10:
+            l0 = times(l0, "1.10")
+    else:
+        if c.cflag[99] == 0:
+            l0 = times(l0, "1.25")
+        elif c.cflag[99] < 5:
+            l0 = times(l0, "1.10")
+    if c.cflag[43] == 504:  # :94–95 救急スプレー
+        l0 += 100
+    if c.base[0] + l0 >= c.maxbase[0]:
+        l0 = c.maxbase[0] - c.base[0]
+    if c.base[0] == 0:
+        l0 = 0
+    c.base[0] += l0
+    l1 = c.maxbase[1] + div(c.base[11] * cloth_battle_hosei(ctx, "BOUGYO") * 4, 200)  # :105–106
+    if tt("溢れる生命力") > 0:
+        l1 = times(l1, "1.25")
+    l1 = times(l1, "0.11" if tt("回復早い") == 1 else "0.09" if tt("回復遅い") == 1 else "0.10")
+    if c.base[1] + l1 >= c.maxbase[1]:
+        l1 = c.maxbase[1] - c.base[1]
+    for _ in range(max(c.cflag[99], 0)):  # :120–129
+        if l1 <= 1:
+            break
+        l1 = times(l1, "0.995" if tt("スタミナ") > 0 else "0.99")
+    c.base[1] += l1
+    st.tflag[99] += 1  # :133–136
+    if tt("空中浮遊") > 0:
+        st.tflag[99] += 1
+    # MESSAGE_BATTLE_CHARA_SEETHROUGH（地の文/MESSAGE_BATTLE.ERB:610–619）
+    if tt("主観視点") > 0:
+        out.printl(f"{print_transcallname(st, st.target)}は油断なく相手の動きを観察した！")
+    else:
+        out.printl(f"{print_transcallname(st, st.target)}は相手の動きを見切ろうとしている！")
+    kojo_root(ctx, "BATTLE_CHARA_SEETHROUGH")
+    out.printw()
+    if enemy_type_check(st, "AKUOTI") == 1:  # :141–142
+        raise NotImplementedError("悪堕ちキャラの地の文（MESSAGE_OTHER_BATTLE_CHARA_SEETHROUGH）は未移植")
+    names = data.names["BASE"]
+    if c.base[0]:  # :144–149
+        out.printl(f"{names.get(0, '')}が{l0}回復した")
+    else:
+        out.printl(f"{names.get(0, '')}は既に尽きてしまっている……")
+    out.printl(f"{names.get(1, '')}が{l1}回復した")
+    out.printl("EXゲージが少し溜まった！")
+    if st.rng.rand(100) < v[11] * v[11] or v[1] == 0:  # :152–156
+        shinkyou_change(ctx, "REISEI")
+    else:
+        v[11] += 1
+    out.printl()
+    return 1
+    yield  # pragma: no cover
+
+
 def com99(ctx: Ctx) -> ComGen:
     """`COMF99.ERB@COM99`:2–21。"""
     st = ctx.state
@@ -854,6 +1019,66 @@ def com99(ctx: Ctx) -> ComGen:
     yield  # pragma: no cover
 
 
+def com69(ctx: Ctx) -> ComGen:
+    """`COMF69.ERB@COM69`:2–29 何もしない。"""
+    st = ctx.state
+    c = tc(ctx)
+    v = c.tcvarn
+    out = ctx.out
+    if v.get_bit(216, 1):  # :5–9 滞空状態なら着地
+        v[216] = 4
+        if t(ctx, c, "有翼") > 0:
+            st.tflag[99] += 1
+    print_distance(ctx)  # :11–12
+    out.printl()
+    v[2] = P_NOTHING  # :15
+    if v[12] & KIZETU:  # :18–20
+        out.printl(f"{print_transcallname(st, st.target)}は意識を失っている…")
+        out.printw()
+    else:
+        # MESSAGE_BATTLE_CHARA_NOACTION（地の文/MESSAGE_BATTLE.ERB:623–628）
+        out.printl(f"{print_transcallname(st, st.target)}は何もしなかった")
+        kojo_root(ctx, "BATTLE_CHARA_NOACTION")
+        out.printw()
+        if enemy_type_check(st, "AKUOTI") == 1:  # :24–25
+            raise NotImplementedError("悪堕ちキャラの地の文（MESSAGE_OTHER_BATTLE_CHARA_NOACTION）は未移植")
+    return 1
+    yield  # pragma: no cover
+
+
+def _invert_bit(v, key: int, bit: int) -> None:  # noqa: ANN001  INVERTBIT
+    v.set_bit(key, bit, not v.get_bit(key, bit))
+
+
+def com16(ctx: Ctx) -> ComGen:
+    """`COMF16.ERB@COM16`:2–7 エアストライク：空中攻撃フラグの切り替えのみ（RETURN 0）。"""
+    _invert_bit(tc(ctx).tcvarn, 216, 0)
+    return 0
+    yield  # pragma: no cover
+
+
+def com17(ctx: Ctx) -> ComGen:
+    """`COMF17.ERB@COM17`:2–7 バースト攻撃：使用フラグの切り替えのみ（RETURN 0）。"""
+    _invert_bit(tc(ctx).tcvarn, 217, 0)
+    return 0
+    yield  # pragma: no cover
+
+
+def com_ex_gauge(ctx: Ctx, n: int) -> ComGen:
+    """`COMF71.ERB@COM71`／`COMF72.ERB@COM72`:2–29：ＥＸゲージの予約と返却（RETURN 0）。"""
+    c = tc(ctx)
+    v = c.tcvarn
+    bit = 0 if n == 71 else 1
+    if c.cflag[1] == 2:
+        amount = 68 if v[217] else 34
+    else:
+        amount = 100
+    v[6] += amount if v.get_bit(3, bit) else -amount
+    _invert_bit(v, 3, bit)
+    return 0
+    yield  # pragma: no cover
+
+
 def run_com(ctx: Ctx, n: int) -> ComGen:
     """`@COM{n}`（Process.SystemProc.cs@endEventCom:414–420 が COM{SELECTCOM} を呼ぶ）。"""
     if n in (0, 201, 202, 203):
@@ -866,6 +1091,23 @@ def run_com(ctx: Ctx, n: int) -> ComGen:
         return (yield from com5(ctx))
     if n == 99:
         return (yield from com99(ctx))
+    if n == 6:
+        return (yield from com6(ctx))
+    if n == 7:
+        return (yield from com7(ctx))
+    if n == 69:
+        return (yield from com69(ctx))
+    if n == 16:
+        return (yield from com16(ctx))
+    if n == 17:
+        return (yield from com17(ctx))
+    if n in (71, 72):
+        return (yield from com_ex_gauge(ctx, n))
+    from .restraint import RESTRAINT_COMS
+
+    if n in RESTRAINT_COMS:
+        return (yield from RESTRAINT_COMS[n](ctx))
     name = ctx.data.names["TRAIN"].get(n, str(n))
-    # DEVIATION: S05 で移植していないコマンドは実行せずに停止する（deviations.md「S05 未移植の戦闘コマンド」）
+    # DEVIATION: 未移植のコマンド（S06 時点で 47 説得する・70 ＳＰバースト・73 ＳＰ変身・74 ＳＰフルバースト）は
+    # 実行せずに停止する（deviations.md「未移植の戦闘分岐は停止」）
     raise NotImplementedError(f"戦闘コマンド「{name}」（COM{n}）は未移植")

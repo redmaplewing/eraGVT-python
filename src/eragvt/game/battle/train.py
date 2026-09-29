@@ -423,8 +423,56 @@ def show_usercom(ctx: Ctx) -> None:
         raise NotImplementedError("コマンドのカテゴリ分け表示（CONFIG_CHECK_SCREEN_F(2)）は未移植")
     v[8] += 10  # :380
     if v[0] == 0:
-        raise NotImplementedError("拘束中のコマンド表示（BATTLE_COM.ERB:382–441）は S06")
-    # :444–548 通常時
+        _show_usercom_restraint(ctx)
+    else:
+        _show_usercom_normal(ctx)
+    v[8] -= 10  # :554
+    out.print("　 ステータス表示[800]")
+    if check_can_retreat(ctx) == 0:
+        out.set_color((128, 128, 128))
+    if _can_try_retreat(ctx):
+        out.print("　　　　　　　　撤退[999]")
+    out.reset_color()
+    v[8] += 10
+    out.print_plain("　 ")
+    print_comname(ctx, 99)
+    v[8] -= 10
+    out.printl()
+
+
+def _show_usercom_restraint(ctx: Ctx) -> None:
+    """BATTLE_COM.ERB:382–441 拘束されている最中のコマンド。"""
+    out = ctx.out
+    v = tc(ctx).tcvarn
+    sp = "　 "
+
+    def row(ns: tuple[int, ...], seps: tuple[str, ...]) -> None:
+        for n, sep in zip(ns, seps):
+            print_comname(ctx, n)
+            if sep:
+                out.print_plain(sep)
+        out.printl()
+
+    print_comname(ctx, 11)
+    out.printl()
+    out.printl()
+    row((40 if v[12] & KYOUKOUSOKU else 8, 9, 10), (sp, sp, sp))
+    row((12, 13, 14), (sp, sp, sp))
+    for n in (44, 45, 46):  # :408 FOR LOCAL,44,47（終値は含まない）
+        if com_able(ctx, n)[0]:
+            print_comname(ctx, n)
+            out.print_plain(sp)
+    out.printl()
+    row((70, 71, 72), (sp, sp, "　"))  # :421 だけ末尾の半角空白なし
+    row((100, 101, 102), (sp, sp, ""))
+    row((103, 104, -1), (sp, sp, ""))
+    row((15, -1), (sp, ""))
+
+
+def _show_usercom_normal(ctx: Ctx) -> None:
+    """BATTLE_COM.ERB:444–548 通常時のコマンド。"""
+    out = ctx.out
+    v = tc(ctx).tcvarn
     if com_able(ctx, 0)[0]:
         if com_able(ctx, 201)[0]:
             _forecast_line(ctx)
@@ -471,18 +519,6 @@ def show_usercom(ctx: Ctx) -> None:
         print_comname(ctx, 69)
     out.printl()
     out.printl()
-    out.printl()
-    v[8] -= 10  # :554
-    out.print("　 ステータス表示[800]")
-    if check_can_retreat(ctx) == 0:
-        out.set_color((128, 128, 128))
-    if _can_try_retreat(ctx):
-        out.print("　　　　　　　　撤退[999]")
-    out.reset_color()
-    v[8] += 10
-    out.print_plain("　 ")
-    print_comname(ctx, 99)
-    v[8] -= 10
     out.printl()
 
 
@@ -547,7 +583,7 @@ def usercom(ctx: Ctx, value: int) -> Generator[None, int, None]:
                 raise NotImplementedError("救出成功（KYUSHUTU_SUCCESS）は未移植")
             raise BeginAfterTrain
         _msg_tettai_false(ctx)
-        source_check(ctx)  # JUMP SOURCE_CHECK
+        yield from source_check(ctx)  # JUMP SOURCE_CHECK
         return
     if value == 999:
         return
@@ -597,7 +633,7 @@ def do_train(ctx: Ctx, com: int) -> Generator[None, int, None]:
     result = yield from run_com(ctx, com)
     if result == 0:  # endCallComXX：RESULT==0 なら EVENTCOMEND を呼ばずに終了
         return
-    source_check(ctx)
+    yield from source_check(ctx)
     before = out.wait_count
     event_comend(ctx)
     if out.wait_count == before:  # NeedWaitToEventComEnd（Process.SystemProc.cs:476、515–517）

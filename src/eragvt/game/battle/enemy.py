@@ -7,6 +7,8 @@
 
 from __future__ import annotations
 
+from collections.abc import Generator
+
 from ..action import Ctx, kojo_root, print_transcallname
 from ..chara_common import is_female
 from ..era import div, isqrt, limit, times
@@ -232,7 +234,58 @@ def msg_takeaway(ctx: Ctx) -> None:
 # --- @ENEMY_ACTION（ENEMY_ACTION.ERB:4–1015）--------------------------------------------
 
 
-def enemy_action(ctx: Ctx) -> None:
+def enemy_action(ctx: Ctx) -> Generator[None, int, None]:
+    """`@ENEMY_ACTION`:4–1015。`$LOOP_TOP`（:5）への GOTO（絡みつく成功直後、:380）はループで表す。
+    拘束中の性攻撃は AUTO_V_DEFENCE の INPUT を含むのでジェネレータ。"""
+    while True:
+        again = yield from _enemy_action_once(ctx)
+        if not again:
+            break
+    # :1011–1015
+    if enemy_type_check(ctx.state, "AKUOTI"):
+        raise NotImplementedError("悪堕ちキャラの行動選択（SELECT_ENEMY_ACTION）は未移植")
+    select_tentacle_action(ctx)
+
+
+def _restraint_sex(ctx: Ctx) -> Generator[None, int, None]:
+    """:969–1009 触手の拘束中性コマンド（再行動判定・SEX_ROUTINE・SEX_COMABLE・連続行動）。"""
+    from .sexcom import enemy_action_sex_routine, sex_comable
+
+    st = ctx.state
+    out = ctx.out
+    c = tc(ctx)
+    l3 = 0
+    lv = tentacle_level(st)
+    # :973–976 `WHILE RAND:100 < min(RESULT,50) && RAND:2`（RESULT は TENTACLE_LEVEL のまま）
+    while st.rng.rand(100) < min(lv, 50) and st.rng.rand(2):
+        if lv >= 10:
+            l3 += 1
+    if enemy_type_check(st, "MOB") == 1 and st.rng.rand(2) == 0:  # :978–979
+        l3 += 1
+    while True:  # $ROUTINE_LOOP_1（:980）
+        select = enemy_action_sex_routine(ctx)
+        r = yield from sex_comable(ctx, select)
+        if r == 0:  # :987–990
+            st.tflag[17] = -1
+            continue
+        c.exp[ctx.data.index_of("EXP", "被姦経験")] += 1  # :993
+        if l3 and st.flag[13] > 0:  # :995–1006
+            l3 -= 1
+            for i in range(4):
+                c.ex[i] += c.nowex[i]
+            c.nowex.clear()
+            out.printw()
+            out.set_bold(True)
+            out.printl("連続行動！")
+            out.set_bold(False)
+            out.printl()
+            continue
+        break
+    shinkyou_change(ctx, "TOUSAKU")  # :1009
+
+
+def _enemy_action_once(ctx: Ctx) -> Generator[None, int, bool]:
+    """:5–1009 の 1 回分。`GOTO LOOP_TOP` するときは True を返す。"""
     st = ctx.state
     out = ctx.out
     c = tc(ctx)
@@ -247,8 +300,10 @@ def enemy_action(ctx: Ctx) -> None:
                 raise NotImplementedError("悪堕ちキャラの押し倒す")
             attack_place_decision(ctx)
     if v[0] <= 0:
-        # :947–1010 拘束中の性コマンド
-        raise NotImplementedError("拘束中の敵の行動（SEX_ROUTINE／SEX_COMABLE）は S06")
+        if enemy_type_check(st, "AKUOTI"):  # :947–967
+            raise NotImplementedError("悪堕ちキャラの拘束中性コマンド（ENEMY_ACTION:947–967）は未移植")
+        yield from _restraint_sex(ctx)
+        return False
     if st.tflag[16] >= 0:  # :25–26
         st.tflag[10] = st.tflag[16]
     action = st.tflag[10]
@@ -379,8 +434,7 @@ def enemy_action(ctx: Ctx) -> None:
             out.printl()
             if abl(ctx, c, "欲望") < 3 and is_female(ctx.data, c) and c.base[0] > 0:
                 v[2] = P_V_GUARD
-            # :380 GOTO LOOP_TOP → 拘束中の性攻撃（S06）
-            raise NotImplementedError("拘束直後の性攻撃（ENEMY_ACTION の拘束分岐）は S06")
+            return True  # :380 GOTO LOOP_TOP → 拘束中の性攻撃
     elif action == 3:  # :383–572 体液を吐く
         msg_taieki(ctx)
         r = act_hantei_tentacle_to_chara(ctx, "AVOID_TAIEKI")
@@ -505,7 +559,7 @@ def enemy_action(ctx: Ctx) -> None:
     if st.tflag[10] != 4 and loc.get(0, 0) == 0:
         st.tflag[33] = 0
     palam_cal(ctx, 0, 0, 0, 0, 0, 0, 0, loc.get(7, 0), loc.get(8, 0), loc.get(9, 0), loc.get(10, 0), loc.get(11, 0))
-    select_tentacle_action(ctx)
+    return False
 
 
 def select_tentacle_action(ctx: Ctx) -> None:

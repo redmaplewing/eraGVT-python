@@ -162,3 +162,42 @@ def test_sortie_battle_retreat_back_to_shop(client):
     c.post("/api/input", json={"value": 300})
     assert c.post("/api/input", json={"value": 3}).json()["phase"] == "shop"
     assert app.state.session.state.flag[852] == st.flag[852]
+
+
+def test_sortie_restraint_battle_save_load(tmp_path, data):
+    """S06：出撃 → 被拘束の戦闘（振り解く／引き剥がす）→ 撤退 → SHOP → セーブ → ロードで状態が戻る。"""
+    app = create_app(data, tmp_path, rng_factory=lambda: GameRng(12), now=lambda: datetime(2026, 9, 29, 12, 34, 56))
+    c = TestClient(app)
+    c.post("/api/input", json={"value": 0})
+    app.state.session.state.flag[47] = app.state.session.state.flag[46]  # ENCOUNT.ERB:159
+    c.post("/api/input", json={"value": 101})
+    s = c.post("/api/input", json={"value": 100}).json()
+    if s["phase"] == "action_confirm":
+        s = c.post("/api/input", json={"value": 9}).json()
+    assert s["phase"] == "turn"
+    restrained = False
+    used = []
+    for _ in range(60):
+        if s["phase"] != "turn":
+            break
+        v = app.state.session.state.charas[1].tcvarn
+        b = [p["button"] for ln in s["lines"][-30:] for p in ln["parts"] if p["button"] is not None]
+        if v[0] == 0:
+            restrained = True
+            x = next(n for n in (8, 40, 10, 11) if n in b)
+        else:
+            x = 999 if restrained else 1
+        used.append(x)
+        s = c.post("/api/input", json={"value": x}).json()
+    assert restrained and 8 in used
+    assert s["phase"] == "shop"
+    st = app.state.session.state
+    snapshot = (st.flag[852], st.charas[1].juel[20])
+    c.post("/api/input", json={"value": 200})
+    assert c.post("/api/input", json={"value": 4}).json()["phase"] == "shop"
+    st.flag[852] = -1  # ロードで戻ることを確認するために壊す
+    c.post("/api/input", json={"value": 300})
+    assert c.post("/api/input", json={"value": 4}).json()["phase"] == "shop"
+    st2 = app.state.session.state
+    assert (st2.flag[852], st2.charas[1].juel[20]) == snapshot
+    assert st2.flag[700] == 0 and st2.charas[1].tcvarn[0] == 0

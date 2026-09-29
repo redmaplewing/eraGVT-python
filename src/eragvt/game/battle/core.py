@@ -896,3 +896,32 @@ def clear_specific_choose(st: GameState, arg: int) -> None:
     for k in range(1, rc[0] + 1):
         rc[k] = kept[k - 1] if k - 1 < len(kept) else 0
     rc[0] = len(kept)
+
+
+# --- 性攻撃系の地の文（S06）------------------------------------------------------------
+
+
+def chinobun(ctx: Ctx, func: str) -> None:
+    """性攻撃・絶頂・射精などの地の文（`地の文/MESSAGE_SEX*.ERB` ほか）の本文の代わりに 1 行出す。
+
+    DEVIATION（表示のみ）：S06 では地の文の本文は移植せず、関数名を示す 1 行に置き換える
+    （本文は S07 の地の文 catalog で扱う）。地の文の中にある状態変化（SET_TENTACLE_SIZE_BY_MESSAGE、
+    TFLAG:4／TFLAG:21／TFLAG:23、FLAG:900、LOSTVIRGIN、NINSIN_HANTEI など）は各呼び出し側で移植している。
+    本文だけを選ぶための RAND は引かない（deviations.md「亂數」の範囲）。
+    """
+    ctx.out.printl(f"〈地の文：{func}〉")
+
+
+_SWOON_SUBJ = ("朦朧とした意識の", "倒れ込んだ", "地に伏せた", "寝そべった", "気を失いかけた", "気絶しかけている",
+               "倒れている", "伏せっている", "寝そべっている", "気を失いかけている")
+_SWOON = ("気絶した", "倒れ込んだ", "地に伏せた", "寝そべった", "気を失った", "気絶している", "倒れている",
+          "伏せっている", "寝そべっている", "気を失っている")
+
+
+def print_swoon(ctx: Ctx) -> str:
+    """`地の文/MESSAGE.ERB@PRINT_SWOON`:192–245（気絶中のみ RAND:10 で形容を選ぶ。非気絶は空文字）。"""
+    c = tc(ctx)
+    if not (c.tcvarn[12] & KIZETU):
+        return ""
+    r = ctx.state.rng.rand(10)
+    return (_SWOON_SUBJ if t(ctx, c, "主観視点") > 0 else _SWOON)[r]

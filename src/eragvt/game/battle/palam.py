@@ -8,12 +8,17 @@
 from __future__ import annotations
 
 from ..action import Ctx, config_check_maniac, config_check_screen, kojo_root, print_transcallname
-from ..chara_common import is_female, seikaku_check
-from ..era import div, times
+from ..chara_common import is_female, is_male, seikaku_check
+from ..era import div, isqrt, times
+from ..opening import game_option
+from ...state.constants import GameOption
 from ..tentacle import enemy_type_check
 from .cloth import INNER_PER, NO_INNER, OUTER_PER, cloth_battle_hosei, figure_split
 from .core import (
     DARAKU,
+    HAIRAN,
+    P_NASUGAMAMA,
+    palamlv,
     KAIRAKU_TOROKE,
     KIZETU,
     KOUKOTSU,
@@ -30,6 +35,7 @@ from .core import (
     get_battle_situation,
     message_branch,
     percent_cal,
+    print_swoon,
     seikaku_hosei_palam,
     shokushu_shimin,
     t,
@@ -466,12 +472,14 @@ def message_branch_faith_down(ctx: Ctx) -> None:
             out.set_bold(False)
             fainted = tc(ctx).tcvarn[12] & KIZETU
             if message_branch(ctx) & ZETSUBOU:
-                if fainted:
-                    raise NotImplementedError("PRINT_SWOON（気絶中の理性破損文）は未移植")
                 if st.tflag[0] < 5:
                     out.print("早々に")
                 out.print("戦意を挫かれ完全に快楽に屈した")
-                out.printl(f"{name}は無様なアヘ顔を晒している・・・")
+                if fainted:  # :1869–1871
+                    out.printl(f"{name}は、")
+                    out.printl(f"{print_swoon(ctx)}まま無様なアヘ顔を晒している・・・")
+                else:
+                    out.printl(f"{name}は無様なアヘ顔を晒している・・・")
             elif message_branch(ctx) & KUSEN:
                 if fainted:
                     out.printl(f"意識を失った{name}の身体は、暴力的な快楽に最後の抵抗を続けている・・・")
@@ -484,12 +492,18 @@ def message_branch_faith_down(ctx: Ctx) -> None:
                     out.printl(f"{name}の意志とは裏腹に、身体は快楽を受け入れてしまっている・・・")
             out.printl()
             st.tflag[97] |= KAIRAKU_TOROKE
-    elif mb & SEI_TEIKOU:
+    elif mb & SEI_TEIKOU:  # :1897–1910
         if (st.tflag[97] & SEI_TEIKOU) == 0:
-            # :1892–1895 FONTBOLD／「理性低下」だけで TFLAG:97 は立てない（毎回出る：原作どおり）
             out.set_bold(True)
             out.printl("理性低下")
-            unlock_achievement(ctx, 280, "ダルマ牧場")
+            out.set_bold(False)
+            if tc(ctx).tcvarn[12] & KIZETU:
+                out.printl(f"{print_swoon(ctx)}{name}の身体は、")
+                out.printl("それでも押し寄せる快楽に必死で抗っている・・・")
+            else:
+                out.printl(f"{name}は押し寄せる快楽に抗うのに必死になっている・・・")
+            out.printl()
+            st.tflag[97] |= SEI_TEIKOU
 
 
 # --- 敵の反応（PALAM_UP.ERB:1806–1890）------------------------------------------------
@@ -535,8 +549,10 @@ def palam_up_enemy_reaction(ctx: Ctx) -> None:
                 ctx.out.printl("は油断から立ち直った")
             else:
                 raise NotImplementedError("悪堕ちキャラ戦は未移植")
-    if c.tcvarn[0] == 0 and st.flag[700] == 1:
-        raise NotImplementedError("凌辱時の応援（PERFORM_CHEERS_TENTACLE_SEX_HANTEI）は S06")
+    if c.tcvarn[0] == 0 and st.flag[700] == 1:  # :1879–1880
+        from .cheers import perform_cheers_tentacle_sex_hantei
+
+        perform_cheers_tentacle_sex_hantei(ctx)
     if st.tflag[2] > 0 and st.flag[700] == 1:
         ctx.out.printl()
         if st.flag[110] == 0:
@@ -546,15 +562,496 @@ def palam_up_enemy_reaction(ctx: Ctx) -> None:
             raise NotImplementedError("悪堕ちキャラ戦は未移植")
 
 
+# --- 絶頂・射精・噴乳（PALAM_UP.ERB:670–985）----------------------------------------------
+
+ZECCHOU_TABLE = (10000, 20000, 50000, 75000, 100000, 150000, 250000, 400000, 600000, 1000000)  # PALAM_UP.ERH:11–22
+
+
+def endure_ecstasy(ctx: Ctx, base_palam: int) -> int:
+    """`@FUNC_PALAM_CALC_ENDURE_ECSTACY, BASE_PALAM`:670–767（> 2000 懇願、> 1000 禁止、> 0 抑制、<= 0 絶頂可能）。"""
+    st = ctx.state
+    c = tc(ctx)
+    up = st.temp.up
+    if base_palam <= 0:
+        return -1
+    ef = div(base_palam * (abl(ctx, c, "欲望") + 5), 10)
+    ef = div(ef * (abl(ctx, c, "触手中毒") + 5), 10)
+    if st.flag[700]:
+        ef = div(ef * (abl(ctx, c, "精液中毒") * div(st.flag[15], st.flag[14]) + 10), 15)
+    # :688–690 PALAMLV_F は引数でなく前回の戻り値を見る（core.palamlv：原作どおり）
+    ef = div(ef * (palamlv(ctx, 11) + 25), 30)
+    ef = div(ef * (palamlv(ctx, 13) + 20), 25)
+    ef = div(ef * (palamlv(ctx, 14) + 25), 30)
+    ef = div(ef, div(isqrt(max(1, min(c.base[2] * 4, 250)) * max(1, min(div(c.base[1], 4), 2500))), 2) + 10)
+    ef = max(32, min(ef, 240))
+    v = c.tcvarn
+    if v[2] == P_TAERU:
+        ef = times(ef, "0.65")
+    if v[2] == P_NASUGAMAMA:
+        ef = times(ef, "1.25")
+    if c.base[20] >= c.maxbase[20] * 2:
+        ef = times(ef, "1.5")
+    elif c.base[20] >= c.maxbase[20]:
+        ef = times(ef, "1.25")
+    if v[2] == P_UKEIRERU or (v[12] & KIZETU):
+        ef = 256
+    if st.flag[999] == 1:
+        raise NotImplementedError("デバッグ表示は未移植")
+    if v[40] > 0:  # :721–724 絶頂禁止
+        up[13] = div(up[13] * 3, 2)
+        ef += 1000
+    elif ef > st.rng.rand(256):
+        ef = 0
+    else:
+        up[13] = div(up[13] * 6, 5)
+    if ef >= 1000:  # :736–760
+        up[11] *= 2
+        up[14] *= 2
+        bf = div(div(base_palam, 800) * (abl(ctx, c, "従順") * 3 + abl(ctx, c, "欲望") * 4 + abl(ctx, c, "触手中毒") * 3
+                                         + 10), 10)
+        bf = div(bf * (palamlv(ctx, 11) + 25), 30)
+        bf = div(bf * (palamlv(ctx, 13) + 20), 25)
+        bf = div(bf * (palamlv(ctx, 14) + 25), 30)
+        bf = bf * (t(ctx, c, "触手の虜") + 1)
+        bf = max(32, min(bf, 240))
+        if bf > st.rng.rand(256):
+            ef += 1000
+    if 0 < ef < 1000 and st.flag[700] == 0:
+        ef = 0
+    return ef
+
+
+def calc_ecstasy(ctx: Ctx, pid: int, forbid: int) -> int:
+    """`@PALAM_CALC_ECSTASY, PALAM_ID, NOWEX_ID, IS_FORBID_EX`:826–851。絶頂回数を返す。"""
+    c = tc(ctx)
+    if forbid > 0:
+        return 0
+    for n in range(len(ZECCHOU_TABLE) - 1, -1, -1):
+        if c.palam[pid] >= ZECCHOU_TABLE[n]:
+            c.palam[pid] -= ZECCHOU_TABLE[0]
+            if c.palam[pid] >= ZECCHOU_TABLE[0]:
+                c.palam[pid] = ZECCHOU_TABLE[0] - 1
+            return n + 1
+    return 0
+
+
+def calc_ejac(ctx: Ctx) -> None:
+    """`@PALAM_CALC_EJAC`:858–920（キャラの射精）。"""
+    from ..chara_common import charatalent
+
+    st = ctx.state
+    c = tc(ctx)
+    up = st.temp.up
+    out = ctx.out
+    if t(ctx, c, "ふたなり") == 0 and (is_female(ctx.data, c) or t(ctx, c, "未熟") == 1):
+        return
+    if up[0]:
+        val = up[0] + 500 * (c.nowex[0] + 1)
+        if config_check_screen(st, 1) > 0:
+            out.set_bold(True)
+            out.printl(f"{print_transcallname(st, st.target)}の射精値＋{val}")
+            out.set_bold(False)
+        c.base[20] += val
+    if c.base[20] >= c.maxbase[20] * 2 and c.nowex[0] > 0:
+        num = 2
+        c.base[20] = 0
+        up[13] += 10000
+        up[14] += 8000
+        up[15] += 8000
+        st.temp.losebase[0] += 600
+    elif c.base[20] >= c.maxbase[20] and c.nowex[0] > 0:
+        num = 1
+        c.base[20] = max(c.base[20] - c.maxbase[20], 0)
+        up[13] += 5000
+        up[14] += 4000
+        up[15] += 4000
+        st.temp.losebase[0] += 300
+    else:
+        num = 0
+    if num:
+        name = print_transcallname(st, st.target)
+        out.set_bold(True)
+        out.printl(f"{name}{'大量射精' if num == 2 else '射精'}")  # MESSAGE_SEX.ERB:6–24
+        out.set_bold(False)
+        kojo_root(ctx, "SEX_CHARA_SYASEI_HI" if num == 2 else "SEX_CHARA_SYASEI")
+        out.printl()
+        if c.cflag[200] == 0 and (is_female(ctx.data, c) or charatalent(ctx.data, c, 0, "オトコ") == 0):
+            c.cflag[200] = 1
+            add_exp(ctx, c, "異常経験", 1)
+            out.printl("異常経験＋1")
+        add_exp(ctx, c, "射精経験", num)
+        out.printl(f"射精経験＋{num}")
+        out.printl()
+    if up[0] and num == 0 and config_check_screen(st, 1) > 0:
+        out.printl()
+
+
+def calc_milk_sqirt(ctx: Ctx) -> None:
+    """`@PALAM_CALC_MILK_SQIRT`:926–985（キャラの噴乳）。"""
+    st = ctx.state
+    c = tc(ctx)
+    up = st.temp.up
+    out = ctx.out
+    if t(ctx, c, "母乳体質") != 1:
+        return
+    if up[3]:
+        val = div(up[3], 4) + 500 * (c.nowex[3] + 1)
+        if config_check_screen(st, 1) > 0:
+            out.set_bold(True)
+            out.printl(f"{print_transcallname(st, st.target)}の噴乳値＋{val}")
+            out.set_bold(False)
+        c.base[21] += val
+    if c.base[21] >= c.maxbase[21] * 2 and c.nowex[3] > 0:
+        num = 2
+        c.base[21] = c.maxbase[21] - 1
+        up[11] += 2000
+        up[13] += 2000
+        up[15] += 2000
+    elif c.base[21] >= c.maxbase[21] and c.nowex[3] > 0:
+        num = 1
+        c.base[21] = c.base[21] - c.maxbase[21]
+        up[11] += 1000
+        up[13] += 1000
+        up[15] += 1000
+    else:
+        num = 0
+    if num:
+        out.set_bold(True)
+        out.printl(f"{print_transcallname(st, st.target)}{'大量噴乳' if num == 2 else '噴乳'}")  # MESSAGE_SEX.ERB:26–44
+        out.set_bold(False)
+        kojo_root(ctx, "SEX_CHARA_HUNNYU_HI" if num == 2 else "SEX_CHARA_HUNNYU")
+        out.printl()
+        if c.cflag[201] == 0:
+            c.cflag[201] = 1
+            add_exp(ctx, c, "異常経験", 1)
+            out.printl("異常経験＋1")
+        add_exp(ctx, c, "噴乳経験", num)
+        out.printl(f"噴乳経験＋{num}")
+        out.printl()
+    if up[3] and num == 0 and config_check_screen(st, 1) > 0:
+        out.printl()
+
+
+_RANK = {1: "", 2: "強", 3: "超", 4: "超強", 5: "最強", 6: "凄", 7: "極", 8: "獄", 9: "狂", 10: "最狂"}
+_PART_FW = "ＣＶＡＢ"
+_MULTI = {"CVAB": "四重絶頂", "CVA": "ＣＶＡ三重絶頂", "CVB": "ＣＶＢ三重絶頂", "CAB": "ＣＡＢ三重絶頂", "CV": "ＣＶ二重絶頂",
+          "CA": "ＣＡ二重絶頂", "CB": "ＣＢ二重絶頂", "VAB": "ＶＡＢ三重絶頂", "VA": "ＶＡ二重絶頂", "VB": "ＶＢ二重絶頂",
+          "AB": "ＡＢ二重絶頂"}
+
+
+def message_sex_ecstasy_single(ctx: Ctx, i: int, n: int) -> None:
+    """`@MESSAGE_SEX_ECSTASY_{C,V,A,B}`（n == 1）／`_HI, ARG`（地の文/MESSAGE_SEX.ERB:104–186、ECSTASY_RANK:188–214）。"""
+    out = ctx.out
+    p = "CVAB"[i]
+    out.set_bold(True)
+    if n == 1:
+        out.printl(f"{_PART_FW[i]}絶頂")
+        out.set_bold(False)
+        kojo_root(ctx, f"SEX_ECSTASY_{p}")
+    else:
+        out.print(f"{_PART_FW[i]}{_RANK.get(n, '')}絶頂")
+        out.set_bold(False)
+        out.printl(f"({n})")
+        kojo_root(ctx, f"SEX_ECSTASY_{p}_HI")
+    out.printl()
+
+
+def message_sex_ecstasy(ctx: Ctx, ex: tuple[int, int, int, int]) -> None:
+    """`@MESSAGE_SEX_ECSTASY, EX_C, EX_V, EX_A, EX_B`（地の文/MESSAGE_SEX.ERB:53–100、221–316）。"""
+    out = ctx.out
+    part = "".join(p for p, n in zip("CVAB", ex) if n > 0)
+    if len(part) > 1:
+        out.set_bold(True)
+        out.printl(_MULTI[part])
+        out.set_bold(False)
+        kojo_root(ctx, f"SEX_MULTIECSTASY_{part}")
+        out.printl()
+    elif len(part) == 1:
+        i = "CVAB".index(part)
+        message_sex_ecstasy_single(ctx, i, max(ex) if max(ex) > 1 else 1)
+
+
+def _message_ecstasy_control(ctx: Ctx, ecs_flag: int) -> None:
+    """:265–275 絶頂禁止・懇願・抑制の地の文（MESSAGE_SEX.ERB:322–396）。"""
+    st = ctx.state
+    out = ctx.out
+    name = print_transcallname(st, st.target)
+    if ecs_flag > 1000:
+        out.set_bold(True)
+        out.printl("絶頂禁止")
+        out.set_bold(False)
+        out.print(f"先ほどの薬液のせいか、{name}はイくことができなかった・・・")
+        out.printl()
+        kojo_root(ctx, "SEX_ECSTASY_PROHIBITION")
+        out.printl()
+        if ecs_flag > 2000:
+            out.set_bold(True)
+            out.printl("絶頂懇願")
+            out.set_bold(False)
+            out.print(f"{name}は{ctx.data.str_defaults.get(2500, '')}に向かって、イかせてくれるよう")
+            rand = st.rng.rand
+            if rand(4) == 0:
+                out.print("みっともなく")
+            else:
+                out.print("無様" if rand(3) == 0 else "惨め" if rand(2) == 0 else "豚のよう")
+                out.print("な声をあげて" if rand(2) == 0 else "に")
+            out.printl("懇願してしまった・・・" if t(ctx, tc(ctx), "主観視点") > 0 else "懇願した・・・")
+            out.printl()
+            kojo_root(ctx, "SEX_ECSTASY_ENTREATY")
+            out.printl()
+    elif ecs_flag > 0 and st.flag[700]:
+        out.set_bold(True)
+        out.printl("絶頂抑制")
+        out.set_bold(False)
+        out.print(f"{name}は、")
+        out.printl("イくことを堪えた！" if ecs_flag < 64 else "イくことをどうにか堪えた" if ecs_flag < 128
+                   else "辛うじてイくことを堪えた" if ecs_flag < 192 else "ぎりぎりのところでイくことを堪えた・・・")
+        out.printl()
+        kojo_root(ctx, "SEX_ECSTASY_INHIBITION")
+        out.printl()
+
+
+def message_shield_state(ctx: Ctx, part: int) -> None:
+    """`地の文/MESSAGE_SEX_COMEX.ERB@MESSAGE_SHIELD_STATE, ARG`:44–86（部位結界の状態）。"""
+    st = ctx.state
+    c = tc(ctx)
+    out = ctx.out
+    tname = ctx.data.names["TALENT"].get(part + 190, "")
+    r = -1 if c.base[part + 30] <= 0 else percent_cal(c.base[part + 30], c.maxbase[part + 30])
+    if r <= 0:
+        rand = st.rng.rand
+        if rand(3) == 0:
+            out.printl(f"ついに{tname}は完全に力を失い、消え去ってしまった！")
+        elif rand(2) == 0:
+            out.printl(f"完全に力を失った{tname}にヒビが入り、粉々に砕けてしまった！")
+        else:
+            out.printl(f"{tname}は完全に力を失い、触手に引き裂かれてしまった！")
+        if st.flag[700] or c.cflag[0] != 0:
+            if part == 0 and is_male(ctx.data, c):
+                out.print("無防備に揺れるペニス")
+            if part == 0:
+                out.print("無防備な陰核")
+            if part == 1:
+                out.print("無防備にひくつく秘所")
+            if part == 2:
+                out.print("キュッと引き締まった菊門")
+            if part == 3:
+                out.print("ツンと天を衝く乳首")
+            out.printl("が触手の眼前にさらされてしまっている・・・")
+        out.printl()
+    elif r <= 25:
+        out.printl(f"今にも破られそうな{tname}が、かろうじて触手の動きを止めている・・・")
+        out.printl()
+    elif r <= 50:
+        out.printl(f"未だ触手の跳梁を許さない{tname}ではあるが、もうあまり保ちそうにない・・・")
+        out.printl()
+    elif r <= 75:
+        out.printl(f"{tname}は、依然として触手の侵入を拒んでいる！")
+        out.printl()
+    else:
+        out.printl(f"淡く輝きを放つ{tname}が、力強く触手の侵入を阻んだ！")
+        out.printl()
+
+
+# --- 体力・気力・性耐性の減少（PALAM_UP.ERB:1404–1686）----------------------------------------
+
+
+def palam_guts(ctx: Ctx, kind: str, arg: int) -> int:
+    """`@PALAM_GUTS_F(ARGS, ARG)`:1672–1686。"""
+    st = ctx.state
+    c = tc(ctx)
+    if arg < 2:
+        return 0
+    if st.temp.selectcom >= 100:
+        if kind == "TAIRYOKU" and div(c.maxbase[0], 20) <= c.base[0] <= arg:
+            return 1
+        if kind == "KIRYOKU" and div(c.maxbase[1], 20) <= c.base[1] <= arg:
+            return 1
+        if kind == "SEITAISEI" and div(c.maxbase[2], 20) <= c.base[2] <= arg:
+            return 1
+    return 0
+
+
+def _step_rand(ctx: Ctx, value: int, table: tuple[tuple[int, int, int], ...], last: tuple[int, int],
+               zero_is_none: bool = True) -> int:
+    """`IF X == 0 / ELSEIF X < b / LOCAL += a + RAND:r … / ELSE / LOCAL += a + RAND:r`。"""
+    if zero_is_none and value == 0:
+        return 0
+    rand = ctx.state.rng.rand
+    for b, a, r in table:
+        if value < b:
+            return a + rand(r)
+    return last[0] + rand(last[1])
+
+
+def palam_tairyokudown(ctx: Ctx, arg0: int, arg1: int) -> None:
+    """`@PALAM_TAIRYOKUDOWN, ARG:0（苦痛）, ARG:1（LOSEBASE:体力）`:1404–1461。"""
+    st = ctx.state
+    c = tc(ctx)
+    out = ctx.out
+    local = div(c.maxbase[0] * 50, 1000)
+    local += _step_rand(ctx, arg0, ((100, 50, 10), (1000, 100, 20), (5000, 150, 40), (10000, 250, 80),
+                                    (20000, 350, 160)), (500, 320))
+    if percent_cal(c.base[1], c.maxbase[1]) <= 0:
+        local = times(local, "1.25")
+        local += 100
+    local += arg1
+    r = percent_cal(c.base[2], c.maxbase[2])
+    if r > 75:
+        local = times(local, "0.05")
+    elif r > 50:
+        local = times(local, "0.10")
+    elif r > 25:
+        local = times(local, "0.25")
+    elif r > 5:
+        local = times(local, "0.50")
+    elif r > 0:
+        local = times(local, "0.75")
+    local = div(local * cloth_battle_hosei(ctx, "TAIRYOKU"), 100)
+    local = div(local * (100 + tentacle_level(st)), 100)
+    if t(ctx, c, "保守的") > 0:
+        local = times(local, "0.90")
+    if t(ctx, c, "好奇心") > 0:
+        local = times(local, "1.10")
+    if c.base[0] - local < 0:
+        local = c.base[0]
+    if local > 0:
+        out.set_bold(True)
+        out.printl(f"{ctx.data.names['BASE'].get(0, '')}が{local}減った！")
+        out.set_bold(False)
+    c.base[0] -= local
+
+
+def palam_kiryokudown(ctx: Ctx, arg0: int, arg1: int, arg2: int) -> None:
+    """`@PALAM_KIRYOKUDOWN, ARG:0（屈服）, ARG:1（恐怖）, ARG:2（恥情）`:1465–1561。
+
+    :1496–1507 の恥情の段階判定は `ARG:1`（恐怖）を見ている（`IF ARG:2 == 0` の後の ELSEIF がすべて ARG:1：原作どおり）。
+    """
+    st = ctx.state
+    c = tc(ctx)
+    out = ctx.out
+    local = div(c.maxbase[1] * 75, 1000)
+    local += _step_rand(ctx, arg0, ((100, 50, 10), (1000, 100, 20), (5000, 150, 30), (10000, 200, 40),
+                                    (20000, 250, 60)), (300, 80))
+    tab2 = ((100, 25, 5), (1000, 50, 10), (5000, 75, 15), (10000, 100, 20), (20000, 125, 30))
+    local += _step_rand(ctx, arg1, tab2, (150, 40))
+    if arg2 != 0:  # :1495–1508（判定値は ARG:1）
+        local += _step_rand(ctx, arg1, tab2, (150, 40), zero_is_none=False)
+    if percent_cal(c.base[0], c.maxbase[0]) <= 0:
+        local = times(local, "1.25")
+        local += 100
+    r = percent_cal(c.base[2], c.maxbase[2])
+    if r > 75:
+        local = times(local, "0.25")
+    elif r > 50:
+        local = times(local, "0.50")
+    elif r > 25:
+        local = times(local, "0.75")
+    elif r > 0:
+        local = times(local, "0.90")
+    local = div(local * cloth_battle_hosei(ctx, "KIRYOKU"), 100)
+    local = div(local * (100 + tentacle_level(st)), 100)
+    if t(ctx, c, "保守的") > 0:
+        local = times(local, "0.90")
+    if t(ctx, c, "好奇心") > 0:
+        local = times(local, "1.10")
+    if local == 0:
+        return
+    if c.base[1] - local < 0:
+        local = c.base[1]
+    if local > 0:
+        out.set_bold(True)
+        if game_option(st, GameOption.STAT_DECLINE):
+            raise NotImplementedError("ステ低下有りオプションは未移植")
+        out.printl(f"{ctx.data.names['BASE'].get(1, '')}が{local}減った！")
+        out.set_bold(False)
+    if palam_guts(ctx, "KIRYOKU", local) > 0:
+        local -= 1
+    c.base[1] -= local
+
+
+def palam_seitaiseidown(ctx: Ctx, arg0: int, arg1: int) -> None:
+    """`@PALAM_SEITAISEIDOWN, ARG:0（恭順）, ARG:1（欲情）`:1565–1668。"""
+    st = ctx.state
+    c = tc(ctx)
+    out = ctx.out
+    rand = st.rng.rand
+    local = 0
+    for b, a in ((500, 0), (1000, 1), (2000, 2), (4000, 3), (8000, 4), (12000, 5), (16000, 6), (20000, 10)):
+        if arg0 < b:
+            local += a
+            break
+    else:
+        local += 12
+    if arg1 != 0:
+        if arg1 < 200:
+            local += 2
+        else:
+            for b, a, r in ((500, 4, 2), (1000, 6, 2), (2000, 8, 3), (3500, 10, 4), (5000, 12, 5), (7500, 15, 7),
+                            (10000, 20, 9), (20000, 28, 12), (50000, 36, 15)):
+                if arg1 < b:
+                    local += a + rand(r)
+                    break
+            else:
+                local += 48 + rand(15)
+    if percent_cal(c.base[0], c.maxbase[0]) <= 0:
+        local = times(local, "1.25")
+    if percent_cal(c.base[1], c.maxbase[1]) <= 0:
+        local = times(local, "1.25")
+    g = abl(ctx, c, "技巧")
+    if g == 2:
+        local = times(local, "0.95")
+    elif g == 3:
+        local = times(local, "0.90")
+    elif g == 4:
+        local = times(local, "0.85")
+    elif g >= 5:
+        local = times(local, "0.80")
+    if st.tflag[20] == 15:
+        local = times(local, "0.35")
+    local = div(local * cloth_battle_hosei(ctx, "SEITAISEI"), 100)
+    local = div(local * 100, max(80, min(100 + div(c.base[11] - 100, 5), 160)))
+    if c.base[11] - 100 < 0:
+        local = div(local * (100 + div(100 - c.base[11], 2)), 100)
+    if c.base[11] - 100 > 0:
+        local = div(local * 100, max(100, min(100 + isqrt(c.base[11] - 100), 200)))
+    local = div(local * (200 + tentacle_level(st)), 200)
+    if c.base[2] - local < 0:
+        local = c.base[2]
+    if local > 0:
+        out.set_bold(True)
+        if game_option(st, GameOption.STAT_DECLINE):
+            raise NotImplementedError("ステ低下有りオプションは未移植")
+        out.printl(f"{ctx.data.names['BASE'].get(2, '')}が{local}減った！")
+        out.set_bold(False)
+    if t(ctx, c, "避妊結界") > 0 and c.base[2] > 0 and c.base[2] - local < 1:  # :1659–1663
+        out.printw()
+        # MESSAGE_PREGNANCY_SHIELD_COLLAPSED（地の文/MESSAGE_SEX.ERB:1916–1925）
+        out.printl(f"快楽に理性を蝕まれた{print_transcallname(st, st.target)}の精神力では、もはや避妊結界を維持できない！")
+        out.printl()
+        kojo_root(ctx, "PREGNANCY_SHIELD_COLLAPSED")
+        out.printl()
+        out.printl(f"{print_transcallname(st, st.target)}の避妊結界が効果を失った")
+        out.printl()
+        out.printw()
+    c.base[2] -= local
+
+
 # --- @PALAM_UP（PALAM_UP.ERB:13–367）-------------------------------------------------
 
 
 def palam_up(ctx: Ctx) -> None:
+    from .gaping import palam_calc_gaping
+    from .source_check import source_check_jump
+    from .syasei import tentacle_syasei_check
+    from .func import state_change_dengeki, state_change_ex, state_change_hatujou, state_change_kizetu
+
     st = ctx.state
     c = tc(ctx)
     v = c.tcvarn
     up = st.temp.up
     cp = st.temp.common_palam
+    out = ctx.out
     # :31–46 快部位の補正と絶頂可能性
     possible = 0
     for pc in range(4):
@@ -562,25 +1059,24 @@ def palam_up(ctx: Ctx) -> None:
         up[pc] += cp[pc]
         if c.palam[pc] + up[pc] > ZECCHOU_SHIKII:
             possible += c.palam[pc] + div(div(up[pc] * c.abl[pc], 15) * (t(ctx, c, _KAI_TALENT[pc]) + 5), 5)
-    if possible > 0:
-        raise NotImplementedError("快部位の絶頂判定（FUNC_PALAM_CALC_ENDURE_ECSTACY 以降）は S06")
-    # :49 ECS_FLAG = -1（BASE_PALAM <= 0）
+    ecs_flag = endure_ecstasy(ctx, possible)  # :49
+    ecs_num = 0  # :52–89
     for pc in range(4):
         if up[pc] > 0:
             add = up[pc]
             if c.base[30 + pc] > 0 and st.flag[700] and v[0] == 0 and st.tflag[10] != 1006:
-                raise NotImplementedError("部位結界の処理（拘束中）は S06")
+                if st.flag[999]:
+                    raise NotImplementedError("デバッグ表示は未移植")
+                c.base[30 + pc] -= add
+                add = 0
+                if st.flag[700]:
+                    message_shield_state(ctx, pc)
             c.palam[pc] += add
-            # :79 PALAM_CALC_ECSTASY（IS_FORBID_EX = -1）：PALAM がしきい値以上なら絶頂
-            if c.palam[pc] >= ZECCHOU_SHIKII:
-                raise NotImplementedError("快部位の絶頂（PALAM_CALC_ECSTASY）は S06")
-            c.nowex[pc] = 0
-    # :92 PALAM_CALC_GAPING（TFLAG:1 == 0 のとき）
-    if st.tflag[1] == 0:
-        if st.flag[700] > 0 and config_check_maniac(st, 16) == 1 and c.cflag[34] > 0:
-            raise NotImplementedError("PRINT_TENTACLE_SIZE（拡張度表示）は未移植")
-        if st.temp.insert:
-            raise NotImplementedError("挿入による拡張（GAPING）は S06")
+            c.nowex[pc] = calc_ecstasy(ctx, pc, ecs_flag)
+            if c.nowex[pc] > 0:
+                st.temp.max_palam[pc] = 0
+        ecs_num += c.nowex[pc]
+    palam_calc_gaping(ctx)  # :92
     for pc in range(4):
         cp[pc] = 0
     # :100–113 動画撮影フラグ
@@ -591,7 +1087,11 @@ def palam_up(ctx: Ctx) -> None:
             st.tflag.set_bit(21, 5)
         if (c.stain[0] & 4) or (c.stain[1] & 4) or (c.stain[2] & 4):
             st.tflag.set_bit(21, 6)
-    # :120–133 二次計算（原作は PALAM_HOSEI に PCOUNT（0〜3）を渡しており、快部位用の補正が掛かる：原作どおり）
+        if c.nowex[0] + c.nowex[1] + c.nowex[2] + c.nowex[3]:
+            st.tflag.set_bit(21, 8)
+    if ecs_num > 0:  # :120–121
+        up[14] += min(ecs_num * 5000, 20000)
+    # :123–133 二次計算（原作は PALAM_HOSEI に PCOUNT（0〜3）を渡しており、快部位用の補正が掛かる：原作どおり）
     for pc, pid in enumerate(NIJI_PALAM):
         up[pid] = palam_hosei(ctx, pc, up[pid])
         up[pid] += cp[pid]
@@ -600,21 +1100,16 @@ def palam_up(ctx: Ctx) -> None:
         up[12] += 150 + 15 * (abl(ctx, c, "従順") + abl(ctx, c, "奉仕精神") * 2)
     # :144–152 触手の射精チェック
     if st.flag[700] == 1:
-        if st.flag[15] >= st.flag[14]:
-            raise NotImplementedError("触手の射精（TENTACLE_SYASEI_CHECK）は S06")
-        st.tflag[5] = 0
-    # :155 PALAM_CALC_EJAC（射精は NOWEX:Ｃ絶頂 > 0 が前提。絶頂は上で停止するので射精値の加算のみ）
-    if not (t(ctx, c, "ふたなり") == 0 and (is_female(ctx.data, c) or t(ctx, c, "未熟") == 1)):
-        if up[0]:
-            if config_check_screen(st, 1) > 0:
-                raise NotImplementedError("調教ステータス表示（CONFIG_CHECK_SCREEN_F(1)）は未移植")
-            c.base[20] += up[0] + 500 * (c.nowex[0] + 1)
-    # :158 PALAM_CALC_MILK_SQIRT（同上）
-    if t(ctx, c, "母乳体質") == 1 and up[3]:
-        if config_check_screen(st, 1) > 0:
-            raise NotImplementedError("調教ステータス表示（CONFIG_CHECK_SCREEN_F(1)）は未移植")
-        c.base[21] += div(up[3], 4) + 500 * (c.nowex[3] + 1)
-    ctx.out.printl()
+        r = list(tentacle_syasei_check(ctx))
+        if (v[12] & HAIRAN) and (st.tflag[4] & 2):
+            r[1] *= 4
+        up[10] += r[0]
+        up[14] += r[1]
+        up[11] += r[2]
+        up[13] += r[3]
+    calc_ejac(ctx)  # :155
+    calc_milk_sqirt(ctx)  # :158
+    out.printl()
     # :165–174 恥情
     up[15] += palam_tijou_cloth_damage(ctx)
     ups = (up[0], up[1], up[2], up[3])
@@ -626,8 +1121,12 @@ def palam_up(ctx: Ctx) -> None:
     # :191–196 潤滑
     up[10] += palam_junkatu(up[13])
     up[10] = palam_hosei(ctx, 10, up[10])
-    # :202–213 恭順（ECS_NUM = 0）
+    # :202–213 恭順
     up[11] += palam_kyoujun(ctx, ups)
+    if abl(ctx, c, "触手中毒") > 0:
+        up[11] += min(ecs_num * 1500 * abl(ctx, c, "触手中毒"), 30000)
+    if t(ctx, c, "触手の虜") > 0:
+        up[11] += min(ecs_num * 1500, 6000)
     up[11] = palam_hosei(ctx, 11, up[11])
     # :217–228
     if v[12] & KIZETU:
@@ -636,33 +1135,56 @@ def palam_up(ctx: Ctx) -> None:
     elif v[12] & KOUKOTSU:
         for pid in (11, 12, 13, 14):
             up[pid] = times(up[pid], "1.25")
-    # :231–246 絶頂回数（0）による珠・油断：変化なし
+    # :231–246 絶頂回数と珠
+    local = sum(1 for i in range(4) if c.nowex[i] > 0)
+    for i, jname in enumerate(("快Ｃ", "快Ｖ", "快Ａ", "快Ｂ")):
+        add_exp(ctx, c, "絶頂経験", c.nowex[i] * local)
+        c.juel[ctx.data.index_of("JUEL", jname)] += 1000 * c.nowex[i] * local
+    st.tflag[3] += 50 * local
     # :250–259 経験
     if up[15] > 2000 and up[13] > 2000:
         add_exp(ctx, c, "露出快楽経験", 1)
-    if up[13] > 2000 and (v[2] == P_HOUSHI or (st.temp.selectcom >= 100 and st.temp.selectcom < 200)):
+    # :254 括弧内は `奉仕 || SELECTCOM >= 100 && SELECTCOM < 200` = ((奉仕 || >= 100) && < 200)（&& と || は同順位・左結合：
+    # reference/emuera-1824/Emuera/GameData/Expression/OperatorCode.cs:33–34、ExpressionParser.cs:502–506）
+    if up[13] > 2000 and ((v[2] == P_HOUSHI or st.temp.selectcom >= 100) and st.temp.selectcom < 200):
         add_exp(ctx, c, "奉仕快楽経験", 1)
     if up[16] > 2000 and up[13] > 2000:
         add_exp(ctx, c, "苦痛快楽経験", 1)
-    # :262–275 絶頂の地の文（絶頂なし・ECS_FLAG = -1 のため何も出ない）
-    # :282–295 TFLAG:20（性攻撃の番号）による状態異常：非拘束時は TFLAG:20 が -999／-1 なので該当しない
-    if st.tflag[20] in (1004, 6, 1000, 1001, 1012, 1015, 8, 9, 12, 1009, 1010, 1013):
-        raise NotImplementedError(f"TFLAG:20 = {st.tflag[20]} の状態異常は S06")
+    message_sex_ecstasy(ctx, (c.nowex[0], c.nowex[1], c.nowex[2], c.nowex[3]))  # :262
+    _message_ecstasy_control(ctx, ecs_flag)  # :265–275
+    if ecs_num and st.flag[700] > 0:  # :278–279
+        state_change_ex(ctx, ecs_num)
+    tf20 = st.tflag[20]
+    if tf20 == 1004:  # :282–283
+        state_change_dengeki(ctx)
+    if tf20 in (6, 1000, 1001):  # :286–287
+        state_change_hatujou(ctx, 100)
+    if tf20 in (1012, 1015) and (v[12] & KIZETU) == 0:  # :290–295
+        state_change_kizetu(ctx, 100)
+    elif tf20 in (8, 9, 12, 1009, 1010, 1013) and (v[12] & KIZETU) and (c.base[0] > 0 or c.base[1] > 0 or c.base[2] > 0):
+        v[101] = -999
     palam_personality_adjust(ctx)
     if any(up[i] for i in range(0, 100)) and config_check_screen(st, 1) > 0:
         raise NotImplementedError("調教ステータス表示（CONFIG_CHECK_SCREEN_F(1)）は未移植")
     for pid in BUI_IGAI_PALAM:
         if up[pid] > 0:
             c.palam[pid] += min(up[pid], PALAM_MAX)
-    # :320–330 体力・気力・性耐性の減算（拘束中または暴走した触手服のみ）
+    # :320–330 体力・気力・性耐性の減算
     if st.flag[700] == 1 and (v[0] == 0 or (v[41] != 0 and c.cflag[40 if c.cflag[1] == 0 else 41] == 199)):
-        raise NotImplementedError("PALAM_TAIRYOKUDOWN 等（拘束中の消耗）は S06")
+        palam_tairyokudown(ctx, up[16], st.temp.losebase[0])
+        palam_kiryokudown(ctx, up[14], up[17], up[15])
+        palam_seitaiseidown(ctx, up[11], up[13])
+        out.printl()
+        if up[16] + st.temp.losebase[0] + up[14] + up[17] + up[13]:
+            if c.cflag[1] != 2:
+                v[6] += max(0, min(isqrt(max(c.base[11] - 100, 0)), 20)) + 5
     for mark_id, pid in ((0, 13), (1, 16), (2, 14), (3, 17), (4, 15)):
         got_sex_mark_check(ctx, mark_id, up[pid])
     message_branch_faith_down(ctx)
     # :352 GET_STATE_EXPUP：実績のみ（UNLOCK_ACHIEVEMENT、deviations「全域資料」）
-    if st.flag[13] <= 0 and st.flag[700] == 1:
-        raise NotImplementedError("搾精による撃破（PALAM_UP から JUMP SOURCE_CHECK）は S06")
+    if st.flag[13] <= 0 and st.flag[700] == 1:  # :355–356 JUMP SOURCE_CHECK
+        source_check_jump(ctx)
+        return
     palam_up_enemy_reaction(ctx)
     if c.cflag[1] > 0 and t(ctx, c, "処女") == -1 and is_female(ctx.data, c) and t(ctx, c, "変身時非処女") == 0:
         c.talent[ctx.data.index_of("TALENT", "変身時非処女")] = 1

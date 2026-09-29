@@ -428,3 +428,175 @@ def perform_cheers_tentacle_hit_hantei(ctx: Ctx) -> None:
         else:
             out.printl(f"{name}が攻撃を避けきれずに食らう様を目の当たりにして")
             out.printl("観衆から悲鳴が上がった・・・")
+
+
+def perform_cheers_tentacle_sex_hantei(ctx: Ctx) -> None:
+    """`@PERFORM_CHEERS_TENTACLE_SEX_HANTEI`:761–958（凌辱時の観衆の反応）。
+
+    状態変化は :771–774（CFLAG:284 += FLAG:71、TFLAG:21 bit0）のみ。以下の本文も原作どおり出す。
+    """
+    from .core import is_hole, print_swoon
+
+    st = ctx.state
+    c = tc(ctx)
+    out = ctx.out
+    if not is_hole(ctx):
+        return
+    if st.flag[70] + st.flag[71] == 0:
+        return
+    if st.flag[71] or get_battle_situation(st, "常時撮影"):
+        c.cflag[284] += st.flag[71]
+        st.tflag.set_bit(21, 0)
+    l1 = _suit_state(ctx)  # :776–784（同じ左結合の条件式）
+    name = print_transcallname(st, st.target)
+    crowd = st.flag[70] + st.flag[71]
+    kizetu = c.tcvarn[12] & 1
+    cl = st.temp.cloth
+    stain = c.stain
+    many = "たち" if crowd > 1 else ""
+    if st.flag[72]:  # :785–928
+        if crowd >= 5:
+            out.printl(f"凌辱される{print_swoon(ctx)}{name}は観衆に取り囲まれて強姦ショーの様相を呈している。")
+        else:
+            out.print(f"観衆の男{many}")
+            out.printl(f"は凌辱される{name}に興奮し、むしろ敵の応援をする勢いだ。")
+        out.printl()
+        if cl[OUTER_PER] > 50 or l1 == 3:
+            if (stain[1] & 4) or (stain[2] & 4):
+                out.print("精液まみれで")
+            if stain[0] & 4:
+                out.printl("口から白濁液を垂らし、")
+            if st.temp.selectcom in (8, 9) and not kizetu:
+                out.print("暴れてもどうにもならずに")
+            elif not kizetu:
+                out.print("ろくな抵抗もできずに")
+            out.printl(f"煽情的なポーズで固定された{name}。")
+            out.printl("その様子に観衆は鼻息荒く見入っている・・・")
+        elif cl[INNER_PER] > 50:
+            if (stain[0] & 4) or (stain[1] & 4) or (stain[2] & 4):
+                out.print("精液で汚され")
+            if stain[0] & 4:
+                out.printl("口からは白濁液を垂らし、")
+            out.print("嬲りものにされて着衣がボロボロになった" if cl[OUTER_PER] else "下着姿を晒しながら凌辱される")
+            eager = (t(ctx, c, "触手の虜") or abl(ctx, c, "欲望") >= 3) and t(ctx, c, "初心") < 1
+            if eager:
+                out.printl(f"{name}が痴態を見せつけるようにポーズを取ると、")
+                out.print(f"男{many}")
+                out.print("は歓喜の声を上げながら興奮した様子で")
+            elif not kizetu:
+                out.printl(f"{name}が助けを求めるが、")
+                out.print(f"男{many}")
+                out.printl(f"には{name}の味方をしようというつもりは毛頭無いらしく、")
+                out.print("ニヤニヤしながら")
+            else:
+                out.printl(f"{name}の体が触手に動かされ卑猥な姿勢を取らせられると、")
+                out.print(f"男{many}")
+                out.print("は歓喜の声を上げながら興奮した様子で")
+            if crowd > 1:
+                out.printl("卑猥な言葉を投げかけてくる・・・")
+            elif st.flag[71]:
+                out.printl("卑猥な言葉でこちらを煽りながら撮影を続けている・・・")
+            else:
+                out.printl("卑猥な言葉を連呼しながら舐めるように視姦してくる・・・")
+        else:
+            soft = l1 == 2 or (c.cflag[41] == 401 and c.cflag[1] > 0)
+            nude = c.cflag[41] == 299 and c.cflag[1] > 0
+            if (stain[1] & 4) or (stain[2] & 4):
+                out.print("精液まみれ")
+                if l1 == 1:
+                    out.print("の蠢く触手服に陵辱されつつ、")
+                elif soft:
+                    out.print("の扇情的な衣装で、")
+                elif nude:
+                    out.print("の全裸同然の姿で、")
+                else:
+                    out.print("で")
+                    if cl[INNER_PER]:
+                        out.print("ほとんど")
+                    out.print("全裸にされ、")
+            else:
+                if l1 == 1:
+                    out.print("の蠢く触手服に陵辱されつつ、")
+                elif soft:
+                    out.print("扇情的な衣装で")
+                elif nude:
+                    out.print("全裸同然の姿で")
+                else:
+                    if cl[INNER_PER]:
+                        out.print("ほとんど")
+                    out.print("全裸にされ、")
+            if (stain[1] & 4) or (stain[2] & 4) or cl[INNER_PER]:
+                out.printl()
+            if stain[0] & 4:
+                out.print("口から白濁液を垂らしながら")
+            if stain[3] & 4:
+                out.print("股間から中出しされた精液を溢れさせる")
+            elif stain[4] & 4:
+                out.print("尻穴から中出しされた精液を溢れさせる")
+            else:
+                out.print("大きく開脚させられた")
+            out.printl(f"{name}。")
+            out.print(f"男{many}")
+            if st.flag[71]:
+                out.printl(f"は蹂躙される{print_swoon(ctx)}{name}のあられもない姿に興奮しながら、")
+                tf20 = st.tflag[20]
+                eager = (t(ctx, c, "触手の虜") or abl(ctx, c, "欲望") >= 3) and t(ctx, c, "初心") < 1
+                if kizetu:
+                    out.print("ぐったりとした体が嬲られる卑猥な光景を")
+                elif tf20 in (3, 5, 1001, 1002):
+                    if (st.temp.insert & 2) or (st.temp.insert & 4):
+                        out.print("明らかに挿入を受け入れている結合部にズームしながら")
+                    elif t(ctx, c, "触手の虜") or abl(ctx, c, "欲望") >= 3:
+                        out.print(f"快楽に蕩けていく{name}の痴態を")
+                    elif st.tflag[2] == 100:
+                        out.print(f"挿入されまいと必死に抵抗する{name}の様子を")
+                    else:
+                        out.print(f"屈辱に歪んだ{name}の表情を")
+                elif tf20 in (11, 12, 1005):
+                    if (t(ctx, c, "触手の虜") or abl(ctx, c, "欲望") >= 3 or st.tflag[2] == 4) and t(ctx, c, "初心") < 1:
+                        out.print(f"頬を染めて奉仕する{name}を")
+                    else:
+                        out.print(f"無理やり奉仕させられる{name}を")
+                elif tf20 in (8, 9, 13, 1004):
+                    if abl(ctx, c, "マゾっ気") >= 3 and t(ctx, c, "初心") < 1:
+                        out.print(f"被虐的な興奮に喘ぐ{name}を")
+                    else:
+                        out.print(f"苦痛にのたうつ{name}の様子を")
+                elif eager:
+                    out.print(f"快楽に蕩けていく{name}の痴態を")
+                elif abl(ctx, c, "従順") >= 3:
+                    out.print(f"力なく項垂れた{name}の絶望の表情を")
+                else:
+                    out.print(f"必死の抵抗を続ける{name}の様子を")
+                out.printl("撮影している・・・")
+            else:
+                out.printl("は血走った眼をしながら下半身を露出し、")
+                out.printl(f"{print_swoon(ctx)}{name}を罵りながらオナニーしている・・・")
+        out.printw()
+    elif st.rng.rand(100) < 75:  # :929–958
+        rand = st.rng.rand
+        if exp(ctx, c, "陥落経験") > 0:
+            if rand(4) == 0:
+                out.printl(f"{name}を犯そうと近付いた一般人が")
+                out.printl("触手に突き飛ばされて尻餅をついた・・・")
+            elif rand(3) == 0:
+                out.printl(f"為すすべなく凌辱される{name}に周囲が興奮状態に陥っている・・・")
+            elif rand(2) == 0:
+                out.printl(f"周囲は凌辱される{name}に興奮し")
+                out.printl("目を背けることができずにいる・・・")
+            else:
+                out.printl("目の前で繰り広げられる痴態を見せつけられて")
+                out.printl(f"{name}を罵倒する声が強くなっていく・・・")
+        else:
+            if rand(4) == 0:
+                out.printl(f"{name}を助けようと近付いた一般人が")
+                out.printl("触手に突き飛ばされて尻餅をついた・・・")
+            elif rand(3) == 0:
+                out.printl(f"為すすべなく凌辱される{name}に周囲が恐慌状態に陥っている・・・")
+            elif rand(2) == 0:
+                out.printl(f"周囲は凌辱される{name}に蒼白になりながらも")
+                out.printl("目を背けることができずにいる・・・")
+            else:
+                out.printl("目の前で繰り広げられる痴態を見せつけられて")
+                out.printl(f"{name}を応援する声が弱々しくなっていく・・・")
+        out.printw()
