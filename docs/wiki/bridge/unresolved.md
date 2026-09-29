@@ -13,6 +13,7 @@
 ## 原作邏輯
 
 - [ ] `TFLAG:0`（戰鬥回合數，一覧:459）在全部 ERB 找不到遞增處（grep `TFLAG:0`／`TFLAG ++` 皆無），但時間切れ判定用它（`ゲーム内_戦闘処理/BATTLE_COM_AFTER.ERB@SOURCE_CHECK`:1113）— 推測是 Emuera 或舊版 eramaker 的內建行為，或某處用了間接寫法；S05 必須解。
+  - 2026-09-29 本機追加調查：別名 `TFLAG:TFターン`（`REPORT.ERH`:15 `#DIM CONST TFターン = 0`）只有讀取；無索引 `TFLAG ++` 也沒有。全部寫入只有 `VARSET TFLAG`（3 個イベント戦闘共通檔）與 `BATTLE_COM_AFTER.ERB`:1107 `TFLAG:0 -= 1`（註解「このターンは時間経過させない」）。一覧:459 另說「戰鬥開始直前為 -1」。結論：ERB 內確定沒有遞增，遞增發生在引擎側或已失傳；S05 應直接做 bridge 決策（例：每完成一輪指令後 +1），記在 `docs/wiki/bridge/` 並以該決策寫測試，不必再全域 grep。
 - [ ] 一覧:594 說回合上限在 `TCVARn:13`，程式實際用 `ERB/DIM.ERH`:280 `ターン上限` — 以程式為準。
 - [ ] 雜魚／クズ市民戰在體力・氣力・性耐性全 0 時的結束路徑（`BATTLE_COM_AFTER.ERB@SOURCE_CHECK`:955 排除 MOB/CITIZEN）— S05 調查。
 - [ ] 角色 CSV `相性,對方番号,值` 如何轉成以 `CFLAG:240`（固有番號）為索引的 RELATION（來源：`●GVTフラグ一覧.txt`:741）— 轉換處未調查，S03 開局時需要。

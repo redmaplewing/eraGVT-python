@@ -14,7 +14,7 @@
 
 ## 下一步
 
-- **S02**：核心狀態模型（範圍已依 S01 分析調整，見 PLAN.md 的 S02 說明）：
+- **S02**：核心狀態模型 → 規格 `docs/sessions/S02-core-state.md`；範圍細項如下：
   1. `GameState`：DAY/TIME（一回合 = 半天，TIME 0 晝 1 夜）、MONEY、FLAG（dict 稀疏）、ITEM（衣裝持有）、SAVESTR、
      `MOB_FLAG`、`SHIELD`；全域 `GLOBAL` 另存。
   2. `Character`：由 `CharaDef` 建立（BASE=MAXBASE=CSV 值）；BASE/MAXBASE/ABL/TALENT/EXP/MARK/JUEL/EX/CFLAG/CSTR/

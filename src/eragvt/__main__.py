@@ -29,6 +29,9 @@ def check_data(csv_dir: Path) -> int:
 
 
 def main(argv: list[str] | None = None) -> int:
+    # Windows 主控台預設 cp950，日文路徑/名稱會變亂碼
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     parser = argparse.ArgumentParser(prog="eragvt")
     parser.add_argument("--check-data", action="store_true", help="載入原作 CSV 並列出摘要")
     parser.add_argument("--csv-dir", type=Path, default=None, help="原作 CSV 目錄")
