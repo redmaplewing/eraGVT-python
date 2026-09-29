@@ -1,6 +1,7 @@
 # 戰鬥（TRAIN）結構概觀
 
-只寫架構；計算式細節留給 S05／S06。路徑相對 `source/earGVP/ERB/ゲーム内_戦闘処理/`（另註明者除外）。
+只寫架構；計算式細節留給 S05／S06。S05 的 Python 對應在 `src/eragvt/game/battle/`（各模組 docstring 註明對應的 ERB 函式）；
+本作的 `@COM_ABLE` 在引擎列舉時全部回 0，TRAIN 的輸入一律經 `@USERCOM` → `DOTRAIN`（見 `docs/wiki/bridge/unresolved.md`）。路徑相對 `source/earGVP/ERB/ゲーム内_戦闘処理/`（另註明者除外）。
 戰鬥是 era 標準「調教」階段改造而成：玩家角色 = `TARGET`，敵人資料放在 `FLAG:10–22` 與 `TFLAG`／`TCVARn`。
 
 ## 1. 進入戰鬥（遭遇）

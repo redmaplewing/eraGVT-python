@@ -21,6 +21,13 @@
 
 - [x] `TFLAG:0`（戰鬥回合數）遞增處 — `ゲーム内_戦闘処理/BATTLE_COM_AFTER.ERB@SOURCE_CHECK`:1313–1318（先制攻擊中扣 `TFLAG:24`，否則 `TFLAG:0 += 1`）。
 - [ ] 一覧:594 說回合上限在 `TCVARn:13`，程式實際用 `ERB/DIM.ERH`:280 `ターン上限` — 以程式為準。
-- [ ] 雜魚／クズ市民戰在體力・氣力・性耐性全 0 時的結束路徑（`BATTLE_COM_AFTER.ERB@SOURCE_CHECK`:955 排除 MOB/CITIZEN）— S05 調查。
+- [x] 雜魚／クズ市民戰在體力・氣力・性耐性全 0 時的結束路徑 — `BEGIN AFTERTRAIN` 全作只有 6 處（grep：`BATTLE_COM_AFTER.ERB`:435 勝利、
+  :950 敗北、:1095 強拘束敗北、:1130 時間切れ；`BATTLE_COM.ERB`:596／:614 撤退），`TFLAG:98` 只在 :129（=1 勝利）、:852、:973（=2 敗北）設定。
+  :955／:1303 的一般敗北判定排除 MOB／CITIZEN，所以**雜魚戰全 0 也不會敗北**，只能以勝利・時間切れ（15 回合）・撤退結束；
+  クズ市民戰則由 :850 的專用判定（全 0 且被拘束 → 監禁 `CFLAG:0 = 4`）敗北。基本設定（FLAG:802 bit4 = 0）下雜魚遭遇只有文章
+  （`ENCOUNT.ERB@MOB_TENTACLE_ENCOUNT`:449–521），不進 TRAIN。
+- [x] TRAIN 的輸入 — 本作 `COMABLE.ERB` 的 38 個 `@COM_ABLE` 在 `TCVARn:8 < 10` 時全部 RETURN 0（35 個有 `SIF TCVARn:8 < 10`，
+  201–203 最後回傳 `COM_ABLE0` 的結果），引擎的選項清單（SystemProc@endCallComAbleXX:312–354）永遠是空的，輸入一律經 `@USERCOM`
+  （`BATTLE_COM.ERB`:572–664）再 `DOTRAIN`。
 - [x] 角色 CSV `相性` 的轉換 — 只在 `HEROINE_PRESET` 選 `[30]` 時經 `SYSTEM/キャラメイキング関連/FIRSTSETTING_CONVERTCSV.ERB@CONVERT_RELATION`:3–23 把「CSV 番号索引」複製到「登錄 index 索引」（index = `CFLAG:240`）。直接開始遊戲時不轉換。引擎本身 RELATION 的索引是 CSV 番号（`VariableCode.cs`:146）。
 - [ ] `DIM.ERH`:20 `GFLAG`（「全領域参照用」）用途未調查。

@@ -1,6 +1,6 @@
 # 現況（唯一真相，≤150 行）
 
-更新：2026-09-29（S04）
+更新：2026-09-29（S05）
 
 ## 已完成
 
@@ -24,27 +24,38 @@
     `EVENTSHOP` 一般分岐（PARASITE、SMALL_TENTACLE、BIRTH_AUTO_RANDOM、晝夜、RECOVERY_OVER_TIME、ESTRUS_CYCLE、
     日期、CALC_INCOME_EXPEND、新聞旗標、CHECK_SHIELD_ALL）。session 新增 `turn`／`halted` phase。
   - 各行動影響範圍與開局狀態下的事件觸發表：`docs/wiki/era/actions.md`。測試共 273 個。
+- **S05**：戰鬥核心。出撃 → 遭遇 → 戰鬥（非拘束狀態）→ 撤退／勝利／時間切れ → EVENTEND → TURNEND → SHOP，可存讀檔。
+  - `eragvt.game.battle`：`encount`（ENCOUNT／ENCOUNT_ENEMY／ENCOUNT_BOSS、MOB_TENTACLE_ENCOUNT 文章版、GET_EXP_BATTLE 等報酬）、
+    `train`（UpdateInBeginTrain、EVENTTRAIN＋先制、SHOW_STATUS 簡略、SHOW_USERCOM 不分類版、USERCOM、DOTRAIN→EVENTCOM→COMn
+    →SOURCE_CHECK→EVENTCOMEND＋自動 WAIT）、`commands`（COM_ABLE／0・201–203・1–3・4・5・99）、`hantei`（命中・傷害）、
+    `palam`（PALAM_CAL／PALAM_UP）、`enemy`（ENEMY_ACTION 非拘束分岐、SELECT_TENTACLE_ACTION、ボス 1–7 資料）、
+    `source_check`（勝利・時間切れ・狀態異常・回合）、`cheers`、`cloth`、`func`、`after`（EVENTEND 撤退／時間切れ・ボス勝利、
+    刻印、蓄積ダメージ）、`ablup`（_ABLUP：珠→能力上昇、素質取得的一部分）。
+  - `action_main` 出撃接上；`run_turn` 的 `Step.TRAIN` 以 generator 進入戰鬥（session 沿用 `turn` phase，戰鬥中不能存檔）。
+  - 查清 unresolved「雜魚／クズ市民戰結束路徑」「TRAIN 輸入一律經 USERCOM」。基本設定下雜魚只有文章（不進 TRAIN）；
+    ボス遭遇需 探索度 FLAG:47 ≥ ノルマ FLAG:46（開局 28，出撃一次 +6〜9），故前幾次出撃不會遇到ボス。測試共 303 個。
 
 
 ## 下一步
 
-- deviations.md 各項：使用者 2026-09-29 裁決「暫時維持現狀，嚴重到無法推進時再評估」。S04 新增 5 項待裁決（見該檔）。
-- **S05：戰鬥核心**（規格待寫 `docs/sessions/S05-*.md`）。具體起點：
-  1. 出撃：`ACTION.ERB`:74–98 → `ゲーム内_戦闘処理/ENCOUNT.ERB@ENCOUNT`:5（ボス／悪堕ち遭遇）→ 無則
-     `@MOB_TENTACLE_ENCOUNT`（:429）→ `BEGIN TRAIN`。目前 `action_main` 對出撃丟 NotImplementedError
-     （`src/eragvt/game/action.py` 末尾），`run_turn` 對 `Step.TRAIN` 也是 NotImplementedError。
-  2. TRAIN 流程（flow.md §0／§7、battle-overview.md）：`BATTLE_TRAIN.ERB@EVENTTRAIN` → `@SHOW_STATUS` →
-     `@COM_ABLEn` → `@SHOW_USERCOM` → 輸入（指令番號直接 DOTRAIN）→ `@EVENTCOM`→`@COMn`→`@SOURCE_CHECK`→`@EVENTCOMEND`
-     → `BATTLE_TRAIN_AFTER.ERB@EVENTEND` → `BEGIN TURNEND`（接回 `turnend.event_turnend`）。
-     session 需新增 TRAIN 的輸入 phase（沿用 `run_turn` 的 generator 方式：`Step.TRAIN` 時 `yield from` 戰鬥）。
-  3. 接上後可解除的偏離：拠点防衛（`ACTION_GUARD.ERB`，未遭遇部分很短）、`RAID_HANTEI`／`SMALL_TENTACLE_ATTACK` 的跳過
-     （`turnend._skip_event`，S06 可一併做事件戰）。
-  4. 雜魚戰結束路徑（unresolved「原作邏輯」）在 S05 查清。
+- deviations.md：使用者 2026-09-29 裁決「暫時維持現狀」。S05 新增 3 項（戰鬥停止分岐、身體資料 0 對戰鬥式的影響【需裁決】、
+  戰鬥畫面簡略），另在「原作行為」補列照翻的疑似 bug。
+- **S06：拘束與性攻擊**（規格待寫）。具體起點（路徑相對 `source/earGVP/ERB/ゲーム内_戦闘処理/`）：
+  1. 拘束後的敵行動：`ENEMY_ACTION.ERB` 拘束分岐 → `TENTACLE_BOSS_{n}_SEX_ROUTINE`（`触手データ/ボス触手/`）、
+     `戦闘コマンド(性攻撃)/`。現在停在 `battle/enemy.py` 的「拘束直後の性攻撃」`NotImplementedError`（隨機戰鬥幾回合就會遇到）。
+  2. 拘束中的指令：`COMABLE.ERB` 的 8–15・40・44–47・100–104、`SHOW_USERCOM` 拘束分岐（`BATTLE_COM.ERB`:382–441）、
+     `COMF8〜15`（振り解く・救出 等）。`battle/commands.py` 的 `_RESTRAINT_ONLY` 目前在拘束中會停止。
+  3. 絶頂・射精：`PALAM_UP.ERB` 的絶頂處理（`battle/palam.py` 目前遇到可能絶頂就停）、`TENTACLE_SYASEI.ERB`、`GAPING.ERB`。
+  4. 敗北：`BATTLE_COM_AFTER.ERB`:850–973 → 幽閉（`source_check._battle_lose` 停止中）與 `EVENTEND`:335–422。
+  5. 其餘指令 6・7・16・17・69–74（`commands.run_com`）、反擊（`HANGEKI_STYLE.ERB`）、バースト。
+  6. 之後：事件戰（襲撃／救援、`turnend._skip_event`）、拠点防衛、雜魚戰系統（CONFIG bit4）、ラスボス。
 
 ## 已知問題
 
 - 未決：`docs/wiki/bridge/unresolved.md`；偏離：`docs/wiki/bridge/deviations.md`（尚未經使用者裁決）。
 - 無 BOM 的 7 個角色 CSV 在原版 1.824 會以 Shift-JIS 讀（亂碼）；本程式以 UTF-8 讀，可能是 +v10 差異，待實機確認。
 - 開局僅支援「NORMAL＋特装戦隊」；其他初期セット／自訂角色會 `NotImplementedError`。
-- 可玩範圍：休憩・鍛錬。其他行動、11 日目夜的日數超過結局、救出／妊娠等狀態會進入 Web「停止」畫面（deviations）。
+- 可玩範圍：休憩・鍛錬・出撃（戰鬥到被拘束為止）。其他行動、拘束後、11 日目夜的日數超過結局、救出／妊娠等狀態會進入
+  Web「停止」畫面（deviations）。
+- 身體資料（体重・胸の重量）為 0，戰鬥中女性角色敏捷被扣成 0、傷害 2 倍（deviations，需裁決）。
 - 襲撃／救援（DAY ≥ 3）與子触手襲来成立時只顯示「スキップ」訊息（deviations）。

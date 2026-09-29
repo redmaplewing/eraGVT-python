@@ -246,6 +246,8 @@ class TextOutput:
         self._color: str | None = None
         self._bold = False
         self._align: Literal["left", "center", "right"] = "left"
+        # WAIT／PRINTW の累計回数（EVENTCOMEND 後の自動 WAIT 判定用：Process.SystemProc.cs:476、515–517）
+        self.wait_count = 0
 
     # --- 樣式 ---------------------------------------------------------------
 
@@ -308,6 +310,7 @@ class TextOutput:
 
     def wait(self) -> None:
         """WAIT：在目前位置等待輸入。"""
+        self.wait_count += 1
         if self._pending or self._parts:
             self._newline(wait=True)
         elif self._lines:
@@ -345,6 +348,8 @@ class TextOutput:
         self._pending = []
 
     def _newline(self, wait: bool = False) -> None:
+        if wait:
+            self.wait_count += 1
         self._resolve_pending()
         self._lines.append(Line(self._parts, wait=wait, align=self._align))
         self._parts = []

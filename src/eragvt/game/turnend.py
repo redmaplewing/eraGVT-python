@@ -50,8 +50,12 @@ def run_turn(ctx: Ctx) -> Generator[None, int, None]:
             step = yield from action_main(ctx)
         elif step == Step.SHOP:
             return
+        elif step == Step.TRAIN:
+            from .battle.train import run_train
+
+            step = yield from run_train(ctx)
         else:
-            raise NotImplementedError("BEGIN TRAIN（戦闘）は S05")
+            raise AssertionError(step)
 
 
 # --- @EVENTTURNEND ---------------------------------------------------------------

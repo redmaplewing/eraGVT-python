@@ -216,9 +216,23 @@ def action_main(ctx: Ctx) -> InputGen:
         rest(ctx)
         st.flag[43] -= 1
         return Step.TURNEND
-    # 出撃（:74–98、ENCOUNT → TRAIN）は S05。活動 SEISAN／防衛 GUARD／支援 SUPPORT／情報 GATHER_INFORMATION／
-    # 自由 PASTIME は未移植（影響範囲は docs/wiki/era/actions.md）。
-    raise NotImplementedError(f"行動「{ACTION_NAMES[_find_action(plan)]}」は未移植（S04 は休憩・鍛錬のみ）")
+    if plan == ActionPlan.SORTIE:  # :75–96
+        from .battle.encount import encount, mob_tentacle_encount
+
+        st.flag[41] += 1
+        result = encount(ctx)
+        if result == 0:
+            result = mob_tentacle_encount(ctx)
+        if result == 0:
+            _wait_or_line(ctx)
+            return Step.TURNEND
+        if result > 0:
+            return Step.TRAIN
+        # RESULT < 0（MOB_TENTACLE_BATTLE の候補なし）は SELECTCASE を抜けて ACTION_MAIN の末尾へ
+        raise NotImplementedError("雑魚戦の候補なし（MOB_TENTACLE_BATTLE が -1）後の処理は未移植")
+    # 活動 SEISAN／防衛 GUARD／支援 SUPPORT／情報 GATHER_INFORMATION／自由 PASTIME は未移植
+    # （影響範囲は docs/wiki/era/actions.md）。
+    raise NotImplementedError(f"行動「{ACTION_NAMES[_find_action(plan)]}」は未移植（休憩・鍛錬・出撃のみ移植済み）")
 
 
 def action_ngreason(ctx: Ctx, who: int, action: int) -> str:

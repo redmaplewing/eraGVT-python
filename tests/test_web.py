@@ -117,7 +117,48 @@ def test_training_input_and_unported_halt(client):
     s = c.post("/api/input", json={"value": 3}).json()  # 筋トレ
     assert s["phase"] == "shop"
     assert app.state.session.state.charas[1].cflag[101] == 3
-    c.post("/api/input", json={"value": 101})  # 紅葉 → 出撃（S05）
+    c.post("/api/input", json={"value": 104})  # 紅葉 → 活動（特別活動：未移植）
     s = c.post("/api/input", json={"value": 100}).json()
     assert s["phase"] == "halted"
     assert any("未實作" in x for x in texts(s))
+
+
+def test_sortie_battle_retreat_back_to_shop(client):
+    """出撃 → ボス遭遇（探索度をノルマに設定）→ 戦闘画面で攻撃・撤退 → EVENTEND → TURNEND → SHOP → セーブ／ロード。"""
+    c, app, save_dir = client
+    c.post("/api/input", json={"value": 0})
+    st = app.state.session.state
+    st.flag[47] = st.flag[46]  # ENCOUNT.ERB:159 のボス遭遇条件（探索度 >= ノルマ）
+    c.post("/api/input", json={"value": 101})  # 紅葉 → 出撃
+    c.post("/api/input", json={"value": 100})
+    s = c.post("/api/input", json={"value": 9}).json()
+    for _ in range(10):  # 遭遇しなかった日はそのまま次のターンへ
+        if s["phase"] == "turn":
+            break
+        assert s["phase"] == "shop"
+        st = app.state.session.state
+        st.flag[47] = max(st.flag[47], st.flag[46])
+        st.flag[49] = 0
+        s = c.post("/api/input", json={"value": 100}).json()
+    assert s["phase"] == "turn"  # 戦闘の入力待ち（BATTLE_COM.ERB@SHOW_USERCOM）
+    assert any("撤退[999]" in x for x in texts(s))
+    assert app.state.session.state.flag[700] == 1  # BATTLE_TRAIN.ERB:139 戦闘中フラグ
+    st = app.state.session.state
+    turn0, pre0 = st.tflag[0], st.tflag[24]
+    s = c.post("/api/input", json={"value": 3}).json()  # 遠距離攻撃（COMF3）→ SOURCE_CHECK → EVENTCOMEND
+    assert s["phase"] == "turn"
+    assert any("自分の行動" in x for x in texts(s)) and any("敵の行動" in x for x in texts(s))
+    # BATTLE_COM_AFTER.ERB@SOURCE_CHECK:1313–1318 先制攻撃中は TFLAG:24 を減らし、そうでなければ TFLAG:0 を進める
+    assert (st.tflag[0], st.tflag[24]) == ((turn0, pre0 - 1) if pre0 > 0 else (turn0 + 1, 0))
+    for _ in range(30):
+        s = c.post("/api/input", json={"value": 999}).json()
+        if s["phase"] != "turn":
+            break
+    assert s["phase"] == "shop"
+    st = app.state.session.state
+    assert st.flag[700] == 0  # BATTLE_TRAIN_AFTER.ERB:7
+    c.post("/api/input", json={"value": 200})
+    assert c.post("/api/input", json={"value": 3}).json()["phase"] == "shop"
+    c.post("/api/input", json={"value": 300})
+    assert c.post("/api/input", json={"value": 3}).json()["phase"] == "shop"
+    assert app.state.session.state.flag[852] == st.flag[852]

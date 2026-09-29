@@ -21,6 +21,30 @@ class TempVars:
     battle_situation: str = ""  # 特殊戦闘シチュエーション（イベントから派生する特殊戦闘/DIM.ERH:3）
     # era LASTLOAD_VERSION：新遊戲 -1、讀檔後 = 存檔的遊戲版本（VariableData.cs:48、653；VariableEvaluator.cs:2174）
     last_load_version: int = -1
+    # --- 戰鬥（S05）用的非存檔變數 ---
+    # 內建 UP／LOSEBASE（非角色陣列；VariableCode.cs 中不屬 __SAVE__，UpdateAfterShowUsercom 清零）
+    up: IntArray = field(default_factory=IntArray)
+    losebase: IntArray = field(default_factory=IntArray)
+    # 內建 SELECTCOM／PREVCOM／NEXTCOM（VariableEvaluator.cs@UpdateInBeginTrain:1425–1426）
+    selectcom: int = 0
+    prevcom: int = -1
+    nextcom: int = -1
+    # DIM.ERH:139–143 CLOTH_NO_INNER／CLOTH_OUTER_PER／CLOTH_OUTER_DEF／CLOTH_INNER_PER／CLOTH_INNER_DEF
+    cloth: IntArray = field(default_factory=IntArray)
+    # DIM.ERH:159–164 TENTACLE_SIZE／TENTACLE_NUM（2 維，索引 (i, j)）、EX_COM、SH_COM、INSERT
+    tentacle_size: IntArray = field(default_factory=IntArray)
+    tentacle_num: IntArray = field(default_factory=IntArray)
+    ex_com: int = 0
+    sh_com: int = 0
+    insert: int = 0
+    # DIM.ERH:13 RANDCHOOSE_NUM（稀疏：index → 值）
+    randchoose: IntArray = field(default_factory=IntArray)
+    # ゲーム内_戦闘処理/REPORT.ERH:2 TCREPORT
+    tcreport: IntArray = field(default_factory=IntArray)
+    # 函式的 LOCAL 是「每個函式各一份、呼叫間保留」的靜態變數，只在 ResetData／讀檔時歸零
+    # （reference/emuera-1824/Emuera/GameData/Variable/VariableData.cs@SetDefaultLocalValue:514–520）。
+    # 原作有幾處依賴「上次呼叫留下的值」（例：DAMAGE の LOCAL:7、PALAMLV_F の LOCAL），以 (函式名, 索引) 保存。
+    locals: dict[tuple[str, int], int] = field(default_factory=dict)
 
 
 @dataclass
