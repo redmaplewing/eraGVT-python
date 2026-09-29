@@ -6,7 +6,7 @@
 
 from __future__ import annotations
 
-from ..action import Ctx, get_syuren, print_transcallname
+from ..action import Ctx, get_syuren, kojo_root, print_transcallname
 from ..era import div, times
 from ..tentacle import enemy_type_check
 from .core import (
@@ -14,7 +14,7 @@ from .core import (
     P_HOUSHI,
     P_NASUGAMAMA,
     abl,
-    chinobun,
+    run_chinobun,
     config_check_balance,
     t,
     tc,
@@ -92,7 +92,7 @@ def tentacle_syasei_check(ctx: Ctx) -> tuple[int, int, int, int]:
             f[15] = 0
             _clear_kyoukousoku(ctx)
             return r
-        chinobun(ctx, "MESSAGE_SEX_TENTACLE_SYASEI_GAMAN")
+        run_chinobun(ctx, "MESSAGE_SEX_TENTACLE_SYASEI_GAMAN")  # 地の文/MESSAGE_SEX.ERB:764–779
         tentacle_syasei_up(ctx, 50)
         return (0, 0, 0, 0)
     if f[15] >= f[14] * 2:  # :177–194
@@ -135,7 +135,8 @@ def tentacle_syasei_point(ctx: Ctx, arg: int) -> tuple[int, int, int, int]:
     if st.tflag[4] == 0 or (st.tflag[4] & BOUHATSU):  # :223–234
         c.stain[1] |= 4
         st.tflag[5] |= BOUHATSU
-        chinobun(ctx, "MESSAGE_SEX_TENTACLE_SYASEI_EXPLODE")
+        run_chinobun(ctx, "MESSAGE_SEX_TENTACLE_SYASEI_EXPLODE",  # MESSAGE_SEX.ERB:785–801（:800 KOJO_ROOT）
+                     fallback=lambda: kojo_root(ctx, "SEX_TENTACLE_SYASEI_EXPLODE"))
         c.exp[seieki] += arg
         loc[2] += arg
     ju = abl(ctx, c, "従順")
@@ -153,7 +154,10 @@ def tentacle_syasei_point(ctx: Ctx, arg: int) -> tuple[int, int, int, int]:
         if arg not in (1, 2):
             continue
         p = p1 if arg == 1 else p2
-        chinobun(ctx, f"MESSAGE_SEX_TENTACLE_SYASEI_{code}" + ("_HI" if arg == 2 else ""))
+        sub = code + ("_HI" if arg == 2 else "")
+        # MESSAGE_SEX.ERB:805–1063。WAREME(_HI) 以外は本文末尾で KOJO_ROOT(CFLAG:6, "SEX_TENTACLE_SYASEI_<sub>")
+        run_chinobun(ctx, f"MESSAGE_SEX_TENTACLE_SYASEI_{sub}",
+                     fallback=None if code == "WAREME" else (lambda s=sub: kojo_root(ctx, f"SEX_TENTACLE_SYASEI_{s}")))
         if part == V_BIT:  # :306／:326 受精判定
             ninsin_hantei(ctx, arg, 3 if arg == 1 else 15)
         loc[0] += p[0]

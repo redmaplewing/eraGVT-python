@@ -1,0 +1,81 @@
+# 口上／地の文 catalog（`eragvt.narration`，S07）
+
+原作 `ERB/口上/`（114 檔）與 `ERB/地の文/`（61 檔）的函式**不手翻**：執行期從 `source/earGVP/ERB` 抽取成節點樹，
+由受限的執行器求值。**不是** ERB 直譯器：只支援「文字輸出＋條件分岐」子集，子集外一律 unsupported（附原因與行號），
+不去補一般化的執行引擎。ERB 路徑相對 `source/earGVP/ERB/`，引擎路徑相對 `reference/emuera-1824/Emuera/`。
+
+## 模組
+
+| 模組 | 內容 |
+|---|---|
+| `lexer.py` | 字句解析（`Sub/LexicalAnalyzer.cs`）：式、FORM 字串（`%式,幅,LEFT%`／`{式}`／`\@ 式 ? 左 # 右 \@`）、`"…"`、`@"…"` |
+| `expr.py` | 式 AST＋shift-reduce 剖析（`GameData/Expression/ExpressionParser.cs`:327–637 的 `TermStack` 原樣移植） |
+| `extract.py` | 讀檔（`{ }` 連結、`[SKIPSTART]`、註解）、`@` 標籤、函式本體 → `nodes`（命令判定：`LogicalLineParser.cs`:386–480） |
+| `nodes.py` | 節點格式（下節） |
+| `symbols.py` | 命令名表（`BuiltInFunctionCode.cs`）、內建變數、CSV 名稱索引表（`ConstantData.cs`:707–860）、ERH `#DIM` |
+| `catalog.py` | 全 ERB 的函式索引（檔案順序 `Config.cs@getFiles`:345–379、同名先定義者優先 `LabelDictionary.cs`:58–77、名稱 ToUpper）＋lazy 抽取＋可執行性判定＋覆蓋率報告 |
+| `runtime_support.py` | 可讀變數（狀態模型有對應欄位者）、已實作式中関数、靜態檢查 |
+| `runtime.py`／`builtins.py` | 執行器、式中関数（`GameData/Function/Creator.Method.cs`） |
+| `hooks.py` | 狀態變化行的 hook 表（下述） |
+| `service.py` | `CatalogNarrationService`：`call_kojo`（KOJO_ROOT 派發）、`run_function`（地の文）、失敗回復 |
+
+產生物不落地：啟動時只掃 label（約 0.5 秒），函式本體第一次用到時解析、快取在記憶體。
+
+## 節點格式（`nodes.py`）
+
+`FuncDef(name, file, line, params, kind=proc|int|str, private, consts, body, unsupported, calls, dynamic_calls, hooks)`。
+文：`Print(kind=raw|form|expr|forms, arg, newline, wait, dflag, plain)`、`PrintData(var, items)`（item = 行のリスト：
+DATA／DATAFORM／DATALIST）、`If(branches, orelse)`、`Select(expr, cases[(CaseCond…), body], orelse)`
+（CaseCond: eq／`a TO b`／`IS 演算子 a`）、`Sif(cond, body)`、`Assign(target, op, values)`、`BitOp`、`VarSet`、`StrLen`、
+`Style(SETCOLOR|RESETCOLOR|FONTBOLD|FONTITALIC|FONTREGULAR|ALIGNMENT|SETFONT)`、`DrawLine`、`ClearLine`、`Wait`、
+`Return`、`ReturnF`、`CallStmt(name=str|Form, args, try_, catch, success, callf)`、`MethodStmt`（式中関数を命令として：
+結果は RESULT／RESULTS）、`For`／`While`／`Repeat`／`Loop`／`Break`／`Continue`、`Hook(key, text, [文])`、`Unsupported(reason)`。
+式：`Lit`、`Var(name, args)`、`Call(name, args)`、`Unary`、`Binary`、`Ternary`、`Form(strs, parts)`。
+
+## 子集（可執行的條件）
+
+- 命令：上表的文＋ TRYCALL／TRYCALLFORM／TRYCCALL(FORM)…CATCH…ENDCATCH（見つからない → CATCH 側：`Instraction.Child.cs`:2310–2317、
+  呼べたら CATCH までの文を実行して ENDCATCH へ：:2034–2038）。
+- 代入先：LOCAL／LOCALS／ARG／ARGS／函式內 `#DIM`（靜態：`UserDefinedVariable.cs`:27）、RESULT／RESULTS／COUNT、
+  **口上專用的非 SAVEDATA `#DIM`**（口上／地の文的 ERH 宣告、且口上／地の文以外的 ERB 完全不參照者：例 `真面目_フラグ_シチュ`）。
+  其他代入（CFLAG、TALENT、FLAG…）→ unsupported。
+- 讀取：狀態模型有對應的變數（BASE・TALENT・CFLAG…・FLAG・TFLAG・DAY・TCVARn・TENTACLE_SIZE・CLOTH_*・SHIELD・STR（Str.csv）…）。
+  SOURCE・TEQUIP・PLAYER・GLOBAL 等模型沒有的變數 → unsupported（讀了等於猜 0）。
+- 呼叫：呼叫先（任何 ERB 檔的函式，包含 `汎用関数/` 等）本身也可執行才算可執行（遞迴判定）。
+  KOJO_ROOT 以 Python 實作（`action.kojo_root_full`＋`service.call_kojo`）。
+- 不支援：GOTO／$ラベル、INPUT 系、BEGIN、JUMP、PRINTV・PRINT K 系・PRINTC 系、SPLIT、STRDATA、TIMES、SETCOLORBYNAME、
+  `@` 付き変数、未實作的式中関数（`STRCOUNT`、`REPLACE` 等）。
+
+語意重點（皆有引擎行號，見 `runtime.py` docstring）：`&&`／`||` 短絡；`/`・`%` 先評價右辺；C# 的切り捨て除算；
+`PRINTDATA` 以 `RAND(件數)` 選 1 件；`%…,幅%` 以 cp932 位元組寬補空白；文字列中 `\n` 換行；函式末尾流れ落ち → RESULT = 0；
+省略引數 → 0／""；`PRINT` 系的引數是命令後 1 字元之後的全部（`;` 也照印）。RAND 一律 `state.rng`，照 ERB 求值順序。
+
+## 口上派發（KOJO_ROOT.ERB）
+
+`action.kojo_root(ctx, code, force)` = `kojo_root_full(ctx, TARGET の CFLAG:6, …)`：:17–21 気絶、:23–39 結界（部分一致）→ 0；
+其餘交給 `narration.call_kojo`（:46–90）：汎用口上（C_NO 0／1：`CSV定数定義/CFLAG.ERH`:79–80）呼
+`KOJO_{C_NO}_COLOR_{SEIKAKU_CHECK_F(TARGET)}` 再 `KOJO_{C_NO}_%CODE%_{同}`；`OTHER_` 含み → FLAG:62 = 1、`SEIKAKU_CHECK_F(FLAG:111)`。
+找不到 → RESETCOLOR・FLAG:900 = 0・-1；有 → 執行、RESETCOLOR・FLAG:900 = 0、RESULT == 999 ならそれ、否則輸出行數。
+ERB 內的 `TRYCALLFORM KOJO_ROOT(…)`（地の文）也走同一實作。`NullNarrationService` 只走「找不到」路徑。
+
+## 地の文與 hook
+
+呼叫端用 `core.run_chinobun(ctx, 函式, args, fallback)`：可執行 → catalog 輸出本文（含其中的 KOJO_ROOT）；否則印
+「〈地の文：函式〉」並執行 fallback（該地の文中本文以外的處理，如 KOJO_ROOT 呼叫）。性攻擊地の文（`sexmsg.msg_*`）以
+`@_catalog` 裝飾：可執行就整個以 catalog 執行，否則走 S06 的 Python 移植。
+
+`MESSAGE_SEX_COM*`／`MESSAGE_SEX_SPCOM*` 中的狀態變化行（FLAG:900、TFLAG:4／21／23、TENTACLE_SIZE、CFLAG:206、TCVARn:12／25、
+CALL SET_TENTACLE_SIZE_BY_MESSAGE／TENTACLE_SYASEI_UP／NINSIN_HANTEI／LOSTVIRGIN）逐行列在 `hooks.HOOK_LINES`（140 行，
+附 sexmsg 對應函式與註解引用）。抽取時這些行成為 `Hook`：代入以「可寫入狀態」模式執行，CALL 轉呼叫既有 Python 移植，
+**依 ERB 的順序**與本文、RAND 交錯執行。表外的狀態變化仍是 unsupported。測試 `test_hook_table_matches_sexmsg` 對照原文、
+sexmsg 引用、以及「表外沒有漏掉的代入」。
+
+## 失敗回復
+
+執行中才發現不可執行（動態 CALLFORM 的呼叫先 unsupported、除以 0 等引擎會報錯者）→ 回復輸出（TextOutput 內部狀態）、
+亂數（`GameRng.snapshot/restore`）、LOCAL／narr；口上當「找不到」、地の文走 fallback。hook 已執行（狀態已變）之後失敗則
+無法回復 → `NotImplementedError`（Web 停止）。
+
+## 覆蓋率
+
+`python -m eragvt --narration-report`（函式數・可執行數・unsupported 第一原因前 10 名・檔案別）。數字見 `docs/STATUS.md`。

@@ -33,13 +33,21 @@ def create_app(
     save_dir: Path,
     rng_factory: Callable[[], GameRng] = GameRng,
     now: Callable[[], datetime] = datetime.now,
+    narration: Any = "auto",
+    csv_dir: Path | None = None,
 ) -> FastAPI:
+    """narration="auto"：`csv_dir`（省略時は既定の CSV 目錄）旁有 `ERB/` 就用 catalog 版口上（S07），否則 Null。"""
+    if narration == "auto":
+        from ..data import default_csv_dir
+        from ..narration.service import CatalogNarrationService
+
+        narration = CatalogNarrationService.from_csv_dir(csv_dir or default_csv_dir(), data)
     app = FastAPI(title="eraGVT")
     templates = Jinja2Templates(directory=str(_HERE / "templates"))
     app.mount("/static", StaticFiles(directory=str(_HERE / "static")), name="static")
 
     def new_session() -> GameSession:
-        return GameSession(data, save_dir, rng=rng_factory(), now=now)
+        return GameSession(data, save_dir, rng=rng_factory(), narration=narration, now=now)
 
     app.state.session = new_session()
 

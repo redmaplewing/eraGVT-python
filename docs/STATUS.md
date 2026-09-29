@@ -1,6 +1,6 @@
 # 現況（唯一真相，≤150 行）
 
-更新：2026-09-29（S06）
+更新：2026-09-29（S07）
 
 ## 已完成
 
@@ -49,13 +49,24 @@
   - 修正 S05：`message_branch_faith_down` 性抵抗分岐的文與旗標、`SENGIUP` 的 `&&`／`||` 優先順位（同順位・左結合）。
   - 測試共 349 個（新增 `tests/test_battle_restraint.py`、Web 拘束戰→存讀檔 1 case）；Chromium 實機跑完拘束戰→SHOP。
 
+- **S07**：口上／地の文抽取管線（`eragvt.narration`，設計：`docs/wiki/python/narration.md`）。執行期從 `source/earGVP/ERB` lazy 抽取
+  （啟動約 0.5 秒、不落地），「文字輸出＋條件分岐」子集以執行器求值（RAND 照 ERB 順序、引擎語意附 reference 行號）。
+  - `NarrationService` 改為 `call_kojo(ctx, C_NO, code)`（KOJO_ROOT.ERB:46–90 派發）／`run_function(ctx, 函式, args)`；
+    `action.kojo_root_full` 移植 KOJO_ROOT 全體。Web 預設用 `CatalogNarrationService`（無 `ERB/` 時 Null）。
+  - 接上：SHOP 一口メッセージ、全 `kojo_root` 呼叫點、性攻擊地の文（`sexmsg` 33 函式＋COM15–20，狀態變化行 140 行經 `narration/hooks.py`
+    依 ERB 順序執行）、射精・處女喪失・ヒロイン側性攻撃・敗北 `MESSAGE_BATTLE_END_LOSS`（`core.run_chinobun`）。
+  - 修正 S06：地の文中的 `KOJO_ROOT`（LOSTVIRGIN、SYASEI_*、SEX_ATTACK104）在 Null／佔位路徑也照原作呼叫。
+  - 覆蓋率（`python -m eragvt --narration-report`）：口上／地の文函式 **13384，可執行 12814（95.7%）**。unsupported 第一原因前 10：
+    GOTO 199、CFLAG 代入 186、TALENT 代入 32、NAME／CSTR／BASE 代入 各 20、CDFLAG 代入 13、未對應變數 TCVAR 12、STRDATA 9、SPLIT 8。
+    （「代入」＝口上本身改狀態，依規格不移植 → 當「找不到」，deviations 需裁決。）
+  - 隨機方針 40 場模擬（seed 0–39）：catalog 實行時失敗 0、例外 0；停止原因同 S06。測試共 381 個（新增 `tests/test_narration.py` 32）。
+
 ## 下一步
 
-- **S07：口上／地の文抽取管線**（PLAN.md）。抽取 `口上/`（148K 行）與 `地の文/` 成文字 catalog＋條件表，接上
-  `NarrationService`；S05／S06 以「〈地の文：…〉」代替的性攻擊地の文、`MESSAGE_BATTLE_END_LOSS` 等改由 catalog 輸出。
-  口上／地の文函式內的狀態變化已在 S06 以 Python 移植（`battle.sexmsg`），抽取時只取文字與條件。
-- deviations.md 新增（需裁決）：振り解く判定的 `LOCAL:O`（原作 1.824 會報錯停止，本作當 `LOCAL:0`）、性攻擊地の文代替顯示。
-- 之後：幽閉（PRISON／SHIFTBACK_CHARA）、妊娠（NINSIN_SUBMIT 以後）、反擊・バースト・ＳＰ系指令、事件戰、拠点防衛、雜魚戰、ラスボス。
+- 未指定 S08。候選（PLAN「S08+ 橫向擴充」）：幽閉（PRISON／SHIFTBACK_CHARA，模擬中最常見的停止點）、妊娠（NINSIN_SUBMIT 以後）、
+  反擊・バースト・ＳＰ系指令、其餘行動、開局 `MESSAGE_FIRST` 接上 catalog。
+- 口上 catalog 待擴充：改狀態的口上（hook 化）、GOTO、SPLIT／STRDATA、未實作式中関数（覆蓋率報告）。
+- deviations.md 需裁決：振り解く `LOCAL:O`、口上的狀態副作用（S07 更新）、口上 catalog 實行時失敗的回復。
 
 ## S06 後仍會停止的分岐（`NotImplementedError` → Web 停止）
 

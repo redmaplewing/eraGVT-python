@@ -133,4 +133,18 @@ def test_line_to_json():
 
 
 def test_null_narration():
-    assert NullNarrationService().narrate(0, "FIRST", 12) is None
+    """口上なし＝KOJO_ROOT.ERB:46–90 の「見つからない」路徑：FLAG:62（OTHER_ なら 1）、RESETCOLOR、FLAG:900 = 0、-1。"""
+    from types import SimpleNamespace
+
+    from eragvt.state import GameState
+
+    st = GameState()
+    st.flag[900] = 3
+    out = TextOutput()
+    out.set_color((1, 2, 3))
+    ctx = SimpleNamespace(state=st, out=out)
+    assert NullNarrationService().call_kojo(ctx, 0, "FIRST") == -1
+    assert (st.flag[62], st.flag[900], out._color) == (0, 0, None)
+    assert NullNarrationService().call_kojo(ctx, 0, "OTHER_X") == -1
+    assert st.flag[62] == 1
+    assert NullNarrationService().run_function(ctx, "MESSAGE_FIRST") is False

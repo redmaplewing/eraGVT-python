@@ -36,7 +36,7 @@ from .core import (
     SEI_TEIKOU,
     ZETSUBOU,
     abl,
-    chinobun,
+    run_chinobun,
     correction_trans,
     exp,
     is_hole,
@@ -874,9 +874,10 @@ def com46(ctx: Ctx) -> ComGen:
 def _sex_attack_msg(ctx: Ctx, n: int) -> None:
     """`MESSAGE_BATTLE_CHARA_SEX_ATTACK{n}`（地の文/MESSAGE_SEX.ERB:1932–2200、本文は chinobun）。"""
     _need_boss(ctx)
-    chinobun(ctx, f"MESSAGE_BATTLE_CHARA_SEX_ATTACK{n}")
-    if n != 104:
-        kojo_root(ctx, f"BATTLE_CHARA_SEX_ATTACK{n}")
+    # 本文の末尾で TRYCALLFORM KOJO_ROOT(CFLAG:6, "BATTLE_CHARA_SEX_ATTACK{n}")（100〜104 すべて：:2001／:2063／:2101／
+    # :2146／:2213）。S06 は 104 の KOJO_ROOT を落としていたので fallback でも呼ぶ。
+    run_chinobun(ctx, f"MESSAGE_BATTLE_CHARA_SEX_ATTACK{n}",
+                 fallback=lambda: kojo_root(ctx, f"BATTLE_CHARA_SEX_ATTACK{n}"))
 
 
 def _pleasure_given(ctx: Ctx, before: int, wait_split: bool = False) -> None:

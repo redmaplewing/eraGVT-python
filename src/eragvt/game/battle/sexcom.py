@@ -16,12 +16,13 @@ from __future__ import annotations
 
 from collections.abc import Generator
 
-from ..action import Ctx, config_check_maniac, config_check_other
+from ..action import Ctx, config_check_maniac, config_check_other, kojo_root
 from ..chara_common import is_female, is_male
 from ..era import div, times
 from ..tentacle import enemy_type_check
 from .cloth import INNER_DEF, INNER_PER, NO_INNER, OUTER_PER, cloth_battle_damage
 from .core import (
+    run_chinobun,
     DARAKU,
     KIZETU,
     KOUKOTSU,
@@ -157,7 +158,8 @@ def lostvirgin(ctx: Ctx, arg0: int = 0) -> None:
     if arg0 != 0:
         arg0 = 1
     c.cflag[206] = 2 + arg0
-    sexmsg.chinobun(ctx, "MESSAGE_SEX_LOSTVIRGIN")  # 地の文/MESSAGE_SEX.ERB:1582–（表示のみ）
+    # :445 CALL MESSAGE_SEX_LOSTVIRGIN（地の文/MESSAGE_SEX.ERB:1582–1658：本文＋:1657 KOJO_ROOT）
+    run_chinobun(ctx, "MESSAGE_SEX_LOSTVIRGIN", fallback=lambda: kojo_root(ctx, "SEX_LOSTVIRGIN"))
     if (message_branch(ctx) & DARAKU) == 0:
         shinkyou_change(ctx, "TOUSAKU")
 

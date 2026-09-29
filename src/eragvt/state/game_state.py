@@ -45,6 +45,9 @@ class TempVars:
     # （reference/emuera-1824/Emuera/GameData/Variable/VariableData.cs@SetDefaultLocalValue:514–520）。
     # 原作有幾處依賴「上次呼叫留下的值」（例：DAMAGE の LOCAL:7、PALAMLV_F の LOCAL），以 (函式名, 索引) 保存。
     locals: dict[tuple[str, int], int] = field(default_factory=dict)
+    # 口上／地の文 catalog 執行器（eragvt.narration）用：LOCALS・ARG・ARGS・函式內 #DIM（靜態）、RESULT／RESULTS／COUNT、
+    # 口上專用的非 SAVEDATA #DIM（真面目_フラグ_シチュ 等）。鍵 = (變數, 索引)。不存檔（與 Emuera 的非 SAVEDATA 相同）。
+    narr: dict = field(default_factory=dict)
 
 
 @dataclass

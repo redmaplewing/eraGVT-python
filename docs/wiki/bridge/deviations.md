@@ -38,11 +38,22 @@ ERB 路徑相對 `source/earGVP/ERB/`。
   （`ゲーム内_戦闘処理/COMMON_BATTLE_HANTEI.ERB`:606–614 被弾判定、:1097–1105 撤退判定），`DAMAGE` 的巨乳ボーナス
   `LOCAL:5 += LOCAL:5 * (1+胸の重量) / (1+体重)`（:1207–1214）讓傷害變 2 倍。照原作公式移植，結果是「幾乎必中＋攻擊 2 倍」。
   （Python：`eragvt.game.battle.hantei`）— 若要正常數值，需先移植 `CHARA_MAKE_BASE_PROFILE`／`CHARA_SIZE.ERB`。
-- [ ] **口上的狀態副作用**：REST／鍛錬／MESSAGE_TURNEND 的 `KOJO_ROOT` 只做「找不到口上」路徑（FLAG:62 = 0、FLAG:900 = 0、RETURN -1）；原作若該角色有專用口上（如 KOJO_301_REST），口上函式本身可能改變變數，這部分未執行。（Python：`eragvt.game.action.kojo_root`）— 隨 S07 口上抽取處理。
+- [ ] **口上的狀態副作用**（S07 更新，**需裁決**）：口上函式本身若對非 LOCAL 變數代入（CFLAG・TALENT・BASE・CSTR…，覆蓋率報告的
+  「非 LOCAL 変数 … への代入」，約 300 函式；例：`★KOJO_0_16_真面目/鍛錬.ERB` 的 TRAINING 系 9 函式寫 CFLAG），catalog 判為 unsupported，
+  KOJO_ROOT 當作「找不到」（-1、不輸出）。原作會輸出口上並改變狀態。（Python：`eragvt.narration.service.call_kojo`）
+  — 規格 S07「口上的狀態變化不做新移植」。替代：逐一以 hook 移植這些狀態變化。
 
 ## 只影響顯示
 
-- [ ] **口上**：`MESSAGE_FIRST`、SHOP 一口メッセージ等口上文字未輸出（`NullNarrationService`），SHOP 以「無口上」的 4 行空行處理。（原作：`口上/口上システム関係/KOJO_ROOT.ERB`；Python：`eragvt.text.narration`）— S07 抽取管線處理。
+- [ ] **口上**（S07 更新）：SHOP 一口メッセージ・行動・戰鬥中的口上改由 catalog 輸出（`eragvt.narration`）。仍未輸出的：
+  unsupported 的口上（見上「口上的狀態副作用」及覆蓋率報告）、開局 `MESSAGE_FIRST`（`opening.event_first` 沒有輸出／narration 參數，
+  維持 FLAG:62＝0・FLAG:900＝0 的「找不到」處理）。無 `ERB/` 目錄時回落 `NullNarrationService`。
+- [ ] **口上 catalog 的實行時失敗**（S07 新增）：執行中才發現的子集外（動態 CALLFORM 的呼叫先不可執行）或引擎會報錯停止的狀況
+  （除以 0、範圍外參照），catalog 會回復輸出・亂數・LOCAL，口上當「找不到」、地の文印佔位。原作會報錯停止或照常執行。
+  hook（狀態變化）已執行後才失敗者無法回復，改為停止（NotImplementedError）。（Python：`eragvt.narration.service._run`）
+- [ ] **口上 catalog 的顯示簡化**（S07 新增，只影響顯示）：`SETFONT`（字型名）與 `FONTITALIC`（斜體）不反映；`CLEARLINE` 只刪已完成的行；
+  RESULT／RESULTS／COUNT 放在口上專用的暫存（`state.temp.narr`），與 Python 移植部分不共用（原作是全域變數；口上函式讀取呼叫前別處設定的
+  RESULT 時會不同）。（Python：`eragvt.narration.runtime`）
 - [ ] **SHOW_SHOP 簡化**：狀態條（`COLOR_BAR` 的色階與長度）以 20 格單色近似；`SHOW_SHOP_STATUS_SIGN`（生理周期・疲勞等標記）、隊伍列表的欄寬對齊與第 2 行詳細、控えメンバー一覽未移植；`SHOP_NG_ACTION_INFO` 的紅字在函式結尾重設顏色（原作不重設）。（Python：`eragvt.game.shop`）
 - [ ] **未實作的選單**：`[50]`、`[110]`〜`[180]`、`[700]`、`[800]` 只顯示「（未實作）」。（`[100]` 已於 S04 接上行動執行。）
 - [ ] **WAIT／PRINTW 不阻塞**：Web 一次顯示到下一個 INPUT 為止，WAIT 位置以虛線標示，不需按鍵繼續。（Python：`eragvt.game.session`、`eragvt.web`）
@@ -59,11 +70,10 @@ ERB 路徑相對 `source/earGVP/ERB/`。
   這些函式內沒有代入與 RAND（grep 確認），不影響狀態。`[800]` ステータス畫面（`SHOW_STATUS_CHARA_SELECT`，5 頁）只顯示
   「未移植」一行。`SHOW_USERCOM` 只移植「不分類」版（`BATTLE_COM.ERB`:379–568，基本設定 FLAG:801 bit2 = 0），
   《危険度》的顏色照 `FORECAST_OUTPUT_SETCOLOR`。（Python：`eragvt.game.battle.train.show_status`／`show_usercom`／`usercom`）
-- [ ] **性攻擊的地の文**（S06 新增）：`地の文/MESSAGE_SEX*.ERB`、`MESSAGE_SEX_COMSP.ERB`、`MESSAGE_SEX_COMEX.ERB`、
-  射精・絶頂系（`MESSAGE_SEX.ERB`:764–1060 等）、敗北時 `MESSAGE_BATTLE_END_LOSS` 的本文不移植，改印一行
-  「〈地の文：函式名〉」（`eragvt.game.battle.core.chinobun`）。本文中的**狀態變化**（TFLAG:21 撮影 bit、FLAG:900、
-  SET_TENTACLE_SIZE_BY_MESSAGE、處女喪失、受精判定、TCVARn:25、CFLAG:206、氣絶 等）與 KOJO_ROOT 呼叫照原作位置移植
-  （`battle.sexmsg`）。只為選文句而抽的 RAND 不抽（RAND 次數不同，已含在「亂數」項）。— 地の文 catalog 由 S07 抽取管線處理。
+- [ ] **性攻擊的地の文**（S06 新增、S07 更新）：S07 起 `地の文/MESSAGE_SEX*.ERB`、敗北 `MESSAGE_BATTLE_END_LOSS`、射精・處女喪失・
+  ヒロイン側性攻撃的地の文由 catalog 輸出本文，其中的狀態變化行經 `narration/hooks.py`（140 行，對照 sexmsg）依 ERB 順序執行、
+  RAND 也照 ERB 順序抽（亂數序列與 S06 不同）。catalog 不可執行（`MESSAGE_SEX_SPCOM7` 的 CFLAG:34 > 0 分岐等）或 Null 時才印
+  「〈地の文：函式名〉」並走 S06 的 Python 移植（`eragvt.game.battle.core.run_chinobun`、`sexmsg._catalog`）。
 - [ ] **Web 停止狀態**：遇到未移植處理時顯示「（未實作のため停止しました：…）」並停住，是原作沒有的畫面（見上「S04 未翻的行動」）。
 
 ## 原作行為（照翻，但請留意）

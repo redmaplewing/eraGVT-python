@@ -271,15 +271,11 @@ def show_shop(state: GameState, data: GameData, out: TextOutput, narration: Narr
                 break
     # :113–122 一口メッセージ口上
     if cf(state.target, 0) == CharaState.SAFE and state.target != GameState.MASTER:
-        # MESSAGE_HITOKUTI_SHOP（地の文/MESSAGE.ERB:13–16）→ KOJO_ROOT(CFLAG:6, "HITOKUTI_SHOP")
-        text = narration.narrate(cf(state.target, 6), "HITOKUTI_SHOP", None)
-        lines = 0
-        if text is not None:
-            for line in text.split("\n"):
-                out.printl(line)
-            lines = len(text.split("\n"))
-        # 口上が無い場合 KOJO_ROOT は RETURN -1（KOJO_ROOT.ERB:54–58）→ LIMIT(4-(-1),0,4) = 4 行
-        result = lines if text is not None else -1
+        # MESSAGE_HITOKUTI_SHOP（地の文/MESSAGE.ERB:13–16）→ TRYCALLFORM KOJO_ROOT(CFLAG:6, "HITOKUTI_SHOP")、
+        # RETURN RESULT（口上が無ければ -1 → LIMIT(4-(-1),0,4) = 4 行）
+        from .action import Ctx, kojo_root
+
+        result = kojo_root(Ctx(state, data, out, narration), "HITOKUTI_SHOP")
         for _ in range(limit(4 - result, 0, 4)):
             out.printl()
     else:

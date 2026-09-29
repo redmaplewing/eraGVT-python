@@ -41,12 +41,30 @@ def check_state_roundtrip(data: GameData) -> int:
     return 0 if ok else 1
 
 
+def narration_report(csv_dir: Path, top: int = 10) -> int:
+    """口上／地の文 catalog 的覆蓋率：函式數・可執行數・unsupported 第一原因前 N 名・檔案別。"""
+    from .narration.catalog import Catalog
+
+    data = load_game_data(csv_dir)
+    cat = Catalog(csv_dir.parent / "ERB", data.names)
+    r = cat.report()
+    print(f"口上／地の文 函式 {r['total']}，可執行 {r['ok']}（{r['ok'] * 100 / max(1, r['total']):.1f}%）")
+    print(f"unsupported 原因（第一原因）前 {top} 名：")
+    for why, n in r["reasons"][:top]:
+        print(f"  {n:>5}  {why}")
+    print("檔案別（函式數／可執行數）：")
+    for rel, (t, ok) in sorted(r["files"].items()):
+        print(f"  {t:>5} {ok:>5}  {rel}")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     # Windows 主控台預設 cp950，日文路徑/名稱會變亂碼
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     parser = argparse.ArgumentParser(prog="eragvt")
     parser.add_argument("--check-data", action="store_true", help="載入原作 CSV 並列出摘要")
+    parser.add_argument("--narration-report", action="store_true", help="口上／地の文 catalog 的覆蓋率報告")
     parser.add_argument("--csv-dir", type=Path, default=None, help="原作 CSV 目錄")
     parser.add_argument("--save-dir", type=Path, default=Path("saves"), help="存檔目錄（預設 ./saves）")
     parser.add_argument("--host", default="127.0.0.1")
@@ -55,12 +73,14 @@ def main(argv: list[str] | None = None) -> int:
     csv_dir = args.csv_dir or default_csv_dir()
     if args.check_data:
         return check_data(csv_dir)
+    if args.narration_report:
+        return narration_report(csv_dir)
 
     import uvicorn
 
     from .web import create_app
 
-    app = create_app(load_game_data(csv_dir), args.save_dir)
+    app = create_app(load_game_data(csv_dir), args.save_dir, csv_dir=csv_dir)
     print(f"eraGVT: http://{args.host}:{args.port}/")
     uvicorn.run(app, host=args.host, port=args.port)
     return 0

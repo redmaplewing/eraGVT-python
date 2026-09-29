@@ -107,14 +107,17 @@ _KOJO_SHIELD_CODES = (
 
 
 def kojo_root(ctx: Ctx, code: str, force_print: int = 0) -> int:
-    """`TRYCALLFORM KOJO_ROOT(CFLAG:6, code, FORCEPRINT)`（口上/口上システム関係/KOJO_ROOT.ERB）の TARGET 分。
+    """`TRYCALLFORM KOJO_ROOT(CFLAG:6, code, FORCEPRINT)` の TARGET 分。"""
+    return kojo_root_full(ctx, ctx.state.target_chara.cflag[6], code, force_print)
 
-    DEVIATION: 口上本文は未移植（deviations.md「口上」）。NarrationService が None を返したら
-    「口上が見つからない」として RETURN -1（:54–58）。状態への影響は FLAG:62 = 0（"OTHER_" を含まない code、
-    :50／:71）と FLAG:900 = 0（:57／:88）。
-    :17–21 気絶中（TCVARn:12 & 1）で FORCEPRINT が 0 なら FLAG:900 = 0、RETURN 0（FLAG:62 は触らない）。
-    :23–39 部位結界が残っていて code が該当する性コマンドなら同様に RETURN 0（STRFIND は部分一致なので
-    "SEX_COM1" は "SEX_COM10"〜"SEX_COM19" にも一致する：原作どおり）。
+
+def kojo_root_full(ctx: Ctx, c_no: int, code: str, force_print: int = 0) -> int:
+    """`口上/口上システム関係/KOJO_ROOT.ERB@KOJO_ROOT(C_NO, CODE, FORCEPRINT)`:12–90。
+
+    :17–21 気絶中（TARGET の TCVARn:12 & 1）で FORCEPRINT が 0 なら FLAG:900 = 0、RETURN 0（FLAG:62 は触らない）。
+    :23–39 部位結界（TARGET の BASE:30〜33）が残っていて code が該当する性コマンドなら同様に RETURN 0
+    （STRFIND は部分一致なので "SEX_COM1" は "SEX_COM10"〜"SEX_COM19" にも一致する：原作どおり）。
+    :46–90 の派發（口上色・FLAG:62・TRYCCALLFORM・RESETCOLOR・FLAG:900 = 0・戻り値）は `NarrationService.call_kojo`。
     """
     st = ctx.state
     c = st.target_chara
@@ -125,16 +128,7 @@ def kojo_root(ctx: Ctx, code: str, force_print: int = 0) -> int:
         if c.base[base_no] > 0 and any(k in code for k in codes):
             st.flag[900] = 0
             return 0
-    if "OTHER_" in code:
-        raise NotImplementedError(f"KOJO_ROOT の OTHER_ 系（{code}）は未移植")
-    text = ctx.narration.narrate(c.cflag[6], code, None)
-    st.flag[62] = 0
-    st.flag[900] = 0
-    if text is None:
-        return -1
-    for line in text.split("\n"):
-        ctx.out.printl(line)
-    return len(text.split("\n"))
+    return ctx.narration.call_kojo(ctx, c_no, code)
 
 
 def print_transcallname(state: GameState, index: int) -> str:

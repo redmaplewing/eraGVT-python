@@ -912,6 +912,17 @@ def chinobun(ctx: Ctx, func: str) -> None:
     ctx.out.printl(f"〈地の文：{func}〉")
 
 
+def run_chinobun(ctx: Ctx, func: str, args: tuple = (), fallback=None) -> bool:
+    """S07：地の文 `func` を catalog（`ctx.narration.run_function`）で実行する。実行できなければ `chinobun` の
+    1 行を出し、`fallback`（その地の文の中の本文以外の処理＝KOJO_ROOT 呼び出し等の Python 移植）を実行する。"""
+    if ctx.narration.run_function(ctx, func, list(args)):
+        return True
+    chinobun(ctx, func)
+    if fallback is not None:
+        fallback()
+    return False
+
+
 _SWOON_SUBJ = ("朦朧とした意識の", "倒れ込んだ", "地に伏せた", "寝そべった", "気を失いかけた", "気絶しかけている",
                "倒れている", "伏せっている", "寝そべっている", "気を失いかけている")
 _SWOON = ("気絶した", "倒れ込んだ", "地に伏せた", "寝そべった", "気を失った", "気絶している", "倒れている",

@@ -21,6 +21,13 @@ class GameRng:
         """常見寫法 `RAND:100 < p`。"""
         return self.rand(100) < p
 
+    def snapshot(self) -> object:
+        """目前的亂數狀態（口上 catalog 執行失敗時回復用）。"""
+        return self._random.getstate()
+
+    def restore(self, snap: object) -> None:
+        self._random.setstate(snap)  # type: ignore[arg-type]
+
 
 class FixedRng(GameRng):
     """測試用：依序回傳預先給定的值（對 `rand(n)` 取 `值 % n`），用完即報錯。"""
@@ -35,3 +42,9 @@ class FixedRng(GameRng):
         if not self._values:
             raise RuntimeError("FixedRng 的預設值已用完")
         return self._values.pop(0) % n
+
+    def snapshot(self) -> object:
+        return list(self._values)
+
+    def restore(self, snap: object) -> None:
+        self._values = list(snap)  # type: ignore[call-overload]

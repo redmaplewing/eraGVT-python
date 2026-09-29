@@ -451,7 +451,7 @@ def _motion_by_command(sel: int, local: int) -> int:
 def _battle_lose(ctx: Ctx) -> None:
     """:969–1095 `$BATTLE_LOSE` 以降（敗北 → 幽閉：CFLAG:0 = 1）。最後に `BEGIN AFTERTRAIN`。"""
     from ..action import config_check_prison
-    from .core import chinobun, is_hole
+    from .core import is_hole, run_chinobun
 
     st = ctx.state
     c = tc(ctx)
@@ -495,9 +495,9 @@ def _battle_lose(ctx: Ctx) -> None:
         c.cflag[20] = st.flag[10]
         c.cflag[21] = st.flag[11]
         # MESSAGE_BATTLE_END_LOSS（地の文/MESSAGE_BATTLE.ERB:1815–1863、LOSE_SITUATION を含む。状態変化なし）
-        chinobun(ctx, "MESSAGE_BATTLE_END_LOSS")
-        kojo_root(ctx, "BATTLE_END_LOSS")
-        out.wait()  # :1863 FORCEWAIT
+        # MESSAGE_BATTLE_END_LOSS（本文＋:1860 KOJO_ROOT＋:1861 FORCEWAIT）
+        run_chinobun(ctx, "MESSAGE_BATTLE_END_LOSS",
+                     fallback=lambda: (kojo_root(ctx, "BATTLE_END_LOSS"), out.wait()))
     if c.exp[exp_idx] == 0:
         c.exp[abn_idx] += 1
     c.exp[exp_idx] += 1

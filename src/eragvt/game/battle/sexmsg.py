@@ -13,6 +13,8 @@ ERB の評価順どおりに引く。
 
 from __future__ import annotations
 
+import functools
+
 from ..action import Ctx, config_check_maniac, kojo_root
 from ..chara_common import is_female, is_male
 from ..tentacle import enemy_type_check
@@ -51,6 +53,23 @@ def _akuoti(ctx: Ctx) -> bool:
     return enemy_type_check(ctx.state, "AKUOTI") == 1
 
 
+def _catalog(name: str, erb_args: int = 2):
+    """S07：catalog で `name` を実行できればそれで終わり（本文・RAND・状態変化を ERB の順で：状態変化行は
+    `eragvt.narration.hooks` 経由で下の Python 移植と同じ処理を呼ぶ）。実行できなければ従来の Python 移植。
+    erb_args = 原作の CALL で渡す引数の数（`CALL MESSAGE_SEX_COM8` のように引数なしのものは 0）。"""
+
+    def deco(fn):
+        @functools.wraps(fn)
+        def wrapper(ctx: Ctx, *args):
+            if ctx.narration.run_function(ctx, name, list(args[:erb_args])):
+                return None
+            return fn(ctx, *args)
+
+        return wrapper
+
+    return deco
+
+
 def _head(ctx: Ctx, n: str) -> None:
     chinobun(ctx, f"MESSAGE_SEX_{n}")
 
@@ -68,6 +87,7 @@ def _film_any(ctx: Ctx, arg: int, bit: int) -> None:
 # --- MESSAGE_SEX_COM.ERB ------------------------------------------------------------
 
 
+@_catalog("MESSAGE_SEX_COM0", 2)
 def msg_com0(ctx: Ctx, arg: int, arg1: int) -> None:
     """`@MESSAGE_SEX_COM0`:7–384。"""
     _head(ctx, "COM0")
@@ -75,6 +95,7 @@ def msg_com0(ctx: Ctx, arg: int, arg1: int) -> None:
     _film_any(ctx, arg, 1)  # :380–384
 
 
+@_catalog("MESSAGE_SEX_COM1", 2)
 def msg_com1(ctx: Ctx, arg: int, arg1: int) -> None:
     """`@MESSAGE_SEX_COM1`:388–829。"""
     st = ctx.state
@@ -113,6 +134,7 @@ def msg_com1(ctx: Ctx, arg: int, arg1: int) -> None:
     _film_any(ctx, arg, 1)  # :824–828
 
 
+@_catalog("MESSAGE_SEX_COM2", 2)
 def msg_com2(ctx: Ctx, arg: int, arg1: int) -> None:
     """`@MESSAGE_SEX_COM2`:832–1284。"""
     from .syasei import tentacle_syasei_up
@@ -153,6 +175,7 @@ def msg_com2(ctx: Ctx, arg: int, arg1: int) -> None:
     _film_any(ctx, arg, 1)  # :1279–1283
 
 
+@_catalog("MESSAGE_SEX_COM3", 2)
 def msg_com3(ctx: Ctx, arg: int, arg1: int) -> None:
     """`@MESSAGE_SEX_COM3`:1287–1866。"""
     st = ctx.state
@@ -183,6 +206,7 @@ def msg_com3(ctx: Ctx, arg: int, arg1: int) -> None:
             st.tflag.set_bit(21, 2)
 
 
+@_catalog("MESSAGE_SEX_COM4", 2)
 def msg_com4(ctx: Ctx, arg: int, arg1: int) -> None:
     """`@MESSAGE_SEX_COM4`:1869–2056。"""
     st = ctx.state
@@ -198,6 +222,7 @@ def msg_com4(ctx: Ctx, arg: int, arg1: int) -> None:
     _film_any(ctx, arg, 1)  # :2050–2054
 
 
+@_catalog("MESSAGE_SEX_COM5", 2)
 def msg_com5(ctx: Ctx, arg: int, arg1: int) -> None:
     """`@MESSAGE_SEX_COM5`:2059–2300。:2200–2201 `SIF TALENT:処女 > 0 / CALL LOSTVIRGIN`（SEX_COM5 側で既に
     喪失済みなら TALENT:処女 は -1）。"""
@@ -216,6 +241,7 @@ def msg_com5(ctx: Ctx, arg: int, arg1: int) -> None:
             st.tflag.set_bit(21, 3)
 
 
+@_catalog("MESSAGE_SEX_COM6", 2)
 def msg_com6(ctx: Ctx, arg: int, arg1: int) -> None:
     """`@MESSAGE_SEX_COM6`:2303–2446。"""
     st = ctx.state
@@ -233,6 +259,7 @@ def msg_com6(ctx: Ctx, arg: int, arg1: int) -> None:
     _film_any(ctx, arg, 1)  # :2440–2444
 
 
+@_catalog("MESSAGE_SEX_COM7", 2)
 def msg_com7(ctx: Ctx, arg: int, arg1: int) -> None:
     """`@MESSAGE_SEX_COM7`:2449–2636。"""
     st = ctx.state
@@ -258,6 +285,7 @@ def msg_com7(ctx: Ctx, arg: int, arg1: int) -> None:
     _film_any(ctx, arg, 1)  # :2631–2635
 
 
+@_catalog("MESSAGE_SEX_COM8", 0)
 def msg_com8(ctx: Ctx) -> None:
     """`@MESSAGE_SEX_COM8`:2639–2768（残酷表現 OFF／気絶の分岐以外は RAND:4 で FLAG:900 を決める）。"""
     st = ctx.state
@@ -282,16 +310,18 @@ def msg_com8(ctx: Ctx) -> None:
         st.tflag.set_bit(21, 7)
 
 
+@_catalog("MESSAGE_SEX_COM9", 0)
 def msg_com9(ctx: Ctx) -> None:
     """`@MESSAGE_SEX_COM9`:2771–2825。"""
     st = ctx.state
     _head(ctx, "COM9")
     st.flag[900] = 1 if st.rng.rand(2) == 0 else 2  # :2791–2799
     kojo_root(ctx, "SEX_COM9")  # :2818
-    if _filming(ctx):
+    if _filming(ctx):  # :2821–2824
         st.tflag.set_bit(21, 7)
 
 
+@_catalog("MESSAGE_SEX_COM10", 2)
 def msg_com10(ctx: Ctx, arg: int, arg1: int) -> None:
     """`@MESSAGE_SEX_COM10`:2829–2975。"""
     st = ctx.state
@@ -313,9 +343,10 @@ def msg_com10(ctx: Ctx, arg: int, arg1: int) -> None:
                 by_msg(ctx, "Ｃ", "細い", "単数")
         st.flag[900] = 2
     kojo_root(ctx, "SEX_COM10")  # :2967
-    _film_any(ctx, arg, 1)
+    _film_any(ctx, arg, 1)  # :2970–2974
 
 
+@_catalog("MESSAGE_SEX_COM11", 2)
 def msg_com11(ctx: Ctx, arg: int, arg1: int) -> None:
     """`@MESSAGE_SEX_COM11`:2978–3153。"""
     st = ctx.state
@@ -332,16 +363,18 @@ def msg_com11(ctx: Ctx, arg: int, arg1: int) -> None:
         st.tflag.set_bit(21, 2)
 
 
+@_catalog("MESSAGE_SEX_COM12", 0)
 def msg_com12(ctx: Ctx) -> None:
     """`@MESSAGE_SEX_COM12`:3156–3277。"""
     st = ctx.state
     _head(ctx, "COM12")
     kojo_root(ctx, "SEX_COM12")  # :3223
-    if _filming(ctx):
+    if _filming(ctx):  # :3271–3276
         st.tflag.set_bit(21, 2)
         st.tflag.set_bit(21, 7)
 
 
+@_catalog("MESSAGE_SEX_COM13", 2)
 def msg_com13(ctx: Ctx, arg: int, arg1: int) -> None:
     """`@MESSAGE_SEX_COM13`:3280–3361。:3354 は KOJO_ROOT を通さない `TRYCALLFORM KOJO_{CFLAG:6}_SEX_COM13`
     （口上未移植：deviations.md「口上」、見つからない扱いで何もしない）。"""
@@ -351,6 +384,7 @@ def msg_com13(ctx: Ctx, arg: int, arg1: int) -> None:
         st.tflag.set_bit(21, 7)
 
 
+@_catalog("MESSAGE_SEX_COM14", 0)
 def msg_com14(ctx: Ctx) -> None:
     """`@MESSAGE_SEX_COM14`:3365–3410。:3408 は `TRYCALLFORM KOJO_{CFLAG:6}_SEX_COM14`（KOJO_ROOT ではないので
     FLAG:900 はリセットされない：原作どおり）。"""
@@ -364,7 +398,7 @@ def msg_com14(ctx: Ctx) -> None:
         st.flag[900] = 2
     elif st.rng.rand(4) == 0:  # :3396
         st.flag[900] = 1
-    else:
+    else:  # :3400–3404
         st.flag[900] = 1
 
 
@@ -377,6 +411,7 @@ def _msg_plain(ctx: Ctx, n: int) -> None:
 # --- MESSAGE_SEX_COMSP.ERB -----------------------------------------------------------
 
 
+@_catalog("MESSAGE_SEX_SPCOM0", 2)
 def msg_spcom0(ctx: Ctx, arg: int, arg1: int) -> None:
     """`@MESSAGE_SEX_SPCOM0`:12–224。"""
     _head(ctx, "SPCOM0")
@@ -384,6 +419,7 @@ def msg_spcom0(ctx: Ctx, arg: int, arg1: int) -> None:
     _film_any(ctx, arg, 1)  # :217–221
 
 
+@_catalog("MESSAGE_SEX_SPCOM1", 2)
 def msg_spcom1(ctx: Ctx, arg: int, arg1: int) -> None:
     """`@MESSAGE_SEX_SPCOM1`:228–588。"""
     st = ctx.state
@@ -409,6 +445,7 @@ def msg_spcom1(ctx: Ctx, arg: int, arg1: int) -> None:
             st.tflag.set_bit(21, 3)
 
 
+@_catalog("MESSAGE_SEX_SPCOM2", 2)
 def msg_spcom2(ctx: Ctx, arg: int, arg1: int) -> None:
     """`@MESSAGE_SEX_SPCOM2`:592–781。"""
     st = ctx.state
@@ -445,22 +482,25 @@ def msg_spcom2(ctx: Ctx, arg: int, arg1: int) -> None:
             st.tflag.set_bit(21, 3)
 
 
+@_catalog("MESSAGE_SEX_SPCOM3", 2)
 def msg_spcom3(ctx: Ctx, arg: int, arg1: int) -> None:
     """`@MESSAGE_SEX_SPCOM3`:785–903。"""
     _head(ctx, "SPCOM3")
     kojo_root(ctx, "SEX_SPCOM3")  # :894
-    _film_any(ctx, arg, 1)
+    _film_any(ctx, arg, 1)  # :897–901
 
 
+@_catalog("MESSAGE_SEX_SPCOM4", 0)
 def msg_spcom4(ctx: Ctx) -> None:
     """`@MESSAGE_SEX_SPCOM4`:907–952。"""
     st = ctx.state
     _head(ctx, "SPCOM4")
     kojo_root(ctx, "SEX_SPCOM4")  # :944
-    if _filming(ctx):
+    if _filming(ctx):  # :947–950
         st.tflag.set_bit(21, 7)
 
 
+@_catalog("MESSAGE_SEX_SPCOM5", 2)
 def msg_spcom5(ctx: Ctx, arg: int, arg1: int) -> None:
     """`@MESSAGE_SEX_SPCOM5`:956–1095。"""
     st = ctx.state
@@ -472,12 +512,14 @@ def msg_spcom5(ctx: Ctx, arg: int, arg1: int) -> None:
         st.tflag.set_bit(21, 2)
 
 
+@_catalog("MESSAGE_SEX_SPCOM6", 0)
 def msg_spcom6(ctx: Ctx) -> None:
     """`@MESSAGE_SEX_SPCOM6`:1099–1122。"""
     _head(ctx, "SPCOM6")
     kojo_root(ctx, "SEX_SPCOM6")  # :1120
 
 
+@_catalog("MESSAGE_SEX_SPCOM7", 0)
 def msg_spcom7(ctx: Ctx) -> None:
     """`@MESSAGE_SEX_SPCOM7`:1126–1300。"""
     st = ctx.state
@@ -500,12 +542,14 @@ def msg_spcom7(ctx: Ctx) -> None:
     kojo_root(ctx, "SEX_SPCOM7")  # :1297
 
 
+@_catalog("MESSAGE_SEX_SPCOM8", 2)
 def msg_spcom8(ctx: Ctx, arg: int, arg1: int) -> None:
     """`@MESSAGE_SEX_SPCOM8`:1304–1356。"""
     _head(ctx, "SPCOM8")
     kojo_root(ctx, "SEX_SPCOM8")  # :1351
 
 
+@_catalog("MESSAGE_SEX_SPCOM9", 2)
 def msg_spcom9(ctx: Ctx, arg: int, arg1: int) -> None:
     """`@MESSAGE_SEX_SPCOM9`:1359–1576。"""
     st = ctx.state
@@ -526,6 +570,7 @@ def msg_spcom9(ctx: Ctx, arg: int, arg1: int) -> None:
         st.tflag.set_bit(21, 7)
 
 
+@_catalog("MESSAGE_SEX_SPCOM10", 2)
 def msg_spcom10(ctx: Ctx, arg: int, arg1: int) -> None:
     """`@MESSAGE_SEX_SPCOM10`:1580–1650。"""
     st = ctx.state
@@ -543,6 +588,7 @@ def msg_spcom10(ctx: Ctx, arg: int, arg1: int) -> None:
         st.tflag.set_bit(21, 7)
 
 
+@_catalog("MESSAGE_SEX_SPCOM11", 2)
 def msg_spcom11(ctx: Ctx, arg: int, arg1: int) -> None:
     """`@MESSAGE_SEX_SPCOM11`:1654–1826。"""
     from .sexcom import check_holyvirgin
@@ -561,21 +607,24 @@ def msg_spcom11(ctx: Ctx, arg: int, arg1: int) -> None:
             st.tflag.set_bit(21, 3)
 
 
+@_catalog("MESSAGE_SEX_SPCOM12", 0)
 def msg_spcom12(ctx: Ctx, arg: int, arg1: int) -> None:
     """`@MESSAGE_SEX_SPCOM12`:1830–1907。"""
     st = ctx.state
     _head(ctx, "SPCOM12")
     kojo_root(ctx, "SEX_SPCOM12")  # :1856
-    if _filming(ctx):
+    if _filming(ctx):  # :1902–1905
         st.tflag.set_bit(21, 7)
 
 
+@_catalog("MESSAGE_SEX_SPCOM13_PRE", 0)
 def msg_spcom13_pre(ctx: Ctx, arg: int, arg1: int) -> None:
     """`@MESSAGE_SEX_SPCOM13_PRE`:1911–1926（丸飲み準備）。"""
     _head(ctx, "SPCOM13_PRE")
     ctx.state.tflag[23] += 1  # :1926
 
 
+@_catalog("MESSAGE_SEX_SPCOM13", 0)
 def msg_spcom13(ctx: Ctx, arg: int, arg1: int) -> None:
     """`@MESSAGE_SEX_SPCOM13`:1929–2105（KOJO_ROOT は FORCEPRINT = 1）。"""
     c = tc(ctx)
@@ -593,12 +642,14 @@ def msg_spcom13(ctx: Ctx, arg: int, arg1: int) -> None:
         kojo_root(ctx, f"SEX_SPCOM13_FINISHER_{i}", 1)
 
 
+@_catalog("MESSAGE_SEX_SPCOM13_MISS", 0)
 def msg_spcom13_miss(ctx: Ctx, arg: int, arg1: int) -> None:
     """`@MESSAGE_SEX_SPCOM13_MISS`:2109–2119。"""
     _head(ctx, "SPCOM13_MISS")
     ctx.state.tflag[23] += 1  # :2117
 
 
+@_catalog("MESSAGE_SEX_SPCOM14", 2)
 def msg_spcom14(ctx: Ctx, arg: int, arg1: int) -> None:
     """`@MESSAGE_SEX_SPCOM14`:2123–2323。"""
     c = tc(ctx)
@@ -616,6 +667,7 @@ def msg_spcom14(ctx: Ctx, arg: int, arg1: int) -> None:
     kojo_root(ctx, "SEX_SPCOM14")  # :2320
 
 
+@_catalog("MESSAGE_SEX_SPCOM15", 2)
 def msg_spcom15(ctx: Ctx, arg: int, arg1: int) -> None:
     """`@MESSAGE_SEX_SPCOM15`:2327–2362。"""
     c = tc(ctx)
@@ -627,4 +679,8 @@ def msg_spcom15(ctx: Ctx, arg: int, arg1: int) -> None:
 
 
 def msg_plain(ctx: Ctx, n: int) -> None:
+    """MESSAGE_SEX_COM15〜20（`CALL MESSAGE_SEX_COMn, EX_COM, SH_COM`）。"""
+    st = ctx.state
+    if ctx.narration.run_function(ctx, f"MESSAGE_SEX_COM{n}", [st.temp.ex_com, st.temp.sh_com]):
+        return
     _msg_plain(ctx, n)
