@@ -67,7 +67,11 @@ tohoTW(PY) 的 log／checklist／index 各膨脹到 450–700KB，每個 session
 - 新檔一律 **LF + UTF-8（無 BOM）**。Windows 上用 Python 寫檔要 `newline="\n"`；
   commit 前看 `git diff --cached --numstat`，只改幾行卻顯示上千行 = 行尾被污染。
 - 只 `git add` 本次任務真正改到的路徑；不要 `git add -A`。
-- 雲端 session：在自己的分支工作，完成後 commit + push，由使用者合併進 `main`。
+- **Repo 只用 `main` 一條線**（使用者授權代理直接 commit/push `main`）。雲端 session 若被平台放在 `claude/*` 分支開工：
+  收尾時 `git fetch origin && git rebase origin/main`（只 rebase 自己尚未推上 main 的 commit），
+  再 `git push origin HEAD:main`（一般 fast-forward push，不可 force）。
+  若平台拒絕推 `main`，就照平台允許的分支推，並在報告第一行寫明「未能推上 main」，由本機代理合併。
+- 每個 S 階段開一個**新的**雲端 session（不要在同一個 session 連做多個階段：對話越長，每一步重讀的上下文越貴）。
 - 不 force-push、不改寫歷史、不刪分支，除非使用者明確要求。
 - 子 agent 改完檔案，自己用 `git status`／`git diff --stat` 核對範圍，不要只信它的自述。
 
@@ -77,5 +81,5 @@ tohoTW(PY) 的 log／checklist／index 各膨脹到 450–700KB，每個 session
 2. 更新 `docs/STATUS.md`（仍 ≤150 行）。
 3. 有新的未決事項 → `docs/wiki/bridge/unresolved.md`；有偏離原作 → `deviations.md`。
 4. 確認 `git status` 沒有動到 `source/`、`reference/`。
-5. commit（訊息結尾照 system 指示加 Co-Authored-By）並 push。
+5. commit（訊息結尾照 system 指示加 Co-Authored-By）並推上 `main`（見「檔案與 Git」）。
 6. 最後回報分三段：「做了什麼」「已查證的依據」「需要使用者決定（UNVERIFIED／DEVIATION）」。
