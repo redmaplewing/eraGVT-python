@@ -1,0 +1,137 @@
+﻿;----------------------------------------------------------
+;かけ声のランダム設定
+@FIRSTSETTING_CHANGINGCALL_RANDOM
+#FUNCTIONS
+STRDATA LOCALS
+DATAFORM 変身！
+DATAFORM 装着！
+DATAFORM 装填！
+DATAFORM チェンジ！
+DATAFORM メタモルフォーゼ！
+DATAFORM セット！
+DATAFORM インストール！
+DATAFORM インジェクション！
+DATAFORM モジュレーション！
+DATAFORM オーバーライド！
+DATAFORM フュージョン！
+DATAFORM アトラクション！
+DATAFORM メイクアップ！
+DATAFORM ドレスアップ！
+DATAFORM ビートアップ！
+DATAFORM フルバースト！
+DATAFORM クロックアップ！
+DATAFORM エンゲージ！
+DATAFORM アナザーフォーム！
+ENDDATA
+RETURNF LOCALS
+
+
+;**********************************************************
+;キャラの変身後の名乗り口上の設定
+;ARG キャラ
+;ARG:1 性格
+@FIRSTSETTING_CHANGINGCALL_DETAIL, ARG:0, ARG:1
+#FUNCTIONS
+LOCAL:0 = ARG:1
+LOCAL:1 = 0
+LOCALS = %STRCLEAR()%
+
+;PRINTFORML {ARG:1}
+
+;性格を大別する
+
+;グループ2 弱気系　臆病、恥ずかしがり屋、悲観的
+IF LOCAL:0 == 10 || LOCAL:0 == 11 || LOCAL:0 == 18
+	STRDATA LOCALS
+	DATAFORM 、参上
+	DATAFORM 、見参
+	DATAFORM 、推参
+	DATAFORM 、準備完了
+	ENDDATA
+	STRDATA LOCALS:1
+	DATAFORM ……！
+	DATAFORM ……！
+	DATAFORM ……！
+	DATAFORM 。……っ！ 行きます！
+	DATAFORM 。やるしか……ないよね……！
+	ENDDATA
+;グループ3 活発系　元気っ子、楽天家、素直、おしゃべり、かるい性格
+ELSEIF LOCAL:0 == 13 || LOCAL:0 == 17 || LOCAL:0 == 19 || LOCAL:0 == 23 || LOCAL:0 == 25
+	STRDATA LOCALS
+	DATAFORM 、参上
+	DATAFORM 、見参
+	DATAFORM 、推参
+	DATAFORM 、準備完了
+	ENDDATA
+	STRDATA LOCALS:1
+	DATAFORM ！
+	DATAFORM ！
+	DATAFORM っ！
+	DATAFORM ！ よーし行くぞぉ！
+	DATAFORM ！ 覚悟してねっ！
+	ENDDATA
+;グループ4 大人しい系　おっとり、面倒くさがり
+ELSEIF LOCAL:0 == 14 || LOCAL:0 == 15
+	STRDATA LOCALS
+	DATAFORM 、参上
+	DATAFORM 、見参
+	DATAFORM 、推参
+	DATAFORM 、準備完了
+	ENDDATA
+	STRDATA LOCALS:1
+	DATAFORM …♪
+	DATAFORM ……用意はいいかしら？
+	DATAFORM ……さて、行きますよ
+	ENDDATA
+;グループ5 物静か系　ヤンデレ、無口、感情乏しい
+ELSEIF LOCAL:0 == 21 || LOCAL:0 == 22 || LOCAL:0 == 28
+	STRDATA LOCALS
+	DATAFORM 、参上
+	DATAFORM 、見参
+	DATAFORM 、推参
+	DATAFORM 、準備完了
+	ENDDATA
+	STRDATA LOCALS:1
+	DATAFORM 
+	DATAFORM 
+	DATAFORM 
+	DATAFORM 。行く……ッ
+	DATAFORM 。……殲滅開始
+	ENDDATA
+;グループ6 古風
+ELSEIF LOCAL:0 == 24
+	STRDATA LOCALS
+	DATAFORM 、参上
+	DATAFORM 、見参
+	DATAFORM 、推参
+	DATAFORM 、準備完了
+	ENDDATA
+	STRDATA LOCALS:1
+	DATAFORM 
+	DATAFORM 
+	DATAFORM 。さて、始めようぞ
+	DATAFORM 。始動じゃ、覚悟せい
+	ENDDATA
+;グループ1 強気系　勝気、真面目、ツンデレ、意地っ張り、乱暴者　未設定(ランダム)時もここから引く
+ELSE
+	STRDATA LOCALS
+	DATAFORM 、参上
+	DATAFORM 、見参
+	DATAFORM 、推参
+	DATAFORM 、準備完了
+	ENDDATA
+	STRDATA LOCALS:1
+	DATAFORM ！
+	DATAFORM ！
+	DATAFORM ！
+	DATAFORM …さあ、行くわよ！
+	DATAFORM …負けないわよ！
+	DATAFORM …覚悟しなさい！
+	ENDDATA
+ENDIF
+LOCALS'=LOCALS+LOCALS:1
+
+RETURNF LOCALS
+
+
+

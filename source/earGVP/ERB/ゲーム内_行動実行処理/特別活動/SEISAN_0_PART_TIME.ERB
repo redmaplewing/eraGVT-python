@@ -1,0 +1,296 @@
+﻿;==============================================================================
+;特別活動：アルバイト
+; 変数
+;	EVENT_RAND		起こるイベントを決める乱数値
+;	EVENT_RESULT	イベントの結果
+;	PROCESSED		処理数（観客の数、扱った商品の数など、分岐によって変わる）
+;	PAYMENT			支払額
+;	CHARM			魅了経験上昇量
+;	POPULARITY		人気度上昇量
+; 定数（扱い含む）
+;	人数除算値, 人数乱数除算値, 人数乱数加算値	アルバイトの件数/人数計算用の定数配列（イベントの種類順）
+;												稼ぎ額計算関数の戻り値の「人数」がアルバイトの対象数では多すぎるため、割り引き計算を行う
+;	人数加算値									同上、一部動的な値を参照するため定数にできない
+@SEISAN_PART_TIME
+#DIM EVENT_RAND
+#DIM EVENT_RESULT
+#DIM PROCESSED
+#DIM PAYMENT
+#DIM DYNAMIC CHARM
+#DIM DYNAMIC POPULARITY
+#DIMS STR_PART_RESULT
+#DIM CONST 人数除算値 = 100, 250, 100, 50
+#DIM CONST 人数乱数除算値 = 500, 250, 500, 150
+#DIM CONST 人数乱数加算値 = 6, 6, 8, 4
+#DIM DYNAMIC 人数加算値 = 10, 0, 1, 2
+
+
+;行うアルバイトを決める（男なら新聞配達とヒーローショーのみ）
+IF ISHOLE() == 0
+	EVENT_RAND = RANDOM(2)
+ELSE
+	EVENT_RAND = RANDOM(4)
+ENDIF
+
+
+SELECTCASE EVENT_RAND
+	;新聞配達(男女可)
+	CASE 0
+		;分岐先で人気度上昇が発生した場合、RESULT:1で受け取る
+		CALL SEISAN_PART_TIME_SHINBUN
+		EVENT_RESULT = RESULT:0
+		POPULARITY = RESULT:1
+		STR_PART_RESULT = 軒に新聞配達し
+
+	;ヒーローショー(男女可)
+	CASE 1
+		;呼び出し先で成否分岐し、戻り値が活動結果
+		CALL SEISAN_PART_TIME_HERO
+		EVENT_RESULT = RESULT:0
+		
+		;活動結果によって結果表示文章を決める
+		STR_PART_RESULT = 人のちびっこに
+		SELECTCASE EVENT_RESULT
+			CASE 特別活動結果_成功
+				STR_PART_RESULT += "夢と希望を与え"
+			CASE 特別活動結果_失敗
+				STR_PART_RESULT +=  \@ISHOLE()?夢と性の芽生えを与え#現実の厳しさを教え\@
+			CASE 特別活動結果_絶頂失敗
+				STR_PART_RESULT += "歪んだ性癖を植え付け"
+		ENDSELECT
+		
+		;ちびっこの人数補正にキャラのレベルを使う
+		人数加算値:EVENT_RAND = ABL:レベル
+		
+		;魅了経験の上昇（フィート補正）
+		CHARM = CALC_CHARM_FEAT_OTHER(TARGET)
+		
+		;人気度の上昇
+		SIF RANDOM(100) < 10
+			POPULARITY += 1
+		SIF RANDOM(100) < (EXP:魅了経験 / 10)
+			POPULARITY += 1
+
+	;ウェイトレス(GIRLY限定)
+	CASE 2
+		CALL SEISAN_PART_TIME_FAMILY
+		EVENT_RESULT = RESULT:0
+		STR_PART_RESULT = 席の注文を取り
+		
+		;人気度の上昇
+		SIF RANDOM(100) < 10
+			POPULARITY += 1
+		SIF RANDOM(100) < (EXP:魅了経験 / 10)
+			POPULARITY += 1
+
+	;食堂(GIRLY限定)
+	CASE 3
+		CALL SEISAN_PART_TIME_SYOKUDOU
+		EVENT_RESULT = RESULT:0
+		STR_PART_RESULT = 品の料理を手伝い
+
+ENDSELECT
+
+;体力・気力・性耐性減少量と稼ぎ額の計算
+CALL CALC_SEISAN, 特別活動_アルバイト, EVENT_RESULT
+;戻り値が人数/件数としてはちょっと多すぎるので割引き補正をかける
+PROCESSED = RESULT:0 / 人数除算値:EVENT_RAND + RAND:(RESULT:0 / 人数乱数除算値:EVENT_RAND + 人数乱数加算値:EVENT_RAND) + 人数加算値:EVENT_RAND
+PAYMENT = RESULT:1
+
+;活動結果の表示
+CALL REDUCIBLE_PRINTW
+PRINTFORML %PRINT_TRANSCALLNAME(TARGET)%は{PROCESSED}%STR_PART_RESULT%、{PAYMENT}＄の報酬を得ました。
+
+;魅了経験の上昇
+IF CHARM > 0
+	EXP:魅了経験 += CHARM
+	PRINTFORML 魅了経験が{CHARM}上がった
+ENDIF
+;人気度上昇
+IF POPULARITY > 0
+	FLAG:853 += POPULARITY
+	PRINTFORML 人気度が{POPULARITY}上がった
+ENDIF
+
+;==============================================================================
+;以下、関数内で呼ばれるサブ関数
+;==============================================================================
+;------------------------------------------------------------------------------
+;アルバイト（新聞配達）
+; 変数
+;	POPULARITY	人気度
+; 戻り値：活動結果、人気度上昇
+@SEISAN_PART_TIME_SHINBUN
+#DIM DYNAMIC POPULARITY
+
+PRINTL アルバイト（新聞配達）
+PRINTL 
+;出だしの地の文
+CALL MESSAGE_SEISAN_PART_TIME_SHINBUN_INTRO
+
+;新聞配達中にアクメ自転車に犯される
+;memo:条件式がどう見てもバグってて発生率がやたら高くなっていたので直した
+IF RANDOM(4) == 0 && FLAG:44 <= 30 && ISHOLE() == 1 && (TALENT:処女 < 1 || RANDOM(2) == 0)
+	;20%の確率で触手拘束具化
+	SIF RANDOM(5) == 0
+		CFLAG:42 = 400
+	;地の文と口上
+	CALL MESSAGE_SEISAN_PART_TIME_SHINBUN_ACMECYCLE
+	;珠の上昇
+	JUEL:習得 += 75
+	JUEL:恥情 += 100
+
+;配達中の新聞のトップ記事が自分の痴態だった
+ELSEIF RANDOM(3) == 0 && CFLAG:254 && ISHOLE() == 1
+	;地の文と口上
+	CALL MESSAGE_SEISAN_PART_TIME_SHINBUN_TOPNEWS
+	;珠の上昇
+	JUEL:恥情 += 50
+
+ELSEIF RANDOM(2) == 0
+	;新聞配達中に雑魚触手を退治（人気度が上がる）
+	IF RANDOM(2) == 0 && FLAG:44 <= 10
+		;地の文と口上
+		CALL MESSAGE_SEISAN_PART_TIME_SHINBUN_ENCOUNT
+		POPULARITY = 1
+	;新聞配達中に野外プレイを目撃
+	ELSE
+		;地の文と口上
+		CALL MESSAGE_SEISAN_PART_TIME_SHINBUN_DEBAGAME
+	ENDIF
+
+;特筆すべき事件はなし
+ELSE
+	;地の文と口上
+	CALL MESSAGE_SEISAN_PART_TIME_SHINBUN_NORMAL
+ENDIF
+
+RETURN 特別活動結果_成功, POPULARITY
+
+;------------------------------------------------------------------------------
+;アルバイト（ヒーローショー）
+; 戻り値：活動結果
+@SEISAN_PART_TIME_HERO
+
+PRINTL アルバイト（ヒーローショー）
+PRINTL 
+CALL MESSAGE_SEISAN_PART_TIME_HERO_INTRO
+;触手拘束具
+IF CFLAG:42 == 400 && RANDOM(2) == 0
+	;触手拘束具の暴走から凌辱ショーへ
+	IF EXP:魅了経験 >= 50 && RANDOM(2) == 0 && ISHOLE() == 1
+		;地の文と口上
+		CALL MESSAGE_SEISAN_PART_TIME_HERO_RYOJOKU
+		;珠と経験の上昇
+		JUEL:習得 += 125
+		JUEL:恥情 += 100
+		EXP:フェラ経験 += 3
+
+	;触手拘束具の暴走により絶頂
+	ELSE
+		;地の文と口上
+		CALL MESSAGE_SEISAN_PART_TIME_HERO_SYOKUSYU
+	ENDIF
+	
+	RETURN 特別活動結果_絶頂失敗
+
+;転んで失敗（FEAT効果による不幸防止あり）
+ELSEIF RANDOM(3) == 0 && TALENT:ラッキーチャーム == 0
+	;地の文と口上
+	CALL MESSAGE_SEISAN_PART_TIME_HERO_KOROBI
+	;珠の上昇
+	JUEL:恥情 += 25
+	
+	RETURN 特別活動結果_失敗
+
+;怪人役に痴漢される
+ELSEIF RANDOM(2) == 0 && ISHOLE() == 1
+	;怪人役に痴漢されて絶頂
+	IF EXP:魅了経験 >= 100
+		;地の文と口上
+		CALL MESSAGE_SEISAN_PART_TIME_HERO_CHIKAN
+		
+		;珠と経験の上昇
+		JUEL:習得 += 50
+		JUEL:恥情 += 50
+		EXP:絶頂経験 += 1
+		IF RANDOM(3) == 0 && (ISPENIS())
+			EXP:射精経験 += 1
+			;memo:なぜ膨乳値を上げている？
+			CFLAG:37 += 1
+		ENDIF
+		
+		RETURN 特別活動結果_絶頂失敗
+
+	;怪人役にスカートをめくられる
+	ELSE
+		;地の文と口上
+		CALL MESSAGE_SEISAN_PART_TIME_HERO_SKIRTMEKURI
+		;珠の上昇
+		JUEL:習得 += 25
+		JUEL:恥情 += 25
+		RETURN 特別活動結果_失敗
+
+	ENDIF
+;無事成功
+ELSE
+	;地の文と口上
+	CALL MESSAGE_SEISAN_PART_TIME_HERO_NORMAL
+	RETURN 特別活動結果_成功
+
+ENDIF
+
+;------------------------------------------------------------------------------
+;アルバイト（ファミレスでウェイトレス）
+; 変数
+; 戻り値：活動結果
+@SEISAN_PART_TIME_FAMILY
+
+PRINTL アルバイト（ウェイトレス）
+PRINTL 
+CALL MESSAGE_SEISAN_PART_TIME_FAMILY_INTRO
+;客に痴漢される
+IF EXP:魅了経験 >= 40 && ISHOLE() == 1
+	;地の文と口上
+	CALL MESSAGE_SEISAN_PART_TIME_FAMILY_CHIKAN
+	;珠の上昇
+	JUEL:恥情 += 50
+;特に何事もなし
+ELSE
+	;地の文と口上
+	CALL MESSAGE_SEISAN_PART_TIME_FAMILY_NORMAL
+ENDIF
+
+RETURN 特別活動結果_成功
+
+;------------------------------------------------------------------------------
+;アルバイト（食堂）
+; 戻り値：活動結果
+@SEISAN_PART_TIME_SYOKUDOU
+
+PRINTL アルバイト（厨房手伝い）
+PRINTL 
+CALL MESSAGE_SEISAN_PART_TIME_SYOKUDOU_INTRO
+;同僚に痴漢される
+IF RANDOM(3) == 0
+	;地の文と口上
+	CALL MESSAGE_SEISAN_PART_TIME_SYOKUDOU_CHIKAN
+	;珠の上昇
+	JUEL:習得 += 25
+	JUEL:恥情 += 100
+;店長に一服盛られる
+ELSEIF RANDOM(2) == 0 && ABL:Ｃ感覚 + ABL:Ｖ感覚 + ABL:Ａ感覚 + ABL:Ｂ感覚 <= 10
+	;地の文と口上
+	CALL MESSAGE_SEISAN_PART_TIME_SYOKUDOU_DRUG
+	;珠と経験の上昇
+	JUEL:習得 += 75
+	JUEL:恥情 += 250
+	EXP:フェラ経験 += 3
+	EXP:精液経験 += 3
+;特に何事もなし
+ELSE
+	;地の文と口上
+	CALL MESSAGE_SEISAN_PART_TIME_SYOKUDOU_NORMAL
+ENDIF
+
+RETURN 特別活動結果_成功

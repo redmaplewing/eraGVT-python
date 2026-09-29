@@ -1,0 +1,46 @@
+﻿eraGVT_社会派触手ニュース版240105用　完堕ち冠名修正パッチ
+
+<問題>
+・CSTR番号が競合するため、 近距離武器の武器名が変更される
+	ついでに市民は近距離武器の武器名を連呼して声援を送る（？）
+	CSTR:60がまったく使われていないので、これで判定するつもり
+
+<変更>
+・ERB \ ヒロイン関連 \ 悪堕ち \ CORRPUTION.ERB \ @CORRUPTTION_GET_THEME
+	;本来の名乗りをバックアップ
+	CSTR:ARG:60 = CSTR:ARG:3
+	CALL CORRUPTTION_GET_NANORI_FINAL(ARG)
+		（中略）
+	CSTR:ARG:5 = %DARK_NOUN%%DARK_NOUN:1%
+		（中略）
+	;本来の名乗りから変身名以降を切り出す
+	CALL STRMATCH(CSTR:ARG:3,CSTR:55)
+			↓
+	;本来の名乗りをバックアップ
+	CALL CORRUPTTION_GET_NANORI_FINAL(ARG)
+		（中略）
+	CSTR:ARG:60 = %DARK_NOUN%%DARK_NOUN:1%
+		（中略）
+	;本来の名乗りから変身名以降を切り出す
+	CALL STRMATCH(CSTR:ARG:3,CSTR:ARG:55)
+
+
+・ERB \ 汎用関数 \ コモン関数.ERB \ @PRINT_THEME
+	RETURNF CSTR:ARG:5 != "" ? CSTR:ARG:5 # SAVESTR:10
+			↓
+	RETURNF CSTR:ARG:60 != "" ? CSTR:ARG:60 # SAVESTR:10
+
+<おまけ>
+・ホムラ/ヒカリ（版権キャラ）Ver0.06
+	2人で1人の変身ヒロイン
+	チェンジするとカラダ以外のすべてが変化する　　衣装のカスタマイズも変更（デフォルトのカスタマイズのみ）
+	また、SP変身すると短期決戦に役立つ必殺技を使えるようになる（デフォルトの武器名と戦闘スタイルのみ）
+	強さを抑えるように心掛けてはいるが、それでもロールプレイにこだわらないととんでもない強さになる
+		ver0.01　　新規作成
+		ver0.02　　ホムラの性格を変更　　チェンジの確率を調整　　チェンジに見切りと体力/気力回復を追加
+		ver0.03　　ホムラ/ヒカリの衣装を変更　　チェンジの確率を調整
+		ver0.04　　チェンジの確率を調整　　チェンジの不具合を修正
+		ver0.05　　チェンジの確率を調整　　必殺技リセットの不具合を修正
+		ver0.06　　悪堕ち、完堕ちに対応　　変身後の名乗りを調整　　チェンジの確率を調整
+
+2024/08/06  Musue

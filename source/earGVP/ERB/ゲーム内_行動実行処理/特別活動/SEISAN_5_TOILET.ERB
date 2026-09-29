@@ -1,0 +1,94 @@
+﻿;==============================================================================
+;特別活動：公衆便所
+; 変数
+;	PAYMENT	支払額
+;	LOST_VIRGIN	この活動で処女喪失したか
+@SEISAN_TOILET
+#DIM DYNAMIC PAYMENT
+#DIM DYNAMIC LOST_VIRGIN
+
+;浮浪者の共用便器
+IF RANDOM(3) == 0 && ISGIRLY()
+	PRINTL 公衆便所（浮浪者）
+	PRINTL 
+	;処女は問答無用で喪失
+	IF TALENT:処女 > 0
+		CFLAG:206 = 9
+		TALENT:処女 = -1
+		EXP:異常経験 += 1
+		LOST_VIRGIN = 1
+	ENDIF
+	;男の娘がアナル未開発でも容赦なく犯される
+	IF TALENT:男の娘 > 0 && ABL:Ａ感覚 < 2
+		EXP:異常経験 += 1
+	ENDIF
+	;地の文と口上
+	CALL MESSAGE_SEISAN_TOILET_HOMELESS, LOST_VIRGIN
+	
+	CALL CALC_SEISAN, 特別活動_公衆便所, 特別活動公衆便所_肉便器
+	PAYMENT = RESULT:1
+	RESULT:0 = RESULT:0 / 10 + RANDOM(5) + 1
+	PRINTFORML 肉便器%PRINT_TRANSCALLNAME(TARGET)%は{RESULT:0}人に使われたが、使用料は{PAYMENT}＄しか入っていなかった…
+
+;路地裏放置
+ELSEIF RANDOM(2) == 0
+	PRINTL 公衆便所（路地裏放置）
+	PRINTL 
+	;処女は問答無用で喪失
+	IF ISFEMALE() && TALENT:処女 > 0
+		CFLAG:206 = 9
+		TALENT:処女 = -1
+		EXP:異常経験 += 1
+	;男の娘がアナル未開発でも容赦なく犯される
+	ELSEIF TALENT:男の娘 > 0 && ABL:Ａ感覚 < 2
+		EXP:異常経験 += 1
+	ENDIF
+	;地の文と口上
+	CALL MESSAGE_SEISAN_TOILET_BACK_ARRAY, LOST_VIRGIN
+	
+	CALL CALC_SEISAN, 特別活動_公衆便所, 特別活動公衆便所_肉便器
+	PAYMENT = RESULT:1
+	RESULT:0 = RESULT:0 / 10 + RANDOM(5) + 1
+	PRINTFORML 肉便器%PRINT_TRANSCALLNAME(TARGET)%は{RESULT:0}人に使われたが、使用料は{PAYMENT}＄しか入っていなかった…
+	;アフターピル
+	CALL AFTER_PILL, TARGET, 10, 誰とも知れない相手
+	;妊娠判定
+	SIF ISFEMALE()
+		CALL NINSIN_HANTEI, (RESULT:0 / 2 + 2), 100, 誰とも知れない相手
+;野良犬
+ELSE
+	PRINTL 公衆便所（野良犬）
+	PRINTL 
+	;処女は問答無用で喪失
+	IF TALENT:処女 > 0 && ISFEMALE()
+		CFLAG:206 = 10
+		TALENT:処女 = -1
+		EXP:異常経験 += 1
+	ENDIF
+	;地の文と口上
+	CALL MESSAGE_SEISAN_TOILET_DOG, LOST_VIRGIN
+	
+	CALL CALC_SEISAN, 特別活動_公衆便所, 特別活動公衆便所_牝犬
+	PAYMENT = RESULT:1
+	RESULT:0 = RESULT:0 / 20 + RANDOM(5) + 1
+	PRINTFORML 肉便器%PRINT_TRANSCALLNAME(TARGET)%は{RESULT:0}匹の野良犬に使われたが、当然使用料は１＄たりとも得られなかった…
+ENDIF
+CFLAG:285 += 1
+
+;珠と経験の取得
+JUEL:習得 += 200
+JUEL:恥情 += 100
+IF ISFEMALE()
+	EXP:Ｖ経験 += RESULT:0 / 2 + 2
+	JUEL:快Ｖ += RESULT:0 * ABL:Ｖ感覚 / 2 + 2
+ELSE
+	EXP:Ａ経験 += RESULT:0 / 4 + 1
+	JUEL:快Ａ += RESULT:0 * ABL:Ａ感覚 / 4 + 1
+ENDIF
+EXP:Ａ経験 += RESULT:0 / 4 + 1
+JUEL:快Ａ += RESULT:0 * ABL:Ａ感覚 /4 + 1
+EXP:フェラ経験 += RESULT:0 / 2 + 2
+EXP:精液経験 += RESULT:0 / 2 + 2
+SIF RANDOM(100) < 25
+	CFLAG:825 += 1
+

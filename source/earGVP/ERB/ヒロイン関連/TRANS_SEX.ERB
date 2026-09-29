@@ -1,0 +1,929 @@
+﻿
+;♂→♀変身時ＴＳキャラが女体化するとオトコに戻れなくなる
+;--------------------------------------------------------------------------------------------------------------------------------------------------------------
+@TS_MtoF, ARG
+#DIM KEEP
+#DIM TRANS
+#DIM AIRPLUS
+KEEP = TARGET
+TARGET = ARG
+IF CFLAG:1 > 0
+	TRANS = 1
+ELSE
+	TRANS = 0
+ENDIF
+
+;変身してなければ強制変身させる
+SIF CFLAG:1 < 1
+	CALL TRANSFORM, 1
+;素質変動を消去して変身を解除する
+TALENT:変身時体格変動 = 0
+TALENT:変身時胸サイズ変動 = 0
+BASE:年齢 = MAXBASE:年齢
+
+;変身前の空中性能強化
+CALL CLOTH_BATTLE_HOSEI, "AIRPLUS",TARGET
+AIRPLUS = RESULT
+
+;空中性能強化の変動
+CALL CLOTH_BATTLE_HOSEI, "AIRPLUS",TARGET
+IF AIRPLUS == 0 && RESULT > 0
+	MAXBASE:空中ダッシュ += 1
+	BASE:空中ダッシュ = MAXBASE:空中ダッシュ
+	SIF BASE:空中ダッシュ >= 5
+		BASE:空中ダッシュ = 5
+ELSEIF AIRPLUS == 1 && RESULT == 0
+	MAXBASE:空中ダッシュ -= 1
+	BASE:空中ダッシュ = MAXBASE:空中ダッシュ
+	SIF BASE:空中ダッシュ < 0
+		BASE:空中ダッシュ = 0
+ENDIF
+
+;変身のみ解除処理
+CFLAG:1 = 0
+
+TALENT:性別変化 = 1
+TALENT:オトコ = 0
+TALENT:男の娘 = 0
+SIF TALENT:変身時非処女 == 0
+	TALENT:処女 = 1
+TALENT:変身時ＴＳ = -1
+TALENT:変身時非処女 = 0
+TALENT:外見 = TALENT:変身時外見
+TALENT:ふたなり = TALENT:変身時ふたなり
+IF TALENT:変身時濡れやすさ変動 > 0
+	TALENT:濡れやすい = 1
+ELSEIF TALENT:変身時濡れやすさ変動 < 0
+	TALENT:濡れにくい = 1
+ENDIF
+IF TALENT:変身時Ｖ感覚変動 > 0
+	TALENT:Ｖ敏感 = 1
+ELSEIF TALENT:変身時Ｖ感覚変動 < 0
+	TALENT:Ｖ鈍感 = 1
+ENDIF
+TALENT:変身時濡れやすさ変動 = 0
+TALENT:変身時Ｖ感覚変動 = 0
+
+IF CFLAG:34 > 0
+	CALL GENERATE_CHAR_SIZE, TARGET, 0
+	BASE:身長 = RESULT:2
+	BASE:体重 = RESULT:3
+	BASE:胸囲 = RESULT:4
+	BASE:胴囲 = RESULT:5
+	BASE:腰囲 = RESULT:6
+	BASE:胸の重量 = RESULT:7
+ENDIF
+PRINTL 
+
+;髪瞳肌の色を上書きする
+IF CSTR:ARG:13 != CSTR:ARG:14
+	PRINTL 【通常時】　ヘアスタイル　を選択してください
+	PRINT [0] 変身後のヘアスタイル [
+	PRINTS CSTR:ARG:14
+	PRINTL ] を引き継ぐ
+	PRINT [1] 通常時のヘアスタイル [
+	PRINTS CSTR:ARG:13
+	PRINTL ] を引き継ぐ
+	$INPUT_LOOP_0
+	INPUT
+	IF RESULT == 0
+		CSTR:13 = %CSTR:14%
+	ELSEIF RESULT != 1
+		GOTO INPUT_LOOP_0
+	ENDIF
+	PRINTL 
+ENDIF
+IF CSTR:ARG:30 != CSTR:ARG:31
+	PRINTL 【通常時】　髪の色　を選択してください
+	PRINT [0] 変身後の色 [
+	CALL SETCOLOR_BY_STR, CSTR:ARG:31
+	PRINT ■
+	RESETCOLOR
+	PRINTL ] を引き継ぐ
+	PRINT [1] 通常時の色 [
+	CALL SETCOLOR_BY_STR, CSTR:ARG:30
+	PRINT ■
+	RESETCOLOR
+	PRINTL ] を引き継ぐ
+	$INPUT_LOOP_1
+	INPUT
+	IF RESULT == 0
+		CSTR:30 = %CSTR:31%
+	ELSEIF RESULT != 1
+		GOTO INPUT_LOOP_1
+	ENDIF
+	PRINTL 
+ENDIF
+IF (CSTR:ARG:32 != CSTR:ARG:34) || (CSTR:ARG:33 != CSTR:ARG:35)
+	PRINTL 【通常時】　瞳の色　を選択してください
+	PRINT [0] 変身後の色 [
+	CALL SETCOLOR_BY_STR, CSTR:ARG:34
+	PRINT ■
+	RESETCOLOR
+	PRINT ][
+	CALL SETCOLOR_BY_STR, CSTR:ARG:35
+	PRINT ■
+	RESETCOLOR
+	PRINTL ] を引き継ぐ
+	PRINT [1] 通常時の色 [
+	CALL SETCOLOR_BY_STR, CSTR:ARG:32
+	PRINT ■
+	RESETCOLOR
+	PRINT ][
+	CALL SETCOLOR_BY_STR, CSTR:ARG:33
+	PRINT ■
+	RESETCOLOR
+	PRINTL ] を引き継ぐ
+	$INPUT_LOOP_2
+	INPUT
+	IF RESULT == 0
+		CSTR:32 = %CSTR:34%
+		CSTR:33 = %CSTR:35%
+	ELSEIF RESULT != 1
+		GOTO INPUT_LOOP_2
+	ENDIF
+	PRINTL 
+ENDIF
+IF CSTR:ARG:36 != CSTR:ARG:37
+	PRINTL 【通常時】　肌の色　を選択してください
+	PRINT [0] 変身後の色 [
+	CALL SETCOLOR_BY_STR, CSTR:ARG:37
+	PRINT ■
+	RESETCOLOR
+	PRINTL ] を引き継ぐ
+	PRINT [1] 通常時の色 [
+	CALL SETCOLOR_BY_STR, CSTR:ARG:36
+	PRINT ■
+	RESETCOLOR
+	PRINTL ] を引き継ぐ
+	$INPUT_LOOP_3
+	INPUT
+	IF RESULT == 0
+		CSTR:36 = %CSTR:37%
+	ELSEIF RESULT != 1
+		GOTO INPUT_LOOP_3
+	ENDIF
+	PRINTL 
+ENDIF
+
+SIF TRANS > 0
+	CALL TRANSFORM, 1
+
+TARGET = KEEP
+RETURN 1
+
+
+
+;♀→♂変身時ＴＳキャラが女体化するとオトコに変身できなくなくなる
+;--------------------------------------------------------------------------------------------------------------------------------------------------------------
+@TS_FtoM, ARG
+#DIM KEEP
+#DIM TRANS
+KEEP = TARGET
+TARGET = ARG
+IF CFLAG:1 > 0
+	TRANS = 1
+ELSE
+	TRANS = 0
+ENDIF
+
+;変身してなければ強制変身させる
+SIF CFLAG:1 < 1
+	CALL TRANSFORM, 1
+
+TALENT:性別変化 = 10
+TALENT:オトコ = 0
+TALENT:男の娘 = 0
+TALENT:変身時ＴＳ = -1
+SIF TALENT:処女 < -2
+	TALENT:処女 += 5
+MAXBASE:年齢 = BASE:年齢
+
+;胸サイズ、体格を通常時に合わせる
+IF CHARATALENT_F(TARGET,0,"絶壁") > 0
+	TALENT:貧乳 = 2
+	TALENT:巨乳 = 0
+ELSEIF CHARATALENT_F(TARGET,0,"貧乳") > 0
+	TALENT:貧乳 = 1
+	TALENT:巨乳 = 0
+ELSEIF CHARATALENT_F(TARGET,0,"奇乳") > 0
+	TALENT:貧乳 = 0
+	TALENT:巨乳 = 5
+ELSEIF CHARATALENT_F(TARGET,0,"魔乳") > 0
+	TALENT:貧乳 = 0
+	TALENT:巨乳 = 4
+ELSEIF CHARATALENT_F(TARGET,0,"超乳") > 0
+	TALENT:貧乳 = 0
+	TALENT:巨乳 = 3
+ELSEIF CHARATALENT_F(TARGET,0,"爆乳") > 0
+	TALENT:貧乳 = 0
+	TALENT:巨乳 = 2
+ELSEIF CHARATALENT_F(TARGET,0,"巨乳") > 0
+	TALENT:貧乳 = 0
+	TALENT:巨乳 = 1
+ENDIF
+IF CHARATALENT_F(TARGET,0,"小柄") > 0
+	TALENT:小柄 = 1
+	TALENT:長身 = 0
+ELSEIF CHARATALENT_F(TARGET,0,"長身") > 0
+	TALENT:小柄 = 0
+	TALENT:長身 = 1
+ENDIF
+TALENT:変身時体格変動 = 0
+TALENT:変身時胸サイズ変動 = 0
+TALENT:変身時外見 = TALENT:外見
+TALENT:変身時ふたなり = TALENT:ふたなり
+
+;変身のみ解除処理
+CFLAG:1 = 0
+
+IF CFLAG:34 > 0
+	CALL GENERATE_CHAR_SIZE, TARGET, 1
+	MAXBASE:身長 = RESULT:2
+	MAXBASE:体重 = RESULT:3
+	MAXBASE:胸囲 = RESULT:4
+	MAXBASE:胴囲 = RESULT:5
+	MAXBASE:腰囲 = RESULT:6
+	MAXBASE:胸の重量 = RESULT:7
+ENDIF
+PRINTL 
+
+;髪瞳肌の色を上書きする
+IF CSTR:ARG:13 != CSTR:ARG:14
+	PRINTL 【通常時】　ヘアスタイル　を選択してください
+	PRINT [0] 変身後のヘアスタイル [
+	PRINTS CSTR:ARG:14
+	PRINTL ] を引き継ぐ
+	PRINT [1] 通常時のヘアスタイル [
+	PRINTS CSTR:ARG:13
+	PRINTL ] を引き継ぐ
+	$INPUT_LOOP_0
+	INPUT
+	IF RESULT == 0
+		CSTR:13 = %CSTR:14%
+	ELSEIF RESULT != 1
+		GOTO INPUT_LOOP_0
+	ENDIF
+	PRINTL 
+ENDIF
+IF CSTR:ARG:31 != CSTR:ARG:30
+	PRINTL 【変身後】　髪の色　を選択してください
+	PRINT [0] 変身後の色 [
+	CALL SETCOLOR_BY_STR, CSTR:ARG:31
+	PRINT ■
+	RESETCOLOR
+	PRINTL ] を引き継ぐ
+	PRINT [1] 通常時の色 [
+	CALL SETCOLOR_BY_STR, CSTR:ARG:30
+	PRINT ■
+	RESETCOLOR
+	PRINTL ] を引き継ぐ
+	$INPUT_LOOP_1
+	INPUT
+	IF RESULT == 1
+		CSTR:31 = %CSTR:30%
+	ELSEIF RESULT != 0
+		GOTO INPUT_LOOP_1
+	ENDIF
+	PRINTL 
+ENDIF
+IF (CSTR:ARG:32 != CSTR:ARG:34) || (CSTR:ARG:33 != CSTR:ARG:35)
+	PRINTL 【変身後】　瞳の色　を選択してください
+	PRINT [0] 変身後の色 [
+	CALL SETCOLOR_BY_STR, CSTR:ARG:34
+	PRINT ■
+	RESETCOLOR
+	PRINT ][
+	CALL SETCOLOR_BY_STR, CSTR:ARG:35
+	PRINT ■
+	RESETCOLOR
+	PRINTL ] を引き継ぐ
+	PRINT [1] 通常時の色 [
+	CALL SETCOLOR_BY_STR, CSTR:ARG:32
+	PRINT ■
+	RESETCOLOR
+	PRINT ][
+	CALL SETCOLOR_BY_STR, CSTR:ARG:33
+	PRINT ■
+	RESETCOLOR
+	PRINTL ] を引き継ぐ
+	$INPUT_LOOP_2
+	INPUT
+	IF RESULT == 1
+		CSTR:34 = %CSTR:32%
+		CSTR:35 = %CSTR:33%
+	ELSEIF RESULT != 0
+		GOTO INPUT_LOOP_2
+	ENDIF
+	PRINTL 
+ENDIF
+IF CSTR:ARG:36 != CSTR:ARG:37
+	PRINTL 【変身後】　肌の色　を選択してください
+	PRINT [0] 変身後の色 [
+	CALL SETCOLOR_BY_STR, CSTR:ARG:37
+	PRINT ■
+	RESETCOLOR
+	PRINTL ] を引き継ぐ
+	PRINT [1] 通常時の色 [
+	CALL SETCOLOR_BY_STR, CSTR:ARG:36
+	PRINT ■
+	RESETCOLOR
+	PRINTL ] を引き継ぐ
+	$INPUT_LOOP_3
+	INPUT
+	IF RESULT == 1
+		CSTR:37 = %CSTR:36%
+	ELSEIF RESULT != 0
+		GOTO INPUT_LOOP_3
+	ENDIF
+	PRINTL 
+ENDIF
+
+SIF TRANS > 0
+	CALL TRANSFORM, 1
+
+TARGET = KEEP
+RETURN 1
+
+
+
+;通常の女体化処理
+;--------------------------------------------------------------------------------------------------------------------------------------------------------------
+@TS_NORMAL, ARG
+#DIM KEEP
+#DIM TRANS
+#DIM BREAST
+#DIM BODY
+KEEP = TARGET
+TARGET = ARG
+
+IF CHARATALENT_F(TARGET,0,"オトコ") == 0
+	PRINTFORMW 　! ERROR ! 通常時の性別が女性なのに通常の女体化シーケンスが呼び出されました
+	RETURN 0
+ENDIF
+
+IF CFLAG:1 > 0
+	TRANS = 1
+ELSE
+	TRANS = 0
+ENDIF
+
+;まずは変身を解除する
+CALL TRANSFORM, 0
+
+PRINTL 【通常時】　胸サイズ　を選択してください
+IF TALENT:変身時ＴＳ > 0
+	PRINT [0] 変身後 [
+	IF CHARATALENT_F(TARGET,1,"絶壁") > 0
+		PRINT 絶壁
+		BREAST = -2
+	ELSEIF CHARATALENT_F(TARGET,1,"貧乳") > 0
+		PRINT 貧乳
+		BREAST = -1
+	ELSEIF CHARATALENT_F(TARGET,1,"奇乳") > 0
+		PRINT 奇乳
+		BREAST = 5
+	ELSEIF CHARATALENT_F(TARGET,1,"魔乳") > 0
+		PRINT 魔乳
+		BREAST = 4
+	ELSEIF CHARATALENT_F(TARGET,1,"超乳") > 0
+		PRINT 超乳
+		BREAST = 3
+	ELSEIF CHARATALENT_F(TARGET,1,"爆乳") > 0
+		PRINT 爆乳
+		BREAST = 2
+	ELSEIF CHARATALENT_F(TARGET,1,"巨乳") > 0
+		PRINT 巨乳
+		BREAST = 1
+	ELSE
+		PRINT 普通
+		BREAST = 0
+	ENDIF
+	PRINTL ] に合わせる
+ENDIF
+PRINTL [1] 絶壁　　[2] 貧乳　　[3] 普通　　
+PRINTL [4] 巨乳　　[5] 爆乳　　[6] 超乳　　[7] 魔乳　　[8] 奇乳　　
+$INPUT_LOOP_1
+INPUT
+IF RESULT == 0 && TALENT:変身時ＴＳ > 0
+	;胸サイズを変身後に合わせる
+	IF CHARATALENT_F(TARGET,1,"絶壁") > 0
+		TALENT:貧乳 = 2
+		TALENT:巨乳 = 0
+	ELSEIF CHARATALENT_F(TARGET,1,"貧乳") > 0
+		TALENT:貧乳 = 1
+		TALENT:巨乳 = 0
+	ELSEIF CHARATALENT_F(TARGET,1,"奇乳") > 0
+		TALENT:貧乳 = 0
+		TALENT:巨乳 = 5
+	ELSEIF CHARATALENT_F(TARGET,1,"魔乳") > 0
+		TALENT:貧乳 = 0
+		TALENT:巨乳 = 4
+	ELSEIF CHARATALENT_F(TARGET,1,"超乳") > 0
+		TALENT:貧乳 = 0
+		TALENT:巨乳 = 3
+	ELSEIF CHARATALENT_F(TARGET,1,"爆乳") > 0
+		TALENT:貧乳 = 0
+		TALENT:巨乳 = 2
+	ELSEIF CHARATALENT_F(TARGET,1,"巨乳") > 0
+		TALENT:貧乳 = 0
+		TALENT:巨乳 = 1
+	ENDIF
+ELSEIF RESULT == 1
+	TALENT:貧乳 = 2
+	TALENT:巨乳 = 0
+ELSEIF RESULT == 2
+	TALENT:貧乳 = 1
+	TALENT:巨乳 = 0
+ELSEIF RESULT == 3
+	TALENT:貧乳 = 0
+	TALENT:巨乳 = 0
+ELSEIF RESULT == 4
+	TALENT:貧乳 = 0
+	TALENT:巨乳 = 1
+ELSEIF RESULT == 5
+	TALENT:貧乳 = 0
+	TALENT:巨乳 = 2
+ELSEIF RESULT == 6
+	TALENT:貧乳 = 0
+	TALENT:巨乳 = 3
+ELSEIF RESULT == 7
+	TALENT:貧乳 = 0
+	TALENT:巨乳 = 4
+ELSEIF RESULT == 8
+	TALENT:貧乳 = 0
+	TALENT:巨乳 = 5
+ELSE
+	GOTO INPUT_LOOP_1
+ENDIF
+;変身時胸サイズ変動の調整
+SIF TALENT:変身時ＴＳ > 0
+	TALENT:変身時胸サイズ変動 = BREAST - TALENT:巨乳 + TALENT:貧乳
+PRINTL 
+
+PRINTL 【通常時】　体格　を選択してください
+IF TALENT:変身能力 > 0
+	IF CHARATALENT_F(TARGET,1,"小柄") > 0
+		BODY = -1
+	ELSEIF CHARATALENT_F(TARGET,1,"長身") > 0
+		BODY = 1
+	ELSE
+		BODY = 0
+	ENDIF
+ENDIF
+IF TALENT:変身時ＴＳ > 0
+	PRINT [0] 変身後 [
+	IF CHARATALENT_F(TARGET,1,"小柄") > 0
+		PRINT 小柄
+	ELSEIF CHARATALENT_F(TARGET,1,"長身") > 0
+		PRINT 長身
+	ELSE
+		PRINT 普通
+	ENDIF
+	PRINTL ] に合わせる
+ENDIF
+PRINT [1] 通常時 [
+IF CHARATALENT_F(TARGET,0,"小柄") > 0
+	PRINT 小柄
+ELSEIF CHARATALENT_F(TARGET,0,"長身") > 0
+	PRINT 長身
+ELSE
+	PRINT 普通
+ENDIF
+PRINTL ] のままにする
+PRINTL [2] 小柄　　
+PRINTL [3] 普通　　
+PRINTL [4] 長身　　
+$INPUT_LOOP_2
+INPUT
+IF RESULT == 0 && TALENT:変身時ＴＳ > 0
+	;体格を変身後に合わせる
+	IF CHARATALENT_F(TARGET,1,"小柄") > 0
+		TALENT:小柄 = 1
+		TALENT:長身 = 0
+	ELSEIF CHARATALENT_F(TARGET,1,"長身") > 0
+		TALENT:小柄 = 0
+		TALENT:長身 = 1
+	ENDIF
+ELSEIF RESULT == 1
+	;特になにも処理しない
+ELSEIF RESULT == 2
+	TALENT:小柄 = 1
+	TALENT:長身 = 0
+ELSEIF RESULT == 3
+	TALENT:小柄 = 0
+	TALENT:長身 = 0
+ELSEIF RESULT == 4
+	TALENT:小柄 = 0
+	TALENT:長身 = 1
+ELSE
+	GOTO INPUT_LOOP_2
+ENDIF
+;変身時胸サイズ変動の調整
+SIF TALENT:変身能力 > 0
+	TALENT:変身時体格変動 = BODY - TALENT:長身 + TALENT:小柄
+PRINTL 
+
+IF TALENT:変身能力 > 0 && TALENT:変身時ＴＳ == 0
+	PRINTL 【変身後】　胸サイズ　を選択してください
+	PRINT [0] 通常時 [
+	IF CHARATALENT_F(TARGET,0,"絶壁") > 0
+		PRINT 絶壁
+	ELSEIF CHARATALENT_F(TARGET,0,"貧乳") > 0
+		PRINT 貧乳
+	ELSEIF CHARATALENT_F(TARGET,0,"奇乳") > 0
+		PRINT 奇乳
+	ELSEIF CHARATALENT_F(TARGET,0,"魔乳") > 0
+		PRINT 魔乳
+	ELSEIF CHARATALENT_F(TARGET,0,"超乳") > 0
+		PRINT 超乳
+	ELSEIF CHARATALENT_F(TARGET,0,"爆乳") > 0
+		PRINT 爆乳
+	ELSEIF CHARATALENT_F(TARGET,0,"巨乳") > 0
+		PRINT 巨乳
+	ELSE
+		PRINT 普通
+	ENDIF
+	PRINTL ] に合わせる
+	PRINTL [1] 絶壁　　[2] 貧乳　　[3] 普通　　
+	PRINTL [4] 巨乳　　[5] 爆乳　　[6] 超乳　　[7] 魔乳　　[8] 奇乳　　
+	$INPUT_LOOP_3
+	INPUT
+	IF RESULT == 0
+		;胸サイズを通常時に合わせる
+		TALENT:変身時胸サイズ変動 = 0
+	ELSEIF RESULT == 1
+		TALENT:変身時胸サイズ変動 = TALENT:貧乳 + TALENT:巨乳 - 2
+	ELSEIF RESULT == 2
+		TALENT:変身時胸サイズ変動 = TALENT:貧乳 + TALENT:巨乳 - 1
+	ELSEIF RESULT == 3
+		TALENT:変身時胸サイズ変動 = TALENT:貧乳 - TALENT:巨乳
+	ELSEIF RESULT == 4
+		TALENT:変身時胸サイズ変動 = TALENT:貧乳 - TALENT:巨乳 + 1
+	ELSEIF RESULT == 5
+		TALENT:変身時胸サイズ変動 = TALENT:貧乳 - TALENT:巨乳 + 2
+	ELSEIF RESULT == 6
+		TALENT:変身時胸サイズ変動 = TALENT:貧乳 - TALENT:巨乳 + 3
+	ELSEIF RESULT == 7
+		TALENT:変身時胸サイズ変動 = TALENT:貧乳 - TALENT:巨乳 + 4
+	ELSEIF RESULT == 8
+		TALENT:変身時胸サイズ変動 = TALENT:貧乳 - TALENT:巨乳 + 5
+	ELSE
+		GOTO INPUT_LOOP_3
+	ENDIF
+	PRINTL 
+
+	PRINTL 【変身後】　体格　を選択してください
+	PRINT [0] 通常時 [
+	IF CHARATALENT_F(TARGET,0,"小柄") > 0
+		PRINT 小柄
+	ELSEIF CHARATALENT_F(TARGET,0,"長身") > 0
+		PRINT 長身
+	ELSE
+		PRINT 普通
+	ENDIF
+	PRINTL ] に合わせる
+	PRINT [1] 変身後 [
+	IF CHARATALENT_F(TARGET,1,"小柄") > 0
+		PRINT 小柄
+	ELSEIF CHARATALENT_F(TARGET,1,"長身") > 0
+		PRINT 長身
+	ELSE
+		PRINT 普通
+	ENDIF
+	PRINTL ] のままにする
+	PRINTL [2] 小柄　　
+	PRINTL [3] 普通　　
+	PRINTL [4] 長身　　
+	$INPUT_LOOP_4
+	INPUT
+	IF RESULT == 0
+		;体格を通常時に合わせる
+		TALENT:変身時体格変動 = 0
+	ELSEIF RESULT == 1
+		TALENT:変身時体格変動 = TALENT:変身時体格変動
+	ELSEIF RESULT == 2
+		TALENT:変身時体格変動 = TALENT:小柄 + TALENT:長身 - 1
+	ELSEIF RESULT == 3
+		TALENT:変身時体格変動 = TALENT:小柄 + TALENT:長身
+	ELSEIF RESULT == 4
+		TALENT:変身時体格変動 = TALENT:小柄 - TALENT:長身 + 1
+	ELSE
+		GOTO INPUT_LOOP_4
+	ENDIF
+	PRINTL 
+ENDIF
+
+PRINTL 【通常時】　外見的特徴　を選択してください
+IF TALENT:変身時ＴＳ > 0
+	PRINT [0] 変身後 [
+	IF TALENT:変身時外見 == 1
+		PRINT 安産型
+	ELSEIF TALENT:変身時外見 == 2
+		PRINT むちむち
+	ELSEIF TALENT:変身時外見 == 3
+		PRINT イカ腹
+	ELSEIF TALENT:変身時外見 == 4
+		PRINT スレンダー
+	ELSEIF TALENT:変身時外見 == 5
+		PRINT 巨尻
+	ELSEIF TALENT:変身時外見 == 6
+		PRINT 爆尻
+	ELSE
+		PRINT 普通
+	ENDIF
+	PRINTL ] に合わせる
+ENDIF
+PRINTL [1] 安産型　　
+PRINTL [2] むちむち　
+PRINTL [3] イカ腹　　
+PRINTL [4] スレンダー
+PRINTL [5] 巨尻　　　
+PRINTL [6] 爆尻　　　
+PRINTL [7] 普通　　　
+$INPUT_LOOP_5
+INPUT
+IF RESULT == 0 && TALENT:変身時ＴＳ > 0
+	;外見を変身後に合わせる
+	TALENT:外見 = TALENT:変身時外見
+ELSEIF RESULT >= 1 && RESULT <= 6
+	TALENT:外見 = RESULT
+ELSEIF RESULT == 7
+	TALENT:外見 = 0
+ELSE
+	GOTO INPUT_LOOP_5
+ENDIF
+PRINTL 
+
+IF TALENT:変身能力 > 0 && TALENT:変身時ＴＳ == 0
+	PRINTL 【変身後】　外見的特徴　を選択してください
+	PRINT [0] 通常時 [
+	IF TALENT:外見 == 1
+		PRINT 安産型
+	ELSEIF TALENT:外見 == 2
+		PRINT むちむち
+	ELSEIF TALENT:外見 == 3
+		PRINT イカ腹
+	ELSEIF TALENT:外見 == 4
+		PRINT スレンダー
+	ELSEIF TALENT:外見 == 5
+		PRINT 巨尻
+	ELSEIF TALENT:外見 == 6
+		PRINT 爆尻
+	ELSE
+		PRINT 普通
+	ENDIF
+	PRINTL ] に合わせる
+	PRINTL [1] 安産型　　
+	PRINTL [2] むちむち　
+	PRINTL [3] イカ腹　　
+	PRINTL [4] スレンダー
+	PRINTL [5] 巨尻　　　
+	PRINTL [6] 爆尻
+	PRINTL [7] 普通　　　
+	$INPUT_LOOP_6
+	INPUT
+	IF RESULT == 0
+		;外見を通常時に合わせる
+		TALENT:変身時外見 = TALENT:外見
+	ELSEIF RESULT >= 1 && RESULT <= 6
+		TALENT:変身時外見 = RESULT
+	ELSEIF RESULT == 7
+		TALENT:変身時外見 = 0
+	ELSE
+		GOTO INPUT_LOOP_6
+	ENDIF
+	PRINTL 
+ENDIF
+
+IF TALENT:変身時濡れやすさ変動 > 0
+	TALENT:濡れやすい = 1
+ELSEIF TALENT:変身時濡れやすさ変動 < 0
+	TALENT:濡れにくい = 1
+ENDIF
+IF TALENT:変身時Ｖ感覚変動 > 0
+	TALENT:Ｖ敏感 = 1
+ELSEIF TALENT:変身時Ｖ感覚変動 < 0
+	TALENT:Ｖ鈍感 = 1
+ENDIF
+
+;実際の性別変化の処理
+IF TALENT:変身時ＴＳ > 0
+	TALENT:性別変化 = 1
+	TALENT:ふたなり = TALENT:変身時ふたなり
+ELSEIF TALENT:変身能力 > 0
+	TALENT:性別変化 = 11
+ELSE
+	TALENT:性別変化 = 1
+ENDIF
+
+TALENT:オトコ = 0
+TALENT:男の娘 = 0
+TALENT:変身時男の娘 = 0
+SIF TALENT:変身時非処女 == 0
+	TALENT:処女 = 1
+
+IF TALENT:変身能力 > 0
+	IF TALENT:変身時ＴＳ > 0
+		TALENT:変身時ＴＳ = -1
+		TALENT:変身時非処女 = 0
+	ENDIF
+	IF CFLAG:34 > 0
+		CALL GENERATE_CHAR_SIZE, TARGET, 1
+		MAXBASE:身長 = RESULT:2
+		MAXBASE:体重 = RESULT:3
+		MAXBASE:胸囲 = RESULT:4
+		MAXBASE:胴囲 = RESULT:5
+		MAXBASE:腰囲 = RESULT:6
+		MAXBASE:胸の重量 = RESULT:7
+	ENDIF
+ENDIF
+
+IF CFLAG:34 > 0
+	CALL GENERATE_CHAR_SIZE, TARGET, 0
+	BASE:身長 = RESULT:2
+	BASE:体重 = RESULT:3
+	BASE:胸囲 = RESULT:4
+	BASE:胴囲 = RESULT:5
+	BASE:腰囲 = RESULT:6
+	BASE:胸の重量 = RESULT:7
+ENDIF
+
+;髪瞳肌の色を上書きする
+IF CSTR:ARG:13 != CSTR:ARG:14
+	PRINTL 【通常時】　ヘアスタイル　を選択してください
+	PRINT [0] 変身後のヘアスタイル [
+	PRINTS CSTR:ARG:14
+	PRINTL ] を引き継ぐ
+	PRINT [1] 通常時のヘアスタイル [
+	PRINTS CSTR:ARG:13
+	PRINTL ] を引き継ぐ
+	$INPUT_LOOP_0
+	INPUT
+	IF RESULT == 0
+		CSTR:13 = %CSTR:14%
+	ELSEIF RESULT != 1
+		GOTO INPUT_LOOP_0
+	ENDIF
+	PRINTL 
+ENDIF
+IF CSTR:ARG:30 != CSTR:ARG:31
+	PRINTL 【通常時】　髪の色　を選択してください
+	PRINT [0] 変身後の色 [
+	CALL SETCOLOR_BY_STR, CSTR:ARG:31
+	PRINT ■
+	RESETCOLOR
+	PRINTL ] を引き継ぐ
+	PRINT [1] 通常時の色 [
+	CALL SETCOLOR_BY_STR, CSTR:ARG:30
+	PRINT ■
+	RESETCOLOR
+	PRINTL ] を引き継ぐ
+	$INPUT_LOOP_7
+	INPUT
+	IF RESULT == 0
+		CSTR:30 = %CSTR:31%
+	ELSEIF RESULT != 1
+		GOTO INPUT_LOOP_7
+	ENDIF
+	PRINTL 
+ENDIF
+IF TALENT:変身能力 > 0 && TALENT:変身時ＴＳ == 0
+	IF CSTR:ARG:31 != CSTR:ARG:30
+		PRINTL 【変身後】　髪の色　を選択してください
+		PRINT [0] 変身後の色 [
+		CALL SETCOLOR_BY_STR, CSTR:ARG:31
+		PRINT ■
+		RESETCOLOR
+		PRINTL ] を引き継ぐ
+		PRINT [1] 通常時の色 [
+		CALL SETCOLOR_BY_STR, CSTR:ARG:30
+		PRINT ■
+		RESETCOLOR
+		PRINTL ] を引き継ぐ
+		$INPUT_LOOP_8
+		INPUT
+		IF RESULT == 1
+			CSTR:31 = %CSTR:30%
+		ELSEIF RESULT != 0
+			GOTO INPUT_LOOP_8
+		ENDIF
+		PRINTL 
+	ENDIF
+ENDIF
+IF (CSTR:ARG:32 != CSTR:ARG:34) || (CSTR:ARG:33 != CSTR:ARG:35)
+	PRINTL 【通常時】　瞳の色選択　を選択してください
+	PRINT [0] 変身後の色 [
+	CALL SETCOLOR_BY_STR, CSTR:ARG:34
+	PRINT ■
+	RESETCOLOR
+	PRINT ][
+	CALL SETCOLOR_BY_STR, CSTR:ARG:35
+	PRINT ■
+	RESETCOLOR
+	PRINTL ] を引き継ぐ
+	PRINT [1] 通常時の色 [
+	CALL SETCOLOR_BY_STR, CSTR:ARG:32
+	PRINT ■
+	RESETCOLOR
+	PRINT ][
+	CALL SETCOLOR_BY_STR, CSTR:ARG:33
+	PRINT ■
+	RESETCOLOR
+	PRINTL ] を引き継ぐ
+	$INPUT_LOOP_9
+	INPUT
+	IF RESULT == 0
+		CSTR:32 = %CSTR:34%
+		CSTR:33 = %CSTR:35%
+	ELSEIF RESULT != 1
+		GOTO INPUT_LOOP_9
+	ENDIF
+	PRINTL 
+ENDIF
+IF TALENT:変身能力 > 0 && TALENT:変身時ＴＳ == 0
+	IF (CSTR:ARG:32 != CSTR:ARG:34) || (CSTR:ARG:33 != CSTR:ARG:35)
+		PRINTL 【変身後】　瞳の色　を選択してください
+		PRINT [0] 変身後の色 [
+		CALL SETCOLOR_BY_STR, CSTR:ARG:34
+		PRINT ■
+		RESETCOLOR
+		PRINT ][
+		CALL SETCOLOR_BY_STR, CSTR:ARG:35
+		PRINT ■
+		RESETCOLOR
+		PRINTL ] を引き継ぐ
+		PRINT [1] 通常時の色 [
+		CALL SETCOLOR_BY_STR, CSTR:ARG:32
+		PRINT ■
+		RESETCOLOR
+		PRINT ][
+		CALL SETCOLOR_BY_STR, CSTR:ARG:33
+		PRINT ■
+		RESETCOLOR
+		PRINTL ] を引き継ぐ
+		$INPUT_LOOP_10
+		INPUT
+		IF RESULT == 1
+			CSTR:34 = %CSTR:32%
+			CSTR:35 = %CSTR:33%
+		ELSEIF RESULT != 0
+			GOTO INPUT_LOOP_10
+		ENDIF
+		PRINTL 
+	ENDIF
+ENDIF
+IF CSTR:ARG:36 != CSTR:ARG:37
+	PRINTL 【通常時】　肌の色　を選択してください
+	PRINT [0] 変身後の色 [
+	CALL SETCOLOR_BY_STR, CSTR:ARG:37
+	PRINT ■
+	RESETCOLOR
+	PRINTL ] を引き継ぐ
+	PRINT [1] 通常時の色 [
+	CALL SETCOLOR_BY_STR, CSTR:ARG:36
+	PRINT ■
+	RESETCOLOR
+	PRINTL ] を引き継ぐ
+	$INPUT_LOOP_11
+	INPUT
+	IF RESULT == 0
+		CSTR:36 = %CSTR:37%
+	ELSEIF RESULT != 1
+		GOTO INPUT_LOOP_11
+	ENDIF
+	PRINTL 
+ENDIF
+IF TALENT:変身能力 > 0 && TALENT:変身時ＴＳ == 0
+	IF CSTR:ARG:36 != CSTR:ARG:37
+		PRINTL 【変身後】　肌の色　を選択してください
+		PRINT [0] 変身後の色 [
+		CALL SETCOLOR_BY_STR, CSTR:ARG:37
+		PRINT ■
+		RESETCOLOR
+		PRINTL ] を引き継ぐ
+		PRINT [1] 通常時の色 [
+		CALL SETCOLOR_BY_STR, CSTR:ARG:36
+		PRINT ■
+		RESETCOLOR
+		PRINTL ] を引き継ぐ
+		$INPUT_LOOP_12
+		INPUT
+		IF RESULT == 1
+			CSTR:37 = %CSTR:36%
+		ELSEIF RESULT != 0
+			GOTO INPUT_LOOP_12
+		ENDIF
+		PRINTL 
+	ENDIF
+ENDIF
+
+SIF TRANS > 0
+	CALL TRANSFORM, 1
+
+TARGET = KEEP
+RETURN 1
+
+
+
+

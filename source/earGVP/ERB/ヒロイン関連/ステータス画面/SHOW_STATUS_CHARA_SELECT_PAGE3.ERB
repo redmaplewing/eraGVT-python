@@ -1,0 +1,72 @@
+﻿;================================================================
+;ステータス表示画面の3ページ目（武器カスタマイズ）の表示処理
+; 引数
+;	ARG	対象のキャラ番号
+@SHOW_STATUS_CHARA_SELECT_PAGE3 , ARG
+PRINTL 　　　　　　　　　　　　　　　　　武器カスタマイズ　　　　　　　　　　　　　　　PAGE(3/5)
+DRAWLINE
+;1番目のブロック：名前・呼び名・一人称・レベル・性別の表示
+CALL SHOW_STATUS_CHARA_NAMES_LV, ARG
+
+;2～4番目のブロック：近・中・遠距離武器の表示
+CALL SHORTLINE
+CALL SHOW_WEAPON_EDIT, ARG, キャラ一時戦闘距離_近距離
+CALL SHORTLINE
+CALL SHOW_WEAPON_EDIT, ARG, キャラ一時戦闘距離_中距離
+CALL SHORTLINE
+CALL SHOW_WEAPON_EDIT, ARG, キャラ一時戦闘距離_遠距離
+PRINTL 
+DRAWLINE
+
+;行動不能または戦闘中なら武器カスタマイズは不可
+IF CFLAG:ARG:0 != 状態_無事 || FLAG:700
+	SETCOLOR 105,105,105
+	PRINTPLAIN [0]武器カスタマイズ画面に移動　　　
+	RESETCOLOR
+ELSE
+	PRINT [0]武器カスタマイズ画面に移動　　　
+ENDIF
+PRINTL
+
+;--------------------------------------------------
+;ステータス表示の3ページ目（武器カスタマイズ）の画面固有コマンド処理
+; 引数
+;	ARG				対象のキャラ番号
+;	INPUT_CMD 		入力されたコマンド番号
+; 戻り値
+;	1:関数内でコマンド処理ができた
+;	0:関数内に対応するコマンドがなかった
+@CMD_STATUS_CHARA_SELECT_PAGE3 , ARG, INPUT_CMD
+#DIM INPUT_CMD
+IF INPUT_CMD == 0 && CFLAG:ARG:0 == 状態_無事 && FLAG:700 == 0
+	CALL WEAPON_CUSTOMIZE, ARG
+	RETURN 1
+ELSE
+	RETURN 0
+ENDIF
+
+;================================================================
+;	以降、画面表示の各部分を担当する関数群
+;================================================================
+;--------------------------------------------------
+;武器カスタマイズ表示
+; 引数
+;	ARG	対応するキャラ番号
+;	RANGE	対応する戦闘距離番号（TCVARn）
+@SHOW_WEAPON_EDIT, ARG, RANGE
+#DIM RANGE
+
+PRINTFORM ◆%キャラ一時戦闘距離:RANGE%武器
+;memo:このマジックナンバーを滅ぼすには、武器改造処理コード類の中に戦闘距離を渡すと対応する武器名を返す関数が必要
+IF CSTR:ARG:(RANGE + 4) != ""
+	PRINTFORML 『%CSTR:ARG:(RANGE + 4)%』
+ELSE
+	PRINTL （武器名が設定されていません）
+ENDIF
+PRINTL │
+CALL FSTYLE_ATTACK, ARG,RANGE
+PRINTFORML └◎戦闘スタイル　<<%FSTYLE_NAME_F(ARG,RANGE)%>>　　　　　　　　　威力：【{RESULT}】
+CALL SET_FSTYLE_INFO, ARG,RANGE
+PRINTFORML 　---> %RESULTS:0%
+PRINTFORML 　---> %RESULTS:1%
+PRINTFORML 　---> %RESULTS:2%

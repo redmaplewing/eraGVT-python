@@ -1,0 +1,167 @@
+﻿;**********************************************************
+;インターミッション画面(SHOP)でのパーティ編成処理
+@SHOP_ORGANIZE_PARTY
+
+CALL LB
+
+;触手の探索/発見/交戦状況、悪堕ちキャラの表示
+DRAWLINE
+CALL SHOP_SHOW_BOSS_INFO
+
+;パーティーキャラのステータス一覧
+DRAWLINE
+PRINTL
+PRINTFORML パーティ人数( {CHARANUM_PARTYCHECK(1)} / {パーティ人数最大値} )
+
+;パーティメンバーと（いるなら）控えメンバーの一覧を続けて表示する。編成処理から呼ぶので引数はTRUE
+CALL SHOP_SHOW_STATUS_PARTY_LIST, TRUE
+SIF CHARANUM_RESERVE()
+	CALL SHOP_SHOW_STATUS_RESERVE_LIST, TRUE
+PRINTPLAIN 　　　　　　　　　　　　　　　　　　 
+
+;パーティに加える/外すボタンの表示
+IF TARGET != 0
+	;控えキャラを選択した
+	IF CFLAG:TARGET:999 == 0
+		;パーティ人数が最大、選択キャラが出産直前・育児中なら編成不可メッセージを表示
+		IF CHARANUM_ACTIVE() >= パーティ人数最大値
+			PRINT 編成不可(パーティ人数限界)
+		ELSEIF CFLAG:TARGET:0 == 状態_出産直前
+			PRINT 編成不可(特別病棟に入院中)
+		ELSEIF CFLAG:TARGET:0 == 状態_育児中
+			PRINT 編成不可(特別病棟で育児中)
+		ELSE
+			PRINT [100]パーティに加える
+		ENDIF
+	;編成中キャラを選択した
+	ELSEIF CFLAG:TARGET:999
+		PRINT [100]パーティから外す 
+	ENDIF
+ELSE
+	PRINT 　　　　　　　　　　　
+ENDIF
+
+;編成完了ボタンの表示
+FONTBOLD
+CALL CPRINTL, "[50] パーティ編成を完了する　", 0xFAB432
+FONTREGULAR
+
+;実施不可行動のインフォメーション表示
+CALL SHOP_NG_ACTION_INFO
+
+;インターミッション画面だと一口メッセージが出る欄
+DRAWLINE
+PRINTL
+PRINTL
+PRINTL
+PRINTL
+
+;日数・残り期限・資金・防衛力・人気度の表示
+CALL SHOP_INTERMISSON_HEADER
+
+;キャラ入れ替えのガイドメッセージ（選択キャラの有無によって表示変更）
+IF TARGET != 0
+	PRINT 選択中のキャラ：
+	;SETCOLOR 250,180,50
+	;PRINTPLAINFORM [{TARGET}]%CALLNAME:TARGET%
+	;RESETCOLOR
+	CALL CPRINTPLAIN, STRFORM("[{TARGET}]%CALLNAME:TARGET%"), 0xFAB432
+	PRINTL 　⇒　
+	PRINTL （位置を入れ替える対象のキャラを選択してください）
+	PRINTL （選択中のキャラを再度選ぶと選択を解除します）
+ELSE
+	PRINTL 選択中のキャラ：なし
+	PRINTL （配置を変更するキャラを選択してください）
+	PRINTL 
+ENDIF
+;選択中のキャラをパーティに加えられない場合の警告
+IF TARGET != 0 &&  CFLAG:TARGET:999 == 0
+	PRINTL 
+	IF CHARANUM_ACTIVE() < パーティ人数最大値
+		PRINTL パーティ人数が最大に達しているため、パーティに加えられません。
+	ELSEIF CFLAG:TARGET:0 == 状態_出産直前
+		PRINTL 選択中のキャラは特別病棟に入院中のため、パーティに加えられません。
+	ELSEIF CFLAG:TARGET:0 == 状態_育児中
+		PRINTL 選択中のキャラは特別病棟に育児中のため、パーティに加えられません。
+	ELSE
+		PRINTL
+	ENDIF
+ELSE
+	PRINTL 
+	PRINTL
+ENDIF
+PRINTL 
+PRINTL 
+PRINTL 
+
+;入力待ち
+INPUT
+SELECTCASE RESULT
+
+	;[50] パーティ編成を完了する
+	CASE 50
+		PRINTL 編成モードを解除します
+		SIF TARGET == MASTER
+			TARGET = RAND:(CHARANUM-1) + 1
+		;控えが1人もいなくなったなら控えメンバー表示切り替えボタンは表示しないようにする
+		SIF CHARANUM_RESERVE() == 0
+			FLAG:61 = 0
+		RETURN 0
+
+	;[100]パーティに加える/パーティから外す
+	CASE 100
+		;有効なターゲットを選んでいないなら中止
+		SIF TARGET == 0 || CFLAG:TARGET:0 != 状態_無事
+			RESTART
+		;パーティに加えるを選択し、パーティ人数最大値に達していないならパーティ参加中にする
+		IF CFLAG:TARGET:999 == 0 && CHARANUM_ACTIVE() < パーティ人数最大値
+			CFLAG:TARGET:999 = 1
+		;パーティから外すを選択したなら、パーティ非参加にして行動予定を休憩に変更
+		ELSEIF CFLAG:TARGET:999
+			CFLAG:TARGET:999 = 0
+			CFLAG:TARGET:100 = 予定_休憩
+		ENDIF
+		TARGET = 0
+
+	;キャラ番号を選んだ＝キャラの入れ替え選択
+	CASE 1 TO (CHARANUM-1)
+		;本来表示されないキャラのキャラ番号を手打ちで入れた場合は無効
+		SIF GROUPMATCH(CFLAG:RESULT:0, 状態_幽閉, 状態_洗脳, 状態_悪堕ち, 状態_死亡)
+			RESTART
+		;出産直前・育児中のキャラを選んだ場合は無効
+		IF GROUPMATCH(CFLAG:TARGET:0, 状態_出産直前, 状態_育児中) || GROUPMATCH(CFLAG:RESULT:0, 状態_出産直前, 状態_育児中)
+			SIF CFLAG:TARGET:0 == 状態_出産直前
+				PRINTFORML %CALLNAME:TARGET%は特別病棟に入院中のため、入れ替えられません。
+			SIF CFLAG:TARGET:0 == 状態_育児中
+				PRINTFORML %CALLNAME:TARGET%は育児中のため、入れ替えられません。
+			SIF CFLAG:RESULT:0 == 状態_出産直前
+				PRINTFORML %CALLNAME:RESULT%は特別病棟に入院中のため、入れ替えられません。
+			SIF CFLAG:RESULT:0 == 状態_育児中
+				PRINTFORML %CALLNAME:RESULT%は育児中のため、入れ替えられません。
+			TARGET = 0
+			RESTART
+		ENDIF
+		;まだ誰もターゲットにしていないなら選んだキャラをターゲットに
+		IF TARGET == 0
+			TARGET = RESULT
+		;ターゲットをもう一度選んだのならターゲット選択解除
+		ELSEIF TARGET == RESULT
+			TARGET = 0
+		;ターゲットと別のキャラを選んだなら、選んだキャラを入れ替える
+		ELSE
+			FOR LOCAL, 0, CHARANUM
+				SIF LOCAL == MASTER
+					CONTINUE
+				SWAP RELATION:LOCAL:TARGET, RELATION:LOCAL:RESULT
+			NEXT
+			SWAP CFLAG:TARGET:999, CFLAG:RESULT:999
+			SWAPCHARA TARGET,RESULT
+			;入れ替えたことで控えに引っ込むキャラは行動予定を休憩にする
+			SIF CFLAG:TARGET:999 == 0
+				CFLAG:TARGET:100 = 予定_休憩
+			SIF CFLAG:RESULT:999 == 0
+				CFLAG:RESULT:100 = 予定_休憩
+			TARGET = 0
+		ENDIF
+ENDSELECT
+RESTART

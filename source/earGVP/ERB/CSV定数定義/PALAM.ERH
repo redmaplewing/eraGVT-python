@@ -1,0 +1,41 @@
+﻿;==============================================================================
+;PALAM（パラメータ）の定数定義ファイル
+;==============================================================================
+#DIM CONST PALAM上限 = 999999
+;----------------------------------------------------------
+;パラメータの値範囲定義
+;特定のパラメータをセットで扱う場合に、そのIDを数値配列定数にする
+;----------------------------------------------------------
+{
+#DIM CONST 調教PALAM =
+GETNUM(PALAM, "快Ｃ"),
+GETNUM(PALAM, "快Ｖ"),
+GETNUM(PALAM, "快Ａ"),
+GETNUM(PALAM, "快Ｂ"),
+GETNUM(PALAM, "潤滑"),
+GETNUM(PALAM, "恭順"),
+GETNUM(PALAM, "習得"),
+GETNUM(PALAM, "欲情"),
+GETNUM(PALAM, "屈服"),
+GETNUM(PALAM, "恥情"),
+GETNUM(PALAM, "苦痛"),
+GETNUM(PALAM, "恐怖")
+}
+{
+#DIM CONST 快部位PALAM =
+GETNUM(PALAM, "快Ｃ"),
+GETNUM(PALAM, "快Ｖ"),
+GETNUM(PALAM, "快Ａ"),
+GETNUM(PALAM, "快Ｂ")
+}
+{
+#DIM CONST 部位以外調教PALAM =
+GETNUM(PALAM, "潤滑"),
+GETNUM(PALAM, "恭順"),
+GETNUM(PALAM, "習得"),
+GETNUM(PALAM, "欲情"),
+GETNUM(PALAM, "屈服"),
+GETNUM(PALAM, "恥情"),
+GETNUM(PALAM, "苦痛"),
+GETNUM(PALAM, "恐怖")
+}

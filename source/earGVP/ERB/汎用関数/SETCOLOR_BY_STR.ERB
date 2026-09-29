@@ -1,0 +1,73 @@
+﻿;--------------------------------------------------
+;文字列を色情報に解凍する
+; 引数
+;	COLOR_STR	色を表す文字列
+;		色名そのままの日本語か、 R//G//B の形式の色数値指定
+; 定数
+;	SEPARATOR	色数値指定の区切り記号
+; 戻り値
+;	正常終了の場合0、色の変更をしなかった場合-1
+@SETCOLOR_BY_STR, COLOR_STR
+#DIMS COLOR_STR
+#DIMS CONST SEPARATOR = "//"
+
+;文字列の表す色名を探し、対応する色指定を行う
+;memo:色の定義をここで行うのではなく、別に用意した設定ファイルを参照する形にするべき
+SELECTCASE COLOR_STR
+	CASE "赤", "レッド"
+		SETCOLOR 255,8,8
+	CASE "緑", "グリーン"
+		SETCOLOR 8,255,125
+	CASE "青", "ブルー"
+		SETCOLOR 8,125,255
+	CASE "黄", "イエロー"
+		SETCOLOR 245,245,125
+	CASE "金", "ブロンド", "ゴールド"
+		SETCOLOR 255,255,8
+	CASE "紫", "パープル"
+		SETCOLOR 255,8,255
+	CASE "橙", "オレンジ"
+		SETCOLOR 255,125,8
+	CASE "桃", "ピンク"
+		SETCOLOR 255,8,125
+	CASE "銀", "シルバー"
+		SETCOLOR 200,200,255
+	CASE "茶", "ブラウン", "ブルネット"
+		SETCOLOR 88,8,8
+	CASE "黒", "ブラック"
+		SETCOLOR 40,24,24
+	CASE "肌色"
+		SETCOLOR 255,200,180
+	CASE "褐色"
+		SETCOLOR 183,86,17
+	CASE "色白"
+		SETCOLOR 255,236,220
+	;色名に当てはまらなかったので、色数値指定の可能性がある
+	CASEELSE
+		;区切り記号で分割してRGBそれぞれの数値文字列を取得する
+		SPLIT COLOR_STR, SEPARATOR, LOCALS
+		;分割結果がちゃんとRGBの数値文字列なら、数値変換して色指定する
+		IF RESULT == 3 && ISNUMERIC(LOCALS:0) && ISNUMERIC(LOCALS:1) && ISNUMERIC(LOCALS:2)
+			SETCOLOR TOINT(LOCALS:0), TOINT(LOCALS:1), TOINT(LOCALS:2)
+		;そうでないなら異常終了を返す
+		ELSE
+			RETURN -1
+		ENDIF
+ENDSELECT
+
+;--------------------------------------------------
+;[]で括られた色付きの■を印字する。印字前後で文字色を維持する
+; 引数
+;	COLOR	色名の文字列
+; 変数
+;	ORIGINAL_COLOR	呼び出し時点の文字色
+@COLORCHIP, COLOR
+#DIMS COLOR
+#DIM ORIGINAL_COLOR
+
+ORIGINAL_COLOR = GETCOLOR()
+PRINT [
+CALL SETCOLOR_BY_STR, COLOR
+PRINT ■
+SETCOLOR ORIGINAL_COLOR
+PRINT ]

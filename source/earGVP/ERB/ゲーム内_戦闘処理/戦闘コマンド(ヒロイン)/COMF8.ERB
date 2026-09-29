@@ -1,0 +1,53 @@
+﻿;振り解く
+@COM8
+
+;刻印による行動制限判定　１で行動できない
+CALL ACT_LIMIT
+SIF RESULT == 1
+	RETURN 1
+
+;距離表示
+CALL PRINT_DISTANCE
+PRINTL 
+
+;地の文：振り解く
+CALL MESSAGE_BATTLE_CHARA_HURIHODOKU
+
+
+;振り解く成功判定
+CALL ACT_HANTEI_CHARA_TO_TENTACLE, "HURIHODOKU"
+
+IF RESULT == 1
+	TCVARn:0 = 2
+	TFLAG:4 = 0
+	TFLAG:16 = -1
+	TFLAG:17 = -1
+	
+	;地の文：振り解く成功
+	CALL MESSAGE_BATTLE_CHARA_HURIHODOKU_SUCCESS
+	;地の文：洗脳/悪堕ちキャラが操作キャラに振り解かれてしまった
+	SIF ENEMY_TYPE_CHECK_F("AKUOTI") == 1
+		CALL MESSAGE_OTHER_BATTLE_CHARA_HURIHODOKU_SUCCESS
+
+	;触手の体勢が崩れる
+	TFLAG:1 = 1
+	;自動で戦闘メニューを選択する
+	TCVARn:8 = 1
+	
+ELSE
+	;地の文：振り解く失敗
+	CALL MESSAGE_BATTLE_CHARA_HURIHODOKU_FALSE
+	;地の文：洗脳/悪堕ちキャラが操作キャラの振り解くを防いだ
+	SIF ENEMY_TYPE_CHECK_F("AKUOTI") == 1
+		CALL MESSAGE_OTHER_BATTLE_CHARA_HURIHODOKU_FALSE
+
+ENDIF
+
+;行動ポイントを+1
+EX:行動ポイント += 1
+
+;FEAT効果による反動の増加
+SIF TALENT:剛腕 > 0
+	TFLAG:99 += 1
+
+RETURN 1

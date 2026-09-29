@@ -1,0 +1,391 @@
+﻿;女子の人気投票
+;学校のみ
+;防衛が低い＝治安悪い＝ゲス確率増
+@PASTIME_TOHYO, ARG
+#DIMS 順位
+
+PRINTFORML 人気投票
+;男は非対応
+IF ISMANLY()
+	RETURN 0
+ENDIF
+PRINTW
+IF RAND:2 == 0
+	PRINTFORML %PRINT_TRANSCALLNAME(TARGET)%は空き教室の黒板に書かれた落書きを見つけた。
+	PRINTFORM 黒板には『
+ELSE 
+	PRINTFORML %PRINT_TRANSCALLNAME(TARGET)%はゴミ箱のかたわらに丸められた紙が落ちているのを見つけ、何気なくその紙屑を広げて見た。
+	PRINTFORM 紙には『
+ENDIF
+
+;治安低ければ発生しやすい下品めなネタ　1000なら90％　10000なら0％であってる？
+IF RAND:100 > FLAG:852 / 100
+	SELECTCASE RAND:16
+		;C感覚
+		CASE 0
+			PRINTDATA
+			DATAFORM クリいじってそうな
+			DATAFORM クリオナしてそうな
+			DATAFORM クリトリス弱そうな
+			DATAFORM クリ押しただけでイキそうな
+			ENDDATA
+			IF ABL:Ｃ感覚 > 4
+				順位 = ダントツ１位だった
+			ELSEIF ABL:Ｃ感覚 > 2
+				順位 = トップ５に入っていた
+			ELSE
+				順位 = １０位以内にランクインしていた	
+			ENDIF
+		;V
+		CASE 1
+			PRINTDATA
+			DATAFORM 締まりが良さそうな
+			DATAFORM 挿れただけでイキそうな
+			DATAFORM マンコ弱そうな
+			DATAFORM 中出しされるの好きそうな
+			DATAFORM マンコ気持ち良さそうな
+			ENDDATA
+			IF ABL:Ｖ感覚 > 4
+				順位 = ダントツ１位だった
+			ELSEIF ABL:Ｖ感覚 > 2
+				順位 = トップ５に入っていた
+			ELSE
+				順位 = １０位以内にランクインしていた	
+			ENDIF
+		;A
+		CASE 2
+			PRINTDATA
+			DATAFORM アナル弱そうな
+			DATAFORM くっ殺似合いそうな
+			DATAFORM 尻穴ほじられてイキそうな
+			DATAFORM チンポにケツ穴負けそうな
+			ENDDATA
+			IF ABL:Ａ感覚 > 4
+				順位 = ダントツ１位だった
+			ELSEIF ABL:Ａ感覚 > 2
+				順位 = トップ５に入っていた
+			ELSE
+				順位 = １０位以内にランクインしていた	
+			ENDIF
+		;B
+		CASE 3
+			PRINTDATA
+			DATAFORM \@(TALENT:巨乳 > 1) ? 背後からおっぱい揉みたい # 背後から乳首摘まみたい \@
+			DATAFORM \@(TALENT:巨乳 > 1) ? パイズリフェラさせたい # 背後から乳首揉みたい \@
+			DATAFORM \@(TALENT:巨乳 > 1) ? パイズリされたい # 乳首擦るだけでイキそうな \@
+			DATAFORM \@(TALENT:巨乳 > 1) ? おっぱい揉んだらイキそうな # 乳首抓ったら即イキしそうな \@
+			DATAFORM 乳首だけでイキそうな
+			ENDDATA
+			IF ABL:Ｂ感覚 > 4
+				順位 = ダントツ１位だった
+			ELSEIF ABL:Ｂ感覚 > 2
+				順位 = トップ５に入っていた
+			ELSE
+				順位 = １０位以内にランクインしていた	
+			ENDIF
+		;従順
+		CASE 4
+			PRINTDATA
+			DATAFORM 強引に誘えばヤラセてくれそうな
+			DATAFORM 脅せばペットとして飼えそうな
+			DATAFORM 無理矢理ヤれば奴隷にできそうな
+			DATAFORM ナンパ断れずにヤられてそうな
+			DATAFORM 毎朝痴漢被害に遭ってそうな
+			DATAFORM 痴漢してみたい
+			DATAFORM レイプしてみたい
+			DATAFORM 無理矢理イラマチオさせたい
+			DATAFORM 首絞めックスで支配したい
+			DATAFORM 調教してペットにしたい
+			DATAFORM ペット扱いしてヤりたい
+			DATAFORM 強引にレイプされてほしい
+			ENDDATA
+			IF ABL:従順 > 4
+				順位 = ダントツ１位だった
+			ELSEIF ABL:従順 > 2
+				順位 = トップ５に入っていた
+			ELSE
+				順位 = １０位以内にランクインしていた	
+			ENDIF
+		;欲
+		CASE 5
+			PRINTDATA
+			DATAFORM 性欲強そうな
+			DATAFORM 毎晩オナニーしてそうな
+			DATAFORM セックス好きそうな
+			DATAFORM 乱交好きそうな
+			DATAFORM レイプされても喜びそうな
+			DATAFORM 今すぐヤれそうな
+			DATAFORM マンコ使われたがってそうな
+			ENDDATA
+			IF ABL:欲望 > 4
+				順位 = ダントツ１位だった
+			ELSEIF ABL:欲望 > 2
+				順位 = トップ５に入っていた
+			ELSE
+				順位 = １０位以内にランクインしていた	
+			ENDIF
+		;技巧
+		CASE 6
+			PRINTDATA
+			DATAFORM 腰使いがヤバそうな
+			DATAFORM 手コキ上手そうな
+			DATAFORM フェラチオ上手そうな
+			DATAFORM セックス上手そうな
+			ENDDATA
+			IF ABL:技巧 > 4
+				順位 = ダントツ１位だった
+			ELSEIF ABL:技巧 > 2
+				順位 = トップ５に入っていた
+			ELSE
+				順位 = １０位以内にランクインしていた	
+			ENDIF
+		;奉仕
+		CASE 7
+			PRINTDATA
+			DATAFORM フェラが好きそうな
+			DATAFORM チンポに服従してそうな
+			DATAFORM チンポに心酔してそうな
+			DATAFORM パイズリ奉仕に憧れてそうな
+			DATAFORM 男を勃ててくれそうな
+			ENDDATA
+			IF ABL:奉仕精神 > 4
+				順位 = ダントツ１位だった
+			ELSEIF ABL:奉仕精神 > 2
+				順位 = トップ５に入っていた
+			ELSE
+				順位 = １０位以内にランクインしていた	
+			ENDIF
+		;露出
+		CASE 8
+			PRINTDATA
+			DATAFORM パンツ見せてくれそうな
+			DATAFORM 際どい下着履いてそうな
+			DATAFORM ノーパン登校してそうな
+			DATAFORM 露出癖ありそうな
+			DATAFORM 裸見られたがってそうな
+			DATAFORM 全裸で授業受けてほしい
+			DATAFORM 全裸で登校してほしい
+			ENDDATA
+			IF ABL:露出癖 > 4
+				順位 = ダントツ１位だった
+			ELSEIF ABL:露出癖 > 2
+				順位 = トップ５に入っていた
+			ELSE
+				順位 = １０位以内にランクインしていた	
+			ENDIF
+		;マゾ
+		CASE 9
+			PRINTDATA
+			DATAFORM マゾっぽい
+			DATAFORM 被虐願望ありそうな
+			DATAFORM 腹パンされたがってそうな
+			DATAFORM 首輪嵌められたがってそうな
+			DATAFORM レイプされる妄想してそうな
+			DATAFORM アヘ顔似合いそうな
+			DATAFORM 首絞めセックス好きそうな
+			ENDDATA
+			IF ABL:マゾっ気 > 4
+				順位 = ダントツ１位だった
+			ELSEIF ABL:マゾっ気 > 2
+				順位 = トップ５に入っていた
+			ELSE
+				順位 = １０位以内にランクインしていた	
+			ENDIF
+
+		;触手
+		CASE 10
+			PRINTDATA
+			DATAFORM 触手姦にハマってそうな
+			DATAFORM 触手に孕まされるのが似合いそうな
+			DATAFORM 触手に犯されたがってそうな
+			DATAFORM 触手姦で孕まされるのが似合いそうな
+			DATAFORM 触手のママにされてそうな
+			ENDDATA
+			IF ABL:触手中毒 > 4
+				順位 = ダントツ１位だった
+			ELSEIF ABL:触手中毒 > 2
+				順位 = トップ５に入っていた
+			ELSE
+				順位 = １０位以内にランクインしていた	
+			ENDIF
+		;自慰
+		CASE 11
+			PRINTDATA
+			DATAFORM 毎日オナってそうな
+			DATAFORM えぐいオナニーしてそうな
+			DATAFORM オナニー中毒になってそうな
+			DATAFORM 授業中にオナニーしてそうな
+			DATAFORM バイブ挿れたまま登校しそうな
+			ENDDATA
+			IF ABL:自慰中毒 > 4
+				順位 = ダントツ１位だった
+			ELSEIF ABL:自慰中毒 > 2
+				順位 = トップ５に入っていた
+			ELSE
+				順位 = １０位以内にランクインしていた	
+			ENDIF
+		;精液
+		CASE 12
+			PRINTDATA
+			DATAFORM ザーメン飲みそうな
+			DATAFORM ぶっかけられるの好きそうな
+			DATAFORM 実は精液中毒になってそうな
+			DATAFORM ザーメンの臭いで発情しそうな
+			ENDDATA
+			IF ABL:精液中毒 > 4
+				順位 = ダントツ１位だった
+			ELSEIF ABL:精液中毒 > 2
+				順位 = トップ５に入っていた
+			ELSE
+				順位 = １０位以内にランクインしていた	
+			ENDIF
+		;噴乳
+		CASE 13
+			PRINTDATA
+			DATAFORM 母乳出やすそうな
+			DATAFORM おっぱいから特濃ミルク出せそうな
+			DATAFORM 自宅で母乳搾ってそうな
+			DATAFORM おっぱい飲んでみたい
+			ENDDATA
+			IF ABL:噴乳中毒 > 4
+				順位 = ダントツ１位だった
+			ELSEIF ABL:噴乳中毒 > 2
+				順位 = トップ５に入っていた
+			ELSE
+				順位 = １０位以内にランクインしていた	
+			ENDIF
+		;被姦経験
+		CASE 14
+			PRINTDATA
+			DATAFORM ヤリマンっぽい
+			DATAFORM マンコガバガバになってそうな
+			DATAFORM マンコ中古品にされてそうな
+			DATAFORM 雌穴毎日使われてそうな
+			DATAFORM 公衆便女にされてそうな
+			DATAFORM %ESTRUS_TEXT_F(TARGET,"の")%子宮何度も使われてそうな
+			ENDDATA
+			IF EXP:10 > 100
+				順位 = ダントツ１位だった
+			ELSEIF EXP:10 > 50
+				順位 = トップ５に入っていた
+			ELSE
+				順位 = １０位以内にランクインしていた	
+			ENDIF
+		;交際
+		CASE 15
+			PRINTDATA
+			DATAFORM 寝取りたい
+			DATAFORM 恋人の前でアヘ顔ダブルピースさせたい
+			DATAFORM 恋人の前でチン負け宣言させたい
+			DATAFORM レイプで寝取りたい
+			DATAFORM 中出し受精で托卵させたい
+			DATAFORM 共用便器にしたい
+			ENDDATA
+				IF TALENT:交際相手 > 2
+					順位 = ダントツ１位だった
+				ELSEIF TALENT:交際相手 > 1
+					順位 = トップ５に入っていた
+				ELSE
+					順位 = １０位以内にランクインしていた	
+				ENDIF
+		;AV出演PRINT ズリネタにしたことがある（未
+		;円光PRINT 一発ヤリたい（未
+		CASEELSE
+			PRINTDATA
+			DATAFORM AV出てそうな
+			DATAFORM AV出演してほしい
+			DATAFORM ズリネタにされてそうな
+			DATAFORM オナペットにされてそうな
+			DATAFORM 実はドスケベそうな
+			DATAFORM 実は犯されまくりのAV女優やってそうな
+			ENDDATA
+			順位 = ダントツ１位だった
+	ENDSELECT
+
+	PRINTFORML 女子ランキング』と書かれている。
+	IF TALENT:男の娘 > 0
+		PRINTFORML なんとなく目を通してしまった%PRINT_TRANSCALLNAME(TARGET)%は…紛れもなく自分の名前を見つけた。
+		PRINTFORML しかも%順位%。
+		PRINTFORML 自分は女子じゃないのになにを考えているんだと呆れるばかりだが、
+	ELSEIF (TALENT:淫乱 || ABL:欲望 >= 3 || ABL:マゾっ気 >= 3) && TALENT:初心 < 1
+		PRINTFORML 呆れつつも自分の名前を探した%PRINT_TRANSCALLNAME(TARGET)%は…%順位%。
+	ELSE
+		PRINTFORML 誰が書いたのかと呆れていると、偶然%PRINT_TRANSCALLNAME(TARGET)%の名前が目に留まり…%順位%。
+	ENDIF
+	IF (TALENT:淫乱 || ABL:欲望 >= 3 || ABL:マゾっ気 >= 3) && TALENT:初心 < 1
+		IF ISMALE()
+			;#region
+			PRINTFORML %PRINT_TRANSCALLNAME(TARGET)%は男たちからどんな目で見られているのかを知り、体が熱くなり、尻穴が疼くのを感じた。
+			;#endregion
+		ELSE 
+			PRINTFORML %PRINT_TRANSCALLNAME(TARGET)%は男たちからどんな目で見られているのかを知り、体が熱くなり、秘裂が濡れるのを感じた。
+		ENDIF
+	ELSE
+		PRINTFORML %PRINT_TRANSCALLNAME(TARGET)%は嫌悪感に顔をしかめつつも、男たちからどんな目で見られているのかを知り赤面している。
+	ENDIF
+
+;治安が高い時　健全なもの
+ELSE
+	;おっぱい
+	IF RAND:3 == 0
+		IF TALENT:小柄 > 0
+			PRINT ロリ巨乳
+		ELSEIF TALENT:長身 > 0
+			PRINT 巨乳イケメン
+		ELSE
+			PRINT おっぱい大きい
+		ENDIF
+		IF TALENT:巨乳 > 3
+			順位 = トップ３だった
+		ELSEIF TALENT:巨乳 > 0
+			順位 = トップ５に入っていた
+		ELSEIF TALENT:貧乳 > 0
+			順位 = ランク外だった
+		ELSE
+			順位 = １０位以内にランクインしていた	
+		ENDIF
+	;魅了経験
+	ELSEIF RAND:2 == 0
+		PRINTDATA
+		DATAFORM 彼女にしたい
+		DATAFORM デートしてみたい
+		DATAFORM 恋人にしたい
+		DATAFORM キスしてみたい
+		DATAFORM 膝枕してほしい
+		DATAFORM 耳かきしてほしい
+		DATAFORM 抱き締めてみたい
+		ENDDATA
+		IF EXP:魅了経験 > 50
+			順位 = ダントツ１位だった
+		ELSEIF EXP:魅了経験 > 25
+			順位 = トップ５に入っていた
+		ELSE
+			順位 = １０位以内にランクインしていた	
+		ENDIF
+	ELSE
+		PRINTDATA
+		DATAFORM 凛々しい
+		DATAFORM 強そうな
+		DATAFORM 勇敢そうな
+		ENDDATA
+		IF EXP:戦闘経験 > 30
+			順位 = ダントツ１位だった
+		ELSEIF EXP:戦闘経験 > 15
+			順位 = トップ５に入っていた
+		ELSE
+			順位 = １０位以内にランクインしていた	
+		ENDIF
+	ENDIF
+	PRINTFORML 女子ランキング』と書かれている。
+	IF TALENT:男の娘 > 0
+		PRINTFORML なんとなく目を通してしまった%PRINT_TRANSCALLNAME(TARGET)%は…紛れもなく自分の名前を見つけた。
+		PRINTFORML しかも%順位%。
+		PRINTFORML 自分は女子じゃないのにどういうことだと突っ込みたくなるばかりだが、
+	ELSEIF (TALENT:淫乱 || ABL:欲望 >= 3 || ABL:マゾっ気 >= 3) && TALENT:初心 < 1
+		PRINTFORML 呆れつつも自分の名前を探した%PRINT_TRANSCALLNAME(TARGET)%は…%順位%。
+	ELSE
+		PRINTFORML 誰が書いたのかと呆れていると、偶然%PRINT_TRANSCALLNAME(TARGET)%の名前が目に留まり…%順位%。
+	ENDIF
+	PRINTFORML %PRINT_TRANSCALLNAME(TARGET)%は学校の男たちのバカさ加減に呆れつつも、どんな目で見られているのかを知り恥ずかしがっている。
+ENDIF
+

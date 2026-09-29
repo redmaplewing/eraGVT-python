@@ -1,0 +1,316 @@
+﻿;疑似bool型定数
+#DIM CONST TRUE = 1
+#DIM CONST FALSE = 0
+
+;デバッグ用変数
+;#;#DIM DEBUG_RAND, 10 = -1, -1, -1, -1, -1, -1, -1, -1, -1, -1
+
+;戦闘開始時に手動でリセットするTCVAR代替変数
+#DIM CHARADATA TCVARn, 300
+
+;ランダム処理用
+#DIM CONST RANDCHOOSE_MAX = 1000000
+#DIM RANDCHOOSE_NUM,RANDCHOOSE_MAX
+
+;戦闘中のPALAM数値受け渡し用
+#DIM COMMON_PALAM,100
+;COMMON_PRISONの数値受け渡し用
+#DIM COMMON_EXP,100
+;全領域参照用
+#DIM GFLAG,1000
+
+;定数定義
+#DIM CONST CHARACSV最大数 = 9999
+#DIM CONST パーティ人数最大値 = 6
+#DIM CONST 登録最大人数 = 30
+#DIM CONST 強制休憩体力 = 500
+;TALENT関連
+;#DIM CONST SEIKAKU_START = 10
+;#DIM CONST SEIKAKU_NUM = 19
+#DIM CONST RACE_START = 201
+#DIM CONST RACE_NUM = 12
+#DIM CONST FEAT_START = 1000
+#DIM CONST SPECIFIC_FEAT_START = 1100
+#DIM CONST SPECIFIC_FEAT_NUM = 13
+#DIM CONST GENERIC_FEAT_START = 1200
+#DIM CONST GENERIC_FEAT_NUM = 19
+
+
+;FLAG:0　⇒　GAME_OPTION_CHECK_F()　で参照
+#DIM CONST MODE_GAMEOVER = 0
+#DIM CONST MODE_NORMAL   = 1
+#DIM CONST MODE_SOLO     = 2
+#DIM CONST MODE_HARDCORE = 3
+#DIM CONST MODE_SURVIVAL = 4
+#DIM CONST MODE_FREEPLAY = 5
+#DIM CONST MODE_SANDBOX  = 6
+#DIM CONST MODE_INSTANT  = 7
+#DIM CONST モードカウント = 8;モード数
+{
+    #DIMS CONST モードネーム =
+    "GAMEOVER",
+    "NORMAL",
+    "SOLO",
+    "HARDCORE",
+    "SURVIVAL",
+    "FREEPLAY",
+    "SANDBOX",
+    "INSTANT"
+}
+#DIM CONST OPTION_easy = 0
+#DIM CONST OPTION_normal = 1
+#DIM CONST OPTION_hardcore = 2
+#DIM CONST OPTION_solo = 3
+#DIM CONST OPTION_endless = 4
+#DIM CONST OPTION_引継ぎ無し = 5
+#DIM CONST OPTION_制限時間無し = 6
+#DIM CONST OPTION_実績エンド無し = 7
+#DIM CONST OPTION_ゲームオ－バー無し = 8
+#DIM CONST OPTION_加入引退有り = 9
+#DIM CONST OPTION_ステ低下有り = 10
+#DIM CONST オプションカウント = 11;総数
+;デフォルトのモード用
+;右端がOPTION_0
+        ;GAMEOVER
+        ;NORMAL
+        ;SOLO
+        ;HARDCORE
+        ;SURVIVAL
+        ;FREEPLAY
+        ;SANDBOX
+        ;INSTANT
+{
+    #DIM CONST モードオプション = 
+        0b00000000000,
+        0b00000000010,
+        0b00000001010,
+        0b00000000100,
+        0b00000010010,
+        0b00001110010,
+        0b00111110010,
+        0b11000000010
+}
+
+#DIM CONST クリトリス = 1
+#DIM CONST Ｃ = 1
+#DIM CONST 膣 = 2
+#DIM CONST Ｖ = 2
+#DIM CONST アナル = 4
+#DIM CONST Ａ = 4
+#DIM CONST 胸 = 8
+#DIM CONST Ｂ = 8
+#DIM CONST 口 = 16
+#DIM CONST 手 = 32
+#DIM CONST ワレメ = 64
+#DIM CONST 暴発 = 128
+
+#DIM CONST 体力 = 0
+#DIM CONST 気力 = 1
+
+#DIM CONST 快Ｃ = 0
+#DIM CONST 快Ｖ = 1
+#DIM CONST 快Ａ = 2
+#DIM CONST 快Ｂ = 3
+#DIM CONST 潤滑 = 10
+#DIM CONST 恭順 = 11
+#DIM CONST 習得 = 12
+#DIM CONST 欲情 = 13
+#DIM CONST 屈服 = 14
+#DIM CONST 恥情 = 15
+#DIM CONST 苦痛 = 16
+#DIM CONST 恐怖 = 17
+#DIM CONST 修練P = 20
+#DIM CONST 経験値 = 50
+
+#DIM CONST PALAM数 = 12
+#DIM CONST PALAM始点 = 10
+#DIM CONST PALAM終点 = 18
+;TCVARn:12
+#DIM CONST 気絶 = 1
+#DIM CONST 排卵 = 2
+#DIM CONST 発情 = 4
+#DIM CONST 麻痺 = 8
+#DIM CONST べとべと = 16
+#DIM CONST 腰くだけ = 32
+#DIM CONST 恍惚 = 64
+#DIM CONST 強拘束 = 128
+
+#DIM MAX_PALAM, 18
+#DIM CLOTH_NO_INNER
+#DIM CLOTH_OUTER_PER
+#DIM CLOTH_OUTER_DEF
+#DIM CLOTH_INNER_PER
+#DIM CLOTH_INNER_DEF
+
+;衣装購入画面の定数定義
+#DIM CONST WIDTH_CLOTH = STRLENS("胸部：胸を強調したデザイン") + 1
+#DIM CONST WIDTH_MONEY = 6
+
+;衣装の挿入抵抗力の基本値
+#DIM CONST DEFAULT_OUTER_DEF = 75
+#DIM CONST DEFAULT_INNER_DEF = 50
+
+;結界関係
+#DIM CONST 感覚数 = 4
+#DIM SAVEDATA SHIELD,感覚数
+
+;触手サイズ関係
+;たぶん0=サイズ、1=本数を加味したサイズ？？
+#DIM TENTACLE_SIZE, 2, 感覚数
+#DIM TENTACLE_NUM, 2, 感覚数
+
+;追加責め箇所判定用
+#DIM EX_COM
+#DIM SH_COM
+#DIM INSERT
+
+;雑魚敵戦闘システム
+#DIM CONST MOB_CATEGORY = 10
+#DIM SAVEDATA MOB_FLAG,MOB_CATEGORY,100
+#DIM GLOBAL SAVEDATA MOB_GLOBAL,MOB_CATEGORY,100
+
+;リラクゼーション施設用
+#DIM CONST 観葉植物 = 1
+#DIM CONST 上質なベッド = 2
+#DIM CONST 最高級ベッド = 4
+#DIM CONST マッサージチェア = 8
+#DIM CONST シャワー設備 = 16
+#DIM CONST ゲームコーナー = 32
+#DIM CONST 大浴場 = 64
+#DIM CONST 美容温泉 = 128
+#DIM CONST ビューティサロン = 256
+#DIM CONST 心休まる風景画 = 512
+#DIM CONST オシャレなオブジェ = 1024
+#DIM CONST ゴージャスな噴水 = 2048
+
+;防御体勢判定用
+#DIM CONST 体勢：何もしない = -1
+#DIM CONST 体勢：通常 = 0
+#DIM CONST 体勢：防御 = 1
+#DIM CONST 体勢：なすがまま = 2
+#DIM CONST 体勢：耐える = 3
+#DIM CONST 体勢：受け入れる = 4
+#DIM CONST 体勢：奉仕する = 5
+#DIM CONST 体勢：睨みつける = 6
+#DIM CONST 体勢：罵倒する = 7
+#DIM CONST 体勢：反抗する = 8
+#DIM CONST 体勢：説得する = 9
+#DIM CONST 体勢：搾り取る = 10
+#DIM CONST 体勢：Ｖ防御 = 100
+#DIM CONST 体勢：暴れる防御 = 200
+#DIM CONST 体勢：暴れる失敗 = 201
+#DIM CONST 体勢：暴れるクリティカル = 202
+#DIM CONST 体勢：反撃 = 300
+#DIM CONST 体勢：ＥＸ反撃 = 301
+#DIM CONST 体勢：反撃成功 = 302
+
+;性コマンド分類用
+#DIM CONST 通常 = 0
+#DIM CONST フェラ = 1
+#DIM CONST 挿入 = 2
+
+;地の文分岐判定用
+#DIM CONST 堕落 = 1
+#DIM CONST 快楽蕩け = 2
+#DIM CONST 性抵抗 = 4
+#DIM CONST 絶望 = 8
+#DIM CONST 苦戦 = 16
+
+;RELATION用
+#DIM CONST 生き別れ = 1
+#DIM CONST 親しい = 2
+#DIM CONST 疎遠な = 3
+#DIM CONST 愛する = 4
+#DIM CONST 憎悪する = 5
+#DIM CONST 義理の = 6
+
+#DIM CONST 親子 = 20
+#DIM CONST 兄弟姉妹 = 21
+#DIM CONST 祖父祖母孫 = 22
+#DIM CONST おじおば = 23
+#DIM CONST 甥姪 = 24
+#DIM CONST いとこ = 25
+
+#DIM CONST 友人 = 30
+#DIM CONST 片思い = 31
+#DIM CONST 恋人 = 32
+#DIM CONST 婚約者 = 33
+#DIM CONST 配偶者 = 34
+
+#DIM CONST 主人 = 40
+#DIM CONST 従者 = 41
+#DIM CONST 奴隷 = 42
+
+#DIM CONST 血統不明 = 0
+#DIM CONST Ｃ触手 = 1
+#DIM CONST Ｖ触手 = 2
+#DIM CONST Ａ触手 = 3
+#DIM CONST Ｂ触手 = 4
+#DIM CONST Ｓ触手 = 5
+#DIM CONST Ｐ触手 = 6
+#DIM CONST Ｈ触手 = 7
+#DIM CONST Ｋ触手 = 8
+
+#DIM CONST 誰とも知れない相手 = -1
+#DIM CONST 近親相姦 = -2
+#DIM CONST 愛する人 = -3
+#DIM CONST 望まない相手 = -4
+
+;汎用豹変口上用
+#DIM CONST K4普段 = 0
+#DIM CONST K4会敵 = 1
+#DIM CONST K4襲来 = 2
+#DIM CONST K4戦闘 = 3
+#DIM CONST K4戦闘_変身 = 23
+#DIM CONST K4鍛錬 = 4
+#DIM CONST K4休憩 = 5
+#DIM CONST K4特別活動 = 6
+#DIM CONST K4特別活動_変身 = 26
+#DIM CONST K4情報収集 = 7
+#DIM CONST K4情報収集_変身 = 27
+#DIM CONST K4自由行動 = 8
+#DIM CONST K4自由行動_変身 = 28
+#DIM CONST K4幽閉 = 40
+#DIM CONST K4幽閉_変身 = 41
+#DIM CONST K4洗脳 = 50
+#DIM CONST K4悪堕ち = 51
+
+
+;戦闘ターン上限格納(都度代入している)
+#DIM ターン上限,1
+
+{
+#DIMS CONST transnamegenre=
+"マジカル的な単語","天体の名前","色の名前","果物、野菜など植物の名前","雑多な英単語","宝石の名前","人を示す単語","武器の名前","ランダム",
+}
+
+{
+#DIMS CONST namelang=
+"日本語",
+"英語",
+"フランス語",
+"ドイツ語",
+"イタリア語",
+"ロシア語",
+"中国語",
+"韓国語",
+"日本語(中性的)",
+"日本語(ひらがなONLY)",
+}
+
+{
+#DIMS CONST racegenre=
+"人間",
+"異能力者",
+"魔法使い",
+"ロボっ子",
+"天使",
+"魔族",
+"鬼",
+"妖精族",
+"ケモミミ族",
+"ヴァンパイア",
+"ポリニアン",
+}
+
+

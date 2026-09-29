@@ -1,0 +1,136 @@
+﻿;================================================================
+;ステータス表示画面処理
+; 引数
+;	ARG		表示するキャラ番号
+; 変数
+;	PAGE	現在表示中のステータスページ（初期値1）
+@SHOW_STATUS_CHARA_SELECT,ARG
+#DIM PAGE = 1
+
+PAGE = 1
+;変身中キャラは5ページ目のステータス表示を変身中で初期表示する
+SHOW_TRANS_STATUS = CFLAG:ARG:1>0 ? 1 # 0
+
+;描画に時間がかかるためINPUTまで描画ロック
+REDRAW 0
+
+;メインループ　戻るを選択するまで繰り返す
+DO
+	CALL LB
+	DRAWLINE
+
+	;現在のページの描画
+	CALLFORM SHOW_STATUS_CHARA_SELECT_PAGE{PAGE},ARG
+
+	;画面下部共通コマンドの出力
+	PRINT  [1][前ページ]　　
+	;直接ページ移動（現在表示中のページなら水色で印字）
+	CALL SHOW_STATUS_CHARA_SELECT_DIRECTBTN, PAGE, 1000, "戦闘　"
+	CALL SHOW_STATUS_CHARA_SELECT_DIRECTBTN, PAGE, 2000, "素質　"
+	CALL SHOW_STATUS_CHARA_SELECT_DIRECTBTN, PAGE, 3000, "武器　"
+	CALL SHOW_STATUS_CHARA_SELECT_DIRECTBTN, PAGE, 4000, "相関　"
+	CALL SHOW_STATUS_CHARA_SELECT_DIRECTBTN, PAGE, 5000, "個人　"
+	PRINTL 　[2][次ページ]
+	PRINT  [999]戻る　　　　　
+	;戦闘中の場合、キャラの選択ボタンは灰色にする
+	SIF FLAG:700 > 0
+		SETCOLOR 128,128,128
+	PRINT 　[100]前のキャラ　　　　　　　　　　
+	PRINT [200]次のキャラ
+	PRINTL 
+	RESETCOLOR
+
+	;入力待ち
+	INPUT
+
+	;入力結果の処理　まずは共通コマンドから
+	SELECTCASE RESULT
+		;戻る（メインループ脱出）
+		CASE 999
+			BREAK
+		;前のページ
+		CASE 1
+			PAGE--
+			SIF PAGE < 1
+				PAGE=5
+		;次のページ
+		CASE 2
+			PAGE++
+			SIF PAGE > 5
+				PAGE=1
+		;ページ直接移動
+		CASE 1000,2000,3000,4000,5000
+			PAGE=RESULT/1000
+		;前のキャラ/次のキャラ
+		CASE 100,200
+			;戦闘中ではないこと
+			IF FLAG:700 == 0
+				;前のキャラなら戻す
+				IF RESULT == 100
+					ARG --
+					SIF ARG == 0
+						ARG=CHARANUM-1
+				;次のキャラなら進める
+				ELSE
+					ARG ++
+					SIF ARG==CHARANUM
+						ARG=1
+				ENDIF
+				;参照キャラが変わるので、変身中かどうかを取り直す
+				SHOW_TRANS_STATUS = CFLAG:ARG:1>0 ? 1 # 0
+			;戦闘中に無理やり前のキャラ/次のキャラを入力したならエラー
+			ELSE
+				PRINTL 
+				PRINTL 正しい値を入力してください
+			ENDIF
+		;共通コマンドではなかったので、表示中のページの固有コマンドの実行処理を呼び出し
+		CASEELSE
+			CALLFORM CMD_STATUS_CHARA_SELECT_PAGE{PAGE} ,ARG, RESULT
+			;向こうでも対応する選択肢がなかったら、エラーメッセージを出す
+			IF RESULT == 0
+				PRINTL 
+				PRINTL 正しい値を入力してください
+			ENDIF
+	;入力結果の処理ここまで
+	ENDSELECT
+
+;メインループここまで
+LOOP 1
+
+;描画モードを戻す
+REDRAW 3
+
+;memo:SHOPの方でこの戻り値が必要
+RETURN 999
+
+;--------------------------------------------------
+;ステータス表示下部の直接ページジャンプボタン表示
+;現在のページなら水色で出力する
+; 引数
+;	PAGE		現在のページ
+;	CMD_ID		[]の中身の数字
+;	CMD_TEXT	[]の横のキャプション
+@SHOW_STATUS_CHARA_SELECT_DIRECTBTN, PAGE, CMD_ID, CMD_TEXT
+#DIM PAGE
+#DIM CMD_ID
+#DIMS CMD_TEXT
+;現在表示中のページ（ページ数*1000がコマンドの数字と同じ）なら、文字色を水色にする
+SIF PAGE * 1000 == CMD_ID
+	SETCOLORBYNAME CYAN
+PRINTFORM [{CMD_ID}]%CMD_TEXT%
+RESETCOLOR
+
+;================================================================
+;	以降、複数のページで共通した画面表示の各部分を担当する関数群
+;================================================================
+;--------------------------------------------------
+;ページ最上部の名前・呼び名・一人称・レベル・性別の表示
+;（1ページ以外で使用）
+; 引数
+;	ARG		対象のキャラ番号
+@SHOW_STATUS_CHARA_NAMES_LV, ARG
+PRINTFORML 氏名　：%NAME:ARG%
+PRINTFORML 呼び名：%CALLNAME:ARG%
+PRINTFORML 一人称：%SELF_CALL(0, 0, ARG)%
+PRINTFORML レベル：Lv.{ABL:ARG:レベル} （{JUEL:ARG:経験値}％）
+PRINTFORML 性別　：%\@ISMALE(ARG:0) ? 男 # 女\@%

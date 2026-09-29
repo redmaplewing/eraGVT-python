@@ -1,0 +1,59 @@
+﻿;--------------------------------------------------
+;旧行動可能判定関数。再設計した関数のラッパー関数化
+;作りもコメントもすべて不適切だったのでこうした。呼び出し元がなくなったら削除
+
+@CHECK_ACTION(ARG:0, ARG:1)
+RESULT = IS_ACTION_INCAPABLE(ARG:0, ARG:1)
+RETURN RESULT
+
+;--------------------------------------------------
+;指定された行動が制約にかかっているかどうかを返す（特定の実行不可条件の調査機能付き）
+; 引数
+;	ACTION	行動の種類（CFLAG.ERH定義のキャラ行動予定）
+;	TGTNUM	行動可能か調査する対象のキャラ番号
+;	CONSTRAINT	調査の対象とする行動制約（IS_ACTION_INCAPABLE.ERHで定義）
+;				デフォルト値では全ての行動制約をチェックする
+; 変数
+;	INCAPABILITY	戻り値の格納先
+; 戻り値	その行動制約に引っかかって行動不能なら1
+;			その行動制約について行動可能なら0
+@IS_ACTION_INCAPABLE(ACTION, TGTNUM, CONSTRAINT = 行動制約_すべて)
+#FUNCTION
+#DIM ACTION
+#DIM TGTNUM
+#DIM CONSTRAINT
+#DIM DYNAMIC INCAPABILITY = 0
+
+;体力が一定以下だと行動不可
+SIF GROUPMATCH(CONSTRAINT, 行動制約_すべて, 行動制約_体力) && MATCH(体力制約行動, ACTION) && BASE:TGTNUM:体力 <= 強制休憩体力
+	INCAPABILITY = 1
+
+;鍛錬の体力減少量が現在体力以上だったら不可
+SIF GROUPMATCH(CONSTRAINT, 行動制約_すべて, 行動制約_体力) && ACTION == 予定_鍛錬 &&  BASE:TGTNUM:体力 < TRAINING_DOWNTAIRYOKU(TGTNUM)
+	INCAPABILITY = 1
+
+;夜魔の貴族は昼間一部活動不可
+SIF GROUPMATCH(CONSTRAINT, 行動制約_すべて, 行動制約_夜魔) && MATCH(夜魔制約行動, ACTION) && (TALENT:TGTNUM:夜魔の貴族 && TIME == 0)
+	INCAPABILITY = 1
+
+;四肢欠損時は休息と支援以外不可
+SIF GROUPMATCH(CONSTRAINT, 行動制約_すべて, 行動制約_欠損) && MATCH(欠損制約行動, ACTION) && (TALENT:TGTNUM:四肢欠損 > 0)
+	INCAPABILITY = 1
+
+;壊れていたら休息以外不可
+SIF GROUPMATCH(CONSTRAINT, 行動制約_すべて, 行動制約_廃人) && ACTION != 予定_休憩 && (TALENT:TGTNUM:繁殖袋 > 0)
+	INCAPABILITY = 1
+
+;生粋の戦士は一部活動不可
+SIF GROUPMATCH(CONSTRAINT, 行動制約_すべて, 行動制約_戦士) && MATCH(戦士制約行動, ACTION) && TALENT:TGTNUM:生粋の戦士
+	INCAPABILITY = 1
+
+;支援無効だったら支援不可
+SIF GROUPMATCH(CONSTRAINT, 行動制約_すべて, 行動制約_支援無効) && ACTION == 予定_支援 && GETBATTLESITUATION("支援無効")
+	INCAPABILITY = 1
+
+;妊娠（発覚済み）中は一部活動不可
+SIF GROUPMATCH(CONSTRAINT, 行動制約_すべて, 行動制約_妊娠) && MATCH(妊婦制約行動, ACTION) && CHECK_PREGNANT_F(TGTNUM)
+	INCAPABILITY = 1
+
+RETURNF INCAPABILITY

@@ -1,0 +1,816 @@
+﻿;*******************************************************************************************************
+;悪落ち時に容姿を変更する
+;陥落経験が多いほど、復帰時に容姿が戻る確率が下がる。
+;CSTR:50〜に悪堕ち後の容姿を登録し、元の容姿と入れ替える。
+;変身キャラは変身後の容姿を変更する。
+
+;肌色の変更は陥落経験が一定以上で発生。
+;全ての変更が定着すると素質【完堕ち】を追加。目つきが戻らなくなる。
+
+;変身後名は自称感があるので、悪堕ち中のみ変更する。
+
+;進捗はCFLAG80にビットで保持。
+;0=初回登録済み 1=肌色登録済み 2=悪堕ち中（CFLAG:0の復帰後に容姿復帰判定があるので、見分け用） 3 = 髪型登録 4=髪色登録 5=目色登録
+;定着状態はCFLAG81にビットで保持
+;0=髪色定着 1=右目の色定着 2=左目の色定着 3 = 肌色定着 4=全定着
+;*******************************************************************************************************
+@CORRUPT_CHANGE_LOOKS_MAIN, ARG
+
+;コンフィグ未設定なら実行しない
+SIF CONFIG_CHECK_PRISON_F(4) == 0
+	RETURN 1
+
+;悪堕ち変身名の定義
+SIF TALENT:ARG:変身能力 == 1
+	CALL CORRUPT_GET_SPNAME, ARG
+
+
+;プロフィール未設定なら実行しない
+SIF CFLAG:ARG:34 == 0
+	RETURN 1
+
+SIF GETBIT(CFLAG:ARG:80, 0) == 0
+	SETBIT CFLAG:80, 0
+
+;目つき
+CALL GET_CORRUPTED_EYES, ARG
+
+;髪型登録
+IF GETBIT(CFLAG:ARG:80, 3) == 0 && CONFIG_CHECK_PRISON_F(5) == 1
+	CALL GET_CORRUPTED_HAIR, ARG
+	SETBIT CFLAG:80, 3
+ENDIF
+
+;髪色登録
+IF GETBIT(CFLAG:ARG:80, 4) == 0 && CONFIG_CHECK_PRISON_F(6) == 1
+	CALL CORRUPT_CHANGE_HAIR_COLOR, ARG
+	SETBIT CFLAG:80, 4
+ENDIF
+
+;目色登録
+IF GETBIT(CFLAG:ARG:80, 5) == 0 && CONFIG_CHECK_PRISON_F(7) == 1
+	CALL CORRUPT_CHANGE_EYE_COLOR, ARG
+	SETBIT CFLAG:80, 5
+ENDIF
+
+;肌色登録
+IF GETBIT(CFLAG:ARG:80, 1) == 0 && EXP:ARG:陥落経験 >=3 && CONFIG_CHECK_PRISON_F(8) == 1
+	CALL CORRUPT_CHANGE_SKIN, ARG
+	SETBIT CFLAG:80, 1
+ENDIF
+
+;容姿変更・すり替え
+CALL CORRUPT_CHANGE_LOOKS, ARG
+
+SETBIT CFLAG:80, 2
+
+;色が定着していなければ、色変えメッセージ表示
+;髪型が登録されているか、髪色が登録済みで定着していない場合
+IF CONFIG_CHECK_PRISON_F(5) == 1 || CONFIG_CHECK_PRISON_F(6) == 1
+	SIF GETBIT(CFLAG:ARG:80, 3) == 1 || (GETBIT(CFLAG:ARG:80, 4) == 1 && GETBIT(CFLAG:ARG:81, 0) == 0)
+		CALL MESSAGE_CORRUPT_CHANGE_LOOKS_HAIR(ARG)
+ENDIF
+
+;完堕ち前は目つきの変更が発生
+SIF GETBIT(CFLAG:ARG:81, 4) == 0
+		CALL MESSAGE_CORRUPT_CHANGE_LOOKS_EYES(ARG)
+		
+IF CONFIG_CHECK_PRISON_F(8) == 1
+	SIF GETBIT(CFLAG:ARG:80, 1) == 1 && GETBIT(CFLAG:ARG:81, 3) == 0
+		CALL MESSAGE_CORRUPT_CHANGE_LOOKS_SKIN(ARG)
+ENDIF
+
+;変身名の改竄告知
+SIF TALENT:ARG:変身能力 == 1 && CFLAG:ARG:2 == 1
+	CALL MESSAGE_CORRUPT_CHANGE_SP_NAME(ARG)
+RETURN 0
+
+;*******************************************************************************************************
+
+;*******************************************************************************************************
+;元の容姿と登録された容姿を入れ替え
+;CSTR50:目つき
+;CSTR51:髪色
+;CSTR52:右目の色
+;CSTR53:左目の色
+;CSTR54:肌の色
+;CSTR55:キャラの変身後名
+;CSTR56:キャラの変身後呼び名
+;CSTR57:キャラの前髪
+;CSTR58:キャラの髪型
+;*******************************************************************************************************
+@CORRUPT_CHANGE_LOOKS, ARG
+#DIM HAIRSTYLE
+#DIM HAIRCOLOR
+#DIM REYE
+#DIM LEYE
+#DIM SKIN
+
+;CSTR番号
+IF TALENT:ARG:変身能力 == 1
+	HAIRSTYLE = 14
+	HAIRCOLOR = 31
+	REYE = 34
+	LEYE = 35
+	SKIN = 37
+	
+ELSE
+	HAIRSTYLE = 13
+	HAIRCOLOR = 30
+	REYE = 32
+	LEYE = 33
+	SKIN = 36
+ENDIF
+
+;目つき
+CALL EXCHANGE_CSTR (ARG, 50, 18)
+;髪型
+IF GETBIT(CFLAG:ARG:80, 3) == 1 && CONFIG_CHECK_PRISON_F(5) == 1
+	CALL EXCHANGE_CSTR (ARG, 57, 12)
+	CALL EXCHANGE_CSTR (ARG, 58, HAIRSTYLE)
+ENDIF
+;髪色
+SIF GETBIT(CFLAG:ARG:80, 4) == 1 && CONFIG_CHECK_PRISON_F(6) == 1
+	CALL EXCHANGE_CSTR (ARG, 51, HAIRCOLOR)
+;目色
+IF GETBIT(CFLAG:ARG:80, 5) == 1 && CONFIG_CHECK_PRISON_F(7) == 1
+	CALL EXCHANGE_CSTR (ARG, 52, REYE)
+	CALL EXCHANGE_CSTR (ARG, 53, LEYE)
+ENDIF
+;肌
+SIF GETBIT(CFLAG:ARG:80, 1) == 1 && CONFIG_CHECK_PRISON_F(8) == 1
+	CALL EXCHANGE_CSTR (ARG, 54, SKIN)
+
+;変身後名の改竄
+IF TALENT:ARG:変身能力 == 1
+	IF GETBIT(CFLAG:ARG:13,0) == 0
+		SETBIT CFLAG:ARG:13,0
+		PRINTFORML %PRINT_TRANSNAME(ARG)%の変身後名が書き換えられてゆく……
+		SETCOLOR 96,96,96
+		PRINTFORML 　　　　%CSTR:ARG:0%
+
+		;本来の変身名・呼び名と入れ替え
+		;transname
+		CALL EXCHANGE_CSTR (ARG, 55, 0)
+		CALL SETCOLOR_BY_STR, "紫"
+		PRINTFORML 　　　　　————%CSTR:ARG:0%
+		RESETCOLOR
+		PRINTW 
+		;transcallname(＝変身名だった場合)
+		IF GETBIT(CFLAG:ARG:13,1) == 0 && CSTR:1 == CSTR:0
+			SETBIT CFLAG:ARG:13,1
+			CALL EXCHANGE_CSTR (ARG, 56, 1)
+		ENDIF
+	ENDIF
+ENDIF
+
+IF TALENT:ARG:完堕ち == 1
+	IF TALENT:ARG:変身能力 == 1
+		;名乗りの無様改変
+		IF GETBIT(CFLAG:ARG:13,3) == 0
+			SETBIT CFLAG:ARG:13,3
+
+			PRINTFORML %PRINT_TRANSNAME(ARG)%の決め台詞が書き換えられていく……
+
+			;主題部分の個人改竄(個人単位での上書き用)
+			CALL CORRUPTTION_GET_THEME, ARG
+
+			SETCOLOR 96,96,96
+			PRINTFORML 　%CSTR:ARG:3%
+
+			;本来の名乗りをバックアップ(改変時に本来の名乗りを参照するのでここでは値コピーにする)
+			CALL CORRUPTTION_GET_NANORI_FINAL(ARG)
+
+			CALL SETCOLOR_BY_STR, "橙"
+			PRINTFORML 　　————%CSTR:ARG:3%
+			RESETCOLOR
+			PRINTW
+		ENDIF
+		;＠中国版　完堕ち装備
+		;変身能力アリなら淫縛の鎖
+		IF CFLAG:ARG:41 != 402
+			CFLAG:ARG:41 = 402
+			CFLAG:42 = 0
+			CALL SETCOLOR_BY_STR, "桃"
+			PRINTFORML %PRINT_TRANSNAME(ARG)%の変身後衣装が【%ITEMNAME:402%】になった！
+			RESETCOLOR
+			PRINTW
+		ENDIF
+
+	ELSE
+		;＠中国版　完堕ち装備
+		;変身能力ナシなら触手の花嫁／noinner
+		IF CFLAG:ARG:40 != 196
+			CFLAG:ARG:40 = 196
+			CFLAG:42 = 0
+			CALL SETCOLOR_BY_STR, "桃"
+			PRINTFORML %PRINT_TRANSNAME(ARG)%の衣装が【%ITEMNAME:196%】になった！
+			RESETCOLOR
+			PRINTW
+		ENDIF
+	ENDIF
+ENDIF
+
+
+
+
+RETURN 0
+
+;*******************************************************************************************************
+;２つのCSTRのswap
+@EXCHANGE_CSTR, ARG, ARG:1, ARG:2
+#DIM EX_A
+#DIM EX_B
+#DIMS BUFF
+
+EX_A = ARG:1
+EX_B = ARG:2
+
+BUFF = %CSTR:ARG:EX_A%
+CSTR:ARG:EX_A = %CSTR:ARG:EX_B%
+CSTR:ARG:EX_B = %BUFF%
+RETURN 0
+;*******************************************************************************************************
+
+
+;*******************************************************************************************************
+;髪色登録
+;CSVなどでCSTRが指定されていれば飛ばす。
+;*******************************************************************************************************
+@CORRUPT_CHANGE_HAIR_COLOR, ARG
+
+SIF CSTR:ARG:51 != ""
+	RETURN 1
+
+IF TALENT:ARG:変身能力 == 1
+	CALL GET_CORRUPTED_HAIR_COLOR, CSTR:ARG:31
+ELSE
+	CALL GET_CORRUPTED_HAIR_COLOR, CSTR:ARG:30
+ENDIF
+
+CSTR:ARG:51 = %RESULTS%
+
+RETURN 0
+;*******************************************************************************************************
+
+
+
+
+;*******************************************************************************************************
+;悪落ち時の変身後名を登録
+;*******************************************************************************************************
+@CORRUPT_GET_SPNAME, ARG
+
+#DIMS STR_UP
+#DIMS STR_DOWN
+#DIMS DARK_NOUN,2
+STR_UP = %CSTR:ARG:201%
+STR_DOWN = %CSTR:ARG:202%
+
+
+;変身後名が登録されていなければなにもしない
+SIF CFLAG:ARG:2 == 0
+	RETURN 1
+;既に定義済みならなにもしない
+SIF CSTR:ARG:55 != ""
+	RETURN 1
+
+;中黒重複防止
+STR_UP = %REPLACE( STR_UP, "・", "")%
+
+;★悪堕ちと洗脳で分けたりしたい
+;　置換の形式を完全ランダムではなく文字数揃えたりと工夫したい
+
+;下
+STRDATA DARK_NOUN
+	DATA ダーク
+	DATA ヘル
+	DATA イビル
+	DATA シャドウ
+	DATA キラー
+	DATA レイス
+	DATA バンシー
+	DATA カオス
+	DATA テンタクル
+	DATA マリス
+	DATA デーモン
+	DATA サキュバス
+	DATA ナイトメア
+
+	DATA サキュメア
+	DATA プッシー
+	DATA スレイブ
+	DATA コラプション
+
+	DATA スローター
+	DATA ブッチャー
+	DATA エクゼキューショナー
+	DATA コラプター
+	DATA スレイブ
+	DATA ブリーダー
+	DATA デバステイター
+	DATA デストロイヤー
+	DATA フォールン
+	DATA エクリプス
+	DATA リバース
+	DATA トゥルース
+	DATA プレジャー
+	DATA エクスタシー
+	DATA アンチェインド
+	DATA ルインド
+
+	DATA リベレーター
+	;DATA ピースメーカー
+	DATA ターミネーター
+	DATA イビルクイーン
+	DATA エンプレス
+
+	DATA アウォークン
+	DATA イビルマザー
+	DATA インキュベータ
+	DATA スカージ
+	DATA ネメシス
+	DATA カロン
+	DATA ルシファー
+	DATA アナザー
+	DATA ビースト
+	DATA リリス
+	DATA アポカリプス
+	DATA カラミティ
+	DATA ウィックド
+	DATA ヴィシャス
+	DATA エクスターミネーター
+	DATA カームブリンガー
+	DATA ピースブリンガー
+	DATA ヘヴンブリンガー
+ENDDATA
+
+;上
+STRDATA DARK_NOUN:1
+	DATA ダーク
+	DATA ヘル
+	DATA イビル
+	DATA シャドウ
+	DATA キラー
+	DATA レイス
+	DATA バンシー
+	DATA カオス
+	DATA テンタクル
+	DATA デーモン
+	DATA サキュバス
+	DATA ナイトメア
+
+	DATA サキュメア
+	DATA プッシー
+	DATA スレイブ
+	DATA コラプト
+
+	DATA ブリード
+	DATA デストロイ
+	DATA フォールン
+	DATA リバース
+	DATA プレジャー
+	DATA チェインド
+	DATA ルインド
+	DATA ネメシス
+	DATA アナザー
+	DATA ビースト
+	DATA リリス
+	DATA アポカリ
+	DATA カラミティ
+	DATA ヴィシャス
+ENDDATA
+
+
+;(変身後名を未設定or手動設定していた場合)
+;	＝CSTR201と202が空の場合　　付け足しのみ　アポカリプス・〇〇　または　〇〇・アポカリプス　的な変化(ランダム)
+IF STR_UP == "" && STR_DOWN == ""
+	IF RAND:2 == 0
+		CSTR:ARG:55 = %CSTR:ARG:0%・%DARK_NOUN%
+	ELSE
+		CSTR:ARG:55 = %DARK_NOUN%・%CSTR:ARG:0%
+	ENDIF
+
+;(共通設定の冠名を使用していた場合)
+;	冠名側を変える　キュア〇〇→イビル〇〇　的な変化
+ELSEIF FLAG:6 == 1 && SAVESTR:11 == STR_UP
+	CSTR:ARG:55 = %DARK_NOUN:1%%STR_DOWN%
+
+;(それ以外)
+;	ランダムに上の句or下の句どちらかすり替える
+ELSEIF RAND:2 == 0
+	CSTR:ARG:55 = %STR_UP%・%DARK_NOUN%
+ELSE
+	CSTR:ARG:55 = %DARK_NOUN:1%・%STR_DOWN%
+ENDIF
+;変身中の呼び名は悪堕ち変身名に
+CSTR:ARG:56 = %CSTR:ARG:55%
+
+RETURN 0
+;*******************************************************************************************************
+
+
+
+;*******************************************************************************************************
+;悪落ち時の肌の色を登録
+;*******************************************************************************************************
+@CORRUPT_CHANGE_SKIN, ARG
+
+SIF CSTR:ARG:54 != ""
+	RETURN 1
+
+IF TALENT:ARG:変身能力 == 1
+	CALL GET_CORRUPTED_SKIN, CSTR:ARG:37
+	CSTR:ARG:54 = %RESULTS%
+ELSE
+	CALL GET_CORRUPTED_SKIN, CSTR:ARG:36
+	CSTR:ARG:54 = %RESULTS%
+ENDIF
+
+RETURN 0
+;*******************************************************************************************************
+
+;*******************************************************************************************************
+;悪落ち時の肌の色を生成
+;色白->褐色or黒
+;肌色->褐色or黒or色白
+;褐色->黒or色白
+;黒->色白
+;*******************************************************************************************************
+@GET_CORRUPTED_SKIN, ARGS
+#DIMS SKIN_COLOR
+
+IF ARGS == "183//86//17" || ARGS == "褐色"
+	STRDATA SKIN_COLOR
+		;黒
+		DATA 40//24//24
+		;色白
+		DATA 255//236//220
+	ENDDATA
+ELSEIF ARGS == "255//236//220" || ARGS == "色白"
+	STRDATA SKIN_COLOR
+		;黒
+		DATA 40//24//24
+		;褐色
+		DATA 183//86//17
+	ENDDATA
+ELSEIF ARGS == "40//24//24" || ARGS == "黒"
+	;色白
+	SKIN_COLOR = "255//236//220"
+ELSE
+	STRDATA SKIN_COLOR
+		;黒
+		DATA 40//24//24
+		;褐色
+		DATA 183//86//17
+		;色白
+		DATA 255//236//220
+	ENDDATA
+ENDIF
+
+RESULTS = %SKIN_COLOR%
+RETURN 0
+
+
+;*******************************************************************************************************
+;悪堕ち時の髪型を生成
+;えっちな髪型のアイデアが浮かばないので、とりあえず垢抜けさせる。
+;*******************************************************************************************************
+@GET_CORRUPTED_HAIR, ARG
+#DIMS ADJ
+#DIMS HAIR
+
+IF TALENT:ARG:変身能力 == 1
+	HAIR = %CSTR:ARG:14%
+ELSE
+	HAIR = %CSTR:ARG:13%
+ENDIF
+
+
+;■前髪
+;野暮ったい髪型は切っちゃう
+IF CSTR:ARG:57 == "" && (CSTR:ARG:12 == "目隠れ" || CSTR:ARG:12 == "ぼさぼさ")
+	STRDATA CSTR:ARG:57
+		DATA かきあげ
+		DATA ぱっつん
+		DATA 斜めぱっつん
+		DATA シャギーカット
+		DATA まゆ上ぱっつん
+	ENDDATA
+ELSEIF CSTR:ARG:57 == ""
+	CSTR:ARG:57 = %CSTR:ARG:12%
+ENDIF
+
+;■髪型
+;CSVなどで設定済みなら終了
+SIF CSTR:ARG:58 != ""
+	RETURN 0
+;それっぽい形容詞をつくる
+STRDATA ADJ
+	DATA ゆるふわ
+	DATA フェミニン
+	DATA 艶やか
+	DATA 妖艶な
+	DATA スパイラル
+ENDDATA
+;真面目系の髪型なら解いちゃう。
+IF HAIR == "三つ編み" || HAIR == "おさげ" || HAIR == "一本結び"
+	STRDATA HAIR
+		DATA ウェーブロング
+		DATA ロングヘア
+	ENDDATA
+ENDIF
+
+;形容詞をつける。
+CSTR:ARG:58 = %ADJ%%HAIR%
+RETURN 0
+;*******************************************************************************************************
+
+;*******************************************************************************************************
+;悪落ち時の髪の色を生成
+;元と異なる色にする
+;*******************************************************************************************************
+@GET_CORRUPTED_HAIR_COLOR, ARGS
+#DIMS HAIR_COLOR
+
+$LOOP
+STRDATA HAIR_COLOR
+	;ローズレッド
+	DATA 199//79//144
+	;スカーレット
+	DATA 222//67//53
+	;ローズピンク
+	DATA 239//147//182
+	;ブロンド
+	DATA 227//180//102
+	;レモンイエロー
+	DATA 232//200//0	
+	;コバルトグリーン
+	DATA 93//194//136
+	;セルリアンブルー
+	DATA 11//116//175
+	;バイオレット
+	DATA 109//82//171
+	;ライラック
+	DATA 194//162//218
+	;スノーホワイト
+	DATA 241//241//241
+	;アッシュグレイ
+	DATA 147//147//147
+	;スチールグレイ
+	DATA 115//108//121
+ENDDATA
+
+SIF HAIR_COLOR == ARGS
+	GOTO LOOP
+RESULTS = %HAIR_COLOR%
+RETURN 0
+
+;*******************************************************************************************************
+;悪堕ち時の目つきを生成
+;*******************************************************************************************************
+@GET_CORRUPTED_EYES, ARG
+#DIMS ADJ
+
+SIF CSTR:ARG:50 != ""
+	RETURN 1
+
+STRDATA ADJ
+	DATA 妖艶な
+	DATA 煽情的な
+	DATA 艶めかしい
+	DATA 小悪魔的な
+	DATA 妖しく光る
+	DATA 蠱惑的な
+	DATA 劣情を誘う
+	DATA 挑発的な
+ENDDATA
+
+IF CSTR:ARG:18 == "普通"
+	CSTR:ARG:50 = %ADJ%瞳
+ELSE
+	CSTR:ARG:50 = %ADJ%%CSTR:ARG:18%
+ENDIF
+RETURN 0
+;*******************************************************************************************************
+
+;*******************************************************************************************************
+;悪落ち時の目の色を登録
+;*******************************************************************************************************
+@CORRUPT_CHANGE_EYE_COLOR, ARG
+#DIMS REYE
+#DIMS LEYE
+
+IF TALENT:ARG:変身能力 == 1
+	REYE = %CSTR:ARG:34%
+	LEYE = %CSTR:ARG:35%
+ELSE
+	REYE = %CSTR:ARG:32%
+	LEYE = %CSTR:ARG:33%
+ENDIF
+
+;右目を取得
+SIF CSTR:ARG:52 == ""
+	CSTR:ARG:52 = %GET_CORRUPTED_EYE_COLOR(REYE)%
+
+;元がオッドアイなら変更後もオッドアイ
+;元がオッドアイでなければ、10％の確率でオッドアイ
+SIF CSTR:ARG:53 != ""
+	RETURN 1
+IF REYE != LEYE || RAND:10 == 0
+	$LOOP
+	CSTR:ARG:53 = %GET_CORRUPTED_EYE_COLOR(LEYE)%
+	SIF CSTR:ARG:53 == CSTR:ARG:52
+		GOTO LOOP
+ELSE
+	CSTR:ARG:53 = %CSTR:ARG:52%
+ENDIF
+
+RETURN 0
+;*******************************************************************************************************
+;悪落ち時の目の色を生成
+;元と異なる色にする
+;*******************************************************************************************************
+@GET_CORRUPTED_EYE_COLOR, ARGS
+#FUNCTIONS
+#DIMS EYE_COLOR
+
+$LOOP
+STRDATA EYE_COLOR
+	;ルビーレッド
+	DATA 185//30//104
+	;ワインレッド
+	DATA 131//39//78
+	;バーミリオン
+	DATA 237//81//78
+	;アンバー
+	DATA 179//125//64
+	;クロムイエロー
+	DATA 255//188//0
+	;エメラルドグリーン
+	DATA 77//165//115
+	;アイビーグリーン
+	DATA 81//106//57
+	;ターコイズブルー
+	DATA 57//158//204
+	;ウルトラマリンブルー
+	DATA 65//79//163
+	;パープル
+	DATA 162//96//191
+	;マゼンタ
+	DATA 201//73//162
+	;チェリーピンク
+	DATA 207//97//165
+ENDDATA
+
+SIF EYE_COLOR == ARGS
+	GOTO LOOP
+
+RETURNF EYE_COLOR
+;*******************************************************************************************************
+
+
+
+;*******************************************************************************************************
+;完堕ち悪落ち時の名乗りを登録
+;*******************************************************************************************************
+;冠名(美少女戦士部分)の破壊
+@CORRUPTTION_GET_THEME, ARG
+#DIMS DARK_NOUN,2
+IF TALENT:ARG:嬲られ体質 > 0 || TALENT:ARG:触手の虜 > 0
+	STRDATA DARK_NOUN
+		DATA 淫奴
+		DATA 賤奴
+		DATA 肉奴
+		DATA 妓奴
+		DATA 触奴
+		
+		DATA 淫畜
+		DATA 賤畜
+		DATA 肉畜
+		DATA 母畜
+		;DATA 騒畜
+		;DATA 欲畜
+
+		DATA 淫穴
+		;DATA 騒穴
+		DATA 賤穴
+		DATA 爛穴
+		DATA 臭穴
+	ENDDATA
+ELSEIF TALENT:ARG:苗床化 > 0
+	STRDATA DARK_NOUN
+		DATA 淫畜
+		DATA 賤畜
+		DATA 母畜
+		DATA 孕袋
+		DATA 産畜
+		DATA 魔母
+		DATA 孕畜
+		DATA 苗床
+	ENDDATA
+ELSE
+	STRDATA DARK_NOUN
+		DATA 触手
+		DATA 淫魅
+		DATA 蜜穴
+		DATA 性奴
+		DATA 腐穴
+		DATA 汁穴
+		DATA 媚穴
+		DATA 奴隸
+		DATA 淫毒
+	ENDDATA
+ENDIF
+STRDATA DARK_NOUN:1
+	DATA 娼婦
+	DATA 便器
+	DATA 便女
+	DATA 便所
+ENDDATA
+CSTR:ARG:60 = %DARK_NOUN%%DARK_NOUN:1%
+;変身後名乗りの破壊
+@CORRUPTTION_GET_NANORI_FINAL(ARG)
+#DIMS DARK_NANORI,2
+SELECTCASE RAND:100
+CASE 0 TO 90
+	STRDATA DARK_NANORI
+		DATA お触手様の
+		DATA 産まれた時から
+		DATA 夢はみんなの
+		DATA お触手チンポの
+		DATA 戦士失格
+		DATA あっさり堕ちた
+		DATA 女性失格
+		DATA 人間廃業
+		DATA 少女廃業
+		DATA お精子中毒
+		DATA お精子コキ捨て
+		DATA お触手ズボズボ
+		DATA ザーメン大好き
+		DATA セックス中毒
+		DATA 卑しい雌穴
+	ENDDATA
+	STRDATA DARK_NANORI:1
+		DATA 性奴隷
+		DATA 便器妻
+		DATA ハメ便女
+		DATA オナホール
+		DATA 生オナホ
+		DATA 雌オナホ
+		DATA ハメオナホ
+		DATA 肉オナホ
+		DATA オナホ穴
+		DATA 豚オナホ
+	ENDDATA
+CASEELSE
+	STRDATA DARK_NANORI
+		DATA おちんぽハメハメ
+		DATA お触手ハメハメ
+		DATA お触手オナホ
+		DATA お触手即イキ
+		DATA 淫乱ハメハメ
+		DATA 淫乱オナホ
+		DATA 淫乱ビッチ
+		DATA 生ハメビッチ
+	ENDDATA
+	STRDATA DARK_NANORI:1
+		DATA 性奴隷
+		DATA 便器妻
+		DATA 便器穴
+		DATA 肉便器
+		DATA 豚便器
+	ENDDATA
+ENDSELECT
+;本来の名乗りから変身名以降を切り出す
+CALL STRMATCH(CSTR:ARG:3,CSTR:ARG:55)
+IF RESULTS:2 != ""
+	LOCALS:1 '= RESULTS:2
+ELSE
+	LOCALS:1 '= FIRSTSETTING_CHANGINGCALL_DETAIL(ARG:0, LOCAL)
+ENDIF
+
+;改竄
+REPLACE LOCALS:1,"[！？♪]","❤"
+REPLACE RESULTS,"参上","無様に参上"
+REPLACE RESULTS,"見参","無様に見参"
+REPLACE RESULTS,"推参","無様に推参"
+REPLACE RESULTS,"準備完了","生ハメ待機"
+REPLACE RESULTS,"行く","イク"
+REPLACE RESULTS,"行き","イキ"
+REPLACE RESULTS,"殲滅開始","オナニー開始"
+REPLACE RESULTS,"負けない","イキ果てる"
+REPLACE RESULTS,"覚悟してね","早くレイプしてね"
+REPLACE RESULTS,"覚悟しなさい","早く犯して"
+REPLACE RESULTS,"始めよう","ハメハメしよう"
+REPLACE RESULTS,"始動じゃ","穴は濡れまくりじゃ"
+REPLACE RESULTS,"やるしか","孕まされるしか"
+
+LOCALS:1'=RESULTS+"❤❤"
+
+;全体を組み上げる
+LOCALS = %DARK_NANORI%%DARK_NANORI:1%❤ %PRINT_THEME(ARG)%%CSTR:ARG:0%%LOCALS:1%
+CSTR:ARG:3 '= LOCALS
+
+;改竄名乗り設定済みフラグ
+CFLAG:ARG:5 = 1

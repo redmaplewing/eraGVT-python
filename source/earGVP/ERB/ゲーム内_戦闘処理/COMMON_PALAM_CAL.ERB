@@ -1,0 +1,24 @@
+﻿;memo:このファイルにあった関数群はすべてPALAM_UP.ERBへ移動した
+;==============================================================================
+;パラメータの計算に関する共通関数（旧）
+;ARG:0 快Ｃ　ARG:1 快Ｖ　ARG:2 快Ａ　ARG:3 快Ｂ 
+;ARG:4 潤滑  ARG:5 恭順  ARG:6 習得  ARG:7 欲情
+;ARG:8 屈服  ARG:9 恥情  ARG:10苦痛　ARG:11恐怖
+;ARG:12 体力消費指定
+;memo:クソ引数をUP/LOSEBASEに入れ直すだけのラッパー関数に改変
+;memo:呼び出し元すべてで直接入力するよう修正が終わったら、この関数はファイルごと削除する
+@PALAM_CAL, ARG:0, ARG:1, ARG:2, ARG:3, ARG:4, ARG:5, ARG:6, ARG:7, ARG:8, ARG:9, ARG:10, ARG:11 , ARG:12 = 0
+UP:快Ｃ = ARG:0
+UP:快Ｖ = ARG:1
+UP:快Ａ = ARG:2
+UP:快Ｂ = ARG:3
+UP:潤滑 = ARG:4
+UP:恭順 = ARG:5
+UP:習得 = ARG:6
+UP:欲情 = ARG:7
+UP:屈服 = ARG:8
+UP:恥情 = ARG:9
+UP:苦痛 = ARG:10
+UP:恐怖 = ARG:11
+LOSEBASE:体力 = ARG:12
+CALL PALAM_UP

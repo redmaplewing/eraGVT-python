@@ -1,0 +1,136 @@
+﻿;==============================================================================
+;特別活動：公衆便所の地の文と口上呼び出し
+
+;----------------------------------------------------------
+;浮浪者の共用便器
+; 引数
+;	LOST_VIRGIN	この活動で処女喪失したか
+@MESSAGE_SEISAN_TOILET_HOMELESS, LOST_VIRGIN
+#DIM LOST_VIRGIN
+
+PRINTFORMW 曰くつきの公園の木陰に%PRINT_TRANSCALLNAME(TARGET)%の姿があった。
+PRINTFORMW 空のポーチを手に震える少女の肌を隠すものは何一つなく、ふとももには汗でない汁が伝っていた。
+PRINTFORML 今ならまだ引き返すことができる…
+PRINTW 
+PRINTFORML 茂みの先から、吐き気を催すほどの猛烈な臭気が漂ってきている。
+IF TALENT:ふたなり > 0
+	PRINTFORMW %PRINT_TRANSCALLNAME(TARGET)%のふたなりペニスは痛いほど張り詰め、泉のように先走りを垂れ流していた。
+ELSEIF TALENT:男の娘 > 0
+	PRINTFORMW %PRINT_TRANSCALLNAME(TARGET)%の男の娘ペニスは痛いほど張り詰め、泉のように先走りを垂れ流していた。
+ENDIF
+PRINTFORMW %PRINT_TRANSCALLNAME(TARGET)%は何度もつばを飲み込むと、木陰から足を踏み出した。
+PRINTFORML もう後には戻れない…
+;口上
+TRYCALLFORM KOJO_ROOT(CFLAG:6, "SEISAN_TOILET_homeless")
+
+CALL REDUCIBLE_PRINTW
+
+IF LOST_VIRGIN
+	PRINTFORML %PRINT_TRANSCALLNAME(TARGET)%は浮浪者の不潔なペニスをしゃぶらされながら、
+	PRINTFORML 垢のこびりついた肉棒に処女を散らされた。
+	PRINTW 
+	PRINTL 処女喪失
+	PRINTW 
+ENDIF
+IF TALENT:男の娘 > 0 && ABL:Ａ感覚 < 2
+	PRINTFORML %PRINT_TRANSCALLNAME(TARGET)%は浮浪者の不潔なペニスをしゃぶらされながら、
+	PRINTFORML 垢のこびりついた肉棒にまだオトコ慣れしていない尻穴を穿たれた。
+	PRINTW 
+ENDIF
+
+;----------------------------------------------------------
+;路地裏放置
+; 引数
+;	LOST_VIRGIN	この活動で処女喪失したか
+@MESSAGE_SEISAN_TOILET_BACK_ARRAY, LOST_VIRGIN
+#DIM LOST_VIRGIN
+
+;口上
+TRYCALLFORM KOJO_ROOT(CFLAG:6, "SEISAN_TOILET_roji")
+
+PRINTL
+PRINTFORML 開口ギャグで広げられた口だけ露出したラバーマスクで
+PRINTFORML ぴっちりと顔を覆われた%PRINT_TRANSCALLNAME(TARGET)%は人気のない路地裏に転がされていた。
+PRINTW 
+PRINTFORML 『公衆便器　ご自由にお使いください』の看板の通り
+PRINTFORML %PRINT_TRANSCALLNAME(TARGET)%の身体は誰とも知れない精液にまみれて異臭を放ち、
+SIF ISPENIS()
+	PRINTL 股間で屹立するペニスからは自ら吐き出した精液にまみれ、
+SIF TALENT:母乳体質
+	PRINTL 赤く充血した乳首は黄ばんだ母乳を垂れ流し、
+PRINT 無遠慮に使われた
+SIF ISFEMALE()
+	PRINT 雌穴と
+PRINTFORML 尻穴はだらしなく口を開け、混ざり合ったおぞましい精液が地面にまで溢れていた。
+IF LOST_VIRGIN
+	PRINTFORM %PRINT_TRANSCALLNAME(TARGET)%の純潔は
+	PRINTDATA
+		DATA 浮浪者の垢にまみれた汚らしい肉棒
+		DATA 顔も知らぬ通りすがりの男の野太いペニス
+		DATA 小学生の包茎ペニス
+		DATA 発情した野良犬の歪な肉棒
+	ENDDATA
+	PRINTL に散らされ、
+	PRINTL 既に破瓜の血も膣肉にこびりつく生臭い精液に洗い流されていた。
+	PRINTW 
+	PRINTL 処女喪失
+	PRINTW 
+ELSEIF TALENT:男の娘 > 0 && ABL:Ａ感覚 < 2
+	PRINTFORM %PRINT_TRANSCALLNAME(TARGET)%の密やかなアナルは
+	PRINTDATA
+		DATA 浮浪者の垢にまみれた汚らしい肉棒
+		DATA 顔も知らぬ通りすがりの男の野太いペニス
+		DATA 小学生の包茎ペニス
+		DATA 発情した野良犬の歪な肉棒
+	ENDDATA
+	PRINTL に穿たれ、
+	PRINTL 慣れない異物感が腸肉にこびりつく生臭い精液と共にいつまでも残っていた。
+	PRINTW 
+ENDIF
+PRINT 肉穴便器の利用者たちが去っていくと、
+SIF TALENT:お漏らし癖
+	PRINT 溢れた白濁に混じってゆるゆると失禁し
+PRINTFORMW 痙攣する%PRINT_TRANSCALLNAME(TARGET)%はそのまま路地裏に放置された…
+PRINTL 
+
+;----------------------------------------------------------
+;野良犬
+; 引数
+;	LOST_VIRGIN	この活動で処女喪失したか
+@MESSAGE_SEISAN_TOILET_DOG, LOST_VIRGIN
+#DIM LOST_VIRGIN
+
+PRINTFORML %PRINT_TRANSCALLNAME(TARGET)%は着てきた服と下着を詰めたバッグに茂みに隠すと、小さなボードを首に掛けた。
+PRINTFORML 『公衆便器　ご自由にお使い下さい』
+PRINTFORML 破滅への衝動に火照り切った%PRINT_TRANSCALLNAME(TARGET)%はよろけるように裏山へ入り込んでいく。
+PRINTW 
+PRINTFORML 人の声に茂みを覗きこむと、そこには四つん這いの少女が野良犬と交尾するおぞましい光景があった。
+PRINTFORML 少女の上気した肌を隠すものは何もなく、長い髪を振り乱し、
+PRINTFORML 半ば白目を剥いたアへ顔で気が狂ったように泣き叫んでいた…
+PRINTW 
+PRINTFORML %PRINT_TRANSCALLNAME(TARGET)%に気づいた野良犬は激しく吠え立てるものの、
+PRINTFORML 本射精が始まって根本の瘤が少女にがっちりはまりこんでおり
+PRINTFORML 犬の精液を受けて失禁しながらイき狂う少女と繋がったまま、その場を動くことができない。
+PRINTW 
+PRINTFORML 言葉を失う%PRINT_TRANSCALLNAME(TARGET)%が呆然と見つめるなか、種付けを終えた野良犬は一声吠えて逃げ去っていった。
+PRINTW 
+PRINTFORML 意識を取り戻した少女は%PRINT_TRANSCALLNAME(TARGET)%よりもいくらか年上のようで、美しい顔立ちをしてはいたものの
+PRINTFORML その身体は牝豚同然にいやらしく育ち、肥大した乳首からは黄ばんだ母乳が息をつくたびにごぼごぼと溢れ、
+PRINTFORML おぞましい生命を宿し醜く突き出た腹の下には二度と取れないふたなりの証が生やされていた。
+PRINTW 
+PRINTFORML %PRINT_TRANSCALLNAME(TARGET)%は彼女がかつては自分と同じように触手と戦っていたこと
+PRINTFORML そして彼女がもう二度と戦う力を取り戻せないであろうことに気付いてしまった。
+PRINTFORML 少女だったものは%PRINT_TRANSCALLNAME(TARGET)%の手を取り、自分と同じになってはならないと必死に訴え続けている…
+PRINTW 
+PRINTFORML しかし少女の言葉も届かないほど堕ちてしまっている%PRINT_TRANSCALLNAME(TARGET)%は、
+PRINTFORML 少女の隣に四つん這いになり、妖しい期待をその眼に浮かべた…
+PRINTW 
+IF LOST_VIRGIN
+	PRINTL 処女喪失
+	PRINTW 
+ENDIF
+
+;口上
+TRYCALLFORM KOJO_ROOT(CFLAG:6, "SEISAN_TOILET_dog")
+
+CALL REDUCIBLE_PRINTW

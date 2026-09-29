@@ -1,0 +1,332 @@
+﻿;--------------------------------------------------
+;施設拡張
+@HOME_ENHANCING
+
+CALL LB
+
+$INPUT_LOOP
+PRINTL 
+DRAWLINE
+PRINTL 施設を拡張します
+PRINTFORML 資金：{MONEY}＄
+CALL SHORTLINE
+IF FLAG:53 != 0
+	PRINTFORML 購入済みのリラクゼーション設備
+	CALL SHORTLINE
+	SIF (FLAG:53 & 観葉植物)
+		PRINTFORML 　観葉植物　　　　　　常に疲労度を微量回復
+	SIF (FLAG:53 & 心休まる風景画)
+		PRINTFORML 　心休まる風景画　　　常に疲労度を微量回復
+	SIF (FLAG:53 & オシャレなオブジェ)
+		PRINTFORML 　オシャレなオブジェ　常に疲労度を微量回復
+	SIF (FLAG:53 & ゴージャスな噴水)
+		PRINTFORML 　ゴージャスな噴水　　常に疲労度を微量回復
+	SIF (FLAG:53 & 上質なベッド) && (FLAG:53 & 最高級ベッド) == 0
+		PRINTFORML 　上質なベッド　　　　夜間休憩の疲労回復量がアップ
+	SIF (FLAG:53 & 最高級ベッド)
+		PRINTFORML 　最高級ベッド　　　　夜間休憩の疲労回復量が大アップ
+	SIF (FLAG:53 & マッサージチェア)
+		PRINTFORML 　マッサージチェア　　常に疲労度を小回復
+	SIF (FLAG:53 & シャワー設備)
+		PRINTFORML 　シャワー設備　　　　鍛錬後に疲労度を小回復
+	SIF (FLAG:53 & ゲームコーナー)
+		PRINTFORML 　ゲームコーナー　　　昼間休憩の疲労回復量がアップ
+	SIF (FLAG:53 & 大浴場) && (FLAG:53 & 美容温泉) == 0
+		PRINTFORML 　大浴場　　　　　　　休憩時の疲労回復量がアップ
+	SIF (FLAG:53 & 美容温泉)
+		PRINTFORML 　美容温泉　　　　　　休憩時の疲労回復量が大アップ
+	SIF (FLAG:53 & ビューティサロン)
+		PRINTFORML 　ビューティサロン　　休憩時の疲労回復量が超アップ
+ELSE
+	PRINTL 何をしますか？
+ENDIF
+CALL SHORTLINE
+PRINTFORML [0]鍛錬設備のレベルアップ：現在の設備レベル：Lv.\@FLAG:50 > 4 ? MAX # {FLAG:50}\@
+PRINTFORML [1]休憩設備のレベルアップ：現在の設備レベル：Lv.\@FLAG:51 > 4 ? MAX # {FLAG:51}\@
+PRINTFORML [2]防衛設備のレベルアップ：現在の設備レベル：Lv.\@FLAG:52 > 4 ? MAX # {FLAG:52}\@
+PRINTFORML [3]リラクゼーション設備の追加
+PRINTFORML [4]触手研究のレベルアップ：現在の研究レベル：Lv.\@FLAG:54 > 4 ? MAX # {FLAG:54}\@
+PRINTL [999]戻る
+$INPUT_LOOP_1
+INPUT
+IF RESULT == 999
+ELSEIF RESULT == 0
+	IF FLAG:50 >= 5
+		PRINTW これ以上設備レベルは上げられません
+		CLEARLINE 2
+		GOTO INPUT_LOOP_1
+	ELSE
+		PRINTL 
+		PRINTFORML 設備のレベルアップには{5000 * FLAG:50 + 5000}＄必要です
+		PRINTL 設備のレベルアップを行いますか？
+		
+		PRINTL [0]はい
+		PRINTL [1]いいえ
+		$INPUT_LOOP_SELECT
+		INPUT
+		IF RESULT == 0
+			IF MONEY < 5000 * FLAG:50 + 5000
+				PRINTW 所持資金が足りません
+			ELSE
+				MONEY -= 5000 * FLAG:50 + 5000
+				FLAG:50 += 1
+				PRINTW 設備レベルが上がりました！
+			ENDIF
+		ELSEIF RESULT == 1
+		ELSE
+			PRINTW 正しい値を入力してください
+			CLEARLINE 2
+			GOTO INPUT_LOOP_SELECT
+		ENDIF
+	ENDIF
+	PRINTL 
+	GOTO INPUT_LOOP
+ELSEIF RESULT == 1
+	IF FLAG:51 >= 5
+		PRINTW これ以上設備レベルは上げられません
+		CLEARLINE 2
+		GOTO INPUT_LOOP_1
+	ELSE
+		PRINTL 
+		PRINTFORML 設備のレベルアップには{1000 * FLAG:51 + 1000}＄必要です
+		PRINTL 設備のレベルアップを行いますか？
+		
+		PRINTL [0]はい
+		PRINTL [1]いいえ
+		$INPUT_LOOP_SELECT_1
+		INPUT
+		IF RESULT == 0
+			IF MONEY < 1000 * FLAG:51 + 1000
+				PRINTW 所持資金が足りません
+			ELSE
+				MONEY -= 1000 * FLAG:51 + 1000
+				FLAG:51 += 1
+				PRINTW 設備レベルが上がりました！
+			ENDIF
+		ELSEIF RESULT == 1
+		ELSE
+			PRINTW 正しい値を入力してください
+			CLEARLINE 2
+			GOTO INPUT_LOOP_SELECT_1
+		ENDIF
+	ENDIF
+	PRINTL 
+	GOTO INPUT_LOOP
+ELSEIF RESULT == 2
+	IF FLAG:52 >= 5
+		PRINTW これ以上設備レベルは上げられません
+		CLEARLINE 2
+		GOTO INPUT_LOOP_1
+	ELSE
+		PRINTL 
+		PRINTFORML 設備のレベルアップには{10000 * FLAG:52 + 10000}＄必要です
+		PRINTL 設備のレベルアップを行いますか？
+		
+		PRINTL [0]はい
+		PRINTL [1]いいえ
+		$INPUT_LOOP_SELECT_2
+		INPUT
+		IF RESULT == 0
+			IF MONEY < 10000 * FLAG:52 + 10000
+				PRINTL 所持資金が足りません
+			ELSE
+				MONEY -= 10000 * FLAG:52 + 10000
+				FLAG:52 += 1
+				PRINTW 設備レベルが上がりました！
+			ENDIF
+		ELSEIF RESULT == 1
+		ELSE
+			PRINTW 正しい値を入力してください
+			CLEARLINE 2
+			GOTO INPUT_LOOP_SELECT_2
+		ENDIF
+	ENDIF
+	PRINTL 
+	GOTO INPUT_LOOP
+ELSEIF RESULT == 3
+	$INPUT_LOOP_SELECT_4
+	IF FLAG:53 == 4095
+		PRINTW もう追加できるものがありません
+		GOTO INPUT_LOOP
+	ENDIF
+
+	PRINTL 
+	DRAWLINE
+	PRINTL リラクゼーション設備を追加します
+	PRINTFORML 資金：{MONEY}＄
+	;PRINTFORML 　＊　カタログ　＊
+	CALL SHORTLINE
+	SIF (FLAG:53 & 観葉植物) == 0
+		PRINTFORML [0]観葉植物　　　　　　   500＄　常に疲労度を微量回復
+	SIF (FLAG:53 & 心休まる風景画) == 0 && (FLAG:53 & 観葉植物)
+		PRINTFORML [0]心休まる風景画　　　  4500＄　常に疲労度を微量回復
+	SIF (FLAG:53 & オシャレなオブジェ) == 0 && (FLAG:53 & 心休まる風景画)
+		PRINTFORML [0]オシャレなオブジェ　  8500＄　常に疲労度を微量回復
+	SIF (FLAG:53 & ゴージャスな噴水) == 0 && (FLAG:53 & オシャレなオブジェ)
+		PRINTFORML [0]ゴージャスな噴水　　100000＄　常に疲労度を微量回復
+	SIF (FLAG:53 & 上質なベッド) == 0
+		PRINTFORML [1]上質なベッド　　　　 12000＄　夜間休憩の疲労回復量がアップ
+	SIF (FLAG:53 & 最高級ベッド) == 0 && (FLAG:53 & 上質なベッド)
+		PRINTFORML [1]最高級ベッド　　　　 95000＄　夜間休憩の疲労回復量が大アップ
+	SIF (FLAG:53 & マッサージチェア) == 0
+		PRINTFORML [2]マッサージチェア　　 25800＄　常に疲労度を小回復
+	SIF (FLAG:53 & シャワー設備) == 0
+		PRINTFORML [3]シャワー設備　　　　 50000＄　鍛錬後に疲労度を小回復
+	SIF (FLAG:53 & ゲームコーナー) == 0
+		PRINTFORML [4]ゲームコーナー　　　100000＄　昼間休憩の疲労回復量がアップ
+	SIF (FLAG:53 & 大浴場) == 0
+		PRINTFORML [5]大浴場　　　　　　　200000＄　休憩時の疲労回復量がアップ
+	SIF (FLAG:53 & 美容温泉) == 0 && (FLAG:53 & 大浴場)
+		PRINTFORML [5]美容温泉　　　　　　500000＄　休憩時の疲労回復量が大アップ
+	SIF (FLAG:53 & ビューティサロン) == 0
+		PRINTFORML [6]ビューティサロン　 1500000＄　休憩時の疲労回復量が超アップ
+	PRINTFORML [99]戻る
+	$INPUT_LOOP_SELECT_3
+	INPUT
+	IF RESULT == 0 && (FLAG:53 & 観葉植物) == 0
+		IF MONEY >= 500
+			MONEY -= 500
+			FLAG:53 |= 観葉植物
+			PRINTFORML 観葉植物を設置した！
+			PRINTFORMW （休憩していない時でも疲労度が僅かに回復します）
+			GOTO INPUT_LOOP_SELECT_4
+		ENDIF
+	ELSEIF RESULT == 0 && (FLAG:53 & 心休まる風景画) == 0 && (FLAG:53 & 観葉植物)
+		IF MONEY >= 4500
+			MONEY -= 4500
+			FLAG:53 |= 心休まる風景画
+			PRINTFORML 心休まる風景画を設置した！
+			PRINTFORMW （休憩していない時でも疲労度が僅かに回復します）
+			GOTO INPUT_LOOP_SELECT_4
+		ENDIF
+	ELSEIF RESULT == 0 && (FLAG:53 & オシャレなオブジェ) == 0 && (FLAG:53 & 心休まる風景画)
+		IF MONEY >= 8500
+			MONEY -= 8500
+			FLAG:53 |= オシャレなオブジェ
+			PRINTFORML オシャレなオブジェを設置した！
+			PRINTFORMW （休憩していない時でも疲労度が僅かに回復します）
+			GOTO INPUT_LOOP_SELECT_4
+		ENDIF
+	ELSEIF RESULT == 0 && (FLAG:53 & ゴージャスな噴水) == 0 && (FLAG:53 & オシャレなオブジェ)
+		IF MONEY >= 100000
+			MONEY -= 100000
+			FLAG:53 |= ゴージャスな噴水
+			PRINTFORML ゴージャスな噴水を設置した！
+			PRINTFORMW （休憩していない時でも疲労度が僅かに回復します）
+			GOTO INPUT_LOOP_SELECT_4
+		ENDIF
+	ELSEIF RESULT == 1 && (FLAG:53 & 上質なベッド) == 0
+		IF MONEY >= 12000
+			MONEY -= 12000
+			FLAG:53 |= 上質なベッド
+			PRINTFORML 上質なベッドを置いた！
+			PRINTFORMW （夜間の疲労度回復量がアップします）
+			GOTO INPUT_LOOP_SELECT_4
+		ENDIF
+	ELSEIF RESULT == 1 && (FLAG:53 & 最高級ベッド) == 0 && (FLAG:53 & 上質なベッド)
+		IF MONEY >= 95000
+			MONEY -= 95000
+			FLAG:53 |= 最高級ベッド
+			PRINTFORML 最高級ベッドを置いた！
+			PRINTFORMW （夜間の疲労度回復量が大きくアップします）
+			GOTO INPUT_LOOP_SELECT_4
+		ENDIF
+	ELSEIF RESULT == 2 && (FLAG:53 & マッサージチェア) == 0
+		IF MONEY >= 25800
+			MONEY -= 25800
+			FLAG:53 |= マッサージチェア
+			PRINTFORML マッサージチェアを設置した！
+			PRINTFORMW （休憩していない時でも疲労度が少し回復します）
+			GOTO INPUT_LOOP_SELECT_4
+		ENDIF
+	ELSEIF RESULT == 3 && (FLAG:53 & シャワー設備) == 0
+		IF MONEY >= 50000
+			MONEY -= 50000
+			FLAG:53 |= シャワー設備
+			PRINTFORML 入浴設備にシャワーを追加した！
+			PRINTFORMW （鍛錬後に疲労度が少し回復します）
+			GOTO INPUT_LOOP_SELECT_4
+		ENDIF
+	ELSEIF RESULT == 4 && (FLAG:53 & ゲームコーナー) == 0
+		IF MONEY >= 100000
+			MONEY -= 100000
+			FLAG:53 |= ゲームコーナー
+			PRINTFORML ゲームコーナーを開設した！
+			PRINTFORMW （昼間の疲労度回復量が大きくアップします）
+			GOTO INPUT_LOOP_SELECT_4
+		ENDIF
+	ELSEIF RESULT == 5 && (FLAG:53 & 大浴場) == 0
+		IF MONEY >= 200000
+			MONEY -= 200000
+			FLAG:53 |= 大浴場
+			PRINTFORML 入浴設備を広々とした大浴場に改修した！
+			PRINTFORMW （疲労度回復量がアップします）
+			GOTO INPUT_LOOP_SELECT_4
+		ENDIF
+	ELSEIF RESULT == 5 && (FLAG:53 & 美容温泉) == 0 && (FLAG:53 & 大浴場)
+		IF MONEY >= 500000
+			MONEY -= 500000
+			FLAG:53 |= 美容温泉
+			PRINTFORML 美肌効果のある温泉を引いた！
+			PRINTFORMW （疲労度回復量がかなり回復します）
+			GOTO INPUT_LOOP_SELECT_4
+		ENDIF
+	ELSEIF RESULT == 6 && (FLAG:53 & ビューティサロン) == 0
+		IF MONEY >= 1500000
+			MONEY -= 1500000
+			FLAG:53 |= ビューティサロン
+			PRINTFORML メンバー専用のビューティサロンを開設した！
+			PRINTFORMW （疲労度回復量がものすごくアップします）
+			GOTO INPUT_LOOP_SELECT_4
+		ENDIF
+	ELSEIF RESULT == 99
+		GOTO INPUT_LOOP
+	ELSE
+		PRINTW 正しい値を入力してください
+		CLEARLINE 2
+		GOTO INPUT_LOOP_SELECT_3
+	ENDIF
+	PRINTL 
+	;GOTO INPUT_LOOP
+	;GOTO INPUT_LOOP_SELECT_4
+	PRINTW 所持資金が足りません
+	CLEARLINE 3
+	GOTO INPUT_LOOP_SELECT_3
+ELSEIF RESULT == 4
+	IF FLAG:54 >= 5
+		PRINTW これ以上研究レベルは上げられません
+		CLEARLINE 2
+		GOTO INPUT_LOOP_1
+	ELSE
+		PRINTL 
+		PRINTFORML 研究のレベルアップでテンタクルスーツのカスタマイズが追加されます
+		PRINTFORML 研究のレベルアップには触手の欠片が{5 * FLAG:54 + 5}個必要です
+		PRINTFORML 研究のレベルアップを行いますか？　　(触手の欠片所持数:{FLAG:200})
+		
+		PRINTL [0]はい
+		PRINTL [1]いいえ
+		$INPUT_LOOP_SELECT_5
+		INPUT
+		IF RESULT == 0
+			IF FLAG:200 < 5 * FLAG:54 + 5
+				PRINTW 触手の欠片が足りません
+			ELSE
+				FLAG:200 -= 5 * FLAG:54 + 5
+				FLAG:54 += 1
+				PRINTW 研究レベルが上がりました！
+			ENDIF
+		ELSEIF RESULT == 1
+		ELSE
+			PRINTW 正しい値を入力してください
+			CLEARLINE 2
+			GOTO INPUT_LOOP_SELECT_5
+		ENDIF
+	ENDIF
+	PRINTL 
+	GOTO INPUT_LOOP
+ELSE
+	PRINTW 正しい値を入力してください
+	CLEARLINE 2
+	GOTO INPUT_LOOP_1
+ENDIF
+

@@ -1,0 +1,28 @@
+﻿;----------------------------------------------------------
+;行動コマンド名を色付きで出力する
+; 引数
+;	ARG		行動コマンドの実数
+@SHOP_PRINT_ACTIONPLAN, ARG
+LOCALS = %キャラ行動予定短縮名:(FINDELEMENT(キャラ行動予定, ARG))%
+SELECTCASE ARG
+	CASE 予定_出撃
+		SETCOLOR 文字色薄赤
+	CASE 予定_鍛錬
+		SETCOLOR 文字色薄黄
+	CASE 予定_休憩
+		SETCOLOR 文字色薄青
+	CASE 予定_活動
+		SETCOLOR 文字色薄水
+	CASE 予定_防衛
+		SETCOLOR 文字色薄桃
+	CASE 予定_支援
+		SETCOLOR 文字色薄緑
+	CASE 予定_情報
+		SETCOLOR 文字色黄色
+	CASE 予定_自由
+		SETCOLOR 文字色水色
+	CASEELSE
+		LOCALS = 　　　
+ENDSELECT
+PRINTFORM *%LOCALS%*
+RESETCOLOR

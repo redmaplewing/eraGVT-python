@@ -1,0 +1,31 @@
+﻿;清純派による自動Ｖ防御
+@AUTO_V_DEFENCE, ARG
+SIF TFLAG:81 > 0
+	RETURN 1
+SIF BASE:ARG:Ｖ結界耐久力 > 0
+	RETURN 1
+IF TCVARn:12 & 気絶 || (TCVARn:41 == -1 && CFLAG:(CFLAG:1==0 ? 40 # 41) == 199)
+	TFLAG:81 = 1
+	RETURN 1
+ENDIF
+IF TALENT:ARG:処女 > 0
+	PRINTL このままだと処女を奪われそうだ……
+ELSE
+	PRINTL このままだと前の穴に挿入されそうだ……
+ENDIF
+PRINTL 咄嗟にＶ挿入防御しますか？
+PRINTL [0]する
+PRINTL [1]しない
+$INPUT_LOOP
+INPUT
+IF RESULT == 0
+	TCVARn:2 = 体勢：Ｖ防御
+	TFLAG:81 = 1
+ELSEIF RESULT == 1
+	TFLAG:81 = 1
+ELSE
+	GOTO INPUT_LOOP
+ENDIF
+PRINTL 
+RETURN RESULT
+

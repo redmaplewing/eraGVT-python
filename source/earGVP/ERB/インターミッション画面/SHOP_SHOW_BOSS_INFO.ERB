@@ -1,0 +1,188 @@
+﻿;================================================================
+;触手の探索/発見/交戦状況、悪堕ちキャラの表示
+@SHOP_SHOW_BOSS_INFO
+#DIM CCOUNT
+LOCAL = 0
+
+;探索状況に応じて対応コマンドへ色変え
+IF FLAG:47 >= FLAG:46
+	SETCOLOR 255,125,125
+ELSE
+	SETCOLOR 255,180,0
+ENDIF
+PRINTFORML 【探索状況】
+PRINTFORM 　
+;情報不足なら
+IF FLAG:47 < FLAG:46
+	PRINTFORM 探索度{PERCENT_CAL_F(FLAG:47, FLAG:46)}％ ({FLAG:47}/{FLAG:46})
+;情報収集済みなら
+ELSE
+	IF FLAG:100 == 0
+		PRINTFORM 　　ラスボス触手と交戦中！
+	ELSE
+		PRINTFORM 　　ボス触手の痕跡を確認！
+	ENDIF
+	IF FLAG:47 >= FLAG:46
+		IF TIME == 0
+			LOCAL:1 = 40
+		ELSEIF TIME == 1
+			LOCAL:1 = 50
+		ENDIF
+		IF GET_LASTBOSS_PHASE_F() >= 1
+			LOCAL:1 += 50
+		ELSE
+			LOCAL:1 += FLAG:3 * 3
+		ENDIF
+		LOCAL:1 = LOCAL:1 * FLAG:47 / FLAG:46
+		FOR LOCAL,0, CHARANUM
+			SIF CONFIG_CHECK_BALANCE_F(1) > 0 && FLAG:18 > 0 && (CFLAG:LOCAL:100 == 予定_出撃 || CFLAG:LOCAL:100 == 予定_防衛)
+				LOCAL:1 += 4
+		NEXT
+		SIF LOCAL:1 > 95
+			LOCAL:1 = 95
+		PRINTFORM (捕捉率 {LOCAL:1}％)　
+		SETCOLOR 255,255,225
+	ENDIF
+
+ENDIF
+
+;触手の殲滅状況
+PRINTL 
+LOCAL:0 = FLAG:11
+LOCAL:1 = 1
+IF GET_LASTBOSS_PHASE_F() == 0
+	PRINTFORM 　　　
+	SAVESTR:13 = BOSS
+	REPEAT FLAG:3
+		CALL TENTACLE_SURVIVE_CHECK, LOCAL:1
+		IF RESULT == 0
+			SETCOLOR 96,96,96
+			SIF !GETBIT(FLAG:0,4)
+				PRINT [―――]
+		ELSE
+			FLAG:11 = RESULT
+			;索敵アリの場合
+			IF CONFIG_CHECK_BALANCE_F(1) > 0
+				;ターゲット
+				IF FLAG:18 == FLAG:11
+					;探索状況に応じて対応コマンドへ色変え
+					IF FLAG:47 >= FLAG:46
+						SETCOLOR 255,125,125
+					ELSE
+						SETCOLOR 255,180,0
+					ENDIF
+					PRINT [[[
+					CALL TENTACLE_ACCESS, "NAME"
+					PRINT ]]]
+				;ターゲット以外
+				ELSE
+					IF FLAG:47 >= FLAG:46
+						SETCOLOR 185,85,85
+					ELSE
+						SETCOLOR 65,65,155
+					ENDIF
+					PRINT [
+					CALL TENTACLE_ACCESS, "NAME"
+					PRINT ]
+				ENDIF
+			;索敵ナシの場合
+			ELSE
+				FLAG:11 = RESULT
+				;探索状況に応じて対応コマンドへ色変え
+				IF FLAG:47 >= FLAG:46
+					SETCOLOR 255,125,125
+				ELSE
+					SETCOLOR 255,180,0
+				ENDIF
+				PRINT [
+				CALL TENTACLE_ACCESS, "NAME"
+				PRINT ]
+			ENDIF
+		ENDIF
+		LOCAL:1 *=2
+	REND
+ELSEIF GET_LASTBOSS_PHASE_F() >= 1
+	PRINTFORM 　　　
+	REPEAT FLAG:4
+		CALL TENTACLE_SURVIVE_CHECK, LOCAL:1
+		IF RESULT == 0
+			SETCOLOR 96,96,96
+			PRINT [―――]
+		ELSE
+			FLAG:11 = RESULT
+			;索敵アリの場合
+			IF CONFIG_CHECK_BALANCE_F(1) > 0
+				;ターゲット
+				IF FLAG:18 == FLAG:11
+					;探索状況に応じて対応コマンドへ色変え
+					IF FLAG:47 >= FLAG:46
+						SETCOLOR 255,125,125
+					ELSE
+						SETCOLOR 255,180,0
+					ENDIF
+					PRINT [[[
+					CALL TENTACLE_ACCESS, "NAME"
+					PRINT ]]]
+				;ターゲット以外
+				ELSE
+					IF FLAG:47 >= FLAG:46
+						SETCOLOR 185,85,85
+					ELSE
+						SETCOLOR 65,65,155
+					ENDIF
+					PRINT [
+					CALL TENTACLE_ACCESS, "NAME"
+					PRINT ]
+				ENDIF
+			;索敵ナシの場合
+			ELSE
+				FLAG:11 = RESULT
+				;探索状況に応じて対応コマンドへ色変え
+				IF FLAG:47 >= FLAG:46
+					SETCOLOR 255,125,125
+				ELSE
+					SETCOLOR 255,180,0
+				ENDIF
+				PRINT [
+				CALL TENTACLE_ACCESS, "NAME"
+				PRINT ]
+			ENDIF
+		ENDIF
+		LOCAL:1 *=2
+	REND
+ENDIF
+FLAG:11 = LOCAL
+
+;洗脳/悪堕ち中のキャラの確認
+LOCAL:0 = 0
+IF CHARANUM_DARKEN()>=4
+	PRINTL
+	PRINT 　　 
+ENDIF
+FOR CCOUNT, 1, CHARANUM
+	IF CFLAG:CCOUNT:0 == 状態_洗脳	
+		SETCOLOR 255,125,185
+		PRINTFORM  [操:%CALLNAME:CCOUNT%]
+		LOCAL++
+	ELSEIF CFLAG:CCOUNT:0 == 状態_悪堕ち
+		SETCOLOR 255,125,255
+		PRINTFORM  [堕:%CALLNAME:CCOUNT%]
+		LOCAL++
+	ENDIF
+NEXT
+PRINTL 
+LOCAL:0 = 0
+FOR CCOUNT, 1, CHARANUM
+	IF CFLAG:CCOUNT:0 == 状態_幽閉 || CFLAG:CCOUNT:0 == 状態_クズ監禁
+		IF LOCAL:0 == 0
+			PRINTFORM 　　 
+		ENDIF
+		SETCOLOR 155,65,125
+		PRINTFORM 【❤%CALLNAME:CCOUNT%失踪中】
+		LOCAL++
+	ENDIF
+NEXT
+SIF LOCAL:0 > 0
+	PRINTL
+
+RESETCOLOR

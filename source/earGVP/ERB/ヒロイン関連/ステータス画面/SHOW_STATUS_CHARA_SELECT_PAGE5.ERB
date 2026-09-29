@@ -1,0 +1,354 @@
+﻿;================================================================
+;ステータス表示画面の5ページ目（5ページ目）の表示処理
+; 引数
+;	ARG	対象のキャラ番号
+@SHOW_STATUS_CHARA_SELECT_PAGE5 , ARG
+
+;memo:旧バージョンのデータコンバート処理（なんでここに置くの？）
+CALL CONVERT_COLORCSTR, ARG
+CALL CONVERT_AGE, ARG
+PRINTL 　　　　　　　　　　　　　　キャラクタープロフィール　　　　　　　　　　　　　　PAGE(5/5)
+DRAWLINE
+
+;1番目のブロック：名前・呼び名・一人称・レベル・性別の表示
+CALL SHOW_STATUS_CHARA_NAMES_LV, ARG
+CALL SHORTLINE
+
+;2番目のブロック：キャラクターの外見的プロフィールの表示（変身/非変身の切り替え機能付き）
+CALL SHOW_STATUS_CHARA_APPERANCE, ARG
+;変身/非変身の切り替え、設定画面へ移動のボタンを表示
+;プロフィール未設定の場合は設定ボタンのみ
+IF CFLAG:ARG:34 == 0
+	;戦闘中は無効
+	SIF FLAG:700 > 0
+		SETCOLOR 128,128,128
+	PRINTL 　　　　　　　　　　　　　　　　　　　　　[20]　設定
+;プロフィール設定済みの場合は、変身時/通常時でボタンを切り替える
+ELSE
+	IF SHOW_TRANS_STATUS
+		PRINT 　　　　　　　　　　　　　　　　　　　　　[10]　通常時
+	ELSEIF TALENT:ARG:変身能力 > 0
+		PRINT 　　　　　　　　　　　　　　　　　　　　　[10]　変身時
+	ENDIF
+	PRINTL 
+	;戦闘中は再設定の機能は無効
+	SIF FLAG:700 > 0
+		SETCOLOR 128,128,128
+	PRINTL 　　　　　　　　　　　　　　　　　　　　　[20]　再設定
+ENDIF
+RESETCOLOR
+
+;3番目のブロック：拡張度の表示
+;コンフィグで無効にしてある場合はブロック自体表示しない
+IF CONFIG_CHECK_MANIAC_F(16) == 1 && CFLAG:ARG:34 > 0
+	CALL SHORTLINE
+	CALL PRINTFORM_GAPING_NOW, ARG, LOCAL
+ENDIF
+CALL SHORTLINE
+
+;4番目のブロック：パーソナリティの表示
+CALL SHOW_STATUS_CHARA_PERSONALITY, ARG
+
+;5番目のブロック：裏パーソナリティの表示
+;コンフィグで無効にしてあるか未設定の場合はブロック自体表示しない
+CALL SHOW_STATUS_CHARA_SEXUAL_PERSONALITY, ARG
+
+REPEAT 2
+	PRINTL 
+REND
+DRAWLINE
+
+;--------------------------------------------------
+;ステータス表示の5ページ目（5ページ目）の画面固有コマンド処理
+; 引数
+;	ARG				対象のキャラ番号
+;	INPUT_CMD 		入力されたコマンド番号
+; 戻り値
+;	1:関数内でコマンド処理ができた
+;	0:関数内に対応するコマンドがなかった
+@CMD_STATUS_CHARA_SELECT_PAGE5, ARG, INPUT_CMD
+#DIM INPUT_CMD
+IF INPUT_CMD == 10 && TALENT:ARG:変身能力 > 0
+	INVERTBIT SHOW_TRANS_STATUS, 0
+ELSEIF INPUT_CMD == 20 && FLAG:700 == 0
+	;スリーサイズ等設定
+	SIF CFLAG:ARG:34 == 0
+		CALL GENERATE_BODYLINE, ARG
+	CALL CHARA_MAKE_AGE_SETTING, ARG
+	CALL CHARA_SIZE_DEFAULT, ARG
+	CALL SIZE_SETTING, ARG
+ELSEIF INPUT_CMD == 30 && FLAG:999 > 0
+	CFLAG:ARG:35 = 0
+ELSEIF INPUT_CMD == 31 && FLAG:999 > 0
+	CFLAG:ARG:36 = 0
+ELSE
+	RETURN 0
+ENDIF
+RETURN 1
+
+;================================================================
+;	以降、画面表示の各部分を担当する関数群
+;================================================================
+;--------------------------------------------------
+;キャラクターの外見的プロフィールの表示（変身/非変身の切り替え機能付き）
+; 引数
+;	ARG	対象のキャラ番号
+; 変数
+;	APP_**	名前通りの各種ステータスの代入先
+;memo:最初にこのコードを見た時は暗澹たる気分になった
+;memo:このバリアントの売りである「変身ヒロイン」を担保するデータ構造が、根本から腐っていたとわかったから
+;memo:添字を同名にするために、非変身時のデータはBASEで変身時のデータはMAXBASE？　こんな愚かしいERBは今まで見たことない
+;memo:これはデータ構造から直す。何ヶ月かかってでも、絶対に直す
+@SHOW_STATUS_CHARA_APPERANCE, ARG
+#DIM APP_外見年齢
+#DIM APP_身長
+#DIM APP_体重
+#DIM APP_胸重量
+#DIM APP_胸囲
+#DIM APP_胴囲
+#DIM APP_腰囲
+#DIM APP_体つき
+#DIMS APP_性別
+#DIMS APP_髪型
+#DIMS APP_髪色
+#DIMS APP_右目の色
+#DIMS APP_左目の色
+#DIMS APP_肌色
+
+;プロフィール未設定の場合、空行を追加する
+IF CFLAG:ARG:34 == 0
+	PRINT 　　　　　　　　　プロフィール未設定
+	FOR LOCAL:1, 0, 12
+		PRINTL
+	NEXT
+	;拡張度を表示しないなら、その分空行を追加する
+	IF CONFIG_CHECK_MANIAC_F(16) == 0
+		FOR LOCAL:1, 0, 4
+			PRINTL
+		NEXT
+	ENDIF
+;ここにあったコードの残骸は削除した
+
+;プロフィール設定済みの場合の表示処理
+ELSE
+	;変身時か通常時かで参照する変数が変わるため、ここでローカル変数に代入して以降のコードを統一する
+	;memo:こんなその場しのぎの策がそもそも必要ないデータ構造に変えたい
+	;変身時
+	IF SHOW_TRANS_STATUS
+		PRINTL 　　　　　　　　　　　＜＜変身時＞＞
+		APP_外見年齢 = MAXBASE:ARG:年齢
+		APP_身長 = MAXBASE:ARG:身長
+		APP_体重 = MAXBASE:ARG:体重
+		APP_胸重量 = MAXBASE:ARG:胸の重量
+		APP_胸囲 = MAXBASE:ARG:胸囲
+		APP_胴囲 = MAXBASE:ARG:胴囲
+		APP_腰囲 = MAXBASE:ARG:腰囲
+		APP_体つき = TALENT:ARG:変身時外見
+		APP_髪型 = %CSTR:ARG:14%
+		APP_髪色 = %CSTR:ARG:31%
+		APP_右目の色 = %CSTR:ARG:34%
+		APP_左目の色 = %CSTR:ARG:35%
+		APP_肌色 = %CSTR:ARG:37%
+	;通常時
+	ELSE
+		PRINTL 　　　　　　　　　　　＜＜通常時＞＞
+		APP_外見年齢 = BASE:ARG:年齢
+		APP_身長 = BASE:ARG:身長
+		APP_体重 = BASE:ARG:体重
+		APP_胸重量 = BASE:ARG:胸の重量
+		APP_胸囲 = BASE:ARG:胸囲
+		APP_胴囲 = BASE:ARG:胴囲
+		APP_腰囲 = BASE:ARG:腰囲
+		APP_体つき = TALENT:ARG:外見
+		APP_髪型 = %CSTR:ARG:13%
+		APP_髪色 = %CSTR:ARG:30%
+		APP_右目の色 = %CSTR:ARG:32%
+		APP_左目の色 = %CSTR:ARG:33%
+		APP_肌色 = %CSTR:ARG:36%
+	ENDIF
+
+	;左側に前髪、右側に外見年齢と実年齢の表示
+	PRINT 　ヘアスタイル　　　　　　　　　　　
+	;外見年齢と実年齢に食い違いがあれば「実年齢」、なければ「年齢」で実年齢を表示
+	PRINTFORML %APP_外見年齢 != BASE:ARG:実年齢 ? "実" # "　"%年齢：{BASE:ARG:実年齢, 7} 歳
+	;前髪
+	;memo:なんで前髪は変身前後で変えられないの？
+	LOCALS = 『%CSTR:ARG:12%』
+	PRINTFORM 　　　　前髪：%LOCALS, 18, LEFT%
+	;外見年齢と実年齢に食い違いがあれば、外見年齢を表示
+	SIF APP_外見年齢 != BASE:ARG:実年齢
+		PRINTFORM 　　　外見：{APP_外見年齢, 7} 歳
+	PRINTL 
+
+	;左側に後髪、右側に身長と体重を表示（女性なら胸の重量も）
+	LOCALS = 『%APP_髪型%』
+	PRINTFORML 　　　　後髪：%LOCALS, 20, LEFT%　　身長：{APP_身長 / 10, 5}.{APP_身長 % 10} cm
+	PRINTFORM 　　　　　　　　　　　　　　　　　　　体重：{APP_体重 / 10, 5}.{APP_体重 % 10} kg
+	IF CHARATALENT_F(ARG,SHOW_TRANS_STATUS,"オトコ")== 0
+		PRINTFORML (胸{APP_胸重量 / 10}.{APP_胸重量 % 10} kg)
+	ELSE
+		PRINTL 
+	ENDIF
+
+	;左側に髪色、右側にバストサイズ（女性と男の娘のみ）を表示
+	PRINT 　　　髪の色：　
+	CALL COLORCHIP, APP_髪色
+	PRINTL 
+	;カップサイズ計算
+	CALL TOP_UNDER, ARG, SHOW_TRANS_STATUS
+	CALL CUP_SIZE, RESULT + PREGNANCY_BOOB_EXPAND(ARG)
+	;オトコかつ男の娘でないならバストサイズは表示しない
+	IF CHARATALENT_F(ARG,SHOW_TRANS_STATUS,"オトコ") > 0 && CHARATALENT_F(ARG,SHOW_TRANS_STATUS,"男の娘") == 0
+		PRINTFORML 　　　　　　　　　　　　　　　　　　　 Ｂ ：　（―）
+	ELSE
+		;妊娠による胸囲増加を反映
+		APP_胸囲 = APP_胸囲 + PREGNANCY_BOOB_EXPAND(ARG)
+		PRINTFORM 　　　　　　　　　　　　　　　　　　　 Ｂ ：{APP_胸囲 / 10, 5}.{APP_胸囲 % 10} cm 
+		;妊娠が発覚しているなら、妊娠による増加量を明示する
+		SIF IS_REVEALED_PREGNANT(ARG)
+			PRINTFORM (+{PREGNANCY_BOOB_EXPAND(ARG) / 10}.{PREGNANCY_BOOB_EXPAND(ARG) % 10} cm) 
+		;カップサイズを表示
+		PRINTFORM (%RESULTS%)
+		PRINTL 
+	ENDIF
+
+	;左側に目つき、右側にウエストサイズ（女性と男の娘のみ）を表示
+	LOCALS = 『%CSTR:ARG:18%』
+	PRINTFORM 　　　目つき：%LOCALS, 20, LEFT%
+	;オトコかつ男の娘でないならウエストサイズは表示しない
+	IF CHARATALENT_F(ARG,SHOW_TRANS_STATUS,"オトコ") > 0 && CHARATALENT_F(ARG,SHOW_TRANS_STATUS,"男の娘") == 0
+		PRINTFORML 　　 Ｗ ：　（―）
+	ELSE
+		;妊娠による胴囲増加を反映
+		APP_胴囲 = APP_胴囲 + PREGNANCY_BELLY_EXPAND(ARG)
+		PRINTFORM 　　 Ｗ ：{APP_胴囲 / 10, 5}.{APP_胴囲 % 10} cm 
+		;妊娠が発覚しているなら、妊娠による増加量を明示する
+		SIF IS_REVEALED_PREGNANT(ARG)
+			PRINTFORM (+{PREGNANCY_BELLY_EXPAND(ARG) / 10}.{PREGNANCY_BELLY_EXPAND(ARG) % 10} cm) 
+		PRINTL 
+	ENDIF
+
+	;左側に右目の色、右側にヒップサイズ（女性と男の娘のみ）を表示
+	PRINT 　　　　右目：　
+	CALL COLORCHIP, APP_右目の色
+	;オトコかつ男の娘でないならヒップサイズは表示しない
+	IF CHARATALENT_F(ARG,SHOW_TRANS_STATUS,"オトコ") > 0 && CHARATALENT_F(ARG,SHOW_TRANS_STATUS,"男の娘") == 0
+		PRINTFORML 　　　　　　　　　 Ｈ ：　（―）
+	ELSE
+		PRINTFORML 　　　　　　　　　 Ｈ ：{APP_腰囲 / 10, 5}.{APP_腰囲 % 10} cm
+	ENDIF
+
+	;左目の色を表示
+	PRINT 　　　　左目：　
+	CALL COLORCHIP, APP_左目の色
+	PRINTL 
+
+	;体格・性別に該当する素質があれば表示する
+	;memo:参照先のCHARATALENT_Fの構造、というか素質変化の仕様そのものが複雑すぎて手を付けられない
+	;memo:なんで変身時素質変化はこんなにカオスのまま放置されてたんだ。砂上に楼閣は建たんぞ
+	PRINTFORM 　　　　　　　　　　　　　　　　　　　
+	SIF CHARATALENT_F(ARG,SHOW_TRANS_STATUS,"小柄") > 0
+		PRINT [小柄]
+	SIF CHARATALENT_F(ARG,SHOW_TRANS_STATUS,"長身") > 0
+		PRINT [長身]
+	SIF CHARATALENT_F(ARG,SHOW_TRANS_STATUS,"絶壁") > 0
+		PRINT [絶壁]
+	SIF CHARATALENT_F(ARG,SHOW_TRANS_STATUS,"貧乳") > 0
+		PRINT [貧乳]
+	SIF CHARATALENT_F(ARG,SHOW_TRANS_STATUS,"巨乳") > 0
+		PRINT [巨乳]
+	SIF CHARATALENT_F(ARG,SHOW_TRANS_STATUS,"爆乳") > 0
+		PRINT [爆乳]
+	SIF CHARATALENT_F(ARG,SHOW_TRANS_STATUS,"超乳") > 0
+		PRINT [超乳]
+	SIF CHARATALENT_F(ARG,SHOW_TRANS_STATUS,"魔乳") > 0
+		PRINT [魔乳]
+	SIF CHARATALENT_F(ARG,SHOW_TRANS_STATUS,"奇乳") > 0
+		PRINT [奇乳]
+	IF SHOW_TRANS_STATUS
+		SIF CHARATALENT_F(ARG,1,"オトコ") > 0 && CHARATALENT_F(ARG,0,"オトコ") > 0
+			PRINT [オトコ]
+		SIF CHARATALENT_F(ARG,1,"オトコ") > 0 && CHARATALENT_F(ARG,0,"オトコ") == 0
+			PRINT [男性化]
+		SIF CHARATALENT_F(ARG,1,"オトコ") == 0 && CHARATALENT_F(ARG,0,"オトコ") > 0
+			PRINT [女体化]
+	ELSE
+		SIF CHARATALENT_F(ARG,SHOW_TRANS_STATUS,"オトコ") > 0
+			PRINT [オトコ]
+	ENDIF
+	SIF CHARATALENT_F(ARG,SHOW_TRANS_STATUS,"男の娘") > 0
+		PRINT [男の娘]
+	SIF CHARATALENT_F(ARG,SHOW_TRANS_STATUS,"ふたなり") > 0
+		PRINT [ふたなり]
+	IF TALENT:ARG:妊娠 == 素質妊娠_人 && CFLAG:ARG:222 < 11
+		PRINT [着床]
+	ELSEIF IS_REVEALED_PREGNANT(ARG)
+		PRINT [妊娠]
+	ENDIF
+	SIF APP_体つき
+		PRINTFORM [%素質外見:APP_体つき%]
+	PRINTL
+
+	;肌の色を表示
+	PRINT 　　　肌の色：　
+	CALL COLORCHIP, APP_肌色
+	PRINTL 
+ENDIF
+
+;--------------------------------------------------
+;妊娠発覚判定
+; 引数
+;	ARG	対象のキャラ番号
+; 戻り値
+;	対象の妊娠が発覚済みの状態であれば1、未発覚か妊娠していないなら0
+@IS_REVEALED_PREGNANT, ARG
+#FUNCTION
+SIF TALENT:ARG:妊娠 == 素質妊娠_触手 || TALENT:ARG:妊娠 == 素質妊娠_触手人 || TALENT:ARG:妊娠 == 素質妊娠_人
+	RETURNF 1
+RETURNF 0
+
+;--------------------------------------------------
+;キャラクターのパーソナリティテキストの表示
+; 引数
+;	ARG	対象のキャラ番号
+@SHOW_STATUS_CHARA_PERSONALITY, ARG
+IF CSTR:ARG:40 != "" || CSTR:ARG:41 != "" || CSTR:ARG:42 != ""
+	PRINTL 　＊＊＊　パーソナリティ ＊＊＊
+ELSE
+	PRINTL 
+ENDIF
+REPEAT 3
+	IF CSTR:ARG:(40 + COUNT) != ""
+		PRINTFORML 　　『%CSTR:ARG:(40 + COUNT)%』
+	ELSE
+		PRINTL 
+	ENDIF
+REND
+
+;--------------------------------------------------
+;キャラクターの裏パーソナリティテキストの表示
+; 引数
+;	ARG	対象のキャラ番号
+@SHOW_STATUS_CHARA_SEXUAL_PERSONALITY, ARG
+IF CONFIG_CHECK_OTHER_F(6) == 1 && (CSTR:ARG:45 != "" || CSTR:ARG:46 != "" || CSTR:ARG:47 != "" || CSTR:ARG:48 != "")
+	CALL SHORTLINE
+	PRINTL 　＊＊＊　裏パーソナリティ ＊＊＊
+	LOCAL:10=0
+	REPEAT 4
+		IF CSTR:ARG:(45 + COUNT) != ""
+			;感覚に応じて10段階で白からショッキングピンクに色変え
+			SETCOLOR 255, 255 - 23 * LIMIT(ABL:ARG:(0 + COUNT), 0, 10), 255 - 11 * LIMIT(ABL:ARG:(0 + COUNT), 0, 10), 
+			PRINTFORM 　　『%CSTR:ARG:(45 + COUNT)%
+			PRINTFORML %UNICODE(0x2665)*LIMIT(ABL:ARG:(0 + COUNT)/2, 0, 5)%』
+			RESETCOLOR
+			LOCAL:10++
+		ENDIF
+	REND
+	REPEAT 4-LOCAL:10
+		PRINTL 
+	REND
+ELSE
+	REPEAT 6
+		PRINTL 
+	REND
+ENDIF

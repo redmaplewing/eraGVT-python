@@ -1,0 +1,66 @@
+﻿
+
+;キャラ個別のオープニング
+;--------------------------------------------------
+@KOJO_0_FIRST_16
+;ゲーム開始時に表示されるテキストを設定します
+;キャラが戦うに至った動機の説明など
+
+
+
+;完全殲滅
+;--------------------------------------------------
+@KOJO_0_BATTLE_END_PERFECT_16
+PRINTFORML 「滅びなさい下等生物、あんたたちには地獄すら生温いわ！」
+PRINTFORML  これで最後とばかりに、%CALLNAME%は至近距離から全身全霊を込めた攻撃を叩き込んだ。
+PRINTFORML  そして……
+;触手の虜を消さないからこんなことに
+IF TALENT:触手の虜
+	PRINTFORML  とどめの一撃を見るや、瀕死の触手は避けることなく一直線に%CALLNAME%に向かっていった。
+	PRINTFORML  確かな手応えはあった。しかし、圧倒的な質量はそのまま%CALLNAME%を飲み込んだ。
+	PRINTFORML  声を上げる間もなく四肢は絡め取られ、口が、鼻が、膣が、尻が、次々と触手に塞がれていく。
+	PRINTFORML  声にならない絶叫を上げ、半狂乱で暴れる%CALLNAME%の穴という穴に
+	PRINTFORML  断末魔の痙攣とともに、全てを吐き出すかのような精液が注ぎ込まれる。
+	PRINTFORML  もはやプライドも何も無く一人の少女として泣き叫ぼうとする%CALLNAME%だったが、
+	PRINTFORML  口内は喉まで触手で満たされそれすら叶わない……
+	PRINTFORML  精液を出し尽くし、力尽きた触手の抜け落ちた穴には即座に別の触手が潜り込む。
+	PRINTFORML  呼吸すら許されずに%CALLNAME%の意識が途絶える中、触手たちは次々と最期の精液をぶちまけていった……
+	PRINTFORML 
+	PRINTFORMW  意識を失っていた%CALLNAME%はうっすらと目を開く。
+	PRINTFORML  周囲に動くものは何もない。濁液にまみれた自分の体があるばかりだった。
+	PRINTFORMW  この街を脅かす触手ももう、ここにはいない。
+	PRINTFORML  しかし、最後の触手が残された力を何に用いたか、彼女の身体は知っていた。
+	PRINTFORML  今の彼女ならば、仲間たち全員を妊婦腹に膨れ上がらせてなお余る量の触手を産み落とし、
+	PRINTFORML  そして孕まされることもなく、再び子宮を触手で満たすことができるだろう。
+	PRINTFORMW 「……そっか。%SELF_CALL()%はもう戻れなかったんだ、人の側じゃなかったんだ」
+	PRINTFORMW 「……情けない。救いようのないバカね、%SELF_CALL()%」
+	PRINTFORMW  これまでの陵辱も全て、託される者の準備が目的だったのだろうか。
+	PRINTFORML 「ああもう……お腹減っちゃって、疼いて欲してる。ダメそうね、これ」
+	PRINTFORMW  輝く裸身を艶めかしく晒し、新たな女王触手は自嘲気味に笑った。
+ELSEIF ABL:触手中毒>=3
+	PRINTFORML  ……
+	PRINTFORML  触手の爆ぜる轟音は鳴り止み、息を荒げる%CALLNAME%だけがその場に立っていた。
+	PRINTFORMW  この街を脅かす触手ももう、ここにはいない。しかし――
+	PRINTFORML 
+	PRINTFORML  %CALLNAME%は既に知ってしまった
+	PRINTFORML  限界を超えて供される、人外の快楽を
+	PRINTFORML  ただの牝として扱われ、溺れるだけの悦びを
+	PRINTFORML 
+	PRINTFORMW  そして、%CALLNAME%は見てしまった
+	PRINTFORMW   視界の隅で僅かに蠢く何かを……
+	PRINTFORML 
+	PRINTFORML  ここに%CALLNAME%の戦いは終結した。
+	PRINTFORML  けれどその身は触手の快楽に溺れ、ただ平和を謳歌することはできないほどに開発されつくしていた――
+ELSE
+	PRINTFORML  ……
+	PRINTFORML  触手の爆ぜる轟音が鳴り止むと、%CALLNAME%だけがその場に立っていた。
+	PRINTFORMW  この街を脅かす触手ももう、ここにはいない。
+	PRINTFORML  頭を失った各地の触手が討伐されるのも、おそらくは時間の問題だろう。
+	PRINTFORMW  間近で浴びた淫気に疼き始めた衝動を抑え、%CALLNAME%は身を翻す。
+	PRINTFORML  穢された身体も、喪った日常も、今だけは関係ない。
+	PRINTFORMW  髪を靡かせ、一歩一歩踏みしめるように、%CALLNAME%は帰りを待つ人々のもとへと歩み始めた――
+	PRINTFORML 
+	PRINTFORML  ここに%CALLNAME%の戦いは終結した。
+	PRINTFORMW  多くの犠牲を払いながらも、%CALLNAME%たち人類はついに脅威を退けたのだ……！
+ENDIF
+

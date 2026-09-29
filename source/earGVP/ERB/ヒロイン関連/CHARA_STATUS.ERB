@@ -1,0 +1,1746 @@
+﻿;ページ遷移のたびにスタックが積みあがってしまっている…
+;memo:↑気にするべきはそこじゃない
+
+;memo:このファイルに詰め込まれていた関数のうち、ステータス画面の処理はステータス画面フォルダ以下に分離
+;memo:それ以外のうち、単独で汎用関数化できそうなものは汎用関数フォルダへ移動、使ってない関数は削除
+;memo:ここに残っているのは、今回手を付けたステータス画面以外の処理から呼ばれていて動かせない関数
+;memo:今後他の機能に手を付けていき、最終的にこのファイルの中身は空になる（実質削除）予定
+
+
+;memo;基礎情報表示（元SHOW_STATUS_BASE_DETAIL）
+;memo:ラッパー関数で引数を付けて関数内で引数ごとに全く別の処理をする、つまりまったく関係のない4つの関数を無理やり1つにまとめだだけの無意味な構造だったので解体
+;memo:ラッパー関数内にIFの中身を丸ごと移植し、ステータス画面から呼ぶ処理だけSHOW_STATUS_CHARA_SELECT_PAGE1.ERBに移動
+;memo:それ以外から呼ばれる関数はこの場に残した。呼び出し元からの扱いは何も変わってないので動作に影響はない
+
+;--------------------------------------------------
+;基礎情報表示
+;バトル画面から呼んだ
+@SHOW_STATUS_BASE_DISPBATTLE, ARG
+	DRAWLINE
+	PRINTL 
+	LOCALS = %CFLAG:ARG:1==0 ? NAME:ARG # PRINT_TRANSNAME(ARG:0)% Lv.{ABL:(ARG:0):レベル,4,LEFT}
+	STRLENS LOCALS
+	LOCAL=RESULT
+
+	LOCALS+= "性別："+(ISMALE(ARG:0) ? "男性" # (TALENT:(ARG:0):触手の虜 ? "❤" # "女性"))+" "
+
+	IF TALENT:(ARG:0):変身能力 == 1 && CFLAG:(ARG:0):1 == 0 && (TALENT:(ARG:0):変身時ＴＳ < 1 || GETBATTLESITUATION("奇襲") == 0)
+		LOCALS += "　<<未変身>>"
+	ELSEIF TALENT:(ARG:0):変身能力 == 1 && CFLAG:(ARG:0):1 == 0 && TALENT:(ARG:0):変身時ＴＳ && GETBATTLESITUATION("奇襲") && TFLAG:0 < 5
+		LOCALS += "　<<未変身・準備中>>"
+	ELSEIF TALENT:(ARG:0):変身能力 == 1 && CFLAG:(ARG:0):1 == 0 && TALENT:(ARG:0):変身時ＴＳ && GETBATTLESITUATION("奇襲") && TFLAG:0 >= 5
+		LOCALS += "　<<未変身・準備完了>>"
+	ENDIF
+	PRINTFORML %LOCALS, 46,LEFT%
+
+	PRINTFORM %" ", LOCAL,LEFT%
+	CALL STATUS_PRINT_FEAT
+
+	;--------------------------------------------------
+	;キャラの性ステータス
+	CALL SHOW_TRAIN_PALAM_STATUS("上部")
+
+
+	PRINTL
+
+	PRINTFORM %"　", 46,LEFT%　距離適性：
+	LOCAL:1 = TALENT:近距離得意 * 2 - TALENT:近距離苦手 * 2 - TALENT:中距離得意 - TALENT:遠距離得意
+	LOCAL:2 = TALENT:中距離得意 * 2 - TALENT:中距離苦手 * 2 - TALENT:近距離得意 - TALENT:遠距離得意
+	LOCAL:3 = TALENT:遠距離得意 * 2 - TALENT:遠距離苦手 * 2 - TALENT:近距離得意 - TALENT:中距離得意
+	FOR LOCAL, 1, 4
+		IF LOCAL:LOCAL >= 1
+			LOCALS:LOCAL = ◎
+		ELSEIF LOCAL:LOCAL < -2
+			LOCALS:LOCAL = ×
+		ELSEIF LOCAL:LOCAL < -1
+			LOCALS:LOCAL = △
+		ELSE
+			LOCALS:LOCAL = ○
+		ENDIF
+	NEXT
+	PRINTFORM [近距離%LOCALS:1%] [中距離%LOCALS:2%] [遠距離%LOCALS:3%]
+	PRINTL 
+	CALLFORM COLORSENTENCE_BAR(BASENAME:0, 6, BASE:(ARG:0):体力, MAXBASE:(ARG:0):体力, 20)
+	PRINTPLAIN  スタイル：
+	FOR LOCAL,1,4
+		PRINTFORM << %FSTYLE_NAME_F(TARGET,LOCAL)% >> 
+	NEXT
+	PRINTL 
+	CALLFORM COLORSENTENCE_BAR(BASENAME:1, 6, BASE:(ARG:0):気力, MAXBASE:(ARG:0):気力, 20)
+	
+	;戦闘支援による補正率
+	CALL CALC_CHISEI_SHIEN(0)
+	LOCAL:0 = RESULT
+	IF ENEMY_TYPE_CHECK_F("AKUOTI")
+		LOCAL:1 = MAXBASE:(FLAG:111):知性
+	ELSE
+		CALL TENTACLE_ACCESS, "CHISEI"
+		LOCAL:1 = RESULT
+	ENDIF
+	LOCAL:0 = 100 * LOCAL:0 / LOCAL:1
+	IF GETBATTLESITUATION("支援無効")
+		SETCOLORBYNAME RED
+		PRINTFORM  戦闘支援効果：支援不可
+		RESETCOLOR
+	ELSEIF FLAG:43
+		PRINTFORM  戦闘支援効果：(+ {LOCAL:0}％)
+	ENDIF
+
+	PRINTL 
+	CALLFORM COLORSENTENCE_BAR(BASENAME:2, 6, BASE:(ARG:0):性耐性, MAXBASE:(ARG:0):性耐性, 20)
+	PRINTL
+	;追加ゲージ
+	LOCAL=0
+	IF TALENT:ふたなり > 0 || (ISMALE() && TALENT:未熟 != 1)
+		CALLFORM COLORSENTENCE_BAR(BASENAME:20, 6, BASE:(ARG:0):射精, MAXBASE:(ARG:0):射精, 10)
+		PRINTL
+	ENDIF
+	IF TALENT:母乳体質 > 0
+		CALLFORM COLORSENTENCE_BAR(BASENAME:21, 6, BASE:(ARG:0):噴乳, MAXBASE:(ARG:0):噴乳, 10)
+		PRINTL
+	ENDIF
+
+
+	;衣装の耐久度表示
+	CALL CLOTH_BATTLE_DISPHP
+	RESETCOLOR
+
+
+
+	IF CFLAG:1 == 2
+		LOCAL:0 = 24 * (500 + (500 - TCVARn:5) * 4) / 500
+		LOCAL:1 = 15 * (500 + (500 - TCVARn:5) * 4) / 500
+		;PRINTFORM S.P. 　%UNICODE(0x208D)%
+		PRINTFORM S.P.　
+
+		CALL STATUS_PRINT_EX(1)
+			PRINTFORM 　%UNICODE(0x208D)%
+		CALL COLOR_BAR(TCVARn:5, 500, 20, 128, 128, 180, -100, LOCAL:0, LOCAL:0, LOCAL:1, 1, UNICODE(0x25AE), UNICODE(0x25AE))
+		PRINTFORM %UNICODE(0x208E)%　
+	ELSE
+		;EXゲージ破壊済みの場合
+		IF GETBATTLESITUATION("EX不可")==1
+			PRINTFORM E.X.　
+			CALL STATUS_PRINT_EX(2)
+			PRINTFORM 　%UNICODE(0x208D)%
+			SETCOLOR 64, 64, 64
+			PRINTFORM %UNICODE(0x25AE)*3%
+			SETCOLOR 192, 64, 64
+			PRINT B
+			SETCOLOR 64, 64, 64
+			PRINTFORM %UNICODE(0x25AE)*2%
+			SETCOLOR 192, 64, 64
+			PRINT R
+			SETCOLOR 64, 64, 64
+			PRINTFORM %UNICODE(0x25AE)*2%
+			SETCOLOR 192, 64, 64
+			PRINT E
+			SETCOLOR 64, 64, 64
+			PRINTFORM %UNICODE(0x25AE)*2%
+			SETCOLOR 192, 64, 64
+			PRINT A
+			SETCOLOR 64, 64, 64
+			PRINTFORM %UNICODE(0x25AE)*2%
+			SETCOLOR 192, 64, 64
+			PRINT K
+			SETCOLOR 64, 64, 64
+			PRINTFORM %UNICODE(0x25AE)*4%
+			RESETCOLOR
+			PRINTFORM %UNICODE(0x208E)%　
+		ELSE
+			IF TCVARn:4 < 500
+				LOCAL:2 = TCVARn:4 % 100
+			ELSE
+				LOCAL:2 = 100
+			ENDIF
+			LOCAL:0 = 15 * (100 + (100 - LOCAL:2) * 3) / 100
+			LOCAL:1 = 14 * (100 + (100 - LOCAL:2) * 3) / 100
+			;PRINTFORM E.X.　　　%UNICODE(0x208D)%
+			PRINTFORM E.X.　
+			
+			CALL STATUS_PRINT_EX(0)
+			PRINTFORM 　%UNICODE(0x208D)%
+			CALL COLOR_BAR(LOCAL:2, 100, 20, 64, 64, 80, -100 + (TCVARn:4 >= 100) * 80, LOCAL:0, LOCAL:0, LOCAL:1, 1, UNICODE(0x25AE), UNICODE(0x25AE))
+			PRINTFORM %UNICODE(0x208E)%　
+		ENDIF
+	ENDIF
+
+	PRINT 　
+	IF GETBIT(TCVARn:3, 0)
+		FONTBOLD
+		SETCOLOR 255,180,0
+		PRINT E
+		SETCOLOR 255,120,30
+		PRINT X
+		FONTITALIC
+		SETCOLOR 255,60,60
+		PRINT 攻　
+		RESETCOLOR
+		FONTREGULAR
+	ENDIF
+	IF GETBIT(TCVARn:3, 1)
+		FONTBOLD
+		SETCOLOR 0,180,255
+		PRINT E
+		SETCOLOR 30,120,255
+		PRINT X
+		FONTITALIC
+		SETCOLOR 60,60,255
+		PRINT 防　
+		RESETCOLOR
+		FONTREGULAR
+	ENDIF
+	IF CFLAG:1 == 2 && (GETBIT(TCVARn:3, 0) || GETBIT(TCVARn:3, 1))
+		PRINT ＳＰ変身時間
+		SIF GETBIT(TCVARn:3, 0)
+			PRINT ↓
+		SIF GETBIT(TCVARn:3, 1)
+			PRINT ↓
+	ENDIF
+	PRINTL 
+
+
+
+	CALL STATUS_PRINT_AIRGAGE
+	CALL STATUS_PRINT_CHARGE
+
+;--------------------------------------------------
+;基礎情報表示
+;トレーニング画面から呼んだ
+@SHOW_STATUS_BASE_TRAINING, ARG
+	PRINTL 
+	PRINTFORML %CALLNAME:ARG% Lv.{ABL:ARG:レベル} （{JUEL:ARG:経験値}％）
+	CALLFORM COLORSENTENCE_BAR("体力", 6, BASE:ARG:体力, MAXBASE:ARG:体力, 20)
+	PRINTL 
+	CALLFORM COLORSENTENCE_BAR("気力", 6, BASE:ARG:気力, MAXBASE:ARG:気力, 20)
+	PRINTL 
+	CALLFORM COLORSENTENCE_BAR("性耐性", 6, BASE:ARG:性耐性, MAXBASE:ARG:性耐性, 20)
+	PRINTL 
+	PRINTFORML 戦闘力　　攻撃：{MAXBASE:ARG:攻撃}  防御：{MAXBASE:ARG:防御}  敏捷：{MAXBASE:ARG:敏捷}  知性：{MAXBASE:ARG:知性}
+	PRINT 性格    　
+	CALL SEIKAKU_CHECK, "PRINT", ARG
+	PRINTL 
+	PRINTFORML 修練P　 　{JUEL:修練P}P
+	CALL SHOW_STATUS_TALENT, TARGET, 1, 1
+	CALL SHORTLINE
+	PRINTFORMLC 体力基礎：{BASE:ARG:体力基礎}
+	PRINTFORMLC 気力基礎：{BASE:ARG:気力基礎}
+	PRINTFORMLC 性耐性基礎：{BASE:ARG:性耐性基礎}
+	PRINTL 
+	PRINTFORMLC 攻撃基礎：{BASE:ARG:攻撃}
+	PRINTFORMLC 防御基礎：{BASE:ARG:防御}
+	PRINTFORMLC 敏捷基礎：{BASE:ARG:敏捷}
+	PRINTL 
+	PRINTFORMLC 知性基礎：{BASE:ARG:知性}
+	PRINTL 
+	IF TALENT:変身能力 != 素質変身能力_非戦闘員
+		PRINTFORMLC 近距離戦技：LV.{ABL:ARG:近距離}
+		PRINTFORMLC 中距離戦技：LV.{ABL:ARG:中距離}
+		PRINTFORMLC 遠距離戦技：LV.{ABL:ARG:遠距離}
+	ELSE
+		PRINTFORMLC 基本戦闘技能：LV.{ABL:ARG:戦闘基礎}
+	ENDIF
+	PRINTL 
+	CALL SHORTLINE
+
+;--------------------------------------------------
+;素質表示 性格、変身能力、種族は省く
+;ARG:1は見た目調整用 0=ステ画面, 1=鍛錬, 2=キャラメイク
+;ARG:2が0でない場合はHTMLのtitleタグによってコメントが表示される
+;HTML_PRINTによる解説を追加
+@SHOW_STATUS_TALENT, ARG, ARG:1 = 0, ARG:2 = 0
+#LOCALSIZE 1
+#LOCALSSIZE 1
+#DIM LCOUNT, 2
+IF CONFIG_CHECK_SCREEN_F(0) == 0 || ARG:1 == 2
+	IF ARG:1 == 0
+		LOCALS = ◆素質
+	ELSEIF ARG:1 == 2
+		LOCALS = 　　所持素質：
+	ELSE
+		LOCALS = 素質    
+	ENDIF
+	IF ARG:2
+		LOCALS += @"<br>"
+	ELSE
+		PRINTFORM %LOCALS%
+		LOCALS = 
+		IF ARG:1 != 1
+			PRINTL 
+		ENDIF
+	ENDIF
+	SIF ARG:1 == 2
+		PRINT 　　　　　　 
+
+	IF CFLAG:ARG:0 == 状態_幽閉
+		IF ARG:2
+			LOCALS += @"<nonbutton title='%TALENT_INFO(-1)%'>[幽閉中]</nonbutton>"
+		ELSE
+			PRINTFORM [幽閉中]
+		ENDIF
+	ELSEIF CFLAG:ARG:0 == 状態_洗脳
+		IF ARG:2
+			LOCALS += @"<nonbutton title='%TALENT_INFO(-2)%'>[洗脳]</nonbutton>"
+		ELSE
+			PRINTFORM [洗脳]
+		ENDIF
+	ELSEIF CFLAG:ARG:0 == 状態_悪堕ち
+		IF ARG:2
+			LOCALS += @"<nonbutton title='%TALENT_INFO(-3)%'>[悪堕ち]</nonbutton>"
+		ELSE
+			PRINTFORM [悪堕ち]
+		ENDIF
+	ELSEIF CFLAG:ARG:0 == 状態_クズ監禁
+		IF ARG:2
+			LOCALS += @"<nonbutton title='%TALENT_INFO(-4)%'>[誘拐中]</nonbutton>"
+		ELSE
+			PRINTFORM [誘拐監禁中]
+		ENDIF
+	ELSEIF CFLAG:ARG:0 == 5
+		IF ARG:2
+			LOCALS += @"<nonbutton title='%TALENT_INFO(-5)%'>[憂鬱中]</nonbutton>"
+		ELSE
+			PRINTFORM [憂鬱中]
+		ENDIF
+	ELSEIF CFLAG:ARG:0 == 状態_死亡
+		IF ARG:2
+			LOCALS += @"<nonbutton title='%TALENT_INFO(-9)%'>[死亡]</nonbutton>"
+		ELSE
+			PRINTFORM [死亡]
+		ENDIF
+	ELSEIF CFLAG:ARG:0 == 状態_出産直前
+		IF ARG:2
+			LOCALS += @"<nonbutton title='%TALENT_INFO(-10)%'>[入院中]</nonbutton>"
+		ELSE
+			PRINTFORM [入院中]
+		ENDIF
+	ELSEIF CFLAG:ARG:0 == 状態_育児中
+		IF ARG:2
+			LOCALS += @"<nonbutton title='%TALENT_INFO(-10)%'>[育児中]</nonbutton>"
+		ELSE
+			PRINTFORM [育児中]
+		ENDIF
+	ENDIF
+	REPEAT 1000
+		IF TALENT:ARG:COUNT > 0
+			IF (COUNT >= 10 && COUNT <= 27) || (COUNT >= 200 && COUNT <= 206) || (COUNT >= 250 && COUNT <= 299) || COUNT == 400 || (COUNT >= 600 && COUNT <= 799) || (COUNT >= 800 && COUNT <= 899) || COUNT >= 900
+			ELSEIF COUNT == 3 && ISMALE(ARG)
+				IF ARG:2
+					LOCALS += @"<nonbutton title='%TALENT_INFO(COUNT)%'>[生えてない]</nonbutton>"
+				ELSE
+					PRINTFORM [生えてない]
+				ENDIF
+			ELSEIF COUNT == 4
+				IF TALENT:ARG:未熟 == 1
+					IF TALENT:ARG:ロボっ子 > 0 && ISFEMALE(ARG)
+						IF ARG:2
+							LOCALS += @"<nonbutton title='%TALENT_INFO(-999)%'>[人工子宮]</nonbutton>"
+						ELSE
+							PRINTFORM [人工子宮]
+						ENDIF
+					ENDIF
+					IF ARG:2
+						IF ISMALE(ARG)
+							LOCALS += @"<nonbutton title='射精できない'>[未熟]</nonbutton>"
+						ELSE
+							LOCALS += @"<nonbutton title='%TALENT_INFO(COUNT)%'>[未熟]</nonbutton>"
+						ENDIF
+					ELSE
+						PRINTFORM [未熟]
+					ENDIF
+				ELSEIF TALENT:ARG:未熟 == 2
+					IF ARG:2
+						LOCALS += @"<nonbutton title='%TALENT_INFO(COUNT)%'>[不妊]</nonbutton>"
+					ELSE
+						PRINTFORM [不妊]
+					ENDIF
+				ENDIF
+			ELSEIF COUNT == 110
+				IF TALENT:ARG:貧乳 == 2
+					IF ARG:2
+						LOCALS += @"<nonbutton title='%TALENT_INFO(COUNT)%'>[絶壁]</nonbutton>"
+					ELSE
+						PRINTFORM [絶壁]
+					ENDIF
+				ELSE
+					IF ARG:2
+						LOCALS += @"<nonbutton title='%TALENT_INFO(COUNT)%'>[貧乳]</nonbutton>"
+					ELSE
+						PRINTFORM [貧乳]
+					ENDIF
+				ENDIF
+			ELSEIF COUNT == 111
+				IF TALENT:ARG:巨乳 == 5
+					IF ARG:2
+						LOCALS += @"<nonbutton title='%TALENT_INFO(COUNT)%'>[奇乳]</nonbutton>"
+					ELSE
+						PRINTFORM [奇乳]
+					ENDIF
+				ELSEIF TALENT:ARG:巨乳 == 4
+					IF ARG:2
+						LOCALS += @"<nonbutton title='%TALENT_INFO(COUNT)%'>[魔乳]</nonbutton>"
+					ELSE
+						PRINTFORM [魔乳]
+					ENDIF
+				ELSEIF TALENT:ARG:巨乳 == 3
+					IF ARG:2
+						LOCALS += @"<nonbutton title='%TALENT_INFO(COUNT)%'>[超乳]</nonbutton>"
+					ELSE
+						PRINTFORM [超乳]
+					ENDIF
+				ELSEIF TALENT:ARG:巨乳 == 2
+					IF ARG:2
+						LOCALS += @"<nonbutton title='%TALENT_INFO(COUNT)%'>[爆乳]</nonbutton>"
+					ELSE
+						PRINTFORM [爆乳]
+					ENDIF
+				ELSE
+					IF ARG:2
+						LOCALS += @"<nonbutton title='%TALENT_INFO(COUNT)%'>[巨乳]</nonbutton>"
+					ELSE
+						PRINTFORM [巨乳]
+					ENDIF
+				ENDIF
+			ELSEIF COUNT == 159
+				IF CHECK_PREGNANT_F(ARG) > 0
+					IF ARG:2
+						LOCALS += @"<nonbutton title='%TALENT_INFO(COUNT)%'>[妊娠]</nonbutton>"
+					ELSE
+						PRINTFORM [妊娠]
+					ENDIF
+				ELSEIF TALENT:ARG:妊娠 == 5 && CFLAG:ARG:222 < 11
+					IF ARG:2
+						LOCALS += @"<nonbutton title='%TALENT_INFO(COUNT)%'>[着床]</nonbutton>"
+					ELSE
+						PRINTFORM [着床]
+					ENDIF
+				ENDIF
+			ELSEIF COUNT == 300
+				IF TALENT:ARG:ふたなり == 3
+					IF ARG:2
+						LOCALS += @"<nonbutton title='%TALENT_INFO(COUNT)%'>[天然ふたなり]</nonbutton>"
+					ELSE
+						PRINTFORM [天然ふたなり]
+					ENDIF
+				ELSEIF TALENT:ARG:ふたなり == 2
+					IF ARG:2
+						LOCALS += @"<nonbutton title='%TALENT_INFO(COUNT)%'>[寄生ふたなり]</nonbutton>"
+					ELSE
+						PRINTFORM [寄生ふたなり]
+					ENDIF
+				ELSE
+					IF ARG:2
+						LOCALS += @"<nonbutton title='%TALENT_INFO(COUNT)%'>[ふたなり]</nonbutton>"
+					ELSE
+						PRINTFORM [ふたなり]
+					ENDIF
+				ENDIF
+			ELSEIF COUNT == 402 && TALENT:ARG:変身時ＴＳ == 0
+			ELSEIF COUNT == 404 && (TALENT:ARG:変身能力 < 1 || CFLAG:ARG:1 > 0)
+			ELSEIF ARG:2
+				LOCALS += @"<nonbutton title='%TALENT_INFO(COUNT)%'>[%TALENTNAME:COUNT%]</nonbutton>"
+			ELSE
+				PRINTFORM [%TALENTNAME:COUNT%]
+			ENDIF
+		ELSEIF COUNT == 4
+			IF TALENT:ARG:COUNT == 0 && TALENT:ARG:ロボっ子 > 0 && ISFEMALE(ARG)
+				IF ARG:2
+					LOCALS += @"<nonbutton title='%TALENT_INFO(-999)%'>[人工子宮]</nonbutton>"
+				ELSE
+					PRINTFORM [人工子宮]
+				ENDIF
+			ENDIF
+			IF TALENT:ARG:未熟 == -1 && CONFIG_CHECK_SCREEN_F(4) > 0
+				IF TALENT:ARG:ロボっ子 > 0 && ISFEMALE(ARG)
+					IF ARG:2
+						LOCALS += @"<nonbutton title='%TALENT_INFO(-999)%'>[人工子宮]</nonbutton>"
+					ELSE
+						PRINTFORM [人工子宮]
+					ENDIF
+				ENDIF
+				IF ARG:2
+					IF ISMALE(ARG)
+						LOCALS += @"<nonbutton title='薬品によって精通を迎えた'>[性徴促進]</nonbutton>"
+					ELSE
+						LOCALS += @"<nonbutton title='薬品によって初潮を迎えた'>[性徴促進]</nonbutton>"
+					ENDIF
+				ELSE
+					PRINTFORM [性徴促進]
+				ENDIF
+			ENDIF
+		ENDIF
+	REND
+	IF ARG:2
+		LOCALS += @"<br>"
+	ELSE
+		PRINTL 
+	ENDIF
+
+	SIF ARG:1 == 2
+		PRINT 　　　　　
+
+	LCOUNT = 0
+	REPEAT 1000
+		SIF TALENT:ARG:COUNT > 0 && (COUNT >= 600 && COUNT <= 699)
+			LCOUNT = 1
+	REND
+	IF ARG:1 != 1 && LCOUNT > 0
+		IF ARG:2
+			LOCALS += @"<shape type='space' param='150'>"
+		ELSE
+			PRINT    
+		ENDIF
+		REPEAT 1000
+			IF TALENT:ARG:COUNT > 0 && (COUNT >= 600 && COUNT <= 699)
+				IF ARG:2
+					LOCALS += @"<nonbutton title='%TALENT_INFO(COUNT)%'>[%TALENTNAME:COUNT%]</nonbutton>"
+				ELSE
+					PRINTFORM [%TALENTNAME:COUNT%]
+				ENDIF
+			ENDIF
+		REND
+	ENDIF
+
+	LCOUNT:1 = 0
+	REPEAT 1000
+		SIF TALENT:ARG:COUNT > 0 && (COUNT >= 800 && COUNT <= 899)
+			LCOUNT:1 = 1
+	REND
+	IF ARG:1 != 1 && LCOUNT:1 > 0
+		IF ARG:2 && LCOUNT == 0
+			LOCALS += @"<shape type='space' param='150'><nonbutton title='%TALENT_INFO(800)%'>"
+		ELSEIF ARG:2
+			LOCALS += @"<nonbutton title='%TALENT_INFO(800)%'>"
+		ELSEIF LCOUNT == 0
+			LOCALS += @"   "
+		ENDIF
+		IF TALENT:ARG:交際相手 == 1
+			LOCALS += @"[片思い]"
+		ELSEIF TALENT:ARG:交際相手 == 2
+			LOCALS += @"[彼氏持ち]"
+		ELSEIF TALENT:ARG:交際相手 == 3
+			LOCALS += @"[婚約]"
+		ELSEIF TALENT:ARG:交際相手 == 4
+			LOCALS += @"[人妻]"
+		ELSEIF TALENT:ARG:交際相手 == 5
+			LOCALS += @"[未亡人]"
+		ENDIF
+		SIF ARG:2
+			LOCALS += @"</nonbutton><nonbutton title='%TALENT_INFO(801)%'>"
+		IF TALENT:ARG:学生 == 1
+			LOCALS += @"[小学生]"
+		ELSEIF TALENT:ARG:学生 == 2
+			LOCALS += @"[中学生]"
+		ELSEIF TALENT:ARG:学生 == 3
+			LOCALS += @"[高校生]"
+		ELSEIF TALENT:ARG:学生 == 4
+			LOCALS += @"[大学生]"
+		ENDIF
+		SIF ARG:2
+			LOCALS += @"</nonbutton><nonbutton title='%TALENT_INFO(810)%'>"
+		IF TALENT:ARG:家族関係 == 1
+			LOCALS += @"[弟持ち]"
+		ELSEIF TALENT:ARG:家族関係 == 2
+			LOCALS += @"[妹持ち]"
+		ELSEIF TALENT:ARG:家族関係 == 3
+			LOCALS += @"[兄持ち]"
+		ELSEIF TALENT:ARG:家族関係 == 4
+			LOCALS += @"[姉持ち]"
+		ELSEIF TALENT:ARG:家族関係 == 5
+			LOCALS += @"[幼い息子]"
+		ELSEIF TALENT:ARG:家族関係 == 6
+			LOCALS += @"[幼い娘]"
+		ELSEIF TALENT:ARG:家族関係 == 7
+			LOCALS += @"[年頃の息子]"
+		ELSEIF TALENT:ARG:家族関係 == 8
+			LOCALS += @"[年頃の娘]"
+		ENDIF
+		SIF ARG:2
+			LOCALS += @"</nonbutton><nonbutton title='%TALENT_INFO(811)%'>"
+		IF TALENT:ARG:アクセサリ == 1
+			LOCALS += @"[メガネっ娘]"
+		ELSEIF TALENT:ARG:アクセサリ == 2
+			LOCALS += @"[アホ毛]"
+		ELSEIF TALENT:ARG:アクセサリ == 3
+			LOCALS += @"[お嬢様]"
+		ENDIF
+		SIF ARG:2
+			LOCALS += @"</nonbutton><nonbutton title='%TALENT_INFO(812)%'>"
+		IF CFLAG:ARG:1 > 0
+			IF TALENT:ARG:変身時外見 == 1
+				LOCALS += @"[安産型]"
+			ELSEIF TALENT:ARG:変身時外見 == 2
+				LOCALS += @"[むちむち]"
+			ELSEIF TALENT:ARG:変身時外見 == 3
+				LOCALS += @"[イカ腹]"
+			ELSEIF TALENT:ARG:変身時外見 == 4
+				LOCALS += @"[スレンダー]"
+			ELSEIF TALENT:ARG:変身時外見 == 5
+				LOCALS += @"[巨尻]"
+			ELSEIF TALENT:ARG:変身時外見 == 6
+				LOCALS += @"[爆尻]"
+			ENDIF
+		ELSE
+			IF TALENT:ARG:外見 == 1
+				LOCALS += @"[安産型]"
+			ELSEIF TALENT:ARG:外見 == 2
+				LOCALS += @"[むちむち]"
+			ELSEIF TALENT:ARG:外見 == 3
+				LOCALS += @"[イカ腹]"
+			ELSEIF TALENT:ARG:外見 == 4
+				LOCALS += @"[スレンダー]"
+			ELSEIF TALENT:ARG:外見 == 5
+				LOCALS += @"[巨尻]"
+			ELSEIF TALENT:ARG:外見 == 6
+				LOCALS += @"[爆尻]"
+			ENDIF
+		ENDIF
+		IF ARG:2
+			LOCALS += @"</nonbutton><br>"
+		ELSE
+			PRINTFORML %LOCALS%
+		ENDIF
+	ELSE
+		IF ARG:2
+			LOCALS += @"<br>"
+		ELSE
+			PRINTL 
+		ENDIF
+	ENDIF
+
+	SIF ARG:1 == 2
+		PRINT 　　　　　　 
+
+	LCOUNT = 0
+	REPEAT 299
+		SIF TALENT:ARG:(COUNT + 1000) > 0 && (COUNT >= 100 && COUNT <= 299)
+			LCOUNT = 1
+	REND
+	IF ARG:1 != 1 && LCOUNT > 0
+		IF ARG:2
+			LOCALS += @"<shape type='space' param='300'>"
+		ELSE
+			PRINT       
+		ENDIF
+		REPEAT 299
+			IF TALENT:ARG:(1000 + COUNT) > 0 && (COUNT >= 100 && COUNT <= 299)
+				IF ARG:2
+					LOCALS += @"<nonbutton title='%TALENT_INFO(COUNT + 1000)%'>[%TALENTNAME:(COUNT + 1000)%]</nonbutton>"
+				ELSE
+					PRINTFORM [%TALENTNAME:(COUNT + 1000)%]
+				ENDIF
+			ENDIF
+		REND
+	ENDIF
+	IF ARG:2
+		LOCALS += @"<br>"
+	ELSE
+		PRINTL 
+	ENDIF
+	SIF ARG:2
+		HTML_PRINT LOCALS
+ELSE
+
+	IF ARG:1 == 0
+		PRINTL ◆素質
+	ELSE
+		PRINTL 素質
+	ENDIF
+
+	;----------------	　基本　	----------------
+	;0,処女,
+	;300,ふたなり,
+	;400,オトコ,
+	;401,変身時ＴＳ,
+	;201-249種族
+
+	LOCALS = \@ARG:1?#　\@基本：
+
+	IF ISMALE(ARG)
+		LOCALS = %LOCALS%<nonbutton title='%TALENT_INFO(400)%'>[オトコ]</nonbutton>
+	ELSEIF TALENT:ARG:ふたなり == 3
+		LOCALS = %LOCALS%<nonbutton title='%TALENT_INFO(300)%'>[天然ふたなり]</nonbutton>
+	ELSEIF TALENT:ARG:ふたなり == 2
+		LOCALS = %LOCALS%<nonbutton title='%TALENT_INFO(300)%'>[寄生ふたなり]</nonbutton>
+	ELSEIF TALENT:ARG:ふたなり == 1
+		LOCALS = %LOCALS%<nonbutton title='%TALENT_INFO(300)%'>[ふたなり]</nonbutton>
+	ELSE
+		LOCALS = %LOCALS%<nonbutton title='女性であることを示す素質'>[女]</nonbutton>
+	ENDIF
+
+	SIF TALENT:ARG:男の娘 == 1
+		LOCALS = %LOCALS%<nonbutton title='%TALENT_INFO(405)%'>[男の娘]</nonbutton>
+
+	IF TALENT:ARG:処女 == 2 && ISFEMALE(ARG)
+		LOCALS = %LOCALS%<nonbutton title='%TALENT_INFO(0)%'>[聖処女]</nonbutton>
+	ELSEIF TALENT:ARG:処女 == 1 && ISFEMALE(ARG)
+		LOCALS = %LOCALS%<nonbutton title='%TALENT_INFO(0)%'>[処女]</nonbutton>
+	ENDIF
+	SIF TALENT:ARG:初心 == 1
+		LOCALS = %LOCALS%<nonbutton title='%TALENT_INFO(5)%'>[初心]</nonbutton>
+
+	SIF TALENT:ARG:変身時ＴＳ > 0
+		LOCALS = %LOCALS%<nonbutton title='%TALENT_INFO(401)%'>[変身時ＴＳ]</nonbutton>
+	SIF TALENT:ARG:変身時ふたなり > 0 && TALENT:ARG:変身能力 > 0 && CFLAG:ARG:1 == 0
+		LOCALS = %LOCALS%<nonbutton title='%TALENT_INFO(404)%'>[変身時ふたなり]</nonbutton>
+	SIF TALENT:ARG:女体受容 > 0
+		LOCALS = %LOCALS%<nonbutton title='%TALENT_INFO(403)%'>[女体受容]</nonbutton>
+	SIF TALENT:ARG:変身時男の娘 == 1
+		LOCALS = %LOCALS%<nonbutton title='%TALENT_INFO(406)%'>[変身時男の娘]</nonbutton>
+	;種族
+	FOR COUNT, 201, 250
+		SIF TALENT:ARG:COUNT > 0
+			LOCALS = %LOCALS%<nonbutton title='%TALENT_INFO(COUNT)%'>[%TALENTNAME:COUNT%]</nonbutton>
+	NEXT
+	IF ARG:1==0
+		CALL SEIKAKU_CHECK, "STRING", ARG
+		LOCALS += "["+RESULTS+"]"
+	ENDIF
+
+
+	HTML_PRINT LOCALS
+
+	;----------------	　精神　	----------------
+	;301,清純派,
+	SIF TALENT:ARG:清純派 == 1
+		CALL PRINT_TALENT_CATEGORY, "精神", ARG:1, ARG:2, 301
+
+	;600,内向的,
+	;601,社交的,
+	;602,自分勝手,
+	;603,献身的,
+	;604,小心者,
+	;605,プライド高い,
+	;606,保守的,
+	;607,好奇心,
+	;608,サド気質,
+	;609,マゾ気質,
+	;610,快楽に弱い,
+	;611,快楽の否定,
+	;612,争いを好まない,
+	;613,喧嘩上等,
+	;614,恥じらい,
+	;615,度胸,
+	;616,人間不信,
+	;617,両刀,
+	;618,同性苦手,
+	;619,異性苦手,
+	;620,母性的,
+	;621,小悪魔,
+	;622,目立ちたがり,
+	;623,上品,
+	;624,泣き虫,
+	FOR LOCAL, 600, 650
+		SIF TALENT:ARG:LOCAL > 0
+			CALL PRINT_TALENT_CATEGORY, "精神", ARG:1, ARG:2, LOCAL
+	NEXT
+
+	;----------------	　肉体　	----------------
+	;1,母乳体質,
+	;2,お漏らし癖,
+	;3,パイパン,
+	FOR LOCAL, 1, 4
+		SIF TALENT:ARG:LOCAL > 0
+			CALL PRINT_TALENT_CATEGORY, "肉体", ARG:1, ARG:2, LOCAL
+	NEXT
+
+	;4,未熟,
+	SIF TALENT:ARG:ロボっ子 > 0 && TALENT:ARG:未熟 != 2 && ISFEMALE(ARG)
+		CALL PRINT_TALENT_CATEGORY, "肉体", ARG:1, ARG:2, -999
+	IF TALENT:ARG:未熟 > 0
+		IF ISMALE(ARG)
+			CALL PRINT_TALENT_CATEGORY, "肉体", ARG:1, ARG:2, 4, 2
+		ELSE
+			CALL PRINT_TALENT_CATEGORY, "肉体", ARG:1, ARG:2, 4, TALENT:ARG:未熟 - 1
+		ENDIF
+	ELSEIF TALENT:ARG:未熟 == -1
+		IF ISMALE(ARG)
+			CALL PRINT_TALENT_CATEGORY, "肉体", ARG:1, ARG:2, 4, -2
+		ELSE
+			CALL PRINT_TALENT_CATEGORY, "肉体", ARG:1, ARG:2, 4, -1
+		ENDIF
+	ENDIF
+	
+	;304嬲られ体質
+	SIF TALENT:ARG:嬲られ体質 > 0 && (ISGIRLY(ARG))
+		CALL PRINT_TALENT_CATEGORY, "肉体", ARG:1, ARG:2, 304
+
+	;112,濡れやすい,
+	;113,濡れにくい,
+	;114,回復早い,
+	;115,回復遅い,
+	FOR LOCAL, 112, 116
+		SIF TALENT:ARG:LOCAL > 0
+			CALL PRINT_TALENT_CATEGORY, "肉体", ARG:1, ARG:2, LOCAL
+	NEXT
+	SIF TALENT:ARG:アクセサリ == 1 || TALENT:ARG:アクセサリ == 2
+		CALL PRINT_TALENT_CATEGORY, "肉体", ARG:1, ARG:2, 811, TALENT:ARG:アクセサリ
+
+	;110,貧乳,
+	;111,巨乳,
+	FOR LOCAL, 110, 112
+		SIF TALENT:ARG:LOCAL > 0
+			CALL PRINT_TALENT_CATEGORY, "肉体", ARG:1, ARG:2, LOCAL, TALENT:ARG:LOCAL
+	NEXT
+
+	;116,小柄
+	;117,長身
+	FOR LOCAL, 116, 118
+		SIF TALENT:ARG:LOCAL > 0
+			CALL PRINT_TALENT_CATEGORY, "肉体", ARG:1, ARG:2, LOCAL
+	NEXT
+
+	;812,外見
+	;813,変身時外見
+	IF CFLAG:ARG:1 > 0 && TALENT:ARG:変身時外見 > 0
+		CALL PRINT_TALENT_CATEGORY, "肉体", ARG:1, ARG:2, 812, TALENT:ARG:変身時外見
+	ELSEIF TALENT:ARG:外見 > 0
+		CALL PRINT_TALENT_CATEGORY, "肉体", ARG:1, ARG:2, 812, TALENT:ARG:外見
+	ENDIF
+	
+	;900,性別変化＾＾＾＾＾＾＾＾＾＾＾＾＾＾＾＾＾＾＾＾＾＾＾＾＾＾＾＾＾＾＾＾＾＾＾
+	SIF TALENT:ARG:性別変化 == 1 || TALENT:ARG:性別変化 == 10 || TALENT:ARG:性別変化 == 11
+		CALL PRINT_TALENT_CATEGORY, "肉体", ARG:1, ARG:2, 900, TALENT:ARG:性別変化
+
+	;----------------	　性癖　	----------------
+	;100,Ｃ敏感,
+	;101,Ｃ鈍感,
+	;102,Ｖ敏感,
+	;103,Ｖ鈍感,
+	;104,Ａ敏感,
+	;105,Ａ鈍感,
+	;106,Ｂ敏感,
+	;107,Ｂ鈍感,
+	FOR LOCAL, 100, 108
+		SIF TALENT:ARG:LOCAL > 0
+			CALL PRINT_TALENT_CATEGORY, "性癖", ARG:1, ARG:2, LOCAL
+	NEXT
+
+	;150,触手の虜,
+	;151,淫乱,
+	;152,精神崩壊,
+	;153,淫核,
+	;154,淫壷,
+	;155,淫尻,
+	;156,淫乳,
+	FOR LOCAL, 150, 157
+		SIF TALENT:ARG:LOCAL > 0
+			CALL PRINT_TALENT_CATEGORY, "性癖", ARG:1, ARG:2, LOCAL
+	NEXT
+
+	;----------------	　戦闘　	----------------
+	;180,近距離得意,
+	;181,近距離苦手,
+	;182,中距離得意,
+	;183,中距離苦手,
+	;184,遠距離得意,
+	;185,遠距離苦手,
+	;186,空中得意,
+	;187,空中苦手,
+	;190,Ｃ結界,
+	;191,Ｖ結界,
+	;192,Ａ結界,
+	;193,Ｂ結界,
+	;303,避妊結界,
+	FOR LOCAL, 180, 200
+		SIF TALENT:ARG:LOCAL > 0
+			CALL PRINT_TALENT_CATEGORY, "戦闘", ARG:1, ARG:2, LOCAL
+	NEXT
+	SIF TALENT:ARG:避妊結界 > 0
+		CALL PRINT_TALENT_CATEGORY, "戦闘", ARG:1, ARG:2, 303
+
+	;----------------	　状態　	----------------
+
+	;※CFLAG管理だ(TALENT管理ではない)がまとめて載せている
+	;幽閉中
+	;洗脳
+	;悪堕ち
+	;死亡
+	;入院中
+	;育児中
+		CALL PRINT_TALENT_CATEGORY, "状態", ARG:1, ARG:2, -998,CFLAG:ARG:0
+
+	;159,妊娠,
+	IF CHECK_PREGNANT_F(ARG) > 0
+		CALL PRINT_TALENT_CATEGORY, "状態", ARG:1, ARG:2, 159, 0
+	ELSEIF TALENT:ARG:妊娠 == 5 && CFLAG:ARG:222 < 11
+		CALL PRINT_TALENT_CATEGORY, "状態", ARG:1, ARG:2, 159, 1
+	ENDIF
+
+	;160,寄生,
+	;161,苗床化,
+	FOR LOCAL, 160, 180
+		SIF TALENT:ARG:LOCAL > 0
+			CALL PRINT_TALENT_CATEGORY, "状態", ARG:1, ARG:2, LOCAL
+	NEXT
+
+	;----------------	　社交　	----------------
+	;350,噂好きの友人,
+	;351,警察関係者,
+	;352,情報屋,
+	;353,裕福な実家,
+	FOR LOCAL, 350, 400
+		SIF TALENT:ARG:LOCAL > 0
+			CALL PRINT_TALENT_CATEGORY, "社交", ARG:1, ARG:2, LOCAL
+	NEXT
+
+	;800,交際相手,
+	SIF TALENT:ARG:交際相手 > 0
+		CALL PRINT_TALENT_CATEGORY, "社交", ARG:1, ARG:2, 800, TALENT:ARG:交際相手
+	;801,学生,
+	SIF TALENT:ARG:学生 > 0
+		CALL PRINT_TALENT_CATEGORY, "社交", ARG:1, ARG:2, 801, TALENT:ARG:学生
+	;810,家族関係,
+	SIF TALENT:ARG:家族関係 > 0
+		CALL PRINT_TALENT_CATEGORY, "社交", ARG:1, ARG:2, 810, TALENT:ARG:家族関係
+	;811,アクセサリ,
+	SIF TALENT:ARG:アクセサリ == 3
+		CALL PRINT_TALENT_CATEGORY, "社交", ARG:1, ARG:2, 811, 3
+
+	;----------------	　負傷　	----------------
+	;500,痣,
+	;501,出血,
+	;502,やけど,
+	;503,骨折,
+	;504,内臓破裂,
+	;505,部位欠損,
+	;506,子宮崩壊,
+	;507,四肢欠損,
+	;508,繁殖袋,
+	FOR LOCAL, 500, 550
+		SIF TALENT:ARG:LOCAL > 0
+			CALL PRINT_TALENT_CATEGORY, "負傷", ARG:1, ARG:2, LOCAL
+	NEXT
+
+	;----------------	　FEAT　	----------------
+	;1100,平凡,
+	;1101,巻き込まれ体質,
+	;1102,攻勢構築,
+	;1103,魔力貯蔵,
+	;1104,超反応,
+	;1105,神器の担い手,
+	;1106,闘争本能,
+	;1107,溢れる生命力,
+	;1108,精霊交信,
+	;1109,獣性の証,
+	;1110,夜魔の貴族,
+	;1200,秘められし力,
+	;1201,ラッキーチャーム,
+	;1202,生粋の戦士,
+	;1203,剛腕,
+	;1204,有翼,
+	;1205,空中浮遊,
+	;1206,小さな体躯,
+	;1207,ホットスタート,
+	;1208,フルバースト,
+	;1209,祝福,
+	;1210,不屈,
+	;1211,スタミナ,
+	;1212,不老長寿,
+	;1213,叡智の冠,
+	;1214,狩人の勘,
+	;1215,心眼,
+	;1216,人外の美貌,
+	;1217,背徳の烙印,
+	;1218,エアマスター,
+	FOR LOCAL, 1100, 1300
+		SIF TALENT:ARG:LOCAL > 0
+			CALL PRINT_TALENT_CATEGORY, "FEAT", ARG:1, ARG:2, LOCAL
+	NEXT
+
+	;----------------	終了処理	----------------
+	CALL PRINT_TALENT_CATEGORY, "", ARG:1, ARG:2
+ENDIF
+
+
+
+;--------------------------------------------------
+;TALENT番号を受け取り、カテゴリを確認し表示
+;CATEGORY_STR	カテゴリ名　空で終了処理
+;INDENT_VAR	表示元によるインデントの有無　0：あり　1：なし
+;POPUP_VAR	HTML_PRINTによるポップアップの有無　0：あり　1；なし
+;TALENT_VAR	表示する素質番号
+;SUB_TALENT	1以外など、同素質でいくつかの種類を分ける場合のための補助変数
+
+;PRINT_STR	表示用文字列
+;SUB_STR	文字表示補助
+;COUNT_VAR	その行で表示した素質数をカウント
+@PRINT_TALENT_CATEGORY, CATEGORY_STR, INDENT_VAR, POPUP_VAR, TALENT_VAR, SUB_TALENT
+#DIMS PRINT_STR
+#DIMS SUB_STR, 2
+#DIMS CATEGORY_STR, 2
+#DIM INDENT_VAR
+#DIM POPUP_VAR
+#DIM TALENT_VAR
+#DIM SUB_TALENT
+#DIM COUNT_VAR
+
+;前回呼び出されたときとカテゴリ名が違う場合、素質カウントが1以上なら表示してからリセット
+IF CATEGORY_STR != CATEGORY_STR:1
+	IF COUNT_VAR > 0
+		IF POPUP_VAR
+			HTML_PRINT PRINT_STR
+		ELSE
+			PRINTFORML %PRINT_STR%
+		ENDIF
+	ENDIF
+	VARSET COUNT_VAR
+	PRINT_STR = \@INDENT_VAR?#　\@%CATEGORY_STR%：
+	CATEGORY_STR:1 = %CATEGORY_STR%
+ENDIF
+
+;終了処理用にカテゴリ名を空にした際ここで終了
+IF CATEGORY_STR == ""
+	VARSET CATEGORY_STR
+	RETURN 0
+ENDIF
+
+SUB_STR:1 = %TALENT_INFO(TALENT_VAR)%
+
+;値などによって通常の素質名を使用しない場合は個別に設定(負の値を用いる)
+IF TALENT_VAR == -998
+	SELECTCASE SUB_TALENT
+	CASE 1
+		SUB_STR:0 = 幽閉中
+	CASE 2
+	SUB_STR:0 = 洗脳
+	CASE 3
+	SUB_STR:0 = 悪堕ち
+	CASE 4
+	SUB_STR:0 = 誘拐中
+	CASE 9
+	SUB_STR:0 = 死亡
+	CASE 10
+	SUB_STR:0 = 入院中
+	CASE 11
+	SUB_STR:0 = 育児中
+	CASE 0
+		SUB_STR:0 '="" 
+		RETURN 0
+	ENDSELECT
+ELSEIF TALENT_VAR == -999
+	SUB_STR:0 = 人工子宮
+
+;未熟
+;SUB_TALENT　0：未熟　1：不妊　2：オトコによる説明変更
+ELSEIF TALENT_VAR == 4 && SUB_TALENT == 1
+	SUB_STR:0 = 不妊
+ELSEIF TALENT_VAR == 4 && SUB_TALENT == 2
+	SUB_STR:0 = %TALENTNAME:TALENT_VAR%
+	SUB_STR:1 = 射精できない
+ELSEIF TALENT_VAR == 4 && SUB_TALENT == -1 && CONFIG_CHECK_SCREEN_F(4) > 0
+	SUB_STR:0 = 性徴促進
+	SUB_STR:1 = 薬品によって初潮を迎えた
+ELSEIF TALENT_VAR == 4 && SUB_TALENT == -2 && CONFIG_CHECK_SCREEN_F(4) > 0
+	SUB_STR:0 = 性徴促進
+	SUB_STR:1 = 薬品によって精通を迎えた
+;貧乳
+ELSEIF TALENT_VAR == 110 && SUB_TALENT == 2
+	SUB_STR:0 = 絶壁
+ELSEIF TALENT_VAR == 110 && SUB_TALENT == 1
+	SUB_STR:0 = 貧乳
+;巨乳
+ELSEIF TALENT_VAR == 111 && SUB_TALENT == 5
+	SUB_STR:0 = 奇乳
+ELSEIF TALENT_VAR == 111 && SUB_TALENT == 4
+	SUB_STR:0 = 魔乳
+ELSEIF TALENT_VAR == 111 && SUB_TALENT == 3
+	SUB_STR:0 = 超乳
+ELSEIF TALENT_VAR == 111 && SUB_TALENT == 2
+	SUB_STR:0 = 爆乳
+ELSEIF TALENT_VAR == 111 && SUB_TALENT == 1
+	SUB_STR:0 = 巨乳
+;妊娠
+ELSEIF TALENT_VAR == 159 && SUB_TALENT == 1
+	SUB_STR:0 = 着床
+;交際相手
+ELSEIF TALENT_VAR == 800
+	IF SUB_TALENT == 1
+		SUB_STR:0 = 片思い
+	ELSEIF SUB_TALENT == 2
+		SUB_STR:0 = 彼氏持ち
+	ELSEIF SUB_TALENT == 3
+		SUB_STR:0 = 婚約
+	ELSEIF SUB_TALENT == 4
+		SUB_STR:0 = 人妻
+	ELSEIF SUB_TALENT == 5
+		SUB_STR:0 = 未亡人
+	ENDIF
+;学生
+ELSEIF TALENT_VAR == 801
+	IF SUB_TALENT == 1
+		SUB_STR:0 = 小学生
+	ELSEIF SUB_TALENT == 2
+		SUB_STR:0 = 中学生
+	ELSEIF SUB_TALENT == 3
+		SUB_STR:0 = 高校生
+	ELSEIF SUB_TALENT == 4
+		SUB_STR:0 = 大学生
+	ENDIF
+;家族関係
+ELSEIF TALENT_VAR == 810
+	IF SUB_TALENT == 1
+		SUB_STR:0 = 弟持ち
+	ELSEIF SUB_TALENT == 2
+		SUB_STR:0 = 妹持ち
+	ELSEIF SUB_TALENT == 3
+		SUB_STR:0 = 兄持ち
+	ELSEIF SUB_TALENT == 4
+		SUB_STR:0 = 姉持ち
+	ELSEIF SUB_TALENT == 5
+		SUB_STR:0 = 幼い息子
+	ELSEIF SUB_TALENT == 6
+		SUB_STR:0 = 幼い娘
+	ELSEIF SUB_TALENT == 7
+		SUB_STR:0 = 年頃の息子
+	ELSEIF SUB_TALENT == 8
+		SUB_STR:0 = 年頃の娘
+	ENDIF
+;アクセサリ
+ELSEIF TALENT_VAR == 811
+	IF SUB_TALENT == 1
+		SUB_STR:0 = メガネっ娘
+	ELSEIF SUB_TALENT == 2
+		SUB_STR:0 = アホ毛
+	ELSEIF SUB_TALENT == 3
+		SUB_STR:0 = お嬢様
+	ENDIF
+;外見
+ELSEIF TALENT_VAR == 812
+	IF SUB_TALENT == 1
+		SUB_STR:0 = 安産型
+	ELSEIF SUB_TALENT == 2
+		SUB_STR:0 = むちむち
+	ELSEIF SUB_TALENT == 3
+		SUB_STR:0 = イカ腹
+	ELSEIF SUB_TALENT == 4
+		SUB_STR:0 = スレンダー
+	ELSEIF SUB_TALENT == 5
+		SUB_STR:0 = 巨尻
+	ELSEIF SUB_TALENT == 6
+		SUB_STR:0 = 爆尻
+	ENDIF
+;性別変化＾＾＾＾＾＾＾＾＾＾＾＾＾＾＾＾＾＾＾＾＾＾＾＾＾＾＾＾＾＾＾＾＾
+ELSEIF TALENT_VAR == 900
+	IF SUB_TALENT == 1
+		SUB_STR:0 = 完全女体化
+	ELSEIF SUB_TALENT == 10
+		SUB_STR:0 = 封印男体化
+	ELSEIF SUB_TALENT == 11
+		SUB_STR:0 = 強制女体化
+	ENDIF
+ELSE
+	SUB_STR:0 = %TALENTNAME:TALENT_VAR%
+ENDIF
+
+IF POPUP_VAR
+	PRINT_STR = %PRINT_STR%<nonbutton title='%SUB_STR:1%'>[%SUB_STR:0%]</nonbutton>
+ELSE
+	PRINT_STR = %PRINT_STR%[%SUB_STR:0%]
+ENDIF
+COUNT_VAR ++
+
+IF COUNT_VAR > 5
+	IF POPUP_VAR
+		HTML_PRINT PRINT_STR
+	ELSE
+		PRINTFORML %PRINT_STR%
+	ENDIF
+	VARSET COUNT_VAR
+	PRINT_STR = \@INDENT_VAR?#　\@　　　
+ENDIF
+
+
+;--------------------------------------------------
+;EXゲージの表示？
+@STATUS_PRINT_EX(ARG)
+FONTBOLD
+;PRINT GUAGE STOCK　
+FONTITALIC
+IF ARG == 1
+	LOCAL=TCVARn:5
+	IF LOCAL / 100 >= 1
+		IF TCVARn:6 <= -500 && CFLAG:1 != 2
+			SETCOLOR 255,255,0
+		ELSE
+			SETCOLOR 210,210,80
+		ENDIF
+		PRINT ■
+	ENDIF
+	IF LOCAL / 100 >= 2
+		IF TCVARn:6 <= -400 && CFLAG:1 != 2
+			SETCOLOR 255,255,0
+		ELSE
+			SETCOLOR 220,220,90
+		ENDIF
+		PRINT ■
+	ENDIF
+	IF LOCAL / 100 >= 3
+		IF TCVARn:6 <= -300 && CFLAG:1 != 2
+			SETCOLOR 255,255,0
+		ELSE
+			SETCOLOR 230,230,100
+		ENDIF
+		PRINT ■
+	ENDIF
+	IF LOCAL / 100 >= 4
+		IF TCVARn:6 <= -200 && CFLAG:1 != 2
+			SETCOLOR 255,255,0
+		ELSE
+			SETCOLOR 240,240,110
+		ENDIF
+		PRINT ■
+	ENDIF
+	IF LOCAL / 100 >= 5
+		IF TCVARn:6 <= -100 && CFLAG:1 != 2
+			SETCOLOR 255,255,0
+		ELSE
+			SETCOLOR 250,250,120
+		ENDIF
+		PRINT ■
+	ENDIF
+	SETCOLOR 128,128,128
+	REPEAT MAX(0,5-LOCAL / 100)
+		PRINT □
+	REND
+	PRINT  
+ELSEIF ARG==2
+	SETCOLOR 64,64,64
+	REPEAT 5
+		PRINT □
+	REND
+	PRINT  
+
+ELSE
+	LOCAL=TCVARn:4
+	IF LOCAL / 100 == 0
+		SETCOLOR 128,128,128
+		PRINT □
+		PRINT □
+		PRINT □
+		PRINT □
+		PRINT □
+		PRINT  
+	ELSEIF LOCAL / 100 == 1
+		IF TCVARn:6 <= -100 && CFLAG:1 != 2
+			SETCOLOR 255,255,0
+		ELSE
+			SETCOLOR 160,160,160
+		ENDIF
+		PRINT ■
+		SETCOLOR 128,128,128
+		PRINT □
+		PRINT □
+		PRINT □
+		PRINT □
+		PRINT  
+	ELSEIF LOCAL / 100 == 2
+		IF TCVARn:6 <= -200 && CFLAG:1 != 2
+			SETCOLOR 255,255,0
+		ELSE
+			SETCOLOR 160,160,160
+		ENDIF
+		PRINT ■
+		IF TCVARn:6 <= -100 && CFLAG:1 != 2
+			SETCOLOR 255,255,0
+		ELSE
+			SETCOLOR 170,170,170
+		ENDIF
+		PRINT ■
+		SETCOLOR 128,128,128
+		PRINT □
+		PRINT □
+		PRINT □
+		PRINT  
+	ELSEIF LOCAL / 100 == 3
+		IF TCVARn:6 <= -300 && CFLAG:1 != 2
+			SETCOLOR 255,255,0
+		ELSE
+			SETCOLOR 160,160,160
+		ENDIF
+		PRINT ■
+		IF TCVARn:6 <= -200 && CFLAG:1 != 2
+			SETCOLOR 255,255,0
+		ELSE
+			SETCOLOR 170,170,170
+		ENDIF
+		PRINT ■
+		IF TCVARn:6 <= -100 && CFLAG:1 != 2
+			SETCOLOR 255,255,0
+		ELSE
+			SETCOLOR 180,180,180
+		ENDIF
+		PRINT ■
+		SETCOLOR 128,128,128
+		PRINT □
+		PRINT □
+		PRINT  
+	ELSEIF LOCAL / 100 == 4
+		IF TCVARn:6 <= -400 && CFLAG:1 != 2
+			SETCOLOR 255,255,0
+		ELSE
+			SETCOLOR 160,160,160
+		ENDIF
+		PRINT ■
+		IF TCVARn:6 <= -300 && CFLAG:1 != 2
+			SETCOLOR 255,255,0
+		ELSE
+			SETCOLOR 170,170,170
+		ENDIF
+		PRINT ■
+		IF TCVARn:6 <= -200 && CFLAG:1 != 2
+			SETCOLOR 255,255,0
+		ELSE
+			SETCOLOR 180,180,180
+		ENDIF
+		PRINT ■
+		IF TCVARn:6 <= -100 && CFLAG:1 != 2
+			SETCOLOR 255,255,0
+		ELSE
+			SETCOLOR 200,200,200
+		ENDIF
+		PRINT ■
+		SETCOLOR 128,128,128
+		PRINT □
+		PRINT  
+	ELSEIF LOCAL / 100 == 5
+		IF TCVARn:6 <= -500 && CFLAG:1 != 2
+			SETCOLOR 255,255,0
+		ELSE
+			SETCOLOR 160,160,160
+		ENDIF
+		PRINT ■
+		IF TCVARn:6 <= -400 && CFLAG:1 != 2
+			SETCOLOR 255,255,0
+		ELSE
+			SETCOLOR 170,170,170
+		ENDIF
+		PRINT ■
+		IF TCVARn:6 <= -300 && CFLAG:1 != 2
+			SETCOLOR 255,255,0
+		ELSE
+			SETCOLOR 180,180,180
+		ENDIF
+		PRINT ■
+		IF TCVARn:6 <= -200 && CFLAG:1 != 2
+			SETCOLOR 255,255,0
+		ELSE
+			SETCOLOR 200,200,200
+		ENDIF
+		PRINT ■
+		IF TCVARn:6 <= -100 && CFLAG:1 != 2
+			SETCOLOR 255,255,0
+		ELSE
+			SETCOLOR 220,220,220
+		ENDIF
+		PRINT ■
+		PRINT  
+	ENDIF
+
+ENDIF
+
+RESETCOLOR
+FONTREGULAR
+
+;--------------------------------------------------
+;戦闘用、空中ゲージ表示
+@STATUS_PRINT_AIRGAGE
+;ジャンプ性能
+FONTBOLD
+PRINT AIR. 
+FONTITALIC
+IF MAXBASE:空中ダッシュ > 0
+	IF BASE:空中ダッシュ == 0
+		SETCOLOR 128,128,128
+		PRINT □
+	ELSEIF BASE:空中ダッシュ - GETBIT(TCVARn:216, 0) == 0
+		SETCOLOR 255,255,0
+		PRINT ■
+	ELSE
+		SETCOLOR 220,220,220
+		PRINT ■
+	ENDIF
+	RESETCOLOR
+ELSE
+	PRINT 　
+ENDIF
+IF MAXBASE:空中ダッシュ > 1
+	IF BASE:空中ダッシュ < 2
+		SETCOLOR 128,128,128
+		PRINT □
+	ELSEIF BASE:空中ダッシュ -  GETBIT(TCVARn:216, 0) == 1
+		SETCOLOR 255,255,0
+		PRINT ■
+	ELSE
+		SETCOLOR 220,220,220
+		PRINT ■
+	ENDIF
+	RESETCOLOR
+ELSE
+	PRINT 　
+ENDIF
+IF MAXBASE:空中ダッシュ > 2
+	IF BASE:空中ダッシュ < 3
+		SETCOLOR 128,128,128
+		PRINT □
+	ELSEIF BASE:空中ダッシュ -  GETBIT(TCVARn:216, 0) == 2
+		SETCOLOR 255,255,0
+		PRINT ■
+	ELSE
+		SETCOLOR 220,220,220
+		PRINT ■
+	ENDIF
+	RESETCOLOR
+ELSE
+	PRINT 　
+ENDIF
+IF MAXBASE:空中ダッシュ > 3
+	IF BASE:空中ダッシュ < 4
+		SETCOLOR 128,128,128
+		PRINT □
+	ELSEIF BASE:空中ダッシュ -  GETBIT(TCVARn:216, 0) == 3
+		SETCOLOR 255,255,0
+		PRINT ■
+	ELSE
+		SETCOLOR 220,220,220
+		PRINT ■
+	ENDIF
+	RESETCOLOR
+ELSE
+	PRINT 　
+ENDIF
+IF MAXBASE:空中ダッシュ > 4
+	IF BASE:空中ダッシュ < 5
+		SETCOLOR 128,128,128
+		PRINT □
+	ELSEIF BASE:空中ダッシュ -  GETBIT(TCVARn:216, 0) == 4
+		SETCOLOR 255,255,0
+		PRINT ■
+	ELSE
+		SETCOLOR 220,220,220
+		PRINT ■
+	ENDIF
+	RESETCOLOR
+ELSE
+	PRINT 　
+ENDIF
+IF MAXBASE:空中ダッシュ > 5
+	IF BASE:空中ダッシュ < 6
+		SETCOLOR 128,128,128
+		PRINT □
+	ELSEIF BASE:空中ダッシュ -  GETBIT(TCVARn:216, 0) == 5
+		SETCOLOR 255,255,0
+		PRINT ■
+	ELSE
+		SETCOLOR 220,220,220
+		PRINT ■
+	ENDIF
+	RESETCOLOR
+ELSE
+	PRINT 　
+ENDIF
+IF MAXBASE:空中ダッシュ > 6
+	IF BASE:空中ダッシュ < 7
+		SETCOLOR 128,128,128
+		PRINT □
+	ELSEIF BASE:空中ダッシュ -  GETBIT(TCVARn:216, 0) == 6
+		SETCOLOR 255,255,0
+		PRINT ■
+	ELSE
+		SETCOLOR 220,220,220
+		PRINT ■
+	ENDIF
+	RESETCOLOR
+ELSE
+	PRINT 　
+ENDIF
+IF MAXBASE:空中ダッシュ > 7
+	IF BASE:空中ダッシュ < 8
+		SETCOLOR 128,128,128
+		PRINT □
+	ELSEIF BASE:空中ダッシュ -  GETBIT(TCVARn:216, 0) == 7
+		SETCOLOR 255,255,0
+		PRINT ■
+	ELSE
+		SETCOLOR 220,220,220
+		PRINT ■
+	ENDIF
+	RESETCOLOR
+ELSE
+	PRINT 　
+ENDIF
+FONTREGULAR
+
+;--------------------------------------------------
+;戦闘用		蓄積ダメージ表示
+;ここでTCVARn:206（蓄積ダメージ限度値）の値を定める
+@STATUS_PRINT_CHARGE
+;消耗度（体力+気力+{疲労度*150}）によって限度値(%)が変動する
+;消耗度100%~75%：最大体力の120%		消耗度74%~40%：最大体力の100%	消耗度39%~：最大体力の80%
+SELECTCASE PERCENT_CAL_F(BASE:体力 + BASE:気力 + (CFLAG:99 * 150), MAXBASE:体力 + MAXBASE:気力)
+	CASE 0 TO 39
+		LOCAL:0 = 80
+	CASE 40 TO 74
+		LOCAL:0 = 100
+	CASEELSE
+		LOCAL:0 = 120
+ENDSELECT
+
+TCVARn:206 = MAXBASE:体力 * LOCAL:0 / 100
+
+LOCAL:1 = PERCENT_CAL_F(TCVARn:205, TCVARn:206)
+IF LOCAL:1 <= LOCAL:0
+	LOCAL:2 = 60
+	LOCAL:3 = 75
+	LOCAL:4 = 215
+ELSEIF INRANGE(LOCAL:1,LOCAL:0,LOCAL:0+20)
+	LOCAL:2 = 255
+	LOCAL:3 = 255
+	LOCAL:4 = 0
+ELSEIF INRANGE(LOCAL:1,LOCAL:0,LOCAL:0+40)
+	LOCAL:2 = 255
+	LOCAL:3 = 123
+	LOCAL:4 = 0
+ELSE
+	LOCAL:2 = 255
+	LOCAL:3 = 0
+	LOCAL:4 = 0
+ENDIF
+
+SIF LOCAL:1 > LOCAL:0
+	SETCOLOR LOCAL:2,LOCAL:3,LOCAL:4
+
+FONTBOLD
+PRINT CHARGE.
+FONTITALIC
+
+PRINTFORM %UNICODE(0x208D)%
+CALL COLOR_BAR(TCVARn:205, TCVARn:206, 20, LOCAL:2, LOCAL:3, LOCAL:4, -160, 10, 18, 6, 2, UNICODE(0x25AE), UNICODE(0x25AE))
+SIF LOCAL:1 > LOCAL:0
+	SETCOLOR LOCAL:2,LOCAL:3,LOCAL:4
+PRINTFORM %UNICODE(0x208E)%
+
+FONTREGULAR
+PRINTFORM （{TCVARn:205, 5}/{TCVARn:206, 5}）
+RESETCOLOR
+
+;--------------------------------------------------
+;種族とFEATの表示
+@STATUS_PRINT_FEAT
+FOR LOCAL, 201, 250
+	SIF TALENT:LOCAL > 0
+		PRINTFORM  種族:%TALENTNAME:LOCAL%    
+NEXT
+PRINT FEAT:
+LOCAL:1 = 0
+FOR LOCAL, 1100, 1300
+	SIF TALENTNAME:LOCAL == "超反応" && TFLAG:80 > 0
+		SETCOLOR 128,128,128
+	SIF TALENTNAME:LOCAL == "秘められし力" && PERCENT_CAL_F(BASE:体力 + BASE:気力, MAXBASE:体力 + MAXBASE:気力) > 25
+		SETCOLOR 128,128,128
+	IF TALENT:LOCAL > 0
+		PRINTFORM [%TALENTNAME:LOCAL%]
+		LOCAL:1 = 1
+	ENDIF
+	RESETCOLOR
+NEXT
+IF LOCAL:1 == 1
+	PRINTL 
+		;直撃率
+	LOCAL:2 = 0
+	;CRT率
+	LOCAL:3 = 0
+	;バースト攻撃の疲労度
+	LOCAL:4 = 0
+
+	;メリット効果
+	PRINT    
+	SETCOLOR 200,255,200
+	IF TALENT:攻勢構築 > 0
+		LOCAL:2 += 6
+		SIF LOCAL:1 < 3
+			LOCAL:1 = 3
+	ENDIF
+	IF TALENT:獣性の証 > 0
+		LOCAL:3 += 6
+		SIF LOCAL:1 < 2
+			LOCAL:1 = 2
+	ENDIF
+	IF TALENT:秘められし力 > 0 && PERCENT_CAL_F(BASE:体力 + BASE:気力, MAXBASE:体力 + MAXBASE:気力) <= 25
+		LOCAL:2 += 12
+		LOCAL:3 += 12
+		SIF LOCAL:1 < 2
+			LOCAL:1 = 2
+	ENDIF
+	IF TALENT:心眼 > 0
+		LOCAL:2 += 3
+		LOCAL:3 += 3
+		SIF LOCAL:1 < 2
+			LOCAL:1 = 2
+	ENDIF
+	IF TALENT:共生 > 0
+		LOCAL:2 += 2
+		LOCAL:3 += 2
+		SIF LOCAL:1 < 2
+			LOCAL:1 = 2
+	ENDIF
+	IF LOCAL:2 > 0
+		PRINT 直撃率+
+		PRINTFORM {LOCAL:2}
+		PRINT %  
+		SIF LOCAL:1 < 2
+			LOCAL:1 = 2
+	ENDIF
+	IF LOCAL:3 > 0
+		PRINT CRT率+
+		PRINTFORM {LOCAL:3}
+		PRINT %  
+		SIF LOCAL:1 < 2
+			LOCAL:1 = 2
+	ENDIF
+	IF TALENT:超反応 > 0 && TFLAG:80 == 0
+		PRINT 絶対回避  
+		SIF LOCAL:1 < 2
+			LOCAL:1 = 2
+	ENDIF
+	IF TALENT:闘争本能 > 0
+		PRINT 恍惚耐性  
+		SIF LOCAL:1 < 2
+			LOCAL:1 = 2
+	ENDIF
+	IF TALENT:溢れる生命力 > 0
+		PRINT 回復量アップ  
+		SIF LOCAL:1 < 2
+			LOCAL:1 = 2
+	ENDIF
+	IF TALENT:生粋の戦士 > 0
+		PRINT 気絶耐性  被CRT防止  
+		SIF LOCAL:1 < 2
+			LOCAL:1 = 2
+	ENDIF
+	IF TALENT:剛腕 > 0
+		PRINT 振り解き率アップ  
+		SIF LOCAL:1 < 3
+			LOCAL:1 = 3
+	ENDIF
+	IF TALENT:エアマスター > 0
+		PRINT 空中性能強化  
+		SIF LOCAL:1 < 3
+			LOCAL:1 = 3
+	ENDIF
+	IF TALENT:有翼 > 0
+		PRINT 空中ダッシュゲージ+1  
+		SIF LOCAL:1 < 3
+			LOCAL:1 = 3
+	ENDIF
+	IF TALENT:空中浮遊 > 0
+		PRINT 空中ダッシュ疲労軽減  
+		SIF LOCAL:1 < 3
+			LOCAL:1 = 3
+	ENDIF
+	IF TALENT:小さな体躯 > 0
+		PRINT 着地ペナルティ無効  
+		SIF LOCAL:1 < 3
+			LOCAL:1 = 3
+	ENDIF
+	IF TALENT:ホットスタート > 0
+		PRINT 常にバースト攻撃可能  
+		LOCAL:4 += 1
+		SIF LOCAL:1 < 3
+			LOCAL:1 = 3
+	ENDIF
+	IF TALENT:フルバースト > 0
+		PRINT バースト攻撃の威力アップ  
+		LOCAL:4 += 1
+		SIF LOCAL:1 < 3
+			LOCAL:1 = 3
+	ENDIF
+	IF TALENT:祝福 > 0
+		PRINT 状態異常耐性  
+		SIF LOCAL:1 < 3
+			LOCAL:1 = 3
+	ENDIF
+	IF TALENT:不屈 > 0
+		PRINT 消耗ペナルティ軽減  
+		SIF LOCAL:1 < 3
+			LOCAL:1 = 3
+	ENDIF
+	IF TALENT:スタミナ > 0
+		PRINT 持久力アップ  
+		SIF LOCAL:1 < 3
+			LOCAL:1 = 3
+	ENDIF
+	IF TALENT:平凡 > 0
+		PRINT 油断させやすい  
+		SIF LOCAL:1 < 2
+			LOCAL:1 = 2
+	ENDIF
+	IF TALENT:背徳の烙印 > 0
+		PRINT 搾精ダメージアップ  
+		SIF LOCAL:1 < 2
+			LOCAL:1 = 2
+	ENDIF
+
+	SIF LOCAL:1 > 2
+		PRINTL 
+
+	;デメリット効果
+	PRINT    
+	SETCOLOR 255,200,255
+	SIF TALENT:攻勢構築 > 0
+		PRINT 油断させにくい  
+	SIF TALENT:剛腕 > 0
+		PRINT 振り解くと疲労+1  
+	SIF TALENT:エアマスター > 0
+		PRINT 空中ダッシュで疲労+1  
+	SIF TALENT:有翼 > 0
+		PRINT 着地時に疲労+1  
+	SIF TALENT:空中浮遊 > 0
+		PRINT 移動系コマンドで疲労+1  
+	SIF TALENT:小さな体躯 > 0
+		PRINT 振り解き率ダウン  
+	IF LOCAL:4 > 0
+		PRINT バースト攻撃の反動+
+		PRINTFORM {LOCAL:4}  
+	ENDIF
+	SIF TALENT:祝福 > 0
+		PRINT 粘液,波動ダメージ増大  
+	SIF TALENT:不屈 > 0 || TALENT:スタミナ > 0
+		PRINT EXゲージが上昇しにくい  
+	RESETCOLOR
+ELSE
+	PRINTL ─
+ENDIF
+
+@SHOW_TRAIN_PALAM_STATUS(ARGS)
+;表示状態　かつ上部に表示されている場合
+IF CONFIG_CHECK_SCREEN_F(5) == 1 && CONFIG_CHECK_SCREEN_F(6) == (ARGS=="上部" ? 0 # 1)
+	;位置が固定されている場合
+	IF CONFIG_CHECK_SCREEN_F(7) == 0
+;		PRINTL 
+		CALL SHOW_STATUS_PALAM
+	;位置が固定されていない場合
+	ELSE
+		IF ARGS=="上部"
+;			PRINTL 
+			PRINT 　　　　　　　　　　　　　　　　　　　　　　　　
+		ENDIF
+		;閉じている場合
+		IF CONFIG_CHECK_SCREEN_F(8) == 1
+			PRINTBUTTON "[898] 調教ステータスを表示", 898
+			PRINTL 
+		;開いている場合
+		ELSE
+			PRINTBUTTON "[898] 調教ステータスを閉じる", 898
+			SIF ARGS=="上部"
+				PRINTBUTTON "[899] 下側に移動", 899
+			SIF ARGS=="下部"
+				PRINTBUTTON "[899] 上側に移動", 899
+			PRINTL 
+			;表示状態なら描画
+			CALL SHOW_STATUS_PALAM
+		ENDIF
+	ENDIF
+ELSE
+;	PRINTL
+ENDIF

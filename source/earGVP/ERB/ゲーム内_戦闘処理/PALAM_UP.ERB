@@ -1,0 +1,1890 @@
+﻿;==============================================================================
+;パラメータの上昇処理
+; 引数	なし。代わりにUPとLOSEBASEを参照し、終了時に初期化する
+; 定数
+;	二次計算PALAM	快部位の計算と絶頂処理後、個別に計算する物の前にまとめて計算するPALAMの一覧
+; 変数
+;	POSSIBLE_ECSTACY	絶頂する可能性があるかどうか（快部位の加算結果が絶頂しきい値を超えたなら1以上になる）
+;	ECS_FLAG	絶頂抑制判定の結果フラグ( > 2000で絶頂懇願, > 1000で絶頂禁止, > 0で絶頂抑制, <= 0で絶頂可能)
+;memo:この変数仕様はセンスが悪い。余裕がある時に作り直す
+;	ECS_NUM		絶頂回数合計
+;	BEFORE_PALAM_CVAB	快部位の加算前パラメータ（絶頂判定で先に加算してしまうので、その前に保管する）
+;	PCOUNT		パラメータ参照ループ時のループカウンタ
+@PALAM_UP
+#DIM DYNAMIC POSSIBLE_ECSTACY
+#DIM DYNAMIC ECS_FLAG
+#DIM DYNAMIC ECS_NUM
+#DIM BEFORE_PALAM_CVAB, 4
+#DIM PCOUNT
+{
+#DIM CONST 二次計算PALAM =
+GETNUM(PALAM, "習得"),
+GETNUM(PALAM, "屈服"),
+GETNUM(PALAM, "苦痛"),
+GETNUM(PALAM, "恐怖")
+}
+
+;--------------------------------------------------
+;快部位（ＣＶＡＢ）の絶頂処理
+
+;様々な要素を加味して部位それぞれに補正をかける
+FOR PCOUNT, 0, VARSIZE("快部位PALAM")
+
+	;上昇値補正処理
+	CALL PALAM_HOSEI, PCOUNT, UP:(快部位PALAM:PCOUNT)
+	UP:(快部位PALAM:PCOUNT) = RESULT
+
+	;PALAM補正をARGに加算する
+	;memo:これは将来的にCOMMON_PALAMの呼び出し元すべてを (1)UP補正に置き換える(2)UPに加算する のいずれかで対応する
+	;memo:(2)の方がシンプルだが、ここの上の各種補正がかかるようになるのでバランスが変わる
+	UP:(快部位PALAM:PCOUNT) += COMMON_PALAM:(快部位PALAM:PCOUNT)
+
+	;上昇値を加算した結果が絶頂のしきい値を超えるなら、絶頂可否判定のために補正付き計算結果を記録する
+	SIF PALAM:PCOUNT + UP:(快部位PALAM:PCOUNT) > 快部位絶頂しきい値:0
+		POSSIBLE_ECSTACY += PALAM:PCOUNT + UP:(快部位PALAM:PCOUNT) * (ABL:(快部位感覚:PCOUNT)) / 15 * (TALENT:(淫部位素質:PCOUNT) + 5) / 5
+
+NEXT
+
+;絶頂抑制判定
+ECS_FLAG = FUNC_PALAM_CALC_ENDURE_ECSTACY(POSSIBLE_ECSTACY)
+
+;快部位の絶頂チェック
+ECS_NUM = 0
+FOR PCOUNT, 0, VARSIZE("快部位PALAM")
+	IF UP:PCOUNT > 0
+		LOCAL:3 = UP:(快部位PALAM:PCOUNT)
+		;部位結界チェック
+		;戦闘中かつ拘束時でなければ結界は動作しない
+		IF BASE:(基礎部位結界:PCOUNT) > 0 && FLAG:700 && TCVARn:0 == 0 && TFLAG:10 != 1006
+
+			;デバッグ表示
+			IF FLAG:999
+				STRLENFORM {MAXBASE:(基礎部位結界:PCOUNT)}
+				SETCOLOR 96, 96, 96
+				PRINTFORML /* debug */ %BASENAME:(基礎部位結界:PCOUNT)%：{BASE:(基礎部位結界:PCOUNT), RESULT} - {LOCAL:3, RESULT}　= {BASE:(基礎部位結界:PCOUNT) - LOCAL:3, RESULT}
+				RESETCOLOR
+			ENDIF
+			BASE:(基礎部位結界:PCOUNT) -= LOCAL:3
+			LOCAL:3 = 0
+			;戦闘中なら部位結界の状態を出力する
+			SIF FLAG:700
+				CALL MESSAGE_SHIELD_STATE, PCOUNT
+		ENDIF
+		;上昇量表示用に現在のPALAMを保存する
+		BEFORE_PALAM_CVAB:PCOUNT = PALAM:(快部位PALAM:PCOUNT)
+		;快部位のPALAMに結界を考慮した上昇量を加算する
+		PALAM:(快部位PALAM:PCOUNT) += LOCAL:3
+
+		;絶頂回数判定を行い、戻り値を代入する
+		CALL PALAM_CALC_ECSTASY, PCOUNT, PCOUNT, ECS_FLAG
+		NOWEX:(PCOUNT) = RESULT
+
+		;絶頂しているなら、減衰計算用変数をリセット
+		SIF NOWEX:(PCOUNT) > 0
+			MAX_PALAM:(PCOUNT) = 0
+	ENDIF
+
+	;絶頂による屈服の増加
+	ECS_NUM += NOWEX:PCOUNT
+NEXT
+
+;触手による拡張チェック
+CALL PALAM_CALC_GAPING
+
+;ＣＶＡＢのPALAM補正値は利用が終わったのでクリアする
+FOR PCOUNT, 0, VARSIZE("快部位PALAM")
+	COMMON_PALAM:(PCOUNT) = 0
+NEXT
+
+;動画撮影フラグの処理
+IF FLAG:71 > 0 || GETBATTLESITUATION("常時撮影")
+	;膣内射精されたところを見られた
+	SIF (STAIN:3 & 4)
+		SETBIT TFLAG:21,4
+	;アナルに射精されたところを見られた
+	SIF (STAIN:4 & 4)
+		SETBIT TFLAG:21,5
+	;精液ぶっかけされたところを見られた
+	SIF (STAIN:0 & 4) || (STAIN:1 & 4) || (STAIN:2 & 4)
+		SETBIT TFLAG:21,6
+	;絶頂したところを見られた
+	SIF NOWEX:Ｃ絶頂 + NOWEX:Ｖ絶頂 + NOWEX:Ａ絶頂 + NOWEX:Ｂ絶頂
+		SETBIT TFLAG:21,8
+ENDIF
+
+;--------------------------------------------------
+;習得・屈服・苦痛・恐怖の増加処理
+;（潤滑・欲情・恥情・恭順は後で個別に計算）
+
+;絶頂回数による屈服上昇値のボーナス
+SIF ECS_NUM > 0
+	UP:屈服 += MIN(ECS_NUM * 5000, 20000)
+
+FOR PCOUNT, 0, VARSIZE("二次計算PALAM")
+
+	;上昇値補正処理
+	CALL PALAM_HOSEI, PCOUNT, UP:(二次計算PALAM:PCOUNT)
+	UP:(二次計算PALAM:PCOUNT) = RESULT
+
+	;PALAM補正をARGに加算する
+	UP:(二次計算PALAM:PCOUNT) += COMMON_PALAM:(二次計算PALAM:PCOUNT)
+	COMMON_PALAM:(二次計算PALAM:PCOUNT) = 0
+
+NEXT
+
+;奉仕を選択した場合の習得上昇値ボーナス
+SIF TCVARn:2 == 体勢：奉仕する
+	UP:習得 += 150 + 15 * (ABL:従順 + ABL:奉仕精神 * 2)
+
+
+;----------------------------------------------------------
+;射精、噴乳の処理
+
+;触手の射精チェック
+IF FLAG:700 == 1
+	CALL TENTACLE_SYASEI_CHECK
+	SIF (TCVARn:12 & 排卵) && (TFLAG:4 & 膣)
+		RESULT:1 *= 4
+	UP:潤滑 += RESULT:0
+	UP:屈服 += RESULT:1
+	UP:恭順 += RESULT:2
+	UP:欲情 += RESULT:3
+ENDIF
+
+;キャラの射精チェック
+CALL PALAM_CALC_EJAC
+
+;キャラの噴乳チェック
+CALL PALAM_CALC_MILK_SQIRT
+PRINTL 
+
+;----------------------------------------------------------
+;恥情の取得
+
+;衣服の損傷LVによる恥情の獲得
+CALL PALAM_TIJOU_CLOTH_DAMAGE
+UP:恥情 += RESULT
+
+;快Ｃ,快Ｖ,快Ａ,快Ｂの上昇値,絶頂の状態で計算する
+CALL PALAM_TIJOU, UP:快Ｃ, UP:快Ｖ, UP:快Ａ, UP:快Ｂ
+UP:恥情 += RESULT
+
+;上昇値補正処理
+CALL PALAM_HOSEI, GETNUM(PALAM, "恥情"), UP:恥情
+UP:恥情 = RESULT
+
+;----------------------------------------------------------
+;欲情の主計算
+
+;快Ｃ,快Ｖ,快Ａ,快Ｂ,恥情の上昇値,苦痛の上昇値(マゾっ気あり),絶頂の状態で計算する
+CALL PALAM_YOKUJOU, UP:快Ｃ, UP:快Ｖ, UP:快Ａ, UP:快Ｂ, UP:恥情, UP:苦痛
+UP:欲情 += RESULT
+
+;上昇値補正処理
+CALL PALAM_HOSEI, GETNUM(PALAM, "欲情"), UP:欲情
+UP:欲情 = RESULT
+
+;----------------------------------------------------------
+;潤滑の主計算
+
+;欲情の上昇値で計算する
+CALL PALAM_JUNKATU, UP:欲情
+UP:潤滑 += RESULT
+
+;上昇値補正処理
+CALL PALAM_HOSEI, GETNUM(PALAM, "潤滑"), UP:潤滑
+UP:潤滑 = RESULT
+
+;----------------------------------------------------------
+;恭順の主計算
+
+;快C,快V,快A,快Bの上昇値,絶頂の状態で計算する
+CALL PALAM_KYOUJUN, UP:快Ｃ, UP:快Ｖ, UP:快Ａ, UP:快Ｂ
+UP:恭順 += RESULT
+
+;触手中毒と触手の虜による恭順上昇値のボーナス
+SIF ABL:触手中毒 > 0
+	UP:恭順 += MIN(ECS_NUM * 1500 * ABL:触手中毒, 30000)
+SIF TALENT:触手の虜 > 0
+	UP:恭順 += MIN(ECS_NUM * 1500, 6000)
+
+;上昇値補正処理
+CALL PALAM_HOSEI, GETNUM(PALAM, "恭順"), UP:恭順
+UP:恭順 = RESULT
+
+;----------------------------------------------------------
+;気絶中は屈服、恥情、苦痛、恐怖の上昇が抑えられる
+IF (TCVARn:12 & 気絶)
+	TIMES UP:屈服, 0.25
+	TIMES UP:恥情, 0.25
+	TIMES UP:苦痛, 0.25
+	TIMES UP:恐怖, 0.25
+;恍惚の場合は恭順、習得、欲情、屈服が上昇しやすい
+ELSEIF (TCVARn:12 & 恍惚)
+	TIMES UP:恭順, 1.25
+	TIMES UP:習得, 1.25
+	TIMES UP:欲情, 1.25
+	TIMES UP:屈服, 1.25
+ENDIF
+
+;絶頂回数と珠の取得
+LOCAL = 0
+REPEAT 感覚数
+	SIF NOWEX:COUNT > 0
+		LOCAL += 1
+REND
+EXP:絶頂経験 += NOWEX:Ｃ絶頂 * LOCAL
+JUEL:快Ｃ += 1000 * NOWEX:Ｃ絶頂 * LOCAL
+EXP:絶頂経験 += NOWEX:Ｖ絶頂 * LOCAL
+JUEL:快Ｖ += 1000 * NOWEX:Ｖ絶頂 * LOCAL
+EXP:絶頂経験 += NOWEX:Ａ絶頂 * LOCAL
+JUEL:快Ａ += 1000 * NOWEX:Ａ絶頂 * LOCAL
+EXP:絶頂経験 += NOWEX:Ｂ絶頂 * LOCAL
+JUEL:快Ｂ += 1000 * NOWEX:Ｂ絶頂 * LOCAL
+
+;絶頂回数に応じて油断度を上昇
+TFLAG:3 += 50 * LOCAL
+
+;経験の加算
+;露出快楽経験：恥情と欲情が一定以上
+SIF UP:恥情 > 2000 && UP:欲情 > 2000
+	EXP:露出快楽経験 += 1
+
+;奉仕快楽経験：奉仕体制か奉仕コマンドで欲情が一定以上
+SIF UP:欲情 > 2000 && (TCVARn:2 == 体勢：奉仕する || SELECTCOM >= 100 && SELECTCOM < 200)
+	EXP:奉仕快楽経験 += 1
+
+;苦痛快楽経験：苦痛と欲情が一定以上
+SIF UP:苦痛 > 2000 && UP:欲情 > 2000
+	EXP:苦痛快楽経験 += 1
+
+;多重絶頂＆単絶頂
+CALL MESSAGE_SEX_ECSTASY, NOWEX:Ｃ絶頂, NOWEX:Ｖ絶頂, NOWEX:Ａ絶頂, NOWEX:Ｂ絶頂
+
+;絶頂禁止
+IF ECS_FLAG > 1000
+	CALL MESSAGE_SEX_ECSTASY_PROHIBITION
+
+	;絶頂懇願
+	SIF ECS_FLAG > 2000
+		CALL MESSAGE_SEX_ECSTASY_ENTREATY
+
+;絶頂抑制
+ELSEIF ECS_FLAG > 0 && FLAG:700
+	CALL MESSAGE_SEX_ECSTASY_INHIBITION, ECS_FLAG
+ENDIF
+
+;絶頂による状態異常
+SIF ECS_NUM && FLAG:700 > 0
+	CALL STATE_CHANGE_EX, ECS_NUM
+
+;電流による状態異常
+SIF TFLAG:20 == 1004
+	CALL STATE_CHANGE_DENGEKI
+
+;媚薬効果のある行動を受けた場合
+SIF TFLAG:20 == 6 || TFLAG:20 == 1000 || TFLAG:20 == 1001
+	CALL STATE_CHANGE_HATUJOU, 100
+
+;強制気絶の行動
+IF (TFLAG:20 == 1012 || TFLAG:20 == 1015) && (TCVARn:12 & 気絶) == 0
+	CALL STATE_CHANGE_KIZETU, 100
+;特定コマンドを受けると目が覚める
+ELSEIF (TFLAG:20 == 8 || TFLAG:20 == 9 || TFLAG:20 == 12 || TFLAG:20 == 1009 || TFLAG:20 == 1010 || TFLAG:20 == 1013) && (TCVARn:12 & 気絶) && (BASE:体力 > 0 || BASE:気力 > 0 || BASE:性耐性 > 0)
+	TCVARn:101 = -999
+ENDIF
+
+;パラメータ上昇量への性格補正
+CALL PALAM_CALC_PERSONALITY_ADJUST
+
+;----------------------------------------------------------
+;パラメータ上昇結果の画面表示
+IF SUMARRAY(UP) && CONFIG_CHECK_SCREEN_F(1) > 0
+	WAIT
+	CALL SHORTLINE
+	CALL PALAM_UP_DISPLAY_CALCULATION, BEFORE_PALAM_CVAB, ECS_FLAG
+	CALL SHORTLINE
+	PRINTL 
+ENDIF
+
+;快部位以外取得パラメータを上昇する
+FOR PCOUNT, 0, VARSIZE("部位以外調教PALAM")
+	IF UP:(部位以外調教PALAM:PCOUNT) > 0
+		PALAM:(部位以外調教PALAM:PCOUNT) += MIN(UP:(部位以外調教PALAM:PCOUNT),PALAM上限)
+		;CALL PALAM_LIMIT, LOCAL:0 + PALAM始点 - 感覚数, ARG:(LOCAL:0)
+	ENDIF
+NEXT
+
+;体力、気力、性耐性の減算
+;体力は苦痛から、気力は屈服と恐怖と恥情から、性耐性は恭順と欲情からそれぞれ減算値を求める
+IF FLAG:700 == 1 && (TCVARn:0 == 0 || (TCVARn:41 != 0 && CFLAG:(CFLAG:1==0 ? 40 # 41) == 199))
+	CALL PALAM_TAIRYOKUDOWN, UP:苦痛, LOSEBASE:体力
+	CALL PALAM_KIRYOKUDOWN, UP:屈服, UP:恐怖, UP:恥情
+	CALL PALAM_SEITAISEIDOWN, UP:恭順, UP:欲情
+	PRINTL 
+	IF UP:苦痛 + LOSEBASE:体力 + UP:屈服 + UP:恐怖 + UP:欲情
+		;被弾するたびに、防御基礎値に応じてＥＸゲージが上昇する
+		SIF CFLAG:1 != 2
+			TCVARn:6 += LIMIT(SQRT(MAX(BASE:防御 - 100,0)), 0, 20) + 5
+	ENDIF
+ENDIF
+
+;刻印の取得(※クズ市民戦での取得は判定を厳しく見る)
+;快楽刻印　一定量の欲情
+CALL GOT_SEX_MARK_CHECK, GETNUM(MARK,"快楽刻印"), UP:欲情, 快楽刻印判定基礎値, MARK:快楽刻印防止, 快楽刻印防止係数, 快楽刻印クズ市民補正
+
+;苦痛刻印　一定量の苦痛
+CALL GOT_SEX_MARK_CHECK, GETNUM(MARK,"苦痛刻印"), UP:苦痛, 苦痛刻印判定基礎値, MARK:苦痛刻印防止, 苦痛刻印防止係数, 苦痛刻印クズ市民補正
+
+;屈服刻印　一定量の屈服
+CALL GOT_SEX_MARK_CHECK, GETNUM(MARK,"屈服刻印"), UP:屈服, 屈服刻印判定基礎値, MARK:屈服刻印防止, 屈服刻印防止係数, 屈服刻印クズ市民補正
+
+;恐怖刻印　一定量の恐怖
+CALL GOT_SEX_MARK_CHECK, GETNUM(MARK,"恐怖刻印"), UP:恐怖, 恐怖刻印判定基礎値, MARK:恐怖刻印防止, 恐怖刻印防止係数, 恐怖刻印クズ市民補正
+
+;恥辱刻印　一定量の恥情
+CALL GOT_SEX_MARK_CHECK, GETNUM(MARK,"恥辱刻印"), UP:恥情, 恥辱刻印判定基礎値, MARK:恥辱刻印防止, 恥辱刻印防止係数, 恥辱刻印クズ市民補正
+
+;理性強度低下による口上分岐
+CALL MESSAGE_BRANCH_MESSAGE_FAITH_DOWN
+
+;実績
+CALL GET_STATE_EXPUP,TARGET
+
+;搾精用ＨＰチェック
+SIF FLAG:13 <= 0 && FLAG:700 == 1
+	JUMP SOURCE_CHECK
+
+;敵（と観衆）の反応
+CALL PALAM_UP_ENEMY_REACTION
+
+;変身中かつ処女でないなら、変身時非処女を付与
+SIF CFLAG:1 > 0 && TALENT:処女 == -1 && ISFEMALE() && TALENT:変身時非処女 == 0
+	TALENT:変身時非処女 = 1
+
+;最後に、UPとLOSEBASEをクリアする
+VARSET UP
+VARSET LOSEBASE
+
+;==============================================================================
+;以下、関数内で呼ばれるサブ関数
+;==============================================================================
+
+;--------------------------------------------------
+;パラメータ上昇値の補正処理
+; 引数
+;	PALAMID	補正対象のPALAMのID
+;	UPVALUE	上昇値の実値（UP:PALAMIDの値を想定）
+@PALAM_HOSEI, PALAMID, UPVALUE
+#DIM PALAMID
+#DIM UPVALUE
+IF UPVALUE > 0
+
+	;感覚LV6以上補正（快部位のみ）
+	IF MATCH(快部位PALAM, PALAMID)
+		CALL PALAM_OVERFEEL, TARGET, PALAMID
+		UPVALUE *= RESULT / 100
+	ENDIF
+
+	;体勢に関する補正
+	CALL PALAM_HOSEI_POSE, UPVALUE
+	UPVALUE = RESULT
+
+	;観衆の有無による補正（恥情のみ）
+	IF PALAMID == GETNUM(PALAM, "恥情")
+		IF FLAG:71 || GETBATTLESITUATION("常時撮影")
+			UPVALUE = UPVALUE * (360 + FLAG:71 * 40 + FLAG:70 * 20) / 100
+		ELSEIF FLAG:70
+			UPVALUE = UPVALUE * (180 + FLAG:70 * 20) / 100
+		ENDIF
+	ENDIF
+
+	;性耐性に関する補正（潤滑以外すべて）
+	IF PALAMID != GETNUM(PALAM, "潤滑")
+		CALL PALAM_HOSEI_SEITAISEI, UPVALUE
+		UPVALUE = RESULT
+	ENDIF
+
+	;素質に関する補正
+	CALL PALAM_HOSEI_TALENT, PALAMID, UPVALUE
+	UPVALUE = RESULT
+
+	;性格に関する補正
+	CALL PALAM_HOSEI_SEIKAKU, PALAMID, UPVALUE
+	UPVALUE = RESULT
+
+	;触手に関する補正
+	CALL PALAM_HOSEI_TENTACLE, PALAMID, UPVALUE
+	UPVALUE = RESULT
+
+	;触手中毒に関する補正（屈服・欲情・恭順のみ）
+	IF PALAMID == GETNUM(PALAM, "屈服") || PALAMID == GETNUM(PALAM, "欲情") || PALAMID == GETNUM(PALAM, "恭順")
+		CALL PALAM_HOSEI_POISONING_TENTACLE, UPVALUE
+		UPVALUE = RESULT
+	ENDIF
+
+	;ランダム性付与
+	CALL PALAM_HOSEI_RANDOM, UPVALUE
+	UPVALUE = RESULT
+
+	;下限値の設定
+	SIF UPVALUE <= 0
+		UPVALUE = 1
+ENDIF
+
+RETURN UPVALUE
+
+;--------------------------------------------------
+;性耐性に関する補正
+;性耐性の残りが少なくなってくると取得値が大きくなってくる
+@PALAM_HOSEI_SEITAISEI, ARG
+LOCAL = 0
+IF BASE:性耐性 > 0
+	CALL PERCENT_CAL, BASE:性耐性, MAXBASE:性耐性
+	LOCAL = RESULT
+ENDIF
+
+IF LOCAL > 80
+ELSEIF LOCAL > 60
+	TIMES ARG, 1.10
+ELSEIF LOCAL > 40
+	TIMES ARG, 1.20
+ELSEIF LOCAL > 20
+	TIMES ARG, 1.35
+ELSEIF	LOCAL > 10
+	TIMES ARG, 1.50
+ELSE
+	TIMES ARG, 1.70
+ENDIF
+
+RETURN ARG
+
+;--------------------------------------------------
+;素質に関する補正
+@PALAM_HOSEI_TALENT, ARG:0, ARG:1
+SELECTCASE ARG:0
+	;敏感、鈍感など
+	CASE 0
+	;快C
+		IF TALENT:Ｃ敏感 > 0
+			TIMES ARG:1, 1.25
+		ELSEIF TALENT:Ｃ鈍感 > 0
+			TIMES ARG:1, 0.75
+		ENDIF
+		SIF TALENT:淫核 > 0
+			TIMES ARG:1, 1.50
+	CASE 1
+	;快V
+		IF TALENT:Ｖ敏感 > 0
+			TIMES ARG:1, 1.25
+		ELSEIF TALENT:Ｖ鈍感 > 0
+			TIMES ARG:1, 0.75
+		ENDIF
+		SIF TALENT:淫壷 > 0
+			TIMES ARG:1, 1.50
+	CASE 2
+	;快A
+		IF TALENT:Ａ敏感 > 0
+			TIMES ARG:1, 1.25
+		ELSEIF TALENT:Ａ鈍感 > 0
+			TIMES ARG:1, 0.75
+		ENDIF
+		SIF TALENT:淫尻 > 0
+			TIMES ARG:1, 1.50
+	CASE 3
+	;快B
+		IF TALENT:Ｂ敏感 > 0
+			TIMES ARG:1, 1.25
+		ELSEIF TALENT:Ｂ鈍感 > 0
+			TIMES ARG:1, 0.75
+		ENDIF
+		IF TALENT:貧乳 == 2
+			TIMES ARG:1, 0.75
+		ELSEIF TALENT:貧乳 == 1
+			TIMES ARG:1, 0.80
+		ELSEIF TALENT:巨乳 == 5
+			TIMES ARG:1, 1.40
+		ELSEIF TALENT:巨乳 == 4
+			TIMES ARG:1, 1.35
+		ELSEIF TALENT:巨乳 == 3
+			TIMES ARG:1, 1.30
+		ELSEIF TALENT:巨乳 == 2
+			TIMES ARG:1, 1.25
+		ELSEIF TALENT:巨乳 == 1
+			TIMES ARG:1, 1.20
+		ENDIF
+		SIF TALENT:淫乳 > 0
+			TIMES ARG:1, 1.50
+	CASE 10
+	;潤滑
+		IF TALENT:濡れやすい > 0
+			TIMES ARG:1, 2.00
+		ELSEIF TALENT:濡れにくい > 0
+			TIMES ARG:1, 0.50
+		ENDIF
+		SIF TALENT:淫乱 > 0
+			TIMES ARG:1, 2.00
+	CASE 11
+	;恭順
+		SIF TALENT:触手の虜 > 0
+			TIMES ARG:1, 2.00
+	CASE 12
+	;習得
+	CASE 13
+	;欲情
+		SIF TALENT:触手の虜 > 0
+			TIMES ARG:1, 2.00
+		SIF TALENT:淫乱 > 0
+			TIMES ARG:1, 2.00
+	CASE 14
+	;屈服
+		SIF TALENT:触手の虜 > 0
+			TIMES ARG:1, 2.00
+	CASE 15
+	;恥情
+		SIF TALENT:パイパン > 0
+			TIMES ARG:1, 1.50
+		SIF TALENT:淫乱 > 0
+			TIMES ARG:1, 2.00
+	CASE 16
+	;苦痛
+	CASE 17
+	;恐怖
+ENDSELECT
+RETURN ARG:1
+
+;--------------------------------------------------
+;性格に関する補正
+@PALAM_HOSEI_SEIKAKU, ARG:0, ARG:1
+LOCAL = SEIKAKU_HOSEI_PALAM_F(SEIKAKU_CHECK_F(TARGET), ARG:0, ARG:1)
+RETURN LOCAL
+
+;--------------------------------------------------
+;触手に関する補正
+@PALAM_HOSEI_TENTACLE, ARG:0, ARG:1
+SIF FLAG:700 == 0 || ENEMY_TYPE_CHECK_F("AKUOTI")
+	RETURN ARG:1
+
+CALL TENTACLE_ACCESS, "PALAM_HOSEI"
+;RESULT:0=快C　以降順番に RESULT:11=恐怖
+
+SELECTCASE ARG:0
+	CASE 0
+	;快C
+		ARG:1 = ARG:1 * RESULT:0 / 100
+	CASE 1
+	;快V
+		ARG:1 = ARG:1 * RESULT:1 / 100
+	CASE 2
+	;快A
+		ARG:1 = ARG:1 * RESULT:2 / 100
+	CASE 3
+	;快B
+		ARG:1 = ARG:1 * RESULT:3 / 100
+	CASE 10
+	;潤滑
+		ARG:1 = ARG:1 * RESULT:4 / 100
+	CASE 11
+	;恭順
+		ARG:1 = ARG:1 * RESULT:5 / 100
+	CASE 12
+	;習得
+		ARG:1 = ARG:1 * RESULT:6 / 100
+	CASE 13
+	;欲情
+		ARG:1 = ARG:1 * RESULT:7 / 100
+	CASE 14
+	;屈服
+		ARG:1 = ARG:1 * RESULT:8 / 100
+	CASE 15
+	;恥情
+		ARG:1 = ARG:1 * RESULT:9 / 100
+	CASE 16
+	;苦痛
+		ARG:1 = ARG:1 * RESULT:10 / 100
+	CASE 17
+	;恐怖
+		ARG:1 = ARG:1 * RESULT:11 / 100
+ENDSELECT
+RETURN ARG:1
+
+;--------------------------------------------------
+;触手中毒に関する補正
+@PALAM_HOSEI_POISONING_TENTACLE, ARG
+IF ABL:触手中毒 == 1
+	TIMES ARG, 1.20
+ELSEIF ABL:触手中毒 == 2
+	TIMES ARG, 1.50
+ELSEIF ABL:触手中毒 == 3
+	TIMES ARG, 2.00
+ELSEIF ABL:触手中毒 == 4
+	TIMES ARG, 2.50
+ELSEIF ABL:触手中毒 == 5
+	TIMES ARG, 4.00
+ENDIF
+RETURN ARG
+
+;--------------------------------------------------
+;体勢に関する補正
+@PALAM_HOSEI_POSE, ARG
+;耐える選択中ならパラメータ上昇しにくくなる
+SIF TCVARn:2 == 体勢：耐える
+	TIMES ARG, 0.65
+;受け入れる選択中ならパラメータ上昇しやすくなる
+SIF TCVARn:2 == 体勢：受け入れる
+	TIMES ARG, 1.25
+;搾り取る選択中ならパラメータ上昇しやすくなる
+SIF TCVARn:2 == 体勢：搾り取る
+	TIMES ARG, 1.50
+RETURN ARG
+
+;--------------------------------------------------
+;ランダム性付与
+@PALAM_HOSEI_RANDOM, ARG
+LOCAL= RAND:100
+IF LOCAL < 20
+	TIMES ARG, 1.10
+ELSEIF LOCAL < 40
+	TIMES ARG, 1.05
+ELSEIF LOCAL < 60
+	TIMES ARG, 1.00
+ELSEIF LOCAL < 80
+	TIMES ARG, 0.95
+ELSE
+	TIMES ARG, 0.90
+ENDIF
+RETURN ARG
+
+;--------------------------------------------------
+;絶頂耐久、絶頂禁止、絶頂懇願の判定
+; 引数
+;	BASE_PALAM	絶頂可能性のある快部位PALAMの補正付き合計値（耐久計算の元手）
+; 変数
+;	ENDURE_FACTOR	絶頂耐久の計算値
+;	BEGGING_FACTOR	絶頂懇願の計算値
+; 戻り値：基本的にENDURE_FACTORを返す
+;	> 2000で絶頂懇願
+;	> 1000で絶頂禁止
+;	> 0で絶頂抑制
+;	<= 0で絶頂可能
+@FUNC_PALAM_CALC_ENDURE_ECSTACY, BASE_PALAM
+#FUNCTION
+#DIM BASE_PALAM
+#DIM ENDURE_FACTOR
+#DIM BEGGING_FACTOR
+
+;そもそもどの部位も全然絶頂に至ってないなら負数を返す
+SIF BASE_PALAM <= 0
+	RETURNF -1
+
+;計算開始
+;補正付きPALAMに欲望Lvと触手中毒Lvによる補正を掛ける
+ENDURE_FACTOR = BASE_PALAM * (ABL:欲望 + 5) / 10
+ENDURE_FACTOR = ENDURE_FACTOR * (ABL:触手中毒 + 5) / 10
+;戦闘中なら触手の射精状態と精液中毒Lvによる補正を掛ける
+SIF FLAG:700
+	ENDURE_FACTOR = ENDURE_FACTOR * (ABL:精液中毒 * (FLAG:15 / FLAG:14) + 10) / 15
+;現在の恭順・欲情・屈服による補正を掛ける
+ENDURE_FACTOR = ENDURE_FACTOR * (PALAMLV_F(PALAM:恭順) + 25) / 30
+ENDURE_FACTOR = ENDURE_FACTOR * (PALAMLV_F(PALAM:欲情) + 20) / 25
+ENDURE_FACTOR = ENDURE_FACTOR * (PALAMLV_F(PALAM:屈服) + 25) / 30
+;性耐性と気力によって割り引く
+ENDURE_FACTOR /= SQRT(LIMIT(BASE:性耐性 * 4, 1, 250) * LIMIT(BASE:気力 / 4, 1, 2500)) / 2 + 10
+;ここまでの計算値を32～240の値域に揃える
+ENDURE_FACTOR = LIMIT(ENDURE_FACTOR, 32, 240)
+
+;耐える選択中なら絶頂しにくくなる
+SIF TCVARn:2 == 体勢：耐える
+	TIMES ENDURE_FACTOR, 0.65
+;なすがまま選択中なら絶頂しやすくなる
+SIF TCVARn:2 == 体勢：なすがまま
+	TIMES ENDURE_FACTOR, 1.25
+;射精ゲージが限界なら絶頂しやすくなる
+IF BASE:射精 >= MAXBASE:射精 * 2
+	TIMES ENDURE_FACTOR, 1.5
+ELSEIF BASE:射精 >= MAXBASE:射精
+	TIMES ENDURE_FACTOR, 1.25
+ENDIF
+;受け入れる、または気絶中なら抑制できない
+SIF TCVARn:2 == 体勢：受け入れる || (TCVARn:12 & 気絶)
+	ENDURE_FACTOR = 256
+
+;デバッグ用：確率表示
+IF FLAG:999 == 1
+	SETCOLOR 96, 96, 96
+	PRINTFORML /* debug */ 絶頂確率{ENDURE_FACTOR, 3} / 256
+	RESETCOLOR
+ENDIF
+
+;絶頂抑制状態を求め、絶頂を抑制された場合は欲情上昇値を増やす
+;（元々の条件式がバグっていてドキュメントも見つからないので推定）
+IF TCVARn:40 > 0
+	;焦らし嬲り中なら絶頂禁止とし、欲情上昇値に大幅ボーナスを掛ける
+	UP:欲情 = UP:欲情 * 3 / 2
+	ENDURE_FACTOR += 1000
+ELSE
+	;焦らし嬲り中でなければ、確率で絶頂可能かを求める
+	IF ENDURE_FACTOR > RAND:256
+		ENDURE_FACTOR = 0
+	ELSE
+		;絶頂抑制なら欲情上昇値に微ボーナス
+		UP:欲情 = UP:欲情 * 6 / 5
+	ENDIF
+ENDIF
+
+;絶頂禁止状態なら、絶頂懇願判定を行う
+IF ENDURE_FACTOR >= 1000
+	;恭順・屈服の上昇値を倍にする
+	;（元々の条件式がバグっていてドキュメントも見つからないので推定）
+	UP:恭順 *= 2
+	UP:屈服 *= 2
+
+	;絶頂懇願の判定値を計算する
+	BEGGING_FACTOR = BASE_PALAM / 800 * (ABL:従順 * 3 + ABL:欲望 * 4 + ABL:触手中毒 * 3 + 10) / 10
+	BEGGING_FACTOR = BEGGING_FACTOR * (PALAMLV_F(PALAM:恭順) + 25) / 30
+	BEGGING_FACTOR = BEGGING_FACTOR * (PALAMLV_F(PALAM:欲情) + 20) / 25
+	BEGGING_FACTOR = BEGGING_FACTOR * (PALAMLV_F(PALAM:屈服) + 25) / 30
+	BEGGING_FACTOR = BEGGING_FACTOR * (TALENT:触手の虜 + 1)
+	BEGGING_FACTOR = LIMIT(BEGGING_FACTOR, 32, 240)
+
+	;デバッグ用：確率表示
+	IF FLAG:999 == 1
+		SETCOLOR 96, 96, 96
+		PRINTFORML /* debug */ 懇願確率{BEGGING_FACTOR, 3} / 256
+		RESETCOLOR
+	ENDIF
+
+	;確率で絶頂懇願するかを求める
+	SIF BEGGING_FACTOR > RAND:256
+		ENDURE_FACTOR += 1000
+ENDIF
+
+;戦闘中でも絶頂禁止状態でもなければ耐えない
+SIF ENDURE_FACTOR > 0 && ENDURE_FACTOR < 1000 && FLAG:700 == 0
+	ENDURE_FACTOR = 0
+
+;計算結果を返す
+RETURNF ENDURE_FACTOR
+
+;--------------------------------------------------
+;触手による拡張のチェック
+@PALAM_CALC_GAPING
+;触手サイズ表示、拡張度チェック
+IF TFLAG:1 == 0
+	SIF FLAG:700 > 0 && CONFIG_CHECK_MANIAC_F(16) == 1 && CFLAG:34 > 0
+		CALL PRINT_TENTACLE_SIZE, UP:快Ｃ, UP:快Ｖ, UP:快Ａ, UP:快Ｂ
+	;拡張判定
+	;改行判定用フラグ
+	LOCAL:1 = 0
+	SIF TENTACLE_SIZE:1:快Ｖ > 0 && (INSERT & Ｖ)
+		CALL GET_V_GAPING_EXP(GAPING_SIZE_TO_POINT("Ｖ"))
+	SIF TENTACLE_SIZE:1:快Ａ > 0 && (INSERT & Ａ)
+		CALL GET_A_GAPING_EXP(GAPING_SIZE_TO_POINT("Ａ"))
+	IF TENTACLE_SIZE:1:快Ｖ > 0 && (INSERT & Ｖ)
+		CALL V_GAPING(GAPING_SIZE_TO_POINT("Ｖ"))
+		IF RESULT > 0 && CONFIG_CHECK_MANIAC_F(16) == 1
+			PRINTFORML 　膣径：＋{RESULT / 10}.{RESULT % 10} cm
+			LOCAL:1 = 1
+		ENDIF
+	ENDIF
+	IF TENTACLE_SIZE:1:快Ａ > 0 && (INSERT & Ａ)
+		CALL A_GAPING(GAPING_SIZE_TO_POINT("Ａ"))
+		IF RESULT > 0 && CONFIG_CHECK_MANIAC_F(16) == 1
+			SIF LOCAL:1 == 0
+				PRINTL
+			PRINTFORML 　肛径：＋{RESULT / 10}.{RESULT % 10} cm
+			LOCAL:1 = 1
+		ENDIF
+	ENDIF
+ENDIF
+
+SIF LOCAL:1 == 1
+	PRINTL 
+
+;初めてのV拡張の場合、異常経験が入る
+IF CFLAG:202 == 0 && TFLAG:20 == 1009
+	CFLAG:202 = 1
+	EXP:異常経験 += 1
+	PRINTFORML 異常経験＋1
+ENDIF
+
+;初めてのA拡張の場合、異常経験が入る
+IF CFLAG:203 == 0 && TFLAG:20 == 1010
+	CFLAG:203 = 1
+	EXP:異常経験 += 1
+	PRINTFORML 異常経験＋1
+ENDIF
+
+;--------------------------------------------------
+;快部位の絶頂チェック
+; 引数
+;	PALAM_ID	PALAMの添字
+;	NOWEX_ID	NOWEXの添字
+;	IS_FORBID_EX	絶頂禁止状態かどうか
+; 変数
+;	PCOUNT	ループカウンタ
+@PALAM_CALC_ECSTASY, PALAM_ID, NOWEX_ID, IS_FORBID_EX
+#DIM PALAM_ID
+#DIM NOWEX_ID
+#DIM IS_FORBID_EX
+#DIM PCOUNT
+
+;絶頂禁止状態なら処理を打ち切る
+SIF IS_FORBID_EX > 0
+	RETURN 0
+
+;絶頂のしきい値を高い順から見ていく
+FOR PCOUNT, VARSIZE("快部位絶頂しきい値") - 1, -1, -1
+	;しきい値を超えたなら
+	IF PALAM:(PALAM_ID) >= 快部位絶頂しきい値:PCOUNT
+
+		;PALAMを最低しきい値分減らす
+		PALAM:(PALAM_ID) -= 快部位絶頂しきい値:0
+
+		;減らしてもなお最低しきい値超え（＝強絶頂以上）なら、最低しきい値-1に設定してギリギリ絶頂しないように
+		SIF PALAM:(PALAM_ID) >= 快部位絶頂しきい値:0
+			PALAM:(PALAM_ID) = 快部位絶頂しきい値:0 - 1
+
+		;今見ていたしきい値が何番目かが、そのまま絶頂の強さなので戻り値とする（0始まりなので+1）
+		RETURN PCOUNT + 1
+	ENDIF
+NEXT
+
+;----------------------------------------------------------
+;キャラの射精チェック
+; 変数
+;	EJAC_VALUE	射精加算量の計算結果
+;	EJAC_NUM	射精回数の計算結果
+@PALAM_CALC_EJAC
+#DIM EJAC_VALUE
+#DIM EJAC_NUM
+
+;ふたなりでも成熟したオトコでもないなら、射精はできない
+SIF (TALENT:ふたなり == 0 && (ISFEMALE() || TALENT:未熟 == 1))
+	RETURN 0
+
+;快Ｃ上昇値があるなら、Ｃ絶頂回数の補正を付けて射精値に加算する
+IF UP:快Ｃ
+	EJAC_VALUE =  UP:快Ｃ + 500 * (NOWEX:Ｃ絶頂 + 1)
+	;「戦闘中に調教ステータスの上昇を表示する」なら、射精値上昇量を表示
+	IF CONFIG_CHECK_SCREEN_F(1) > 0
+		FONTBOLD
+		PRINTFORML %PRINT_TRANSCALLNAME(TARGET)%の射精値＋{EJAC_VALUE}
+		FONTREGULAR
+	ENDIF
+	BASE:射精 +=EJAC_VALUE
+ENDIF
+
+;大量射精したか
+IF BASE:射精 >= MAXBASE:射精 * 2 && NOWEX:Ｃ絶頂 > 0
+	EJAC_NUM = 2
+	BASE:射精 = 0
+	UP:欲情 += 10000
+	UP:屈服 += 8000
+	UP:恥情 += 8000
+	LOSEBASE:体力 += 600
+;（通常の）射精したか
+ELSEIF BASE:射精 >= MAXBASE:射精 && NOWEX:Ｃ絶頂 > 0
+	EJAC_NUM = 1
+	BASE:射精 = MAX(BASE:射精 - MAXBASE:射精, 0)
+	UP:欲情 += 5000
+	UP:屈服 += 4000
+	UP:恥情 += 4000
+	LOSEBASE:体力+= 300
+ELSE
+	EJAC_NUM = 0
+ENDIF
+
+;射精したなら
+IF EJAC_NUM
+	;地の文；キャラが（大量）射精した
+	CALLFORM MESSAGE_SEX_CHARA_SYASEI\@ EJAC_NUM == 2 ?_HI#\@
+	;地の文：洗脳/悪堕ちキャラが操作キャラの（大量）射精を見た
+	SIF ENEMY_TYPE_CHECK_F("AKUOTI") == 1
+		CALLFORM MESSAGE_OTHER_SEX_CHARA_SYASEI\@ EJAC_NUM == 2 ?_HI#\@
+	;現在の性別か元の性別のどちらかがオトコでなく、その状態での射精が初であれば異常経験獲得
+	IF CFLAG:200 == 0 && (ISFEMALE() || CHARATALENT_F(TARGET,0,"オトコ") == 0)
+		CFLAG:200 = 1
+		EXP:異常経験 += 1
+		PRINTFORML 異常経験＋1
+	ENDIF
+	;射精経験を加算して表示
+	EXP:射精経験 += EJAC_NUM
+	PRINTFORML 射精経験＋{EJAC_NUM}
+	PRINTL 
+ENDIF
+
+;射精値上昇量を表示したが射精しなかった場合、空行1行開ける
+SIF UP:快Ｃ && EJAC_NUM == 0 && CONFIG_CHECK_SCREEN_F(1) > 0
+	PRINTL 
+
+;----------------------------------------------------------
+;キャラの噴乳チェック
+; 変数
+;	SQIRT_VALUE	噴乳加算量の計算結果
+;	SQIRT_NUM	噴乳回数の計算結果
+@PALAM_CALC_MILK_SQIRT
+#DIM SQIRT_VALUE
+#DIM SQIRT_NUM
+
+;母乳体質でないなら、噴乳はできない
+SIF TALENT:母乳体質 != 1
+	RETURN 0
+
+;快Ｂ上昇値があるなら、Ｂ絶頂回数の補正を付けて噴乳値に加算する
+IF UP:快Ｂ
+	SQIRT_VALUE = (UP:快Ｂ / 4 + 500 * (NOWEX:Ｂ絶頂 + 1))
+	;「戦闘中に調教ステータスの上昇を表示する」なら、噴乳値上昇量を表示
+	IF  CONFIG_CHECK_SCREEN_F(1) > 0
+		FONTBOLD
+		PRINTFORML %PRINT_TRANSCALLNAME(TARGET)%の噴乳値＋{SQIRT_VALUE}
+		FONTREGULAR
+	ENDIF
+	BASE:噴乳 += SQIRT_VALUE
+ENDIF
+
+;大量噴乳したか
+IF BASE:噴乳 >= MAXBASE:噴乳 * 2 && NOWEX:Ｂ絶頂 > 0
+	SQIRT_NUM = 2
+	BASE:噴乳 = MAXBASE:噴乳 - 1
+	UP:恭順 += 2000
+	UP:欲情 += 2000
+	UP:恥情 += 2000
+;（通常の）噴乳したか
+ELSEIF BASE:噴乳 >= MAXBASE:噴乳 && NOWEX:Ｂ絶頂 > 0
+	SQIRT_NUM = 1
+	BASE:噴乳 = BASE:噴乳 - MAXBASE:噴乳
+	UP:恭順 += 1000
+	UP:欲情 += 1000
+	UP:恥情 += 1000
+ELSE
+	SQIRT_NUM = 0
+ENDIF
+
+;噴乳したなら
+IF SQIRT_NUM
+	;地の文；キャラが（大量）噴乳した
+	CALLFORM MESSAGE_SEX_CHARA_HUNNYU\@ SQIRT_NUM == 2 ?_HI#\@
+	;地の文：洗脳/悪堕ちキャラが操作キャラの（大量）噴乳を見た
+	SIF ENEMY_TYPE_CHECK_F("AKUOTI") == 1
+		CALLFORM MESSAGE_OTHER_SEX_CHARA_HUNNYU\@ SQIRT_NUM == 2 ?_HI#\@
+	;初めての噴乳であれば異常経験獲得
+	IF CFLAG:201 == 0
+		CFLAG:201 = 1
+		EXP:異常経験 += 1
+		PRINTFORML 異常経験＋1
+	ENDIF
+	;噴乳経験を加算して表示
+	EXP:噴乳経験 += SQIRT_NUM
+	PRINTFORML 噴乳経験＋{SQIRT_NUM}
+	PRINTL 
+ENDIF
+
+;噴乳値上昇量を表示したが噴乳しなかった場合、空行1行開ける
+SIF UP:快Ｂ && SQIRT_NUM == 0 && CONFIG_CHECK_SCREEN_F(1) > 0
+	PRINTL 
+
+;--------------------------------------------------
+;衣服の損傷LVによる恥情の獲得
+@PALAM_TIJOU_CLOTH_DAMAGE
+;壊れない衣装用
+IF (CFLAG:1 == 0 && TCVARn:20 == -1) || (CFLAG:1 >= 1 && TCVARn:22 == -1)
+	IF CFLAG:(CFLAG:1==0 ? 40 # 41) == 199 && FIGURE_SPLIT(EQUIP:(CFLAG:1==0 ? 99 # 199), 1) != 0 && TCVARn:41 == 0
+		RETURN
+	ELSEIF CFLAG:(CFLAG:1==0 ? 40 # 41) == 299 || CFLAG:(CFLAG:1==0 ? 40 # 41) == 401
+		RETURN 350
+	ENDIF
+ENDIF
+
+LOCAL = 0
+IF TCVARn:(CFLAG:1==0 ? 21 # 23) == 0 && (TCVARn:25 == 0 || CLOTH_NO_INNER)
+	LOCAL += 500
+ELSEIF CLOTH_NO_INNER
+	IF CLOTH_OUTER_PER < 25
+		LOCAL += 350
+	ELSEIF CLOTH_OUTER_PER < 50
+		LOCAL += 150
+	ELSEIF CLOTH_OUTER_PER < 75
+		LOCAL += 50
+	ENDIF
+ELSE
+	IF CLOTH_OUTER_PER < 25
+		LOCAL += 100
+	ELSEIF CLOTH_OUTER_PER < 50
+		LOCAL += 50
+	ENDIF
+	
+	IF CLOTH_INNER_PER < 25
+		LOCAL += 250
+	ELSEIF CLOTH_INNER_PER < 50
+		LOCAL += 100
+	ELSEIF CLOTH_INNER_PER < 100
+		LOCAL += 50
+	ENDIF
+ENDIF
+;戦闘中なら衣装による補正がある
+IF FLAG:700
+	;衣装
+	CALL CLOTH_BATTLE_HOSEI, "SHYNESS"
+	LOCAL = LOCAL * RESULT / 100
+ENDIF
+RETURN LOCAL
+
+;--------------------------------------------------
+;恥情の取得
+@PALAM_TIJOU, ARG:0, ARG:1, ARG:2, ARG:3
+LOCAL = 0
+REPEAT 4
+	IF ARG:COUNT == 0
+	ELSEIF ARG:COUNT < 100
+		LOCAL += 50
+	ELSEIF ARG:COUNT < 1000
+		LOCAL += 100
+	ELSEIF ARG:COUNT < 2000
+		LOCAL += 200
+	ELSEIF ARG:COUNT < 5000
+		LOCAL += 500
+	ELSE
+		LOCAL += 1000
+	ENDIF
+	
+	IF NOWEX:COUNT == 1
+		LOCAL += 500
+	ELSEIF NOWEX:COUNT == 2
+		LOCAL += 1000
+	ELSEIF NOWEX:COUNT > 2
+		LOCAL += 2000
+	ENDIF
+REND
+RETURN LOCAL
+
+;--------------------------------------------------
+;欲情の取得
+@PALAM_YOKUJOU, ARG:0, ARG:1, ARG:2, ARG:3, ARG:4, ARG:5
+LOCAL = 0
+REPEAT 4
+	IF ARG:COUNT == 0
+	ELSEIF ARG:COUNT < 100
+		LOCAL += 500
+	ELSEIF ARG:COUNT < 500
+		LOCAL += 900
+	ELSEIF ARG:COUNT < 1000
+		LOCAL += 1200
+	ELSEIF ARG:COUNT < 2000
+		LOCAL += 1500
+	ELSEIF ARG:COUNT < 5000
+		LOCAL += 2000
+	ELSEIF ARG:COUNT < 7500
+		LOCAL += 3500
+	ELSE
+		LOCAL += 5000
+	ENDIF
+	
+	IF NOWEX:COUNT == 1
+		LOCAL += 1000
+	ELSEIF NOWEX:COUNT == 2
+		LOCAL += 2000
+	ELSEIF NOWEX:COUNT > 2
+		LOCAL += 5000
+	ENDIF
+REND
+
+;露出癖があると恥情に応じて欲情が入る
+IF ABL:露出癖 == 1
+	IF ARG:4 == 0
+	ELSEIF ARG:4 < 100
+		LOCAL += 10
+	ELSEIF ARG:4 < 1000
+		LOCAL += 20
+	ELSEIF ARG:4 < 2000
+		LOCAL += 50
+	ELSEIF ARG:4 < 5000
+		LOCAL += 100
+	ELSE
+		LOCAL += 200
+	ENDIF
+ELSEIF ABL:露出癖 == 2
+	IF ARG:4 == 0
+	ELSEIF ARG:4 < 100
+		LOCAL += 20
+	ELSEIF ARG:4 < 1000
+		LOCAL += 50
+	ELSEIF ARG:4 < 2000
+		LOCAL += 100
+	ELSEIF ARG:4 < 5000
+		LOCAL += 200
+	ELSE
+		LOCAL += 500
+	ENDIF
+ELSEIF ABL:露出癖 == 3
+	IF ARG:4 == 0
+	ELSEIF ARG:4 < 100
+		LOCAL += 50
+	ELSEIF ARG:4 < 1000
+		LOCAL += 100
+	ELSEIF ARG:4 < 2000
+		LOCAL += 200
+	ELSEIF ARG:4 < 5000
+		LOCAL += 500
+	ELSE
+		LOCAL += 1000
+	ENDIF
+ELSEIF ABL:露出癖 == 4
+	IF ARG:4 == 0
+	ELSEIF ARG:4 < 100
+		LOCAL += 100
+	ELSEIF ARG:4 < 1000
+		LOCAL += 200
+	ELSEIF ARG:4 < 2000
+		LOCAL += 500
+	ELSEIF ARG:4 < 5000
+		LOCAL += 1000
+	ELSE
+		LOCAL += 2000
+	ENDIF
+ELSEIF ABL:露出癖 == 5
+	IF ARG:4 == 0
+	ELSEIF ARG:4 < 100
+		LOCAL += 200
+	ELSEIF ARG:4 < 1000
+		LOCAL += 500
+	ELSEIF ARG:4 < 2000
+		LOCAL += 1000
+	ELSEIF ARG:4 < 5000
+		LOCAL += 2000
+	ELSE
+		LOCAL += 5000
+	ENDIF
+ENDIF
+
+;マゾっ気があると苦痛に応じて欲情が入る
+IF ABL:マゾっ気 == 1
+	IF ARG:5 == 0
+	ELSEIF ARG:5 < 100
+		LOCAL += 10
+	ELSEIF ARG:5 < 1000
+		LOCAL += 20
+	ELSEIF ARG:5 < 2000
+		LOCAL += 50
+	ELSEIF ARG:5 < 5000
+		LOCAL += 100
+	ELSE
+		LOCAL += 200
+	ENDIF
+ELSEIF ABL:マゾっ気 == 2
+	IF ARG:5 == 0
+	ELSEIF ARG:5 < 100
+		LOCAL += 20
+	ELSEIF ARG:5 < 1000
+		LOCAL += 50
+	ELSEIF ARG:5 < 2000
+		LOCAL += 100
+	ELSEIF ARG:5 < 5000
+		LOCAL += 200
+	ELSE
+		LOCAL += 500
+	ENDIF
+ELSEIF ABL:マゾっ気 == 3
+	IF ARG:5 == 0
+	ELSEIF ARG:5 < 100
+		LOCAL += 50
+	ELSEIF ARG:5 < 1000
+		LOCAL += 100
+	ELSEIF ARG:5 < 2000
+		LOCAL += 200
+	ELSEIF ARG:5 < 5000
+		LOCAL += 500
+	ELSE
+		LOCAL += 1000
+	ENDIF
+ELSEIF ABL:マゾっ気 == 4
+	IF ARG:5 == 0
+	ELSEIF ARG:5 < 100
+		LOCAL += 100
+	ELSEIF ARG:5 < 1000
+		LOCAL += 200
+	ELSEIF ARG:5 < 2000
+		LOCAL += 500
+	ELSEIF ARG:5 < 5000
+		LOCAL += 1000
+	ELSE
+		LOCAL += 2000
+	ENDIF
+ELSEIF ABL:マゾっ気 == 5
+	IF ARG:5 == 0
+	ELSEIF ARG:5 < 100
+		LOCAL += 200
+	ELSEIF ARG:5 < 1000
+		LOCAL += 500
+	ELSEIF ARG:5 < 2000
+		LOCAL += 1000
+	ELSEIF ARG:5 < 5000
+		LOCAL += 2000
+	ELSE
+		LOCAL += 5000
+	ENDIF
+ENDIF
+RETURN LOCAL
+
+;--------------------------------------------------
+;潤滑の取得
+@PALAM_JUNKATU, ARG
+LOCAL = 0
+IF ARG == 0
+ELSEIF ARG < 100
+	LOCAL += 50
+ELSEIF ARG < 1000
+	LOCAL += 100
+ELSEIF ARG < 2000
+	LOCAL += 200
+ELSEIF ARG < 5000
+	LOCAL += 500
+ELSEIF ARG < 10000
+	LOCAL += 1000
+ELSE
+	LOCAL += 2000
+ENDIF
+RETURN LOCAL
+
+;--------------------------------------------------
+;恭順の取得
+@PALAM_KYOUJUN, ARG:0, ARG:1, ARG:2, ARG:3
+LOCAL = 0
+REPEAT 4
+	IF ARG:COUNT == 0
+	ELSEIF ARG:COUNT < 4000
+		LOCAL += 50
+	ELSEIF ARG:COUNT < 8000
+		LOCAL += 100
+	ELSEIF ARG:COUNT < 12000
+		LOCAL += 200
+	ELSEIF ARG:COUNT < 20000
+		LOCAL += 400
+	ELSE
+		LOCAL += 800
+	ENDIF
+	
+	IF NOWEX:COUNT == 1
+		LOCAL += 500
+	ELSEIF NOWEX:COUNT == 2
+		LOCAL += 1000
+	ELSEIF NOWEX:COUNT > 2
+		LOCAL += 2000
+	ENDIF
+REND
+RETURN LOCAL
+
+;--------------------------------------------------
+;パラメータ上昇量への性格補正
+@PALAM_CALC_PERSONALITY_ADJUST
+IF TALENT:小心者 > 0
+	TIMES UP:恥情, 0.90
+	TIMES UP:苦痛, 1.10
+ENDIF
+IF TALENT:プライド高い > 0 && MARK:屈服刻印 >= 3
+	TIMES UP:屈服, 1.20
+ELSEIF TALENT:プライド高い > 0
+	TIMES UP:屈服, 0.90
+ENDIF
+SIF TALENT:保守的 > 0
+	TIMES UP:習得, 0.90
+SIF TALENT:好奇心 > 0
+	TIMES UP:習得, 1.10
+IF TALENT:快楽に弱い > 0
+	TIMES UP:恭順, 1.10
+	TIMES UP:苦痛, 0.90
+ENDIF
+IF TALENT:快楽の否定 > 0
+	TIMES UP:欲情, 0.90
+	TIMES UP:屈服, 1.10
+ENDIF
+IF TALENT:争いを好まない > 0
+	TIMES UP:屈服, 0.90
+	TIMES UP:恐怖, 1.10
+ENDIF
+IF TALENT:喧嘩上等 > 0
+	TIMES UP:欲情, 1.10
+	TIMES UP:恐怖, 0.90
+ENDIF
+IF TALENT:恥じらい > 0
+	TIMES UP:恭順, 0.90
+	TIMES UP:恥情, 1.10
+ENDIF
+IF TALENT:度胸 > 0
+	TIMES UP:欲情, 1.10
+	TIMES UP:恥情, 0.90
+ENDIF
+SIF TALENT:母性的 > 0
+	TIMES UP:恭順, 1.10
+SIF TALENT:小悪魔 > 0
+	TIMES UP:屈服, 1.10
+SIF TALENT:目立ちたがり > 0
+	TIMES UP:苦痛, 1.10
+SIF TALENT:上品 > 0
+	TIMES UP:恥情, 1.10
+SIF TALENT:泣き虫 > 0
+	TIMES UP:恐怖, 1.10
+
+;--------------------------------------------------
+;パラメータ上昇結果の表示
+; 引数
+;	BEFORE_PALAM_CVAB	快部位の加算前パラメータ（絶頂判定で加算する前に保管した値）
+;	ECS_FLAG	絶頂したか、絶頂を抑制されているか（正の値なら絶頂抑制中）
+; 変数
+;	DISP_PALAM	計算前のパラメータとして表示する値
+;	PADDING_P	パラメータの表示幅
+;	PADDING_U	上昇値の表示幅
+;	LCOUNT		ループカウンタ
+@PALAM_UP_DISPLAY_CALCULATION, BEFORE_PALAM_CVAB, ECS_FLAG
+#DIM REF BEFORE_PALAM_CVAB
+#DIM ECS_FLAG
+#DIM DISP_PALAM
+#DIM PADDING_P
+#DIM PADDING_U
+#DIM LCOUNT
+
+;PALAM部分とUP部分の表示桁数を合わせるために出力幅を先に求める
+;最低値は4文字分
+PADDING_U = 4
+PADDING_P = 4
+FOR LCOUNT, 0, VARSIZE("調教PALAM")
+	;快部位のPALAMは絶頂判定の際に加算済みなので、保存していた加算前の値を持ってくる
+	IF MATCH(快部位PALAM, LCOUNT)
+		DISP_PALAM = BEFORE_PALAM_CVAB:LCOUNT
+	;それ以外のPALAMはまだ加算前なのでそのまま
+	ELSE
+		DISP_PALAM = PALAM:LCOUNT
+	ENDIF
+	STRLENFORM {UP:(調教PALAM:LCOUNT)}
+	SIF RESULT > PADDING_U
+		PADDING_U = RESULT
+	STRLENFORM {DISP_PALAM + UP:(調教PALAM:LCOUNT)}
+	SIF RESULT > PADDING_P
+		PADDING_P = RESULT
+NEXT
+
+;各パラメータと上昇値の表示処理
+FOR LCOUNT, 0, VARSIZE("調教PALAM")
+	;パラメータ上昇があるものだけ表示する
+	IF UP:(調教PALAM:LCOUNT) > 0
+		;快部位のPALAM
+		IF MATCH(快部位PALAM, LCOUNT)
+			DISP_PALAM = BEFORE_PALAM_CVAB:LCOUNT
+		;それ以外のPALAM
+		ELSE
+			DISP_PALAM = PALAM:(調教PALAM:LCOUNT)
+		ENDIF
+		;表示の左側（パラメータ名：現在値 + 上昇値）はどのPALAMでも一緒
+		PRINTFORM %PALAMNAME:(調教PALAM:LCOUNT)%：{DISP_PALAM, PADDING_P} + {UP:(調教PALAM:LCOUNT), PADDING_U} 
+		
+		;快部位の場合
+		IF MATCH(快部位PALAM, LCOUNT)
+			;絶頂した場合は絶頂判定内の減算を再現して表示し、絶頂ランクを追加表示する
+			IF NOWEX:LCOUNT > 0 && ECS_FLAG < 1
+				PRINTFORML - {(NOWEX:LCOUNT > 1 ? DISP_PALAM + UP:(調教PALAM:LCOUNT) - 快部位絶頂しきい値:0 + 1 # 快部位絶頂しきい値:0), PADDING_P} = {PALAM:LCOUNT, PADDING_P}　%ECSTASY_RANK(NOWEX:LCOUNT)%絶頂
+			;絶頂していないなら普通に計算後の値を表示し、結界が有効なら結界名を追加表示する
+			ELSE
+				PRINTFORML = {PALAM:(調教PALAM:LCOUNT), PADDING_P}\@BASE:(基礎部位結界:LCOUNT) > 0 && FLAG:700 ? 　（%TALENTNAME:(部位結界素質:LCOUNT)%） # \@
+			ENDIF
+		;快部位以外のパラメータの場合
+		ELSE
+			;上限突破してしまう場合は、上限値になるよう減算して「限界」と追加表示する
+			IF DISP_PALAM + UP:(調教PALAM:LCOUNT) > PALAM上限
+				PRINTFORML - {DISP_PALAM + UP:(調教PALAM:LCOUNT) - PALAM上限, PADDING_P} = {PALAM上限}　限界
+			;そうでない場合は普通に加算結果を表示
+			ELSE
+				PRINTFORML = {DISP_PALAM + UP:(調教PALAM:LCOUNT), PADDING_P}
+			ENDIF
+		ENDIF
+	ENDIF
+NEXT
+
+;--------------------------------------------------
+;体力の減算
+@PALAM_TAIRYOKUDOWN, ARG:0, ARG:1
+LOCAL = MAXBASE:体力 * 50 / 1000
+IF ARG == 0
+ELSEIF ARG < 100
+	LOCAL += 50 + RAND:10
+ELSEIF ARG < 1000
+	LOCAL += 100 + RAND:20
+ELSEIF ARG < 5000
+	LOCAL += 150 + RAND:40
+ELSEIF ARG < 10000
+	LOCAL += 250 + RAND:80
+ELSEIF ARG < 20000
+	LOCAL += 350 + RAND:160
+ELSE
+	LOCAL += 500 + RAND:320
+ENDIF
+
+CALL PERCENT_CAL, BASE:気力, MAXBASE:気力
+IF RESULT <= 0
+	TIMES LOCAL,1.25
+	LOCAL += 100
+ENDIF
+LOCAL += ARG:1
+
+CALL PERCENT_CAL, BASE:性耐性, MAXBASE:性耐性
+IF RESULT > 75
+	TIMES LOCAL,0.05
+ELSEIF RESULT > 50
+	TIMES LOCAL,0.10
+ELSEIF RESULT > 25
+	TIMES LOCAL,0.25
+ELSEIF RESULT > 5
+	TIMES LOCAL,0.50
+ELSEIF RESULT > 0
+	TIMES LOCAL,0.75
+ENDIF
+
+;衣装による補正
+CALL CLOTH_BATTLE_HOSEI, "TAIRYOKU"
+LOCAL = LOCAL * RESULT / 100
+;敵のレベルによる補正
+CALL TENTACLE_LEVEL
+LOCAL = LOCAL * (100 + RESULT) / 100
+
+SIF TALENT:保守的 > 0
+	TIMES LOCAL, 0.90
+SIF TALENT:好奇心 > 0
+	TIMES LOCAL, 1.10
+
+SIF BASE:体力 - LOCAL < 0
+	LOCAL = BASE:体力
+
+IF LOCAL > 0
+	FONTBOLD
+	PRINTFORML %BASENAME:0%が{LOCAL}減った！
+	FONTREGULAR
+ENDIF
+BASE:体力 -= LOCAL
+
+;--------------------------------------------------
+;気力の減算
+@PALAM_KIRYOKUDOWN, ARG:0, ARG:1, ARG:2
+LOCAL = MAXBASE:気力 * 75 / 1000
+IF ARG:0 == 0
+ELSEIF ARG:0 < 100
+	LOCAL += 50 + RAND:10
+ELSEIF ARG:0 < 1000
+	LOCAL += 100 + RAND:20
+ELSEIF ARG:0 < 5000
+	LOCAL += 150 + RAND:30
+ELSEIF ARG:0 < 10000
+	LOCAL += 200 + RAND:40
+ELSEIF ARG:0 < 20000
+	LOCAL += 250 + RAND:60
+ELSE
+	LOCAL += 300 + RAND:80
+ENDIF
+IF ARG:1 == 0
+ELSEIF ARG:1 < 100
+	LOCAL += 25 + RAND:5
+ELSEIF ARG:1 < 1000
+	LOCAL += 50 + RAND:10
+ELSEIF ARG:1 < 5000
+	LOCAL += 75 + RAND:15
+ELSEIF ARG:1 < 10000
+	LOCAL += 100 + RAND:20
+ELSEIF ARG:1 < 20000
+	LOCAL += 125 + RAND:30
+ELSE
+	LOCAL += 150 + RAND:40
+ENDIF
+IF ARG:2 == 0
+ELSEIF ARG:1 < 100
+	LOCAL += 25 + RAND:5
+ELSEIF ARG:1 < 1000
+	LOCAL += 50 + RAND:10
+ELSEIF ARG:1 < 5000
+	LOCAL += 75 + RAND:15
+ELSEIF ARG:1 < 10000
+	LOCAL += 100 + RAND:20
+ELSEIF ARG:1 < 20000
+	LOCAL += 125 + RAND:30
+ELSE
+	LOCAL += 150 + RAND:40
+ENDIF
+
+CALL PERCENT_CAL, BASE:体力, MAXBASE:体力
+IF RESULT <= 0
+	TIMES LOCAL,1.25
+	LOCAL += 100
+ENDIF
+
+CALL PERCENT_CAL, BASE:性耐性, MAXBASE:性耐性
+IF RESULT > 75
+	TIMES LOCAL,0.25
+ELSEIF RESULT > 50
+	TIMES LOCAL,0.50
+ELSEIF RESULT > 25
+	TIMES LOCAL,0.75
+ELSEIF RESULT > 0
+	TIMES LOCAL,0.90
+ENDIF
+
+;衣装による補正
+CALL CLOTH_BATTLE_HOSEI, "KIRYOKU"
+LOCAL = LOCAL * RESULT / 100
+;敵のレベルによる補正
+CALL TENTACLE_LEVEL
+LOCAL = LOCAL * (100 + RESULT) / 100
+
+SIF TALENT:保守的 > 0
+	TIMES LOCAL, 0.90
+SIF TALENT:好奇心 > 0
+	TIMES LOCAL, 1.10
+
+SIF LOCAL == 0
+	RETURN
+
+SIF BASE:気力 - LOCAL < 0
+	LOCAL = BASE:気力
+
+IF LOCAL > 0
+	FONTBOLD
+	IF GAME_OPTION_CHECK_F(OPTION_ステ低下有り)
+	;インスタントモードなら気力基礎も減らす
+		PRINTFORML %BASENAME:1%が{LOCAL} %BASENAME:1%基礎が{LOCAL / 2}減った！
+	ELSE
+		PRINTFORML %BASENAME:1%が{LOCAL}減った！
+	ENDIF
+	FONTREGULAR
+ENDIF
+SIF PALAM_GUTS_F("KIRYOKU", LOCAL) > 0
+	LOCAL -= 1
+BASE:気力 -= LOCAL
+IF GAME_OPTION_CHECK_F(OPTION_ステ低下有り)
+	;インスタントモードなら気力基礎も減らす
+	BASE:TARGET:気力基礎 -= LOCAL / 2
+ENDIF
+
+;--------------------------------------------------
+;性耐性の減算
+@PALAM_SEITAISEIDOWN, ARG:0, ARG:1
+LOCAL = 0
+IF ARG:0 < 500
+ELSEIF ARG:0 < 1000
+	LOCAL += 1
+ELSEIF ARG:0 < 2000
+	LOCAL += 2
+ELSEIF ARG:0 < 4000
+	LOCAL += 3
+ELSEIF ARG:0 < 8000
+	LOCAL += 4
+ELSEIF ARG:0 < 12000
+	LOCAL += 5
+ELSEIF ARG:0 < 16000
+	LOCAL += 6
+ELSEIF ARG:0 < 20000
+	LOCAL += 10
+ELSE
+	LOCAL += 12
+ENDIF
+IF ARG:1 == 0
+ELSEIF ARG:1 < 200
+	LOCAL += 2
+ELSEIF ARG:1 < 500
+	LOCAL += 4 + RAND:2
+ELSEIF ARG:1 < 1000
+	LOCAL += 6 + RAND:2
+ELSEIF ARG:1 < 2000
+	LOCAL += 8 + RAND:3
+ELSEIF ARG:1 < 3500
+	LOCAL += 10 + RAND:4
+ELSEIF ARG:1 < 5000
+	LOCAL += 12 + RAND:5
+ELSEIF ARG:1 < 7500
+	LOCAL += 15 + RAND:7
+ELSEIF ARG:1 < 10000
+	LOCAL += 20 + RAND:9
+ELSEIF ARG:1 < 20000
+	LOCAL += 28 + RAND:12
+ELSEIF ARG:1 < 50000
+	LOCAL += 36 + RAND:15
+ELSE
+	LOCAL += 48 + RAND:15
+ENDIF
+
+CALL PERCENT_CAL, BASE:体力, MAXBASE:体力
+SIF RESULT <= 0
+	TIMES LOCAL,1.25
+CALL PERCENT_CAL, BASE:気力, MAXBASE:気力
+SIF RESULT <= 0
+	TIMES LOCAL,1.25
+;技巧が高いと消耗を軽減できる
+IF ABL:技巧 == 2
+	TIMES LOCAL,0.95
+ELSEIF ABL:技巧 == 3
+	TIMES LOCAL,0.90
+ELSEIF ABL:技巧 == 4
+	TIMES LOCAL,0.85
+ELSEIF ABL:技巧 >= 5
+	TIMES LOCAL,0.80
+ENDIF
+
+;連続系コマンドは効果を小さく
+SIF TFLAG:20 == 15
+	TIMES LOCAL,0.35
+
+;衣装による補正
+CALL CLOTH_BATTLE_HOSEI, "SEITAISEI"
+LOCAL = LOCAL * RESULT / 100
+;防御による補正
+LOCAL = LOCAL * 100 / LIMIT(100 + (BASE:防御 - 100) / 5, 80, 160)
+SIF BASE:防御 - 100 < 0
+	LOCAL = LOCAL * (100 + (100 - BASE:防御) / 2) / 100
+SIF BASE:防御 - 100 > 0
+	LOCAL = LOCAL * 100 / LIMIT(100 + SQRT(BASE:防御 - 100), 100, 200)
+
+;敵のレベルによる補正
+CALL TENTACLE_LEVEL
+LOCAL = LOCAL * (200 + RESULT) / 200
+
+SIF BASE:性耐性 - LOCAL < 0
+	LOCAL = BASE:性耐性
+
+IF LOCAL > 0
+	FONTBOLD
+	IF GAME_OPTION_CHECK_F(OPTION_ステ低下有り)
+		;インスタントモードなら性耐性基礎も減らす
+		PRINTFORML %BASENAME:2%が{LOCAL} %BASENAME:2%基礎が{LOCAL / 2}減った！
+	ELSE
+		PRINTFORML %BASENAME:2%が{LOCAL}減った！
+	ENDIF
+	FONTREGULAR
+ENDIF
+;避妊結界の消滅
+IF TALENT:避妊結界 > 0 && BASE:性耐性 > 0 && BASE:性耐性 - LOCAL < 1
+	PRINTW 
+	CALL MESSAGE_PREGNANCY_SHIELD_COLLAPSED
+	PRINTW 
+ENDIF
+BASE:性耐性 -= LOCAL
+IF GAME_OPTION_CHECK_F(OPTION_ステ低下有り)
+	;インスタントモードなら性耐性基礎も減らす
+	BASE:TARGET:性耐性基礎 -= LOCAL / 2
+ENDIF
+
+;--------------------------------------------------
+;食いしばり効果
+@PALAM_GUTS_F(ARGS, ARG)
+#FUNCTION
+LOCAL = 0
+SIF ARG < 2
+	RETURNF 0
+IF SELECTCOM >= 100
+	IF ARGS == "TAIRYOKU" && BASE:体力 >= MAXBASE:体力 / 20 && BASE:体力 <= ARG
+		LOCAL = 1
+	ELSEIF ARGS == "KIRYOKU" && BASE:気力 >= MAXBASE:気力 / 20 && BASE:気力 <= ARG
+		LOCAL = 1
+	ELSEIF ARGS == "SEITAISEI" && BASE:性耐性 >= MAXBASE:性耐性 / 20 && BASE:性耐性 <= ARG
+		LOCAL = 1
+	ENDIF
+ENDIF
+RETURNF LOCAL
+
+;--------------------------------------------------
+;感覚LV6以上補正
+;ARG:0	対象キャラ
+;ARG:1	部位
+@PALAM_OVERFEEL, ARG:0, ARG:1
+#DIM LCOUNT
+#DIM CAL_VAR
+#DIM LV_VAR
+
+CAL_VAR = 100
+LV_VAR = ABL:(ARG:0):(ARG:1) - 5
+IF LV_VAR > 0
+	CAL_VAR = CAL_VAR * 6 / 5
+	FOR LCOUNT, 0, LV_VAR - 1
+		CAL_VAR = CAL_VAR * (1087 - LCOUNT) / 1000
+	NEXT
+ENDIF
+RETURN CAL_VAR
+
+
+
+;(性コマンド実行時に呼び出す)
+;「今回の攻撃でメイン部位のPALAMはどの程度になりそうか？」を予測する
+;10000超えるなら絶頂相当の快楽になる
+;memo:本物の補正処理を関数化したので、この関数はまるごと不要になる予定
+@PALAM_VABCestimate(部位,ARG:0,ARG:1,ARG:2,ARG:3,ARG:4)
+#DIM REF 部位,0;LOCALの参照渡し
+#DIM 現在部位,1
+#DIM 現在値,1
+
+FOR LOCAL,0,感覚数
+		SIF ARG:LOCAL==-1
+			BREAK
+
+		現在部位=ARG:LOCAL
+		現在値=部位:現在部位
+
+		;感覚LV6以上補正
+		CALL PALAM_OVERFEEL, TARGET, 現在部位
+		現在値 = 現在値 * RESULT / 100
+
+		;体勢に関する補正
+		CALL PALAM_HOSEI_POSE, 現在値
+		現在値 = RESULT
+
+		;性耐性に関する補正
+		CALL PALAM_HOSEI_SEITAISEI, 現在値
+		現在値 = RESULT
+
+		;素質に関する補正
+		CALL PALAM_HOSEI_TALENT, 現在部位, 現在値
+		現在値 = RESULT
+
+		;性格に関する補正
+		CALL PALAM_HOSEI_SEIKAKU, 現在部位, 現在値
+		現在値 = RESULT
+
+		;触手に関する補正
+		CALL PALAM_HOSEI_TENTACLE, 現在部位, 現在値
+		現在値 = RESULT
+
+		;予測結果
+		TFLAG:100+=現在値/10000
+NEXT
+
+RETURN
+
+;--------------------------------------------------
+;刻印取得判定	判定のしきい値となる数値はPALAM_UP.ERHに記載
+; 引数
+;	TARGET_MARK		取得対象の刻印（MARK）のID
+;	UPVALUE			刻印取得の比較条件となるパラメータ上昇値（UP）
+;	THRESHOLD_BASE	使用する配列：刻印判定基礎値の参照渡し（COMMON_PALAM_CALC.ERHで定義）
+;	PREVENT_MARK	対応するMARK:●●刻印防止の実値
+;	PREVENT_FACTOR	使用する配列：刻印防止係数の参照渡し（COMMON_PALAM_CALC.ERHで定義）
+;	KUZU_FIX		使用する配列：クズ市民補正の参照渡し（COMMON_PALAM_CALC.ERHで定義）
+; 変数
+;	MSG_FUNCNAME	口上関数を呼び出す際の各刻印に対応した関数名の文字列
+;					（定数にしないのは、MARK内の配置が飛び番でも冗長な記述にならないようにするため）
+@GOT_SEX_MARK_CHECK, TARGET_MARK_ID, UPVALUE, THRESHOLD_BASE, PREVENT_MARK, PREVENT_FACTOR, KUZU_FIX
+#DIM TARGET_MARK_ID
+#DIM UPVALUE
+#DIM REF THRESHOLD_BASE
+#DIM PREVENT_MARK
+#DIM REF PREVENT_FACTOR
+#DIM REF KUZU_FIX
+#DIMS MSG_FUNCNAME, VARSIZE("MARK")
+
+MSG_FUNCNAME:(GETNUM(MARK,"快楽刻印")) = KAIRAKU
+MSG_FUNCNAME:(GETNUM(MARK,"苦痛刻印")) = KUTUU
+MSG_FUNCNAME:(GETNUM(MARK,"屈服刻印")) = KUPPUKU
+MSG_FUNCNAME:(GETNUM(MARK,"恐怖刻印")) = KYOUHU
+MSG_FUNCNAME:(GETNUM(MARK,"恥辱刻印")) = TIJYOKU
+
+;刻印が0未満か最大値以上である、または戦闘中でも幽閉中でもない、または対象の意識がないなら、判定を打ち切る
+SIF MARK:TARGET_MARK_ID < 0 || MARK:TARGET_MARK_ID >= VARSIZE("THRESHOLD_BASE") || (FLAG:700 != 1 && CFLAG:0 != 1) || (TCVARn:12 & 気絶)
+	RETURN 0
+
+;上昇判定	: UP >= 刻印判定基礎値 + MARK:対象刻印防止 * 刻印防止係数 + クズ市民補正(クズ市民戦のみ)
+IF UPVALUE >= (THRESHOLD_BASE:(MARK:TARGET_MARK_ID) + PREVENT_MARK * PREVENT_FACTOR:(MARK:TARGET_MARK_ID) + (FLAG:73 > 0 ? KUZU_FIX:(MARK:TARGET_MARK_ID) # 0))
+	;以上を満たせば、刻印が+1される
+	MARK:TARGET_MARK_ID += 1
+	;地の文：刻印取得
+	CALLFORM MESSAGE_SEX_MARK_%MSG_FUNCNAME:TARGET_MARK_ID%_{MARK:TARGET_MARK_ID}
+	;地の文：洗脳/悪堕ちキャラが操作キャラに刻印が付くのを見た
+	SIF ENEMY_TYPE_CHECK_F("AKUOTI") == 1
+		CALLFORM MESSAGE_OTHER_SEX_MARK_%MSG_FUNCNAME:TARGET_MARK_ID%_{MARK:TARGET_MARK_ID}
+	PRINTFORM %PRINT_TRANSCALLNAME(TARGET)%は
+	FONTBOLD
+	PRINTFORM %MARKNAME:TARGET_MARK_ID%{MARK:TARGET_MARK_ID}
+	FONTREGULAR
+	PRINTFORML を取得した
+	PRINTL 
+ENDIF
+
+
+;--------------------------------------------------
+;敵（と観衆）の反応
+@PALAM_UP_ENEMY_REACTION
+;即死攻撃ヒット直後とトドメの一撃は触手・観衆関係のテキストを出さない
+SIF TFLAG:23 == -1 || (BASE:TARGET:体力 <= 0 && BASE:TARGET:気力 <= 0 && BASE:TARGET:性耐性 <= 0)
+	RETURN 0
+;触手の油断の確認
+CALL CLOTH_BATTLE_HOSEI, "YUDAN"
+LOCAL = RESULT
+CALL TENTACLE_LEVEL
+LOCAL:1 = RESULT
+SIF LOCAL:1 > 60
+	LOCAL:1 = 60
+;油断度関係のFEAT効果
+SIF TALENT:平凡 > 0
+	LOCAL += 25
+SIF TALENT:攻勢構築 > 0
+	LOCAL -= 25
+IF FLAG:700 == 1
+	TFLAG:3 *= LOCAL / 100
+	FLAG:17 = LIMIT(FLAG:17 + TFLAG:3, 0 , FLAG:16 * 2)
+	;拘束中の場合、油断は毎ターン６％だけ増加する
+	IF TCVARn:0 == 0
+		FLAG:17 += FLAG:16 * 6 * LOCAL / 10000
+	;油断している場合、油断度が毎ターン１２％だけ減少する
+	ELSEIF TFLAG:2 > 0
+		FLAG:17 -= FLAG:16 * 12 / 100
+	;それ以外の場合、油断度が毎ターン１％だけ減少する
+	ELSE
+		FLAG:17 -= FLAG:16 * 1 / 100
+	ENDIF
+	SIF FLAG:17 < 0
+		FLAG:17 = 0
+
+	;デバッグ用
+	IF FLAG:999
+		SETCOLOR 105,105,105
+		PRINTFORM 油断度　補正＝{LOCAL}％ 油断度＝{FLAG:17}/{FLAG:16}
+		SIF TCVARn:0 == 0
+			PRINTFORM  ＋ ターン経過{FLAG:16 * 12 * LOCAL / 10000}
+		SIF TFLAG:3
+			PRINTFORM  ＋ 直接上昇{TFLAG:3}
+		PRINTL 
+		PRINTL 
+		RESETCOLOR
+	ENDIF
+
+	;油断度上昇量をリセット
+	TFLAG:3 = 0
+
+	;２ターン目までなら確実に油断が持続
+	IF TFLAG:2 > 0 && TFLAG:2 <= 2 && FLAG:17 < FLAG:16
+		FLAG:17 = FLAG:16
+	;最大でも１２ターンまでしか持続しない、レベルに応じて短くなる
+	ELSEIF TFLAG:2 >= 12 - LOCAL:1 / 10
+		FLAG:17 = 0
+	ENDIF
+	;閾値を越えていれば油断フラグを加算
+	IF FLAG:17 >= FLAG:16
+		TFLAG:2 += 1
+	;ターン経過で油断が解ける場合
+	ELSEIF TFLAG:2 > 0
+		TFLAG:2 = 0
+		FLAG:17 = 0
+		PRINTL 
+		IF (FLAG:110 == 0)
+			CALL TENTACLE_ACCESS, "NAME"
+			PRINTL は油断から立ち直った
+		ELSEIF (FLAG:110 == 1)
+			PRINTFORML %PRINT_TRANSCALLNAME(FLAG:111)%は油断から立ち直った
+		ENDIF
+	ENDIF
+ENDIF
+
+;凌辱時の応援
+SIF TCVARn:0 == 0 && FLAG:700 == 1
+	CALL PERFORM_CHEERS_TENTACLE_SEX_HANTEI
+
+IF TFLAG:2 > 0 && FLAG:700 == 1
+	PRINTL 
+	IF (FLAG:110 == 0)
+		CALL TENTACLE_ACCESS, "NAME"
+		PRINTL は油断しているようだ
+	ELSEIF (FLAG:110 == 1)
+		PRINTFORML %PRINT_TRANSCALLNAME(FLAG:111)%は油断しているようだ
+	ENDIF
+ENDIF

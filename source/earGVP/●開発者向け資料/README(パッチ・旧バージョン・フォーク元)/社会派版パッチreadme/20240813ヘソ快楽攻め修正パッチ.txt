@@ -1,0 +1,29 @@
+﻿eraGVT_社会派触手ニュース版240105用　ヘソ快楽攻め修正パッチ
+
+<問題>
+・残酷Off　→　ヘソ快楽攻め（恐怖200～20000）
+　残酷On　→　スパンキング（恐怖10～1000）
+　明らかに逆だ。残酷Offの人たちにはちょっと厳しいかも
+
+・一つのパッチにつき一つの問題を解決するというルールに従っているつもりだが、これでは手間が掛かりすぎるのでは…？
+　　でも複数の修正を同時に行うと賛否両論になりそうな気もする。まあ多少の手間は仕方ない
+
+<変更>
+・ERB \ ゲーム内_戦闘処理 \ 戦闘コマンド(性攻撃) \ SEX_COMABLE.ERB \ @SEX_COMABLE
+	;残酷Off時は代替
+	ELSEIF CONFIG_CHECK_MANIAC_F(14) == 0
+		CALL SEX_SPCOM12
+	ELSE
+		TFLAG:10 = 8
+		CALL SEX_COM8, FLAG:11, LOCAL
+	ENDIF
+
+			↓
+
+	;残酷Offならスパンキングに振り替える
+	ELSEIF CONFIG_CHECK_MANIAC_F(14) == 0
+		TFLAG:10 = 8
+		CALL SEX_COM8, FLAG:11, LOCAL
+	ELSE
+		CALL SEX_SPCOM12
+	ENDIF

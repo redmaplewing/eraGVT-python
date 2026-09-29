@@ -1,0 +1,19 @@
+﻿;SHOW_STATUS関数群で使う広域変数
+
+;通常ステータスと変身中ステータスの切り替え判定
+#DIM SHOW_TRANS_STATUS = 0
+
+;非性的な経験の定義（@SHOW_STATUS_CHARA_EXPで使用）
+{
+#DIM CONST 非性的経験 =
+GETNUM(EXP, "戦闘経験"),
+GETNUM(EXP, "ボス経験"),
+GETNUM(EXP, "ラスボス経験"),
+GETNUM(EXP, "近距離戦闘経験"),
+GETNUM(EXP, "中距離戦闘経験"),
+GETNUM(EXP, "遠距離戦闘経験"),
+GETNUM(EXP, "戦闘基礎経験"),
+GETNUM(EXP, "魅了経験")
+}
+;非性的な経験表示（戦闘系経験・魅了経験）のランク（@GET_COLOR_BY_RANKで使用）
+#DIM CONST 非性的経験ランク = -1

@@ -1,0 +1,255 @@
+﻿@PASTIME_SHASHIN, ARG
+#DIMS 被害者名,1
+PRINTFORML 【秘密のオナペット】
+;前段
+;今の姿が男なら直見せ
+IF ISMANLY()
+	PRINTFORM %PRINT_TRANSCALLNAME(TARGET)%は親しい男子
+	IF TALENT:学生 == 4
+	;大学生
+		PRINTFORM 学生
+	ELSE
+	;大学生以外
+		PRINTFORM 生徒
+	ENDIF
+	PRINTFORML ら数人と談笑している。
+	PRINTFORML 親しい男子がイイものを見せてやると言い、スマホを取り出した。
+
+;今の姿が女なら一歩引いた距離
+ELSE
+	PRINTFORM %PRINT_TRANSCALLNAME(TARGET)%の親しい男子
+	IF TALENT:学生 == 4
+	;大学生
+		PRINTFORM 学生
+	ELSE
+	;大学生以外
+		PRINTFORM 生徒
+	ENDIF
+	PRINTFORML が、数人でスマホを囲んで何やら猥談している。
+	PRINTFORML %PRINT_TRANSCALLNAME(TARGET)%が近くを通った時、さりげなく盗み見すると
+	PRINTFORML その手に隠されたスマホが目に入った。
+ENDIF
+
+;中
+LOCALS'=""
+
+;【変身ヒロインの凌辱映像流出被害】
+;　①触手凌辱動画の流出後
+;　③変身後の姿がGIRLY
+;　②現在未変身
+;　＝変身ヒロイン凌辱映像×未変身の中の人
+IF CFLAG:284 && ISGIRLY_AfterTrans() && CFLAG:1 == 0
+	LOCALS'="触手凌辱流出"
+	被害者名=%CSTR:1%
+	;変身後の凌辱動画が流出
+	PRINTFORM それは
+	PRINTDATA
+		DATAFORM %CSTR:1%の戦闘中のパンチラ
+		DATAFORM 戦いで衣服の破れた%CSTR:1%の
+		DATAFORM 戦いでほぼ全裸に剥かれた%CSTR:1%の
+		DATAFORM %CSTR:1%が触手に緊縛されている
+		DATAFORM %CSTR:1%が触手に凌辱されている
+		DATAFORM %CSTR:1%が力尽き、なすがままに犯されている
+	ENDDATA
+
+ 	PRINTDATA
+		DATAFORM エロ画像
+		DATAFORM エロ動画
+	ENDDATA
+	PRINTL だった。
+
+	PRINTFORML ……最大の問題は、ここにいる%PRINT_TRANSCALLNAME(TARGET)%が他ならぬ%CSTR:1%本人である点だ。
+	PRINTL 
+
+;【触手ディープフェイク被害】
+;　①触手凌辱動画は未流出
+;　②現在未変身GIRLY
+;　③防衛度そこそこ以下(冷静に考えるとモラル上だいぶヤバい)
+;　＝凌辱ディープフェイク×通りがかったガチ本人
+;　　上記条件により常に盗み見ヒロイン前提
+ELSEIF CFLAG:284==0 && ISGIRLY() && CFLAG:1 == 0 && FLAG:852<5000 && RAND:2==0
+	LOCALS'="触手ディープフェイク"
+	被害者名=%ISGIRLY() ? CALLNAME:TARGET # PRINT_TRANSCALLNAME(TARGET)%
+
+	PRINTFORM それは
+	IF EXP:魅了経験 >= 300
+		PRINTFORM 《%被害者名%》たちトップアイドル
+	ELSEIF EXP:魅了経験 >= 200
+		PRINTFORM 《%被害者名%》を含む複数の人気アイドル
+	ELSEIF EXP:魅了経験 >= 100
+		PRINTFORM 期待の新人アイドル《%被害者名%》や他のグループメンバー
+	ELSE
+		PRINTFORM %被害者名%や\@TALENT:学生 == 4 ? キャンパス内でも人気の女子学生 # 校内でも人気の女子生徒 \@たち
+	ENDIF
+	PRINTFORM が
+ 	PRINTDATA
+		DATAFORM 触手に犯されてボテ腹を揺らす
+		DATAFORM 触手に犯されながらレズキスしている
+		DATAFORM 触手に犯されてアヘ顔を晒す
+		DATAFORM 先を争って触手にしゃぶりつく
+		DATAFORM 触手に貫かれ下腹部を膨らます
+		DATAFORM プールの中で触手に輪姦され孕まされる
+		DATAFORM 校庭で触手に襲われてアクメ顔を晒す
+		DATAFORM 触手に膣を突かれて下品にボテ腹を揺らす
+		DATAFORM 次々と触手を産み落としながら無様なアへ顔を晒す
+		DATAFORM 極太触手に抱き付きながら蕩けた表情でイキまくる
+		DATAFORM 触巣の深部に吊り下げられて%CONFIG_CHECK_MANIAC_F(14) ? "四肢を喪い" # "子宮を使われ"%苗床アクメを繰り返す
+	ENDDATA
+	PRINTFORML 「エロ動画」だった。
+	;屈辱系
+	PRINTFORML ……そのような恥ずべき屈辱の記憶など、現実の%被害者名%たちには存在しない。
+
+	;行為系
+	;PRINTFORML ……そのような恥ずべき行為の記憶など、現実の%被害者名%たちには存在しない。
+
+	SIF TALENT:男の娘 > 0
+		PRINTFORML そもそも動画の子は顔こそ%被害者名%だが、カラダは股間まで女の子だ。
+	PRINTFORML 何らかの手段で作成された、悪質な合成動画である事は明らかだった。
+
+	PRINTL 
+
+	;★治安悪いと音声まで勝手に合成されてるとか？
+
+;【アイコラディープフェイク】
+;↑の非触手系ver　;★コピペ感が強いので要加筆
+ELSEIF CFLAG:284==0 && ISGIRLY() && CFLAG:1 == 0 && FLAG:852<8000 && RAND:2==0
+	被害者名=%ISGIRLY() ? CALLNAME:TARGET # PRINT_TRANSCALLNAME(TARGET)%
+
+	PRINTFORM それは
+	IF EXP:魅了経験 >= 100 && RAND:(5+EXP:魅了経験/50)
+		LOCALS'="アイコラ"
+				;*hentai fake picts of celebs(アイドル＋コラージュ)
+		IF EXP:魅了経験 >= 300
+			PRINTFORM 《%被害者名%》たちトップアイドル
+		ELSEIF EXP:魅了経験 >= 200
+			PRINTFORM 《%被害者名%》を含む複数の人気アイドル
+		ELSE
+			PRINTFORM 期待の新人アイドル《%被害者名%》や他のグループメンバー
+		ENDIF
+		PRINTFORM が
+		PRINTDATA
+			DATAFORM 繁華街を全裸で歩く
+			DATAFORM ステージ上で全裸ライブを披露する
+			DATAFORM 二穴バイブ挿入した状態で踊る
+			DATAFORM 握手会会場で必死にフェラチオする
+			DATAFORM 精液まみれの姿で踊る
+			DATAFORM 一糸纏わぬ姿でバラエティ番組に出演する
+			DATAFORM 変態的な衣装で犯されている
+		ENDDATA
+	ELSE
+		LOCALS'="ディープフェイク"
+		PRINTFORM %被害者名%や\@TALENT:学生 == 4 ? キャンパス内でも人気の女子学生 # 校内でも人気の女子生徒 \@たち
+		PRINTFORM が
+		PRINTDATA
+			DATAFORM 通学路であられもなく全裸開脚を始める
+			DATAFORM 全裸で\@TALENT:学生 == 4 ? 講義 # 授業 \@を受ける
+			DATAFORM 二穴バイブ挿入しながら定期テストを受ける
+			DATAFORM 教室でにこやかにフェラチオしている
+			DATAFORM 精液まみれの姿で談笑する
+			DATAFORM 一糸纏わぬ姿で談笑する
+			DATAFORM 真剣な表情でオナニーに耽る
+		ENDDATA
+	ENDIF
+	PRINTFORML 「エロ動画」だった。
+
+	;行為系
+	PRINTFORML ……そのような恥ずべき行為の記憶など、現実の%被害者名%たちには存在しない。
+
+	SIF TALENT:男の娘 > 0
+		PRINTFORML そもそも動画の子は顔こそ%被害者名%だが、カラダは股間まで女の子だ。
+	PRINTFORML 何らかの手段で作成された、悪質な合成動画である事は明らかだった。
+
+	PRINTL 
+
+
+;【盗撮・隠し撮り】
+;完全ランダム発生
+;★治安で分岐すべきかも
+ELSE
+	;現時点での姿が女性なら自分自身が盗撮被害に
+	IF ISGIRLY()
+		LOCALS'="盗撮された"
+		被害者名=%CFLAG:1 == 0 ? CALLNAME:TARGET # PRINT_TRANSCALLNAME(TARGET)%
+		PRINTFORM それは%被害者名%の
+	;現時点での姿が男性なら一般女子生徒が被害に
+	ELSE
+		LOCALS'="一般女子盗撮"
+		被害者名=女子生徒
+		PRINTFORML それは校内でも人気の女子の
+	ENDIF
+	;★ここ加筆ほしい
+ 	PRINTDATA
+		DATAFORM 授業中の
+		DATAFORM 体育の授業中の
+		DATAFORM 水泳の授業中の
+		DATAFORM 食事中のパンチラ
+		DATAFORM 着替え中の
+		DATAFORM トイレの
+	ENDDATA
+ 	PRINTDATA
+		DATAFORM 盗撮画像
+		DATAFORM 盗撮動画
+	ENDDATA
+	PRINTFORML だった。
+	PRINTL 
+ENDIF
+
+;後
+;標的が変身後(本人が目の前にいるとは気付いていない)なら露骨なエロ反応
+SIF 被害者名==CSTR:1
+	PRINTFORML 男子達は%被害者名%の痴態に興奮し、卑猥な言葉で賛美しながら食い入るように見ている。
+
+PRINTFORM %PRINT_TRANSCALLNAME(TARGET)%は
+
+;今男なら
+IF ISMANLY()
+	PRINTFORML 動揺を隠し男子に話を合わせながら、
+;今女なら
+ELSE
+	PRINTFORML 気付かないフリをして通りすぎたが、
+ENDIF
+
+;変身後の凌辱動画をオカズにされていた場合
+IF LOCALS=="触手凌辱流出"
+ 	PRINTDATA
+		DATAFORM 親友が自分の痴態で興奮していると知って体の奥が熱くなった・・・
+		DATAFORM 自分の痴態が世界中に拡散されている現実を知り目眩がした・・・
+		DATAFORM もしも自分の正体がバレたら何が起きてしまうのだろうと気になった・・・
+		DATAFORM もしも魔法少女の正体がバレたらどんな目に遭うのか想像してしまい目眩がした・・・
+	ENDDATA
+
+ELSEIF LOCALS=="アイコラ"
+ 	PRINTDATA
+		DATAFORM 親友にアイコラでオナニー「される」のを想像して顔を赤くした・・・
+		DATAFORM 自分たちアイドルに向けられる激しい欲望を知って動揺した・・・
+		DATAFORM あられもない痴態を晒すアイコラでオナニー「されて」いると知って困惑した・・・
+		DATAFORM アイコラ動画の中で激しく喘ぐ「自分」を想像して思わず顔を赤らめた・・・
+	ENDDATA
+ELSEIF LOCALS=="ディープフェイク"
+ 	PRINTDATA
+		DATAFORM 親友が「自分」をおかずにオナニーするのを想像して顔を赤くした・・・
+		DATAFORM 自分たち\@TALENT:学生 == 4 ? 女子学生 # 女子生徒 \@が性的な目で見られていると知って動揺した・・・
+		DATAFORM 無様に乱れる妄想でオナニー「されて」いると知って困惑した・・・
+		DATAFORM 動画の中で激しく喘ぐ「自分」を想像して思わず顔を赤らめた・・・
+	ENDDATA
+ELSEIF LOCALS=="触手ディープフェイク"
+ 	PRINTDATA
+		DATAFORM 親友が「自分」をおかずにオナニーするのを想像して顔を赤くした・・・
+		DATAFORM 自分たち\@TALENT:学生 == 4 ? 女子学生 # 女子生徒 \@が性的な目で見られていると知って動揺した・・・
+		DATAFORM 触手に犯される妄想でオナニー「されて」いると知って困惑した・・・
+		DATAFORM 動画の中で激しく喘ぐ「自分」を想像して思わず顔を赤らめた・・・
+	ENDDATA
+
+ELSEIF LOCALS=="盗撮された"
+ 	PRINTDATA
+		DATAFORM 親友が自分をおかずにオナニーするのを想像して顔を赤くした・・・
+		DATAFORM 自分がどうやらモテているらしいと知って動揺した・・・
+		DATAFORM いつの間に盗撮されたのか分からず困惑した・・・
+		DATAFORM 妄想の中でどんな目に遭わされているのか想像して思わず顔を赤らめた・・・
+	ENDDATA
+;"一般女子盗撮"
+ELSE
+	PRINTL いつの間に盗撮したのか気になった・・・
+ENDIF
+	PRINTL 
+	PRINTL 

@@ -1,0 +1,1702 @@
+﻿;2022//作成（第７支部の>>252）
+;--------------------------------------------------------------------------------------------------------------------------------------------------------
+;--------------------------------------------------------------------------------------------------------------------------------------------------------
+;CFLAG:277 (仮)豹変するタイミング記憶用(bit)
+;CFLAG:278 (仮)豹変する性格記憶用(普段性格1～3桁、豹変時性格4～6桁)
+;CFLAG:279 ヤンデレ口上用
+;CFLAG:280 ヤンデレ口上用
+
+;==================================================
+;【独自関数】
+;--------------------------------------------------
+;豹変する場面の選択肢を表示する関数
+;----------------------------------------------------------
+;ARG	LOCAL
+@GET_CFLAG277_CHOICE_KOJO_4(ARG)
+SIF GETBIT(CFLAG:277,ARG)
+	SETCOLOR 255,60,220
+SELECTCASE ARG
+	CASE K4普段
+		PRINTFORML [{ARG}] 普段　　　　　
+	CASE K4会敵
+		PRINTFORML [{ARG}] 会敵　　　　　
+	CASE K4襲来
+		PRINTFORML [{ARG}] 襲来　　　　　
+	CASE K4戦闘
+		PRINTFORML [{ARG}] 戦闘　　　　　
+	CASE K4戦闘_変身
+		PRINTFORML [{ARG}] 戦闘(変身)　　
+	CASE K4鍛錬
+		PRINTFORML [{ARG}] 鍛錬　　　　　
+	CASE K4休憩
+		PRINTFORML [{ARG}] 休憩　　　　　
+	CASE K4特別活動
+		PRINTFORML [{ARG}] 特別活動　　　
+	CASE K4特別活動_変身
+		PRINTFORML [{ARG}] 特別活動(変身)
+	CASE K4情報収集
+		PRINTFORML [{ARG}] 情報収集　　　
+	CASE K4情報収集_変身
+		PRINTFORML [{ARG}] 情報収集(変身)
+	CASE K4自由行動
+		PRINTFORML [{ARG}] 自由行動　　　
+	CASE K4自由行動_変身
+		PRINTFORML [{ARG}] 自由行動(変身)
+	CASE K4幽閉
+		PRINTFORML [{ARG}] 幽閉　　　　　
+	CASE K4幽閉_変身
+		PRINTFORML [{ARG}] 幽閉(変身)　　
+	CASE K4洗脳
+		PRINTFORML [{ARG}] 洗脳　　　　　
+	CASE K4悪堕ち
+		PRINTFORML [{ARG}] 悪堕ち　　　　
+ENDSELECT
+RESETCOLOR
+
+;その場面での性格を取得する
+;----------------------------------------------------------
+;ARG	対象
+;ARG:1	CFLAG:277のbit桁
+;RESULT:0	性別の番号
+;RESULT:1	性格の番号
+@GET_SEIKAKU_KOJO_4(ARG,ARG:1)
+ARG:1 = GETBIT(CFLAG:277,ARG:1)
+RETURN FIGURE_SPLIT(CFLAG:ARG:278,3+ARG:1*3), FIGURE_SPLIT(CFLAG:ARG:278,2+ARG:1*3)*10 + FIGURE_SPLIT(CFLAG:ARG:278,1+ARG:1*3)
+
+;汎用豹変口上ルート処理_普段
+;----------------------------------------------------------
+@KOJO_4_ROOT_SHOP(ARGS)
+CALL GET_SEIKAKU_KOJO_4(TARGET,K4普段)
+TRYCALLFORM KOJO_{RESULT:0}_COLOR_{RESULT:1}
+TRYCALLFORM KOJO_{RESULT:0}_%ARGS%_{RESULT:1}
+
+;汎用豹変口上ルート処理_鍛錬
+;----------------------------------------------------------
+@KOJO_4_ROOT_TRAINING(ARGS)
+CALL GET_SEIKAKU_KOJO_4(TARGET,K4鍛錬)
+TRYCALLFORM KOJO_{RESULT:0}_COLOR_{RESULT:1}
+TRYCALLFORM KOJO_{RESULT:0}_%ARGS%_{RESULT:1}
+
+;汎用豹変口上ルート処理_戦闘　会敵
+;----------------------------------------------------------
+@KOJO_4_ROOT_ENCOUNT(ARGS)
+CALL GET_SEIKAKU_KOJO_4(TARGET,K4会敵)
+TRYCALLFORM KOJO_{RESULT:0}_COLOR_{RESULT:1}
+TRYCALLFORM KOJO_{RESULT:0}_ENCOUNT_%ARGS%_{RESULT:1}
+
+;汎用豹変口上ルート処理_戦闘　襲来
+;----------------------------------------------------------
+@KOJO_4_ROOT_RAID(ARGS)
+CALL GET_SEIKAKU_KOJO_4(TARGET,K4襲来)
+TRYCALLFORM KOJO_{RESULT:0}_COLOR_{RESULT:1}
+TRYCALLFORM KOJO_{RESULT:0}_RAID_%ARGS%_{RESULT:1}
+
+;汎用豹変口上ルート処理_戦闘
+;----------------------------------------------------------
+@KOJO_4_ROOT_BATTLE(ARGS)
+IF CFLAG:1 > 0
+	CALL GET_SEIKAKU_KOJO_4(TARGET,K4戦闘_変身)
+ELSE
+	CALL GET_SEIKAKU_KOJO_4(TARGET,K4戦闘)
+ENDIF
+TRYCALLFORM KOJO_{RESULT:0}_COLOR_{RESULT:1}
+TRYCALLFORM KOJO_{RESULT:0}_%ARGS%_{RESULT:1}
+
+;汎用豹変口上ルート処理_幽閉
+;----------------------------------------------------------
+@KOJO_4_ROOT_PRISON(ARGS)
+IF CFLAG:1 > 0
+	CALL GET_SEIKAKU_KOJO_4(TARGET,K4幽閉_変身)
+ELSE
+	CALL GET_SEIKAKU_KOJO_4(TARGET,K4幽閉)
+ENDIF
+TRYCALLFORM KOJO_{RESULT:0}_COLOR_{RESULT:1}
+TRYCALLFORM KOJO_{RESULT:0}_PRISON_%ARGS%_{RESULT:1}
+
+;汎用豹変口上ルート処理_戦闘と幽閉両方で使用
+;----------------------------------------------------------
+@KOJO_4_ROOT_BATTLE_TO_PRISON(ARGS)
+IF CFLAG:(FLAG:111):0 == 状態_幽閉
+	IF CFLAG:1 > 0
+		CALL GET_SEIKAKU_KOJO_4(TARGET,K4幽閉_変身)
+	ELSE
+		CALL GET_SEIKAKU_KOJO_4(TARGET,K4幽閉)
+	ENDIF
+ELSE
+	IF CFLAG:1 > 0
+		CALL GET_SEIKAKU_KOJO_4(TARGET,K4戦闘_変身)
+	ELSE
+		CALL GET_SEIKAKU_KOJO_4(TARGET,K4戦闘)
+	ENDIF
+ENDIF
+
+TRYCALLFORM KOJO_{RESULT:0}_COLOR_{RESULT:1}
+TRYCALLFORM KOJO_{RESULT:0}_%ARGS%_{RESULT:1}
+
+
+;キャラ口上色
+;--------------------------------------------------
+@KOJO_4_COLOR
+
+;=================================================
+;MESSAGE.ERB
+;=================================================
+;キャラ個別のオープニング
+;--------------------------------------------------
+@KOJO_4_FIRST
+#DIM PAGE
+#DIM SEIKAKU_COUNT
+CFLAG:277 = 1152921504605798400
+CFLAG:278 = SEIKAKU_CHECK_F(TARGET)*1000+SEIKAKU_CHECK_F(TARGET)
+SIF ISMALE()
+	CFLAG:278 += 100100
+$INPUT_LOOP
+SEIKAKU_COUNT = 0
+PRINTSINGLE ================================================================================================================================================================
+PRINTFORML ※パラメータは「%TALENTNAME:SEIKAKU_CHECK_F(TARGET)%」のまま固定です。
+PRINT ※未変身時の性別は「
+IF CHARATALENT_F(TARGET,0,"オトコ") > 0
+	PRINT オトコ
+ELSEIF CHARATALENT_F(TARGET,0,"ふたなり") > 0
+	PRINT ふたなり
+ELSE
+	PRINT オンナ
+ENDIF
+PRINT 」で、変身時の性別は「
+IF CHARATALENT_F(TARGET,1,"オトコ") > 0
+	PRINT オトコ
+ELSEIF CHARATALENT_F(TARGET,1,"ふたなり") > 0
+	PRINT ふたなり
+ELSE
+	PRINT オンナ
+ENDIF
+PRINTL 」に設定されています。
+IF PAGE == 0
+	PRINTFORML %CALLNAME%の通常時と豹変時の性格を選択してください。
+	PRINTL 末尾に☆が付いている性格が口上有りです。
+	PRINTL 　□　　通常時 　　　　　　　　　　豹変時
+	FOR LOCAL, 10, 50
+		SIF TALENTNAME:LOCAL == ""
+			CONTINUE
+		SIF FIGURE_SPLIT(CFLAG:278,3) == 0 && FIGURE_SPLIT(CFLAG:278,2)*10 + FIGURE_SPLIT(CFLAG:278,1) == LOCAL
+			SETCOLOR 255,60,220
+		PRINTFORM 　[{LOCAL}] %TALENTNAME:LOCAL, 15,LEFT%(女)
+		RESETCOLOR
+		SIF FIGURE_SPLIT(CFLAG:278,6) == 0 && FIGURE_SPLIT(CFLAG:278,5)*10 + FIGURE_SPLIT(CFLAG:278,4) == LOCAL
+			SETCOLOR 255,60,220
+		PRINTFORM 　[{LOCAL*1000}] %TALENTNAME:LOCAL, 15,LEFT%(女)
+		TRYCCALLFORM KOJO_0_COLOR_{LOCAL}
+			PRINTL ☆
+		CATCH
+			PRINTL 
+		ENDCATCH
+		RESETCOLOR
+	NEXT
+	FOR LOCAL, 10, 50
+		SIF TALENTNAME:LOCAL == ""
+			CONTINUE
+		SIF FIGURE_SPLIT(CFLAG:278,3) == 1 && FIGURE_SPLIT(CFLAG:278,2)*10 + FIGURE_SPLIT(CFLAG:278,1) == LOCAL
+			SETCOLOR 255,60,220
+		PRINTFORM 　[{LOCAL+100}] %TALENTNAME:LOCAL, 15,LEFT%(男)
+		RESETCOLOR
+		SIF FIGURE_SPLIT(CFLAG:278,6) == 1 && FIGURE_SPLIT(CFLAG:278,5)*10 + FIGURE_SPLIT(CFLAG:278,4) == LOCAL
+			SETCOLOR 255,60,220
+		PRINTFORM 　[{(LOCAL+100)*1000}] %TALENTNAME:LOCAL, 15,LEFT%(男)
+		TRYCCALLFORM KOJO_1_COLOR_{LOCAL}
+			PRINTL ☆
+		CATCH
+			PRINTL 
+		ENDCATCH
+		RESETCOLOR
+		SEIKAKU_COUNT ++
+	NEXT
+ELSE
+	PRINTFORML %CALLNAME%の性格が豹変する場面を選択してください。
+	FOR LOCAL, 0, 55
+		CALL GET_CFLAG277_CHOICE_KOJO_4(LOCAL)
+	NEXT
+ENDIF
+PRINTL 
+PRINTFORM [-1]ページ変更({PAGE+1}/2)
+PRINT 　　
+PRINT [99]ランダム
+PRINT 　　
+PRINTL [100]決定
+
+INPUT
+IF RESULT == -1
+	INVERTBIT PAGE,0
+	GOTO INPUT_LOOP
+ELSEIF RESULT == 100
+	PRINTW 決定しました。
+ELSEIF PAGE == 0
+	IF RESULT == 99
+		CFLAG:278 = (RAND:SEIKAKU_COUNT+10)*1000+RAND:SEIKAKU_COUNT+10
+		SIF ISMALE()
+			CFLAG:278 += 100100
+	ELSEIF (RESULT >= 10 && RESULT <= SEIKAKU_COUNT+10) || (RESULT >= 110 && RESULT <= SEIKAKU_COUNT+110)
+	CFLAG:278 = FIGURE_SPLIT(CFLAG:278,6)*100000 + FIGURE_SPLIT(CFLAG:278,5)*10000 + FIGURE_SPLIT(CFLAG:278,4)*1000
+	CFLAG:278 += RESULT
+	ELSEIF ((RESULT >= 10*1000 && RESULT <= (SEIKAKU_COUNT+10)*1000)) || ((RESULT >= 110*1000 && RESULT <= (SEIKAKU_COUNT+110)*1000))
+	CFLAG:278 = FIGURE_SPLIT(CFLAG:278,3)*100+FIGURE_SPLIT(CFLAG:278,2)*10+FIGURE_SPLIT(CFLAG:278,1)
+	CFLAG:278 += RESULT
+	ENDIF
+	GOTO INPUT_LOOP
+ELSE
+	IF RESULT == 99
+		CFLAG:277 = 0
+		FOR LOCAL, 0, 20
+			SIF RAND:2
+				SETBIT CFLAG:277, LOCAL
+		NEXT
+		SIF RAND:2
+			SETBIT CFLAG:277, 30
+		SIF RAND:2
+			SETBIT CFLAG:277, 40
+	ELSEIF RESULT >= 0 && RESULT <= 49
+		INVERTBIT CFLAG:277, RESULT
+	ENDIF
+	GOTO INPUT_LOOP
+ENDIF
+
+LOCAL = 0
+SIF FIGURE_SPLIT(CFLAG:278,3) == 0 && FIGURE_SPLIT(CFLAG:278,2)*10 + FIGURE_SPLIT(CFLAG:278,1) == 21
+	LOCAL = 1
+SIF FIGURE_SPLIT(CFLAG:278,6) == 0 && FIGURE_SPLIT(CFLAG:278,5)*10 + FIGURE_SPLIT(CFLAG:278,4) == 21
+	LOCAL = 1
+IF LOCAL > 0
+	PRINTW ヤンデレ(女)口上の初期設定に入ります
+	CALL KOJO_0_FIRST_21
+ENDIF
+
+;ターン終了時の処理
+;--------------------------------------------------
+@KOJO_4_TURNEND
+;ターン終了時に呼び出されるキャラ専用の処理です
+CALL KOJO_4_ROOT_SHOP("TURNEND")
+
+;ショップ画面
+;--------------------------------------------------
+@KOJO_4_HITOKUTI_SHOP
+;ショップ画面で選択されているときに一言しゃべります
+;普段の様子や体調、今の心情など
+SIF CFLAG:277 == 0 && CFLAG:278 == 0
+	CALL KOJO_4_FIRST
+CALL KOJO_4_ROOT_SHOP("HITOKUTI_SHOP")
+
+;**************************************************
+;鍛錬
+;**************************************************
+;鍛錬開始
+;-------------------------------------------------
+@KOJO_4_TRAINING_BEGIN
+CALL KOJO_4_ROOT_TRAINING("TRAINING_BEGIN")
+
+;鍛錬終了
+;-------------------------------------------------
+@KOJO_4_TRAINING_END
+CALL KOJO_4_ROOT_TRAINING("TRAINING_END")
+
+;走りこみ
+;-------------------------------------------------
+@KOJO_4_TRAINING_HASHIRI
+CALL KOJO_4_ROOT_TRAINING("TRAINING_HASHIRI")
+
+;精神鍛錬
+;-------------------------------------------------
+@KOJO_4_TRAINING_SEISHIN
+CALL KOJO_4_ROOT_TRAINING("TRAINING_SEISHIN")
+
+;瞑想
+;-------------------------------------------------
+@KOJO_4_TRAINING_MEISOU
+CALL KOJO_4_ROOT_TRAINING("TRAINING_MEISOU")
+
+;筋トレ
+;-------------------------------------------------
+@KOJO_4_TRAINING_KINTORE
+CALL KOJO_4_ROOT_TRAINING("TRAINING_KINTORE")
+
+;自衛訓練
+;-------------------------------------------------
+@KOJO_4_TRAINING_JIEI
+CALL KOJO_4_ROOT_TRAINING("TRAINING_JIEI")
+
+;ダッシュ
+;-------------------------------------------------
+@KOJO_4_TRAINING_DASH
+CALL KOJO_4_ROOT_TRAINING("TRAINING_DASH")
+
+;近距離戦闘訓練
+;-------------------------------------------------
+@KOJO_4_TRAINING_SHORT
+CALL KOJO_4_ROOT_TRAINING("TRAINING_SHORT")
+
+;中距離戦闘訓練
+;-------------------------------------------------
+@KOJO_4_TRAINING_MIDDLE
+CALL KOJO_4_ROOT_TRAINING("TRAINING_MIDDLE")
+
+;遠距離戦闘訓練
+;-------------------------------------------------
+@KOJO_4_TRAINING_LONG
+CALL KOJO_4_ROOT_TRAINING("TRAINING_LONG")
+
+;戦闘基礎訓練
+;-------------------------------------------------
+@KOJO_4_TRAINING_BASIS
+CALL KOJO_4_ROOT_TRAINING("TRAINING_BASIS")
+
+;戦術研究訓練
+;-------------------------------------------------
+@KOJO_4_TRAINING_TACTICS
+CALL KOJO_4_ROOT_TRAINING("TRAINING_TACTICS")
+
+;触手拘束具が鍛錬の邪魔をする
+;-------------------------------------------------
+@KOJO_4_TRAINING_TENTACLECLOTH
+CALL KOJO_4_ROOT_TRAINING("TRAINING_TENTACLECLOTH")
+
+;=================================================
+;MESSAGE_BATTLE.ERB
+;=================================================
+;**************************************************
+;触手と遭遇
+;**************************************************
+;ザコ触手と戦闘（自動勝利）
+;-------------------------------------------------
+@KOJO_4_ENCOUNT_MOB
+CALL KOJO_4_ROOT_ENCOUNT("MOB")
+
+;雑魚触手と戦闘
+;-------------------------------------------------
+@KOJO_4_ENCOUNT_MOB_BATTLE
+CALL KOJO_4_ROOT_ENCOUNT("MOB_BATTLE")
+
+;ボス触手と戦闘
+;-------------------------------------------------
+@KOJO_4_ENCOUNT_BOSS
+CALL KOJO_4_ROOT_ENCOUNT("BOSS")
+
+;ボス触手襲来
+;-------------------------------------------------
+@KOJO_4_RAID_BOSS
+CALL KOJO_4_ROOT_RAID("BOSS")
+
+;ラスボス触手と戦闘
+;-------------------------------------------------
+@KOJO_4_ENCOUNT_LASTBOSS
+CALL KOJO_4_ROOT_ENCOUNT("LASTBOSS")
+
+;ラスボス触手襲来
+;-------------------------------------------------
+@KOJO_4_RAID_LASTBOSS
+CALL KOJO_4_ROOT_RAID("LASTBOSS")
+
+;初めて洗脳キャラと対峙した
+;-------------------------------------------------
+@KOJO_4_ENCOUNT_SENNOU_FIRST
+CALL KOJO_4_ROOT_ENCOUNT("SENNOU_FIRST")
+
+;洗脳キャラと対峙
+;-------------------------------------------------
+@KOJO_4_ENCOUNT_SENNOU
+CALL KOJO_4_ROOT_ENCOUNT("SENNOU")
+
+;始めて悪堕ちキャラと対峙した
+;-------------------------------------------------
+@KOJO_4_ENCOUNT_AKUOTI_FIRST
+CALL KOJO_4_ROOT_ENCOUNT("AKUOTI_FIRST")
+
+;悪堕ちキャラと対峙
+;-------------------------------------------------
+@KOJO_4_ENCOUNT_AKUOTI
+CALL KOJO_4_ROOT_ENCOUNT("AKUOTI")
+
+;**************************************************
+;戦闘関連
+;**************************************************
+;キャラの行動
+;**************************************************
+;変身前のかけ声
+;口上オリジナルのかけ声を使用する場合のみコメントアウトを外して記述してください
+;-------------------------------------------------
+;@KOJO_4_BATTLE_CHARA_TRANSFORMCALL
+;CALL KOJO_4_ROOT_BATTLE("")
+
+;変身後の名乗り
+;口上オリジナルの名乗りを使用する場合のみコメントアウトを外して記述してください
+;-------------------------------------------------
+;@KOJO_4_BATTLE_CHARA_NANORI
+;CALL KOJO_4_ROOT_BATTLE("")
+
+;気力が尽きて変身が強制的に解けた
+;-------------------------------------------------
+@KOJO_4_BATTLE_CHARA_TRANSRELEASE
+CALL KOJO_4_ROOT_BATTLE("BATTLE_CHARA_TRANSRELEASE")
+
+;絶頂で変身が強制的に解けた
+;-------------------------------------------------
+@KOJO_4_BATTLE_CHARA_TRANSRELEASE_ECS
+CALL KOJO_4_ROOT_BATTLE("BATTLE_CHARA_TRANSRELEASE_ECS")
+
+;撤退成功
+;-------------------------------------------------
+@KOJO_4_BATTLE_CHARA_TETTAI_SUCCESS
+CALL KOJO_4_ROOT_BATTLE("BATTLE_CHARA_TETTAI_SUCCESS")
+
+;撤退失敗
+;-------------------------------------------------
+@KOJO_4_BATTLE_CHARA_TETTAI_FALSE
+CALL KOJO_4_ROOT_BATTLE("BATTLE_CHARA_TETTAI_FALSE")
+
+;COMF1：近距離攻撃
+;-------------------------------------------------
+@KOJO_4_BATTLE_CHARA_ATTACK_RANGE_SHORT
+CALL KOJO_4_ROOT_BATTLE("BATTLE_CHARA_ATTACK_RANGE_SHORT")
+
+;COMF2：中距離攻撃
+;-------------------------------------------------
+@KOJO_4_BATTLE_CHARA_ATTACK_RANGE_MIDDLE
+CALL KOJO_4_ROOT_BATTLE("BATTLE_CHARA_ATTACK_RANGE_MIDDLE")
+
+;COMF3：遠距離攻撃
+;-------------------------------------------------
+@KOJO_4_BATTLE_CHARA_ATTACK_RANGE_LONG
+CALL KOJO_4_ROOT_BATTLE("BATTLE_CHARA_ATTACK_RANGE_LONG")
+
+;攻撃がクリティカルヒット
+;-------------------------------------------------
+@KOJO_4_BATTLE_CHARA_ATTACK_CRITICAL_HIT
+CALL KOJO_4_ROOT_BATTLE("BATTLE_CHARA_ATTACK_CRITICAL_HIT")
+
+;攻撃が通常ヒット
+;-------------------------------------------------
+@KOJO_4_BATTLE_CHARA_ATTACK_HIT
+CALL KOJO_4_ROOT_BATTLE("BATTLE_CHARA_ATTACK_HIT")
+
+;攻撃失敗・カス当たり
+;-------------------------------------------------
+@KOJO_4_BATTLE_CHARA_ATTACK_FALSE
+CALL KOJO_4_ROOT_BATTLE("BATTLE_CHARA_ATTACK_FALSE")
+
+;COMF4：防御
+;-------------------------------------------------
+@KOJO_4_BATTLE_CHARA_DEFENSE
+CALL KOJO_4_ROOT_BATTLE("BATTLE_CHARA_DEFENSE")
+
+;COMF5：距離をとる
+;-------------------------------------------------
+@KOJO_4_BATTLE_CHARA_TAKEAWAY
+CALL KOJO_4_ROOT_BATTLE("BATTLE_CHARA_TAKEAWAY")
+
+;COMF6：背後に回る
+;-------------------------------------------------
+@KOJO_4_BATTLE_CHARA_STEPIN
+CALL KOJO_4_ROOT_BATTLE("BATTLE_CHARA_STEPIN")
+
+;COMF7：見切り
+;-------------------------------------------------
+@KOJO_4_BATTLE_CHARA_SEETHROUGH
+CALL KOJO_4_ROOT_BATTLE("BATTLE_CHARA_SEETHROUGH")
+
+;COMF69：何もしない
+;-------------------------------------------------
+@KOJO_4_BATTLE_CHARA_NOACTION
+CALL KOJO_4_ROOT_BATTLE("BATTLE_CHARA_NOACTION")
+
+;COMF8：振り解く
+;-------------------------------------------------
+@KOJO_4_BATTLE_CHARA_HURIHODOKU
+CALL KOJO_4_ROOT_BATTLE("BATTLE_CHARA_HURIHODOKU")
+
+;振り解く成功
+;-------------------------------------------------
+@KOJO_4_BATTLE_CHARA_HURIHODOKU_SUCCESS
+CALL KOJO_4_ROOT_BATTLE("BATTLE_CHARA_HURIHODOKU_SUCCESS")
+
+;振り解く失敗
+;-------------------------------------------------
+@KOJO_4_BATTLE_CHARA_HURIHODOKU_FALSE
+CALL KOJO_4_ROOT_BATTLE("BATTLE_CHARA_HURIHODOKU_FALSE")
+
+;COMF9：暴れる
+;-------------------------------------------------
+@KOJO_4_BATTLE_CHARA_ABARERU
+CALL KOJO_4_ROOT_BATTLE("BATTLE_CHARA_ABARERU")
+
+;COMF10：耐える
+;-------------------------------------------------
+@KOJO_4_BATTLE_CHARA_TAERU
+CALL KOJO_4_ROOT_BATTLE("BATTLE_CHARA_TAERU")
+
+;COMF11：なすがまま
+;-------------------------------------------------
+@KOJO_4_BATTLE_CHARA_NASUGAMAMA
+CALL KOJO_4_ROOT_BATTLE("BATTLE_CHARA_NASUGAMAMA")
+
+;COMF12：受け入れる
+;-------------------------------------------------
+@KOJO_4_BATTLE_CHARA_UKEIRERU
+CALL KOJO_4_ROOT_BATTLE("BATTLE_CHARA_UKEIRERU")
+
+;COMF13：奉仕する
+;-------------------------------------------------
+@KOJO_4_BATTLE_CHARA_HOUSI
+CALL KOJO_4_ROOT_BATTLE("BATTLE_CHARA_HOUSI")
+
+;COMF14：Ｖ挿入防御
+;-------------------------------------------------
+@KOJO_4_BATTLE_CHARA_ANTI_V
+CALL KOJO_4_ROOT_BATTLE("BATTLE_CHARA_ANTI_V")
+
+;COMF40：引き剥がす
+;-------------------------------------------------
+@KOJO_4_BATTLE_CHARA_HIKIHAGASU
+CALL KOJO_4_ROOT_BATTLE("BATTLE_CHARA_HIKIHAGASU")
+
+;引き剥がす成功
+;-------------------------------------------------
+@KOJO_4_BATTLE_CHARA_HIKIHAGASU_SUCCESS
+CALL KOJO_4_ROOT_BATTLE("BATTLE_CHARA_HIKIHAGASU_SUCCESS")
+
+;引き剥がす失敗
+;-------------------------------------------------
+@KOJO_4_BATTLE_CHARA_HIKIHAGASU_FALSE
+CALL KOJO_4_ROOT_BATTLE("BATTLE_CHARA_HIKIHAGASU_FALSE")
+
+;COMF44：睨みつける
+;-------------------------------------------------
+@KOJO_4_BATTLE_CHARA_NIRAMI
+CALL KOJO_4_ROOT_BATTLE("BATTLE_CHARA_NIRAMI")
+
+;COMF45：罵倒する
+;-------------------------------------------------
+@KOJO_4_BATTLE_CHARA_BATOU
+CALL KOJO_4_ROOT_BATTLE("BATTLE_CHARA_BATOU")
+
+;COMF46：反抗する
+;-------------------------------------------------
+@KOJO_4_BATTLE_CHARA_RESISTANCE
+CALL KOJO_4_ROOT_BATTLE("BATTLE_CHARA_RESISTANCE")
+
+;COMF47：説得する
+;-------------------------------------------------
+@KOJO_4_BATTLE_CHARA_PERSUADE
+CALL KOJO_4_ROOT_BATTLE("BATTLE_CHARA_PERSUADE")
+
+;COMF73：SP変身
+;-------------------------------------------------
+@KOJO_4_BATTLE_CHARA_SP_TRANSFORMCALL
+CALL KOJO_4_ROOT_BATTLE("BATTLE_CHARA_SP_TRANSFORMCALL")
+
+;COMF70：SPバースト
+;-------------------------------------------------
+@KOJO_4_BATTLE_CHARA_SP_BURST
+CALL KOJO_4_ROOT_BATTLE("BATTLE_CHARA_SP_BURST")
+
+;**************************************************
+;触手側の行動（攻撃など）
+;**************************************************
+;ACTION1：攻撃
+;-------------------------------------------------
+@KOJO_4_BATTLE_TENTACLE_ATTACK
+CALL KOJO_4_ROOT_BATTLE("BATTLE_TENTACLE_ATTACK")
+
+;触手の攻撃がクリティカルヒット
+;-------------------------------------------------
+@KOJO_4_BATTLE_TENTACLE_ATTACK_CRITICAL_HIT
+CALL KOJO_4_ROOT_BATTLE("BATTLE_TENTACLE_ATTACK_CRITICAL_HIT")
+
+;触手の攻撃が通常ヒット
+;-------------------------------------------------
+@KOJO_4_BATTLE_TENTACLE_ATTACK_HIT
+CALL KOJO_4_ROOT_BATTLE("BATTLE_TENTACLE_ATTACK_HIT")
+
+;触手の攻撃を回避
+;-------------------------------------------------
+@KOJO_4_BATTLE_TENTACLE_ATTACK_FALSE
+CALL KOJO_4_ROOT_BATTLE("BATTLE_TENTACLE_ATTACK_FALSE")
+
+;攻撃がカス当たり
+;-------------------------------------------------
+@KOJO_4_BATTLE_TENTACLE_ATTACK_GRAZE
+CALL KOJO_4_ROOT_BATTLE("BATTLE_TENTACLE_ATTACK_GRAZE")
+
+;ACTION2：絡みつく
+;-------------------------------------------------
+@KOJO_4_BATTLE_TENTACLE_KARAMITUKU
+CALL KOJO_4_ROOT_BATTLE("BATTLE_TENTACLE_KARAMITUKU")
+
+;触手の絡みつくが成功
+;-------------------------------------------------
+@KOJO_4_BATTLE_TENTACLE_KARAMITUKU_SUCCESS
+CALL KOJO_4_ROOT_BATTLE("BATTLE_TENTACLE_KARAMITUKU_SUCCESS")
+
+;触手の絡みつくを回避
+;-------------------------------------------------
+@KOJO_4_BATTLE_TENTACLE_KARAMITUKU_FALSE
+CALL KOJO_4_ROOT_BATTLE("BATTLE_TENTACLE_KARAMITUKU_FALSE")
+
+;ACTION3：体液を吐く
+;-------------------------------------------------
+@KOJO_4_BATTLE_TENTACLE_TAIEKI
+CALL KOJO_4_ROOT_BATTLE("BATTLE_TENTACLE_TAIEKI")
+
+;触手の体液を吐くがヒット
+;-------------------------------------------------
+@KOJO_4_BATTLE_TENTACLE_TAIEKI_HIT
+CALL KOJO_4_ROOT_BATTLE("BATTLE_TENTACLE_TAIEKI_HIT")
+
+;触手の体液を吐くを回避
+;-------------------------------------------------
+@KOJO_4_BATTLE_TENTACLE_TAIEKI_FALSE
+CALL KOJO_4_ROOT_BATTLE("BATTLE_TENTACLE_TAIEKI_FALSE")
+
+;その距離にはいない
+;-------------------------------------------------
+@KOJO_4_BATTLE_TENTACLE_ABSENCE
+CALL KOJO_4_ROOT_BATTLE("BATTLE_TENTACLE_ABSENCE")
+
+;ACTION4：距離をとる
+;-------------------------------------------------
+@KOJO_4_BATTLE_TENTACLE_TAKEAWAY
+CALL KOJO_4_ROOT_BATTLE("BATTLE_TENTACLE_TAKEAWAY")
+
+;ACTION5：押し倒す
+;-------------------------------------------------
+@KOJO_4_BATTLE_TENTACLE_OSHITAOSU
+CALL KOJO_4_ROOT_BATTLE("BATTLE_TENTACLE_OSHITAOSU")
+
+;敵キャラの押し倒す成功
+;-------------------------------------------------
+@KOJO_4_BATTLE_TENTACLE_OSHITAOSU_SUCCESS
+CALL KOJO_4_ROOT_BATTLE("BATTLE_TENTACLE_OSHITAOSU_SUCCESS")
+
+;押し倒す回避
+;-------------------------------------------------
+@KOJO_4_BATTLE_TENTACLE_OSHITAOSU_FALSE
+CALL KOJO_4_ROOT_BATTLE("BATTLE_TENTACLE_OSHITAOSU_FALSE")
+
+;ACTION6：邪悪な波動を開始
+;-------------------------------------------------
+@KOJO_4_BATTLE_TENTACLE_HADOU
+CALL KOJO_4_ROOT_BATTLE("BATTLE_TENTACLE_HADOU")
+
+;触手の邪悪な波動がヒット
+;-------------------------------------------------
+@KOJO_4_BATTLE_TENTACLE_HADOU_HIT
+CALL KOJO_4_ROOT_BATTLE("BATTLE_TENTACLE_HADOU_HIT")
+
+;触手の邪悪な波動を回避
+;-------------------------------------------------
+@KOJO_4_BATTLE_TENTACLE_HADOU_FALSE
+CALL KOJO_4_ROOT_BATTLE("BATTLE_TENTACLE_HADOU_FALSE")
+
+;**************************************************
+;衣装の損傷が酷くなった
+;**************************************************
+;アウターが破れ始めた
+;-------------------------------------------------
+@KOJO_4_BATTLE_CLOTH_OUTERDAMAGE
+CALL KOJO_4_ROOT_BATTLE("BATTLE_CLOTH_OUTERDAMAGE")
+
+;アウターが破れた
+;-------------------------------------------------
+@KOJO_4_BATTLE_CLOTH_OUTERBREAK
+CALL KOJO_4_ROOT_BATTLE("BATTLE_CLOTH_OUTERBREAK")
+
+;インナーが破れ始めた
+;-------------------------------------------------
+@KOJO_4_BATTLE_CLOTH_INNERDAMAGE
+CALL KOJO_4_ROOT_BATTLE("BATTLE_CLOTH_INNERDAMAGE")
+
+;インナーが破れた
+;-------------------------------------------------
+@KOJO_4_BATTLE_CLOTH_INNERBREAK
+CALL KOJO_4_ROOT_BATTLE("BATTLE_CLOTH_INNERBREAK")
+
+;**************************************************
+;勝敗関連
+;**************************************************
+;触手に勝利
+;-------------------------------------------------
+@KOJO_4_BATTLE_END_WIN
+CALL KOJO_4_ROOT_BATTLE("BATTLE_END_WIN")
+
+;敵キャラに勝利
+;-------------------------------------------------
+@KOJO_4_BATTLE_END_WIN_ENEMY
+CALL KOJO_4_ROOT_BATTLE("BATTLE_END_WIN_ENEMY")
+
+;ラスボス触手出現
+;-------------------------------------------------
+@KOJO_4_BATTLE_END_LASTBOSSAPPEAR
+CALL KOJO_4_ROOT_BATTLE("BATTLE_END_LASTBOSSAPPEAR")
+
+;完全殲滅
+;-------------------------------------------------
+@KOJO_4_BATTLE_END_PERFECT
+CALL KOJO_4_ROOT_BATTLE("BATTLE_END_PERFECT")
+
+;触手に捕らわれていたキャラの救出
+;-------------------------------------------------
+@KOJO_4_BATTLE_END_RESCUE
+CALL KOJO_4_ROOT_BATTLE("BATTLE_END_RESCUE")
+
+;悪堕ちキャラに捕らわれたキャラの救出
+;-------------------------------------------------
+@KOJO_4_BATTLE_END_RESCUE_AKUOTI
+CALL KOJO_4_ROOT_BATTLE("BATTLE_END_RESCUE_AKUOTI")
+
+;洗脳中キャラの救出
+;-------------------------------------------------
+@KOJO_4_BATTLE_END_RESCUE_SENNOU
+CALL KOJO_4_ROOT_BATTLE("BATTLE_END_RESCUE_SENNOU")
+
+;敵キャラの救出
+;-------------------------------------------------
+@KOJO_4_BATTLE_END_RESCUE_ENEMY
+CALL KOJO_4_ROOT_BATTLE("BATTLE_END_RESCUE_ENEMY")
+
+;敗北
+;-------------------------------------------------
+@KOJO_4_BATTLE_END_LOSS
+CALL KOJO_4_ROOT_BATTLE("BATTLE_END_LOSS")
+
+;時間切れ
+;-------------------------------------------------
+@KOJO_4_BATTLE_END_TIMEUP
+CALL KOJO_4_ROOT_BATTLE("BATTLE_END_TIMEUP")
+
+;**************************************************
+;心境変化関連
+;**************************************************
+;倒錯
+;-------------------------------------------------
+@KOJO_4_BATTLE_SHINKYOU_CHANGE_TOUSAKU
+CALL KOJO_4_ROOT_BATTLE("BATTLE_SHINKYOU_CHANGE_TOUSAKU")
+
+;怒り
+;-------------------------------------------------
+@KOJO_4_BATTLE_SHINKYOU_CHANGE_IKARI
+CALL KOJO_4_ROOT_BATTLE("BATTLE_SHINKYOU_CHANGE_IKARI")
+
+;諦観
+;-------------------------------------------------
+@KOJO_4_BATTLE_SHINKYOU_CHANGE_TEIKAN
+CALL KOJO_4_ROOT_BATTLE("BATTLE_SHINKYOU_CHANGE_TEIKAN")
+
+;冷静
+;-------------------------------------------------
+@KOJO_4_BATTLE_SHINKYOU_CHANGE_REISEI
+CALL KOJO_4_ROOT_BATTLE("BATTLE_SHINKYOU_CHANGE_REISEI")
+
+;動揺
+;-------------------------------------------------
+@KOJO_4_BATTLE_SHINKYOU_CHANGE_DOUYOU
+CALL KOJO_4_ROOT_BATTLE("BATTLE_SHINKYOU_CHANGE_DOUYOU")
+
+;高揚
+;-------------------------------------------------
+@KOJO_4_BATTLE_SHINKYOU_CHANGE_KOUYOU
+CALL KOJO_4_ROOT_BATTLE("BATTLE_SHINKYOU_CHANGE_KOUYOU")
+
+;消沈
+;-------------------------------------------------
+@KOJO_4_BATTLE_SHINKYOU_CHANGE_SYOUTIN
+CALL KOJO_4_ROOT_BATTLE("BATTLE_SHINKYOU_CHANGE_SYOUTIN")
+
+;**************************************************
+;体が竦んだ関連
+;**************************************************
+;触手の虜で体が竦む
+;-------------------------------------------------
+@KOJO_4_BATTLE_DISACTION_TORIKO
+CALL KOJO_4_ROOT_BATTLE("BATTLE_DISACTION_TORIKO")
+
+;快楽で体が竦む
+;-------------------------------------------------
+@KOJO_4_BATTLE_DISACTION_KAIRAKU
+CALL KOJO_4_ROOT_BATTLE("BATTLE_DISACTION_KAIRAKU")
+
+;苦痛で体が竦む
+;-------------------------------------------------
+@KOJO_4_BATTLE_DISACTION_KUTUU
+CALL KOJO_4_ROOT_BATTLE("BATTLE_DISACTION_KUTUU")
+
+;屈辱で体が竦む
+;-------------------------------------------------
+@KOJO_4_BATTLE_DISACTION_KUTUZYOKU
+CALL KOJO_4_ROOT_BATTLE("BATTLE_DISACTION_KUTUZYOKU")
+
+;恐怖で体が竦む
+;-------------------------------------------------
+@KOJO_4_BATTLE_DISACTION_KYOUHU
+CALL KOJO_4_ROOT_BATTLE("BATTLE_DISACTION_KYOUHU")
+
+;恥辱で体が竦む
+;-------------------------------------------------
+@KOJO_4_BATTLE_DISACTION_TIZYOKU
+CALL KOJO_4_ROOT_BATTLE("BATTLE_DISACTION_TIZYOKU")
+
+;寄生の影響で体が竦む
+;-------------------------------------------------
+@KOJO_4_BATTLE_DISACTION_PARASITE
+CALL KOJO_4_ROOT_BATTLE("BATTLE_DISACTION_PARASITE")
+
+
+;=================================================
+;MESSAGE_PRISON.ERB
+;=================================================
+;初めての幽閉
+;-------------------------------------------------
+@KOJO_4_PRISON_PRISENTENCE_FIRST
+CALL KOJO_4_ROOT_PRISON("PRISENTENCE_FIRST")
+
+;二度目以降の幽閉後の初被姦
+;-------------------------------------------------
+@KOJO_4_PRISON_PRISENTENCE_START
+CALL KOJO_4_ROOT_PRISON("PRISENTENCE_START")
+
+;幽閉後の被姦開始
+;-------------------------------------------------
+@KOJO_4_PRISON_PRISENTENCE
+CALL KOJO_4_ROOT_PRISON("PRISENTENCE")
+
+;洗脳になった
+;-------------------------------------------------
+@KOJO_4_PRISON_SENNOU
+CALL KOJO_4_ROOT_PRISON("SENNOU")
+
+;悪堕ちになった
+;-------------------------------------------------
+@KOJO_4_PRISON_AKUOTI
+CALL KOJO_4_ROOT_PRISON("AKUOTI")
+
+;自ら悪堕ち
+;-------------------------------------------------
+@KOJO_4_SHOP_AKUOTI
+CALL KOJO_4_ROOT_SHOP("SHOP_AKUOTI")
+
+;自ら幽閉
+;-------------------------------------------------
+@KOJO_4_SHOP_PRISON
+CALL KOJO_4_ROOT_SHOP("SHOP_PRISON")
+
+;取り込まれ
+;-------------------------------------------------
+@KOJO_4_PRISON_DEAD
+CALL KOJO_4_ROOT_PRISON("DEAD")
+
+;ふたなり化
+;-------------------------------------------------
+@KOJO_4_PRISON_HUTANARI
+CALL KOJO_4_ROOT_PRISON("HUTANARI")
+
+;母乳体質化
+;-------------------------------------------------
+@KOJO_4_PRISON_BONYU
+CALL KOJO_4_ROOT_PRISON("BONYU")
+
+;膨乳化
+;-------------------------------------------------
+@KOJO_4_PRISON_BOUNYU
+CALL KOJO_4_ROOT_PRISON("BOUNYU")
+
+;苗床化
+;-------------------------------------------------
+@KOJO_4_PRISON_NAEDOKO
+CALL KOJO_4_ROOT_PRISON("NAEDOKO")
+
+;C中心攻め
+;-------------------------------------------------
+@KOJO_4_PRISON_COM_0
+CALL KOJO_4_ROOT_PRISON("COM_0")
+
+;V中心攻め
+;-------------------------------------------------
+@KOJO_4_PRISON_COM_1
+CALL KOJO_4_ROOT_PRISON("COM_1")
+
+;A中心攻め
+;-------------------------------------------------
+@KOJO_4_PRISON_COM_2
+CALL KOJO_4_ROOT_PRISON("COM_2")
+
+;B中心攻め
+;-------------------------------------------------
+@KOJO_4_PRISON_COM_3
+CALL KOJO_4_ROOT_PRISON("COM_3")
+
+;Sな攻め
+;-------------------------------------------------
+@KOJO_4_PRISON_COM_4
+CALL KOJO_4_ROOT_PRISON("COM_4")
+
+;強制奉仕
+;-------------------------------------------------
+@KOJO_4_PRISON_COM_5
+CALL KOJO_4_ROOT_PRISON("COM_5")
+
+;羞恥な攻め
+;-------------------------------------------------
+@KOJO_4_PRISON_COM_6
+CALL KOJO_4_ROOT_PRISON("COM_6")
+
+;子触手に犯される
+;-----------------------------------------------
+@KOJO_4_PRISON_COM_7
+CALL KOJO_4_ROOT_PRISON("COM_7")
+
+;ふたなり攻め
+;-------------------------------------------------
+@KOJO_4_PRISON_COM_100
+CALL KOJO_4_ROOT_PRISON("COM_100")
+
+;V拡張
+;-------------------------------------------------
+@KOJO_4_PRISON_COM_101
+CALL KOJO_4_ROOT_PRISON("COM_101")
+
+;A拡張
+;-------------------------------------------------
+@KOJO_4_PRISON_COM_102
+CALL KOJO_4_ROOT_PRISON("COM_102")
+
+;搾乳攻め
+;-------------------------------------------------
+@KOJO_4_PRISON_COM_103
+CALL KOJO_4_ROOT_PRISON("COM_103")
+
+;種付け
+;-----------------------------------------------
+@KOJO_4_PRISON_COM_104
+CALL KOJO_4_ROOT_PRISON("COM_104")
+
+;膨乳攻め
+;-----------------------------------------------
+@KOJO_4_PRISON_COM_105
+CALL KOJO_4_ROOT_PRISON("COM_105")
+
+;Vに産卵
+;-------------------------------------------------
+@KOJO_4_PRISON_COM_200
+CALL KOJO_4_ROOT_PRISON("COM_200")
+
+;Aに産卵
+;-------------------------------------------------
+@KOJO_4_PRISON_COM_201
+CALL KOJO_4_ROOT_PRISON("COM_201")
+
+;注射
+;-------------------------------------------------
+@KOJO_4_PRISON_COM_300
+CALL KOJO_4_ROOT_PRISON("COM_300")
+
+;触手の寄生
+;-------------------------------------------------
+@KOJO_4_PRISON_COM_301
+CALL KOJO_4_ROOT_PRISON("COM_301")
+
+
+;=================================================
+;MESSAGE_SEX.ERB
+;=================================================
+;**************************************************
+;絶頂関連
+;**************************************************
+;キャラが射精
+;-------------------------------------------------
+@KOJO_4_SEX_CHARA_SYASEI
+CALL KOJO_4_ROOT_BATTLE("SEX_CHARA_SYASEI")
+
+;キャラが大量射精
+;-------------------------------------------------
+@KOJO_4_SEX_CHARA_SYASEI_HI
+CALL KOJO_4_ROOT_BATTLE("SEX_CHARA_SYASEI_HI")
+
+;キャラが噴乳
+;-------------------------------------------------
+@KOJO_4_SEX_CHARA_HUNNYU
+CALL KOJO_4_ROOT_BATTLE("SEX_CHARA_HUNNYU")
+
+;キャラが大量噴乳
+;-------------------------------------------------
+@KOJO_4_SEX_CHARA_HUNNYU_HI
+CALL KOJO_4_ROOT_BATTLE("SEX_CHARA_HUNNYU_HI")
+
+;C絶頂
+;-------------------------------------------------
+@KOJO_4_SEX_ECSTASY_C
+CALL KOJO_4_ROOT_BATTLE("SEX_ECSTASY_C")
+
+;C強絶頂
+;-------------------------------------------------
+@KOJO_4_SEX_ECSTASY_C_HI
+CALL KOJO_4_ROOT_BATTLE("SEX_ECSTASY_C_HI")
+
+;V絶頂
+;-------------------------------------------------
+@KOJO_4_SEX_ECSTASY_V
+CALL KOJO_4_ROOT_BATTLE("SEX_ECSTASY_V")
+
+;V強絶頂
+;-------------------------------------------------
+@KOJO_4_SEX_ECSTASY_V_HI
+CALL KOJO_4_ROOT_BATTLE("SEX_ECSTASY_V_HI")
+
+;A絶頂
+;-------------------------------------------------
+@KOJO_4_SEX_ECSTASY_A
+CALL KOJO_4_ROOT_BATTLE("SEX_ECSTASY_A")
+
+;A強絶頂
+;-------------------------------------------------
+@KOJO_4_SEX_ECSTASY_A_HI
+CALL KOJO_4_ROOT_BATTLE("SEX_ECSTASY_A_HI")
+
+;B絶頂
+;-------------------------------------------------
+@KOJO_4_SEX_ECSTASY_B
+CALL KOJO_4_ROOT_BATTLE("SEX_ECSTASY_B")
+
+;B強絶頂
+;-------------------------------------------------
+@KOJO_4_SEX_ECSTASY_B_HI
+CALL KOJO_4_ROOT_BATTLE("SEX_ECSTASY_B_HI")
+
+;**************************************************
+;多重絶頂に関する口上
+;**************************************************
+;CVAB四重絶頂
+;-------------------------------------------------
+@KOJO_4_SEX_MULTIECSTASY_CVAB
+CALL KOJO_4_ROOT_BATTLE("SEX_MULTIECSTASY_CVAB")
+
+;CVA三重絶頂
+;-------------------------------------------------
+@KOJO_4_SEX_MULTIECSTASY_CVA
+CALL KOJO_4_ROOT_BATTLE("SEX_MULTIECSTASY_CVA")
+
+;CVB三重絶頂
+;-------------------------------------------------
+@KOJO_4_SEX_MULTIECSTASY_CVB
+CALL KOJO_4_ROOT_BATTLE("SEX_MULTIECSTASY_CVB")
+
+;CAB三重絶頂
+;-------------------------------------------------
+@KOJO_4_SEX_MULTIECSTASY_CAB
+CALL KOJO_4_ROOT_BATTLE("SEX_MULTIECSTASY_CAB")
+
+;VAB三重絶頂
+;-------------------------------------------------
+@KOJO_4_SEX_MULTIECSTASY_VAB
+CALL KOJO_4_ROOT_BATTLE("SEX_MULTIECSTASY_VAB")
+
+;CV二重絶頂
+;-------------------------------------------------
+@KOJO_4_SEX_MULTIECSTASY_CV
+CALL KOJO_4_ROOT_BATTLE("SEX_MULTIECSTASY_CV")
+
+;CA二重絶頂
+;-------------------------------------------------
+@KOJO_4_SEX_MULTIECSTASY_CA
+CALL KOJO_4_ROOT_BATTLE("SEX_MULTIECSTASY_CA")
+
+;CB二重絶頂
+;-------------------------------------------------
+@KOJO_4_SEX_MULTIECSTASY_CB
+CALL KOJO_4_ROOT_BATTLE("SEX_MULTIECSTASY_CB")
+
+;VA二重絶頂
+;-------------------------------------------------
+@KOJO_4_SEX_MULTIECSTASY_VA
+CALL KOJO_4_ROOT_BATTLE("SEX_MULTIECSTASY_VA")
+
+;VB二重絶頂
+;-------------------------------------------------
+@KOJO_4_SEX_MULTIECSTASY_VB
+CALL KOJO_4_ROOT_BATTLE("SEX_MULTIECSTASY_VB")
+
+;AB二重絶頂
+;-------------------------------------------------
+@KOJO_4_SEX_MULTIECSTASY_AB
+CALL KOJO_4_ROOT_BATTLE("SEX_MULTIECSTASY_AB")
+
+;絶頂抑制
+;-------------------------------------------------
+@KOJO_4_SEX_ECSTASY_INHIBITION
+CALL KOJO_4_ROOT_BATTLE("SEX_ECSTASY_INHIBITION")
+
+;絶頂禁止
+;-------------------------------------------------
+@KOJO_4_SEX_ECSTASY_PROHIBITION
+CALL KOJO_4_ROOT_BATTLE("SEX_ECSTASY_PROHIBITION")
+
+;絶頂懇願
+;-------------------------------------------------
+@KOJO_4_SEX_ECSTASY_ENTREATY
+CALL KOJO_4_ROOT_BATTLE("SEX_ECSTASY_ENTREATY")
+
+;**************************************************
+;刻印関連
+;**************************************************
+;快楽刻印１取得
+;-------------------------------------------------
+@KOJO_4_SEX_MARK_KAIRAKU_1
+CALL KOJO_4_ROOT_BATTLE_TO_PRISON("SEX_MARK_KAIRAKU_1")
+
+;快楽刻印２取得
+;-------------------------------------------------
+@KOJO_4_SEX_MARK_KAIRAKU_2
+CALL KOJO_4_ROOT_BATTLE_TO_PRISON("SEX_MARK_KAIRAKU_2")
+
+;快楽刻印３取得
+;-------------------------------------------------
+@KOJO_4_SEX_MARK_KAIRAKU_3
+CALL KOJO_4_ROOT_BATTLE_TO_PRISON("SEX_MARK_KAIRAKU_3")
+
+;快楽刻印４取得
+;-------------------------------------------------
+@KOJO_4_SEX_MARK_KAIRAKU_4
+CALL KOJO_4_ROOT_BATTLE_TO_PRISON("SEX_MARK_KAIRAKU_4")
+
+;快楽刻印５取得
+;-------------------------------------------------
+@KOJO_4_SEX_MARK_KAIRAKU_5
+CALL KOJO_4_ROOT_BATTLE_TO_PRISON("SEX_MARK_KAIRAKU_5")
+
+;苦痛刻印１取得
+;-------------------------------------------------
+@KOJO_4_SEX_MARK_KUTUU_1
+CALL KOJO_4_ROOT_BATTLE_TO_PRISON("SEX_MARK_KUTUU_1")
+
+;苦痛刻印２取得
+;-------------------------------------------------
+@KOJO_4_SEX_MARK_KUTUU_2
+CALL KOJO_4_ROOT_BATTLE_TO_PRISON("SEX_MARK_KUTUU_2")
+
+;苦痛刻印３取得
+;-------------------------------------------------
+@KOJO_4_SEX_MARK_KUTUU_3
+CALL KOJO_4_ROOT_BATTLE_TO_PRISON("SEX_MARK_KUTUU_3")
+
+;苦痛刻印４取得
+;-------------------------------------------------
+@KOJO_4_SEX_MARK_KUTUU_4
+CALL KOJO_4_ROOT_BATTLE_TO_PRISON("SEX_MARK_KUTUU_4")
+
+;苦痛刻印５取得
+;-------------------------------------------------
+@KOJO_4_SEX_MARK_KUTUU_5
+CALL KOJO_4_ROOT_BATTLE_TO_PRISON("SEX_MARK_KUTUU_5")
+
+;屈服刻印１取得
+;-------------------------------------------------
+@KOJO_4_SEX_MARK_KUPPUKU_1
+CALL KOJO_4_ROOT_BATTLE_TO_PRISON("SEX_MARK_KUPPUKU_1")
+
+;屈服刻印２取得
+;-------------------------------------------------
+@KOJO_4_SEX_MARK_KUPPUKU_2
+CALL KOJO_4_ROOT_BATTLE_TO_PRISON("SEX_MARK_KUPPUKU_2")
+
+;屈服刻印３取得
+;-------------------------------------------------
+@KOJO_4_SEX_MARK_KUPPUKU_3
+CALL KOJO_4_ROOT_BATTLE_TO_PRISON("SEX_MARK_KUPPUKU_3")
+
+;屈服刻印４取得
+;-------------------------------------------------
+@KOJO_4_SEX_MARK_KUPPUKU_4
+CALL KOJO_4_ROOT_BATTLE_TO_PRISON("SEX_MARK_KUPPUKU_4")
+
+;屈服刻印５取得
+;-------------------------------------------------
+@KOJO_4_SEX_MARK_KUPPUKU_5
+CALL KOJO_4_ROOT_BATTLE_TO_PRISON("SEX_MARK_KUPPUKU_5")
+
+;恐怖刻印１取得
+;-------------------------------------------------
+@KOJO_4_SEX_MARK_KYOUHU_1
+CALL KOJO_4_ROOT_BATTLE_TO_PRISON("SEX_MARK_KYOUHU_1")
+
+;恐怖刻印２取得
+;-------------------------------------------------
+@KOJO_4_SEX_MARK_KYOUHU_2
+CALL KOJO_4_ROOT_BATTLE_TO_PRISON("SEX_MARK_KYOUHU_2")
+
+;恐怖刻印３取得
+;-------------------------------------------------
+@KOJO_4_SEX_MARK_KYOUHU_3
+CALL KOJO_4_ROOT_BATTLE_TO_PRISON("SEX_MARK_KYOUHU_3")
+
+;恐怖刻印４取得
+;-------------------------------------------------
+@KOJO_4_SEX_MARK_KYOUHU_4
+CALL KOJO_4_ROOT_BATTLE_TO_PRISON("SEX_MARK_KYOUHU_4")
+
+;恐怖刻印５取得
+;-------------------------------------------------
+@KOJO_4_SEX_MARK_KYOUHU_5
+CALL KOJO_4_ROOT_BATTLE_TO_PRISON("SEX_MARK_KYOUHU_5")
+
+;恥辱刻印１取得
+;-------------------------------------------------
+@KOJO_4_SEX_MARK_TIJYOKU_1
+CALL KOJO_4_ROOT_BATTLE_TO_PRISON("SEX_MARK_TIJYOKU_1")
+
+;恥辱刻印２取得
+;-------------------------------------------------
+@KOJO_4_SEX_MARK_TIJYOKU_2
+CALL KOJO_4_ROOT_BATTLE_TO_PRISON("SEX_MARK_TIJYOKU_2")
+
+;恥辱刻印３取得
+;-------------------------------------------------
+@KOJO_4_SEX_MARK_TIJYOKU_3
+CALL KOJO_4_ROOT_BATTLE_TO_PRISON("SEX_MARK_TIJYOKU_3")
+
+;恥辱刻印４取得
+;-------------------------------------------------
+@KOJO_4_SEX_MARK_TIJYOKU_4
+CALL KOJO_4_ROOT_BATTLE_TO_PRISON("SEX_MARK_TIJYOKU_4")
+
+;恥辱刻印５取得
+;-------------------------------------------------
+@KOJO_4_SEX_MARK_TIJYOKU_5
+CALL KOJO_4_ROOT_BATTLE_TO_PRISON("SEX_MARK_TIJYOKU_5")
+
+;**************************************************
+;触手が射精
+;**************************************************
+;触手射精暴発
+;-------------------------------------------------
+@KOJO_4_SEX_TENTACLE_SYASEI_EXPLODE
+CALL KOJO_4_ROOT_BATTLE("SEX_TENTACLE_SYASEI_EXPLODE")
+
+;膣に通常射精
+;-------------------------------------------------
+@KOJO_4_SEX_TENTACLE_SYASEI_VAGINA
+CALL KOJO_4_ROOT_BATTLE("SEX_TENTACLE_SYASEI_VAGINA")
+
+;膣に大量射精
+;-------------------------------------------------
+@KOJO_4_SEX_TENTACLE_SYASEI_VAGINA_HI
+CALL KOJO_4_ROOT_BATTLE("SEX_TENTACLE_SYASEI_VAGINA_HI")
+
+;アナルに通常射精
+;-------------------------------------------------
+@KOJO_4_SEX_TENTACLE_SYASEI_ANAL
+CALL KOJO_4_ROOT_BATTLE("SEX_TENTACLE_SYASEI_ANAL")
+
+;アナルに大量射精
+;-------------------------------------------------
+@KOJO_4_SEX_TENTACLE_SYASEI_ANAL_HI
+CALL KOJO_4_ROOT_BATTLE("SEX_TENTACLE_SYASEI_ANAL_HI")
+
+;手に通常射精
+;-------------------------------------------------
+@KOJO_4_SEX_TENTACLE_SYASEI_HAND
+CALL KOJO_4_ROOT_BATTLE("SEX_TENTACLE_SYASEI_HAND")
+
+;手に大量射精
+;-------------------------------------------------
+@KOJO_4_SEX_TENTACLE_SYASEI_HAND_HI
+CALL KOJO_4_ROOT_BATTLE("SEX_TENTACLE_SYASEI_HAND_HI")
+
+;口内に通常射精
+;-------------------------------------------------
+@KOJO_4_SEX_TENTACLE_SYASEI_MOUTH
+CALL KOJO_4_ROOT_BATTLE("SEX_TENTACLE_SYASEI_MOUTH")
+
+;口内に大量射精
+;-------------------------------------------------
+@KOJO_4_SEX_TENTACLE_SYASEI_MOUTH_HI
+CALL KOJO_4_ROOT_BATTLE("SEX_TENTACLE_SYASEI_MOUTH_HI")
+
+;胸に通常射精
+;-------------------------------------------------
+@KOJO_4_SEX_TENTACLE_SYASEI_BUST
+CALL KOJO_4_ROOT_BATTLE("SEX_TENTACLE_SYASEI_BUST")
+
+;胸に大量射精
+;-------------------------------------------------
+@KOJO_4_SEX_TENTACLE_SYASEI_BUST_HI
+CALL KOJO_4_ROOT_BATTLE("SEX_TENTACLE_SYASEI_BUST_HI")
+
+;**************************************************
+;自慰関連
+;**************************************************
+;夜間自慰
+;-------------------------------------------------
+@KOJO_4_SELF_NIGHT
+CALL KOJO_4_ROOT_SHOP("SELF_NIGHT")
+
+;戦闘後自慰
+;-------------------------------------------------
+@KOJO_4_SELF_BATTLEEND
+CALL KOJO_4_ROOT_SHOP("SELF_BATTLEEND")
+
+;普通の自慰
+;-------------------------------------------------
+@KOJO_4_SELF_N
+CALL KOJO_4_ROOT_SHOP("SELF_N")
+
+;胸自慰
+;-------------------------------------------------
+@KOJO_4_SELF_B
+CALL KOJO_4_ROOT_SHOP("SELF_B")
+
+;アナニー
+;-------------------------------------------------
+@KOJO_4_SELF_A
+CALL KOJO_4_ROOT_SHOP("SELF_A")
+
+;膣オナ(淫尻持ちは二穴オナニーに)
+;-------------------------------------------------
+@KOJO_4_SELF_V
+CALL KOJO_4_ROOT_SHOP("SELF_V")
+
+;**************************************************
+;素質関連
+;**************************************************
+;処女喪失
+;-------------------------------------------------
+@KOJO_4_SEX_LOSTVIRGIN
+CALL KOJO_4_ROOT_BATTLE_TO_PRISON("SEX_LOSTVIRGIN")
+
+;触手の虜取得
+;-------------------------------------------------
+@KOJO_4_GETTALENT_TORIKO
+CALL KOJO_4_ROOT_BATTLE_TO_PRISON("GETTALENT_TORIKO")
+
+;淫乱取得
+;-------------------------------------------------
+@KOJO_4_GETTALENT_INRAN
+CALL KOJO_4_ROOT_BATTLE_TO_PRISON("GETTALENT_INRAN")
+
+;淫核取得
+;-------------------------------------------------
+@KOJO_4_GETTALENT_INKAKU
+CALL KOJO_4_ROOT_BATTLE_TO_PRISON("GETTALENT_INKAKU")
+
+;淫壷取得
+;-------------------------------------------------
+@KOJO_4_GETTALENT_INTUBO
+CALL KOJO_4_ROOT_BATTLE_TO_PRISON("GETTALENT_INTUBO")
+
+;淫尻取得
+;-------------------------------------------------
+@KOJO_4_GETTALENT_INJIRI
+CALL KOJO_4_ROOT_BATTLE_TO_PRISON("GETTALENT_INJIRI")
+
+;淫乳取得
+;-------------------------------------------------
+@KOJO_4_GETTALENT_INNYUU
+CALL KOJO_4_ROOT_BATTLE_TO_PRISON("GETTALENT_INNYUU")
+
+;清純派を失う
+;-------------------------------------------------
+@KOJO_4_LOSETALENT_SEIJUNHA
+CALL KOJO_4_ROOT_BATTLE_TO_PRISON("LOSETALENT_SEIJUNHA")
+
+;ふたなり定着
+;-------------------------------------------------
+@KOJO_4_GETTALENT_HUTANARI4
+CALL KOJO_4_ROOT_BATTLE_TO_PRISON("GETTALENT_HUTANARI4")
+
+;寄生ふたなりを失う
+;-------------------------------------------------
+@KOJO_4_LOSETALENT_HUTANARI
+CALL KOJO_4_ROOT_BATTLE_TO_PRISON("LOSETALENT_HUTANARI")
+
+;触手の虜による女体受容
+;-------------------------------------------------
+@KOJO_4_GETTALENT_TSJYUYOU_TORIKO
+CALL KOJO_4_ROOT_BATTLE_TO_PRISON("GETTALENT_TSJYUYOU_TORIKO")
+
+;淫乱化による女体受容
+;-------------------------------------------------
+@KOJO_4_GETTALENT_TSJYUYOU_INRAN
+CALL KOJO_4_ROOT_BATTLE_TO_PRISON("GETTALENT_TSJYUYOU_INRAN")
+
+;女の喜びによる女体受容
+;-------------------------------------------------
+@KOJO_4_GETTALENT_TSJYUYOU_FEMININE
+CALL KOJO_4_ROOT_BATTLE_TO_PRISON("GETTALENT_TSJYUYOU_FEMININE")
+
+;女の魅力による女体受容
+;-------------------------------------------------
+@KOJO_4_GETTALENT_TSJYUYOU_CHARM
+CALL KOJO_4_ROOT_BATTLE_TO_PRISON("GETTALENT_TSJYUYOU_CHARM")
+
+;両刀淫乱化による女体受容
+;-------------------------------------------------
+@KOJO_4_GETTALENT_TSJYUYOU_RYOUTOU
+CALL KOJO_4_ROOT_BATTLE_TO_PRISON("GETTALENT_TSJYUYOU_RYOUTOU")
+
+;避妊結界が破られた
+;-------------------------------------------------
+@KOJO_4_PREGNANCY_SHIELD_COLLAPSED
+CALL KOJO_4_ROOT_BATTLE_TO_PRISON("PREGNANCY_SHIELD_COLLAPSED")
+
+;**************************************************
+;プレイヤーキャラによる性攻撃
+;**************************************************
+;COMF100：手淫攻撃
+;-------------------------------------------------
+@KOJO_4_BATTLE_CHARA_SEX_ATTACK100
+CALL KOJO_4_ROOT_BATTLE("BATTLE_CHARA_SEX_ATTACK100")
+
+;COMF101：フェラ攻撃
+;-------------------------------------------------
+@KOJO_4_BATTLE_CHARA_SEX_ATTACK101
+CALL KOJO_4_ROOT_BATTLE("BATTLE_CHARA_SEX_ATTACK101")
+
+;COMF102：足コキ攻撃
+;-------------------------------------------------
+@KOJO_4_BATTLE_CHARA_SEX_ATTACK102
+CALL KOJO_4_ROOT_BATTLE("BATTLE_CHARA_SEX_ATTACK102")
+
+;COMF103：素股焦らし
+;-------------------------------------------------
+@KOJO_4_BATTLE_CHARA_SEX_ATTACK103
+CALL KOJO_4_ROOT_BATTLE("BATTLE_CHARA_SEX_ATTACK103")
+
+;COMF104：搾り取る
+;-------------------------------------------------
+@KOJO_4_BATTLE_CHARA_SEX_ATTACK104
+CALL KOJO_4_ROOT_BATTLE("BATTLE_CHARA_SEX_ATTACK104")
+
+;**************************************************
+;触手から受ける性コマンド関連
+;**************************************************
+;=================================================
+;MESSAGE_SEX_COM.ERB
+;=================================================
+;COM0：C攻め弱　クリトリスを撫でる
+;-------------------------------------------------
+@KOJO_4_SEX_COM0
+CALL KOJO_4_ROOT_BATTLE("SEX_COM0")
+
+;COM1：C攻め強　クリトリスに吸い付く
+;-------------------------------------------------
+@KOJO_4_SEX_COM1
+CALL KOJO_4_ROOT_BATTLE("SEX_COM1")
+
+;COM2：V攻め弱　膣口を愛撫（処女は奪いません）
+;-------------------------------------------------
+@KOJO_4_SEX_COM2
+CALL KOJO_4_ROOT_BATTLE("SEX_COM2")
+
+;COM3：V攻め強　挿入
+;-------------------------------------------------
+@KOJO_4_SEX_COM3
+CALL KOJO_4_ROOT_BATTLE("SEX_COM3")
+
+;COM4：A攻め弱　アナルを撫で回す
+;-------------------------------------------------
+@KOJO_4_SEX_COM4
+CALL KOJO_4_ROOT_BATTLE("SEX_COM4")
+
+;COM5：A攻め強　アナルに挿入
+;-------------------------------------------------
+@KOJO_4_SEX_COM5
+CALL KOJO_4_ROOT_BATTLE("SEX_COM5")
+
+;COM6：B攻め弱　胸を揉みしだく
+;-------------------------------------------------
+@KOJO_4_SEX_COM6
+CALL KOJO_4_ROOT_BATTLE("SEX_COM6")
+
+;COM7：B攻め強　乳首に吸い付く
+;-------------------------------------------------
+@KOJO_4_SEX_COM7
+CALL KOJO_4_ROOT_BATTLE("SEX_COM7")
+
+;COM8：スパンキング
+;-------------------------------------------------
+@KOJO_4_SEX_COM8
+CALL KOJO_4_ROOT_BATTLE("SEX_COM8")
+
+;COM9：針
+;-------------------------------------------------
+@KOJO_4_SEX_COM9
+CALL KOJO_4_ROOT_BATTLE("SEX_COM9")
+
+;COM10：手淫
+;-------------------------------------------------
+@KOJO_4_SEX_COM10
+CALL KOJO_4_ROOT_BATTLE("SEX_COM10")
+
+;COM11：フェラ
+;-------------------------------------------------
+@KOJO_4_SEX_COM11
+CALL KOJO_4_ROOT_BATTLE("SEX_COM11")
+
+;COM12：イラマチオ
+;-------------------------------------------------
+@KOJO_4_SEX_COM12
+CALL KOJO_4_ROOT_BATTLE("SEX_COM12")
+
+;COM13：絶頂禁止
+;-------------------------------------------------
+@KOJO_4_SEX_COM13
+CALL KOJO_4_ROOT_BATTLE("SEX_COM13")
+
+;COM14：衣装を破く
+;-------------------------------------------------
+@KOJO_4_SEX_COM14
+CALL KOJO_4_ROOT_BATTLE("SEX_COM14")
+
+;COM15：種付けピストン（Ｖ系統）
+;-------------------------------------------------
+@KOJO_4_SEX_COM15
+CALL KOJO_4_ROOT_BATTLE("SEX_COM15")
+
+;COM16：種付けフィニッシュ（Ｖ系統）
+;-------------------------------------------------
+@KOJO_4_SEX_COM16
+CALL KOJO_4_ROOT_BATTLE("SEX_COM16")
+
+;COM17：アナルピストン（Ａ系統）
+;-------------------------------------------------
+@KOJO_4_SEX_COM17
+CALL KOJO_4_ROOT_BATTLE("SEX_COM17")
+
+;COM18：アナルフィニッシュ（Ａ系統）
+;-------------------------------------------------
+@KOJO_4_SEX_COM18
+CALL KOJO_4_ROOT_BATTLE("SEX_COM18")
+
+;COM19：両穴ピストン（ＶＡ系統）
+;-------------------------------------------------
+@KOJO_4_SEX_COM19
+CALL KOJO_4_ROOT_BATTLE("SEX_COM19")
+
+;COM20：両穴フィニッシュ（ＶＡ系統）
+;-------------------------------------------------
+@KOJO_4_SEX_COM20
+CALL KOJO_4_ROOT_BATTLE("SEX_COM20")
+
+;=================================================
+;MESSAGE_SEX_COMSP.ERB
+;=================================================
+;SPCOM0：C攻めSP　クリトリスに噛み付く
+;-------------------------------------------------
+@KOJO_4_SEX_SPCOM0
+CALL KOJO_4_ROOT_BATTLE("SEX_SPCOM0")
+
+;SPCOM1：V攻めSP　奥を突く
+;-------------------------------------------------
+@KOJO_4_SEX_SPCOM1
+CALL KOJO_4_ROOT_BATTLE("SEX_SPCOM1")
+
+;SPCOM2：A攻めSP　激しくアナルを犯す
+;-------------------------------------------------
+@KOJO_4_SEX_SPCOM2
+CALL KOJO_4_ROOT_BATTLE("SEX_SPCOM2")
+
+;SPCOM3：B攻めSP　乳首に噛み付く
+;-------------------------------------------------
+@KOJO_4_SEX_SPCOM3
+CALL KOJO_4_ROOT_BATTLE("SEX_SPCOM3")
+
+;SPCOM4：電流
+;-------------------------------------------------
+@KOJO_4_SEX_SPCOM4
+CALL KOJO_4_ROOT_BATTLE("SEX_SPCOM4")
+
+;SPCOM5：パイズリ
+;-------------------------------------------------
+@KOJO_4_SEX_SPCOM5
+CALL KOJO_4_ROOT_BATTLE("SEX_SPCOM5")
+
+;SPCOM6：強制自慰
+;-------------------------------------------------
+@KOJO_4_SEX_SPCOM6
+CALL KOJO_4_ROOT_BATTLE("SEX_SPCOM6")
+
+;SPCOM7：羞恥プレイ
+;-------------------------------------------------
+@KOJO_4_SEX_SPCOM7
+CALL KOJO_4_ROOT_BATTLE("SEX_SPCOM7")
+
+;SPCOM8：尿道攻め
+;-------------------------------------------------
+@KOJO_4_SEX_SPCOM8
+CALL KOJO_4_ROOT_BATTLE("SEX_SPCOM8")
+
+;SPCOM9：V拡張攻め
+;-------------------------------------------------
+@KOJO_4_SEX_SPCOM9
+CALL KOJO_4_ROOT_BATTLE("SEX_SPCOM9")
+
+;SPCOM10：A拡張攻め
+;-------------------------------------------------
+@KOJO_4_SEX_SPCOM10
+CALL KOJO_4_ROOT_BATTLE("SEX_SPCOM10")
+
+;SPCOM11：甘えん坊授乳プレイ
+;-------------------------------------------------
+@KOJO_4_SEX_SPCOM11
+CALL KOJO_4_ROOT_BATTLE("SEX_SPCOM11")
+
+;SPCOM12：ヘソ快楽攻め
+;-------------------------------------------------
+@KOJO_4_SEX_SPCOM12
+CALL KOJO_4_ROOT_BATTLE("SEX_SPCOM12")
+
+;SPCOM13：丸飲み精液攻め
+;-------------------------------------------------
+@KOJO_4_SEX_SPCOM13
+CALL KOJO_4_ROOT_BATTLE("SEX_SPCOM13")
+
+;SPCOM14：催眠姦
+;-------------------------------------------------
+@KOJO_4_SEX_SPCOM14
+CALL KOJO_4_ROOT_BATTLE("SEX_SPCOM14")
+
+;SPCOM15：サブミッションファック
+;-------------------------------------------------
+@KOJO_4_SEX_SPCOM15
+CALL KOJO_4_ROOT_BATTLE("SEX_SPCOM15")
+
+
+;=================================================
+;MESSAGE_SUBEVENT.ERB
+;=================================================
+;**************************************************
+;戦闘のサブイベント
+;**************************************************
+;悪堕ちキャラに敗北して犯される
+;-------------------------------------------------
+@KOJO_4_SUBEVENT_BATTLE_RAPED_ENEMY
+CALL KOJO_4_ROOT_BATTLE("SUBEVENT_BATTLE_RAPED_ENEMY")
+
+;触手拘束具を着せられた
+;-------------------------------------------------
+@KOJO_4_SUBEVENT_BATTLE_SETTENTACLECLOTH
+CALL KOJO_4_ROOT_BATTLE("SUBEVENT_BATTLE_SETTENTACLECLOTH")
+
+;触手拘束具による被姦
+;-------------------------------------------------
+@KOJO_4_SUBEVENT_BATTLE_ACTTENTACLECLOTH
+CALL KOJO_4_ROOT_BATTLE("SUBEVENT_BATTLE_ACTTENTACLECLOTH")
+
+;触手服による被姦
+;-------------------------------------------------
+@KOJO_4_SUBEVENT_BATTLE_ACTTENTACLESUIT
+CALL KOJO_4_ROOT_BATTLE("SUBEVENT_BATTLE_ACTTENTACLESUIT")
+
+
+;=================================================
+;COM_ATTACK_COMMON.ERB
+;=================================================
+;戦闘スタイルチェンジスキーム
+;-------------------------------------------------
+@KOJO_4_SUBEVENT_BATTLE_CHARA_BATTLE_STYLE_CHANGE
+CALL KOJO_4_ROOT_BATTLE("BATTLE_CHARA_BATTLE_STYLE_CHANGE")
+
+

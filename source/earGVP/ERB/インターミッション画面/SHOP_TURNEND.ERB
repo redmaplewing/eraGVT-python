@@ -1,0 +1,996 @@
+﻿;**********************************************************
+;ターン行動と襲撃後処理、新しいターンに移る前に起きるイベント各種
+@EVENTTURNEND
+#LATER
+#DIM CCOUNT
+REDRAW 0
+;クズ市民関係のフラグをリセット
+FLAG:70 = 0
+FLAG:71 = 0
+FLAG:72 = 0
+
+;PALAM最大値をリセット
+VARSET MAX_PALAM
+
+;襲撃/救援イベント後ではなく、行動していないキャラがいる場合、ACTIONに飛ばして再度ループ
+SIF FLAG:799 < CHARANUM && FLAG:45 == 0
+	JUMP ACTION_MAIN
+
+;パーティメンバー管理
+CALL SET_PARTYMEMBER
+
+;前ターンで行動開始前に選択していたキャラにターゲットをあわせる
+;ターン中で使用不可になった場合は使用可能なキャラのうち一番若いキャラにあわせる
+;memo:この処理の意義は？
+;memo:少し下の救出されたキャラの処理でTARGET代入しているので、意味があるとしたら直後のエンディングのみ
+;memo:ならエンディング処理で選び直せばよくね？
+IF CFLAG:(FLAG:798):0 != 状態_無事
+	FOR CCOUNT, 0, CHARANUM
+		SIF CCOUNT == MASTER
+			CONTINUE
+		
+		IF CFLAG:CCOUNT:0 == 状態_無事
+			TARGET = CCOUNT
+			BREAK
+		ENDIF
+	NEXT
+ELSE
+	TARGET = FLAG:798
+ENDIF
+
+;エンディング判定
+CALL ENDING
+;強制的にタイトルに戻る場合
+IF FLAG:999 == -999
+	CLEARLINE LINECOUNT
+	RESETDATA
+	BEGIN TITLE
+ELSEIF FLAG:64 != 0
+	;ターン終了処理を終了
+	FLAG:48 = 0
+	JUMP SHOW_SHOP
+ENDIF
+
+;戦闘直後のキャラ再計算処理
+CALL RECALC_PARTYMEMBER
+
+;襲撃イベント後のスキップ
+;ターン終了後イベント処理で襲撃発生して戦闘が終わるとここに戻ってくるので、イベント処理を飛ばす
+IF FLAG:45 > 0
+	;襲撃フラグを折る
+	FLAG:45 = 0
+
+	BEGIN SHOP
+ENDIF
+
+;ゲームクリアモード・引き継ぎスタートでなければ、行動中キャラを0番目にする
+;memo:この処理いる？→夜這いイベントでFLAG:799を使い回してやがった。クソが
+;memo:それを除去したならもっと下、BEGIN SHOPの直前へ持っていく
+SIF FLAG:64 == 0
+	FLAG:799 = 0
+
+
+PRINTL 
+
+;ボス出現停止フラグを折る
+FLAG:49 = 0
+
+;ボス触手のダメージ蓄積値が回復
+CALL BOSS_TENTACLE_RECOVER
+
+;口上のターン終了時処理を呼び出し
+FOR CCOUNT, 0, CHARANUM
+	SIF CCOUNT == MASTER
+		CONTINUE
+
+	TARGET = CCOUNT
+	CALL MESSAGE_TURNEND
+NEXT
+
+;クズ市民による脅迫あるいは誘拐監禁
+FOR CCOUNT, 1, CHARANUM
+	;脅迫イベント（コンフィグで「クズ市民による幽閉を許可する」がONかつ、キャラが無事かつ、レイプされた（クズ市民orナンパ）ことがある）
+	IF CONFIG_CHECK_PRISON_F(10) == 1 && (CFLAG:CCOUNT:0 == 状態_無事 || CFLAG:CCOUNT:0 == 5) && (CFLAG:CCOUNT:286 + CFLAG:CCOUNT:320 + CFLAG:CCOUNT:321) > 0
+		TARGET = CCOUNT
+		CALL INTIMIDATION_EVENT
+	;監禁イベント(コンフィグに関わらずキャラメイクで付与されている可能性がある)
+	ELSEIF CFLAG:CCOUNT:0 == 状態_クズ監禁
+		TARGET = CCOUNT
+		CALL KIDNAPPING
+	ENDIF
+NEXT
+
+
+;触手幽閉
+CALL PRISON
+;判定出産
+CALL BIRTH_HANTEI
+;判定育児終了
+CALL GROW_HANTEI
+
+;悪堕ちキャラが暴れるイベント
+CALL AKUOTI_ATTACK
+;イチャックス
+CALL LOVESEX_NIGHT
+;夜間自慰
+CALL SELF_NIGHT
+;夜這い（コンフィグで「仲間による夜這い」がONなら）
+SIF CONFIG_CHECK_EVENT_F(2) > 0
+	CALL YOBAI
+
+;防衛力の自動変動
+CALL DAILY_DEFENCE_CHANGE
+;人気度の自動変動
+CALL DAILY_POPULARITY_CHANGE
+
+;コンフィグで「一部ウェイトの削減」がOFFならWAIT入れる
+SIF CONFIG_CHECK_SCREEN_F(3) == 0
+	WAIT
+
+;ボス触手襲来判定（コンフィグで「ボス触手の襲撃」がONなら）
+SIF CONFIG_CHECK_EVENT_F(0) > 0
+	CALL RAID_HANTEI
+
+;イベント戦闘が発生していなければ新しいターンを開始する
+SIF FLAG:45 == 0
+	BEGIN SHOP
+
+
+;**********************************************************
+;新しいターンの開始時に起こる処理
+@EVENTSHOP
+#DIM CCOUNT
+
+REDRAW 0
+
+;ゲーム開始直後の処理だった場合
+IF DAY == 0
+	DAY = 1
+	TIME = 0
+	FLAG:64 = 0
+	FLAG:799 = 0
+	TARGET = 1
+	CALL LB
+	;PRINTL ゲームを開始します
+	;PRINTW 
+	JUMP SHOW_SHOP
+ENDIF
+
+;memo:これらはターン終了時のイベントでは駄目な理由はなにかある？
+;寄生関係
+CALL PARASITE
+;子触手襲来（コンフィグで「子触手の夜這い」がONなら）
+SIF CONFIG_CHECK_EVENT_F(1) > 0
+	CALL SMALL_TENTACLE_HANTEI
+;子触手の増殖判定
+CALL BIRTH_AUTO_RANDOM
+
+;同時出撃人数と戦闘支援人数をリセット
+FLAG:41 = 0
+FLAG:43 = 0
+
+;昼夜の切り替え
+INVERTBIT TIME, 0
+
+;時間経過で自動的に体力,気力,性耐性,結界,淫紋が回復する
+CALL RECOVERY_OVER_TIME
+
+;日数
+DRAWLINE
+IF TIME == 0
+	DAY += 1
+	IF DAY > 1
+		PRINTL 一日が終了しました
+		SAVESTR'=""
+		;ゲームオーバーでなければ支援金・支出の判定
+		IF CHECK_GAMEOVER_F() == 0
+			CALL CALC_INCOME_EXPEND
+		ENDIF
+	ENDIF
+ELSE
+	PRINTL 夜になりました
+	WAIT
+ENDIF
+
+;ニュースを初期化
+SAVESTR:20'=""
+;特定状況下ではニュースを固定
+;ゲームオーバーモード
+IF CHECK_GAMEOVER_F() == 1
+	FLAG:60 = 10001
+;ラスボス出現中
+ELSEIF FLAG:101 > 0
+	FLAG:60 = 10000
+ENDIF
+
+;全キャラの結界状態をチェック
+;memo:各結界耐久値にLIMITしているだけの本質的に不要な処理（値更新する時に都度すればいいだけ）
+;memo:いつか関数ごと削除する
+CALL CHECK_SHIELD_ALL
+
+;前ターンで行動開始前に選択していたキャラにターゲットをあわせる
+TARGET = FLAG:798
+
+;**********************************************************
+;以下、各イベント関数から呼び出される関数
+;**********************************************************
+
+;--------------------------------------------------
+;戦闘直後のキャラクターデータ再計算処理
+@RECALC_PARTYMEMBER
+#DIM CCOUNT
+
+LOCAL = TARGET
+FOR CCOUNT, 0, CHARANUM
+	SIF CCOUNT == MASTER
+		CONTINUE
+	SIF CCOUNT >= CHARANUM
+		BREAK
+
+	;ステータスの再計算
+	CALL LEVELSTATUS,CCOUNT
+
+	IF CFLAG:CCOUNT:0 == 状態_救出直後
+		TARGET = CCOUNT
+		IF CFLAG:TARGET:6 == -1
+			PRINTL 
+			CALL RESCUE_CHILD,TARGET
+			SIF RESULT < 0
+				CCOUNT -= RESULT
+		ELSE
+			CALL AFTER_RESCUED,TARGET
+		ENDIF
+		PRINTW 
+	ELSE
+		CALL INMON_RECOVERY,CCOUNT
+	ENDIF
+	;娘を施設に預けた場合の処理
+	SIF CCOUNT > CHARANUM - 1
+		BREAK
+
+	;歴代最高記録の更新判定（長いので別関数へ）
+	CALL UPDATE_STATUS_RECORD, CCOUNT
+
+	;実績獲得判定
+	CALL GET_STATE_TROPHY,CCOUNT
+NEXT
+TARGET = LOCAL
+
+;--------------------------------------------------
+;歴代最高記録の更新判定
+; 引数
+;	ARG	対象のキャラ番号
+@UPDATE_STATUS_RECORD, ARG
+
+IF MAXBASE:ARG:体力 > GLOBAL:103
+	GLOBAL:103 = MAXBASE:ARG:体力
+	GLOBALS:0 = %NAME:ARG,40,LEFT%（Lv{ABL:ARG:レベル}）　{GLOBAL:103}
+ENDIF
+IF MAXBASE:ARG:気力 > GLOBAL:104
+	GLOBAL:104 = MAXBASE:ARG:気力
+	GLOBALS:1 = %NAME:ARG,40,LEFT%（Lv{ABL:ARG:レベル}）　{GLOBAL:104}
+ENDIF
+IF MAXBASE:ARG:性耐性 > GLOBAL:105
+	GLOBAL:105 = MAXBASE:ARG:性耐性
+	GLOBALS:2 = %NAME:ARG,40,LEFT%（Lv{ABL:ARG:レベル}）　{GLOBAL:105}
+ENDIF
+IF MAXBASE:ARG:攻撃 > GLOBAL:106
+	GLOBAL:106 = MAXBASE:ARG:攻撃
+	GLOBALS:10 = %NAME:ARG,40,LEFT%（Lv{ABL:ARG:レベル}）　{GLOBAL:106}
+ENDIF
+IF MAXBASE:ARG:防御 > GLOBAL:107
+	GLOBAL:107 = MAXBASE:ARG:防御
+	GLOBALS:11 = %NAME:ARG,40,LEFT%（Lv{ABL:ARG:レベル}）　{GLOBAL:107}
+ENDIF
+IF MAXBASE:ARG:敏捷 > GLOBAL:108
+	GLOBAL:108 = MAXBASE:ARG:敏捷
+	GLOBALS:12 = %NAME:ARG,40,LEFT%（Lv{ABL:ARG:レベル}）　{GLOBAL:108}
+ENDIF
+IF MAXBASE:ARG:知性 > GLOBAL:109
+	GLOBAL:109 = MAXBASE:ARG:知性
+	GLOBALS:13 = %NAME:ARG,40,LEFT%（Lv{ABL:ARG:レベル}）　{GLOBAL:109}
+ENDIF
+IF 	EXP:ARG:魅了経験 > GLOBAL:110
+	GLOBAL:110 = EXP:ARG:魅了経験
+	GLOBALS:14 = %NAME:ARG,40,LEFT%（Lv{ABL:ARG:レベル}）　{GLOBAL:110}
+ENDIF
+
+;Shame
+IF 	EXP:ARG:Ｖ経験 > GLOBAL:120
+	GLOBAL:120 = EXP:ARG:Ｖ経験
+	GLOBALS:20 = %NAME:ARG,40,LEFT%（Lv{ABL:ARG:レベル}）　{GLOBAL:120}回
+ENDIF
+IF 	EXP:ARG:Ａ経験 > GLOBAL:121
+	GLOBAL:121 = EXP:ARG:Ａ経験
+	GLOBALS:21 = %NAME:ARG,40,LEFT%（Lv{ABL:ARG:レベル}）　{GLOBAL:121}回
+ENDIF
+IF 	EXP:ARG:自慰経験 > GLOBAL:122
+	GLOBAL:122 = EXP:ARG:自慰経験
+	GLOBALS:22 = %NAME:ARG,40,LEFT%（Lv{ABL:ARG:レベル}）　{GLOBAL:122}回
+ENDIF
+IF 	EXP:ARG:フェラ経験 > GLOBAL:123
+	GLOBAL:123 = EXP:ARG:フェラ経験
+	GLOBALS:23 = %NAME:ARG,40,LEFT%（Lv{ABL:ARG:レベル}）　{GLOBAL:123}回
+ENDIF
+IF 	EXP:ARG:精液経験 > GLOBAL:124
+	GLOBAL:124 = EXP:ARG:精液経験
+	GLOBALS:24 = %NAME:ARG,40,LEFT%（Lv{ABL:ARG:レベル}）　{GLOBAL:124}回
+ENDIF
+IF 	EXP:ARG:絶頂経験 > GLOBAL:125
+	GLOBAL:125 = EXP:ARG:絶頂経験
+	GLOBALS:25 = %NAME:ARG,40,LEFT%（Lv{ABL:ARG:レベル}）　{GLOBAL:125}回
+ENDIF
+IF 	EXP:ARG:出産経験 > GLOBAL:126
+	GLOBAL:126 = EXP:ARG:出産経験
+	GLOBALS:26 = %NAME:ARG,40,LEFT%（Lv{ABL:ARG:レベル}）　{GLOBAL:126}回
+ENDIF
+IF 	EXP:ARG:近親交配経験 > GLOBAL:127
+	GLOBAL:127 = EXP:ARG:近親交配経験
+	GLOBALS:27 = %NAME:ARG,40,LEFT%（Lv{ABL:ARG:レベル}）　{GLOBAL:127}回
+ENDIF
+IF 	EXP:ARG:射精経験 > GLOBAL:128
+	GLOBAL:128 = EXP:ARG:射精経験
+	GLOBALS:28 = %NAME:ARG,40,LEFT%（Lv{ABL:ARG:レベル}）　{GLOBAL:128}回
+ENDIF
+IF 	EXP:ARG:噴乳経験 > GLOBAL:129
+	GLOBAL:129 = EXP:ARG:噴乳経験
+	GLOBALS:29 = %NAME:ARG,40,LEFT%（Lv{ABL:ARG:レベル}）　{GLOBAL:129}回
+ENDIF
+IF 	EXP:ARG:放尿経験 > GLOBAL:130
+	GLOBAL:130 = EXP:ARG:放尿経験
+	GLOBALS:30 = %NAME:ARG,40,LEFT%（Lv{ABL:ARG:レベル}）　{GLOBAL:130}回
+ENDIF
+IF 	EXP:ARG:寄生経験 > GLOBAL:131
+	GLOBAL:131 = EXP:ARG:寄生経験
+	GLOBALS:31 = %NAME:ARG,40,LEFT%（Lv{ABL:ARG:レベル}）　{GLOBAL:131}回
+ENDIF
+
+SAVEGLOBAL
+
+;--------------------------------------------------
+;ボス触手の自動回復
+@BOSS_TENTACLE_RECOVER
+
+;裏ボスは回復なし
+SIF GET_LASTBOSS_PHASE_F() >= 2
+	RETURN 0
+
+IF FLAG:999 == 1
+	SETCOLOR 128,128,128
+	PRINTL DEBUG ボスのキズが回復
+	RESETCOLOR
+ENDIF
+FOR LOCAL,1,FLAG:3 + 1
+	FLAG:(300 + LOCAL) -= RAND:3000000 + 8000000
+	SIF FLAG:(300 + LOCAL) < 0
+		FLAG:(300 + LOCAL) = 0
+NEXT
+FOR LOCAL,1,FLAG:4 + 1
+	;ラスボス強化時は回復量が低下
+	CALL LASTBOSS_REST
+	FLAG:(400 + LOCAL) -= (RAND:3000000 + 1000000) / (2 + RESULT)
+	SIF FLAG:(400 + LOCAL) < 0
+		FLAG:(400 + LOCAL) = 0
+NEXT
+
+;--------------------------------------------------
+;防衛力の自動変動
+@DAILY_DEFENCE_CHANGE
+;ゲームオーバーモードでは防衛力が０になる
+IF CHECK_GAMEOVER_F() == 1
+	FLAG:852 = 0
+	RETURN 0
+ENDIF
+;①誰も「出撃／拠点防衛」していない(ソロモードのみ「鍛錬／情報収集」も出撃扱いとする)
+;②放棄ターン＞防衛施設レベル
+;共に満たす場合に低下
+IF FLAG:41 == 0
+	;出撃放棄中は治安の悪化が加速していく
+	;(ただしソロ時は幽閉リスクが高いため、悪化ペースは1/4に抑える)
+	IF FLAG:41 == 0 && (FLAG:2!=2 || (DAY % 2 ==0 && TIME == 0))
+		FLAG:42 ++
+	ENDIF
+	DRAWLINE
+	PRINTL 
+	FONTBOLD
+	PRINTL 防衛力の変動　　
+	IF FLAG:42 < FLAG:52
+		PRINTFORML 　防衛設備が効果的に機能しています
+	ELSEIF FLAG:42 < 2 + FLAG:52
+		PRINTFORML 　危険度レベル{FLAG:42 - FLAG:52}：まだ比較的安全です
+	ELSEIF FLAG:42 < 3 + FLAG:52
+		PRINTFORML 　危険度レベル{FLAG:42 - FLAG:52}：まだ無視できるレベルです
+	ELSEIF FLAG:42 < 5 + FLAG:52
+		PRINTFORML 　危険度レベル{FLAG:42 - FLAG:52}：触手の活動が活発化しています
+	ELSEIF FLAG:42 < 7 + FLAG:52
+		PRINTFORML 　危険度レベル{FLAG:42 - FLAG:52}：あちこちで被害が多発中！
+	ELSE
+		PRINTFORML 　危険度レベルMAX：かなり危険な状態です！
+	ENDIF
+	FONTREGULAR
+	PRINTFORM 　防衛力( {FLAG:852} )　
+	;このターンに誰も出撃していない場合、放棄ターン数に応じて防衛力が大きく低下
+	LOCAL:852 = 0
+	IF FLAG:41 == 0
+		CALL TENTACLE_LEVEL
+		IF FLAG:42 < FLAG:52
+			LOCAL:852 = 0
+		ELSEIF FLAG:42 < 2 + FLAG:52
+			LOCAL:852 = RESULT + 5
+		ELSEIF FLAG:42 == 2 + FLAG:52
+			LOCAL:852 = FLAG:852 * 1 / 100 + RESULT + 5
+		ELSEIF FLAG:42 == 3 + FLAG:52
+			LOCAL:852 = FLAG:852 * 4 / 100 + RESULT + 10
+		ELSEIF FLAG:42 == 4 + FLAG:52
+			LOCAL:852 = FLAG:852 * 8 / 100 + RESULT + 20
+		ELSEIF FLAG:42 == 5 + FLAG:52
+			LOCAL:852 = FLAG:852 * 12 / 100 + RESULT + 40
+		ELSEIF FLAG:42 == 6 + FLAG:52
+			LOCAL:852 = FLAG:852 * 15 / 100 + RESULT + 80
+		ELSEIF FLAG:42 == 7 + FLAG:52
+			LOCAL:852 = FLAG:852 * 20 / 100 + RESULT + 160
+		ELSE
+			LOCAL:852 = FLAG:852 * 50 / 100 + RESULT + 320
+		ENDIF
+		PRINTFORM −　時間経過( {LOCAL:852} )　
+		FLAG:852 = MAX(FLAG:852 - LOCAL:852, 0)
+	ELSE
+		;誰かが出撃していれば放棄ターン数リセット
+		FLAG:42 = 0
+	ENDIF
+	LOCAL:852 = FLAG:52 * FLAG:52 * 5
+	;防衛設備が自動で防衛
+	FLAG:852 = FLAG:852 + LOCAL:852
+	SIF LOCAL:852
+		PRINTFORM ＋　防衛設備Lv{FLAG:52}( {LOCAL:852} )　
+	SIF (FLAG:41 == 0 && !GAME_OPTION_CHECK_F(OPTION_solo)) || FLAG:52
+		PRINTFORM ＝　{FLAG:852}
+	PRINTL 
+;一人でも出撃していれば放棄ターン数はリセット
+ELSEIF FLAG:41 > 0
+	FLAG:42 = 0
+ENDIF
+
+;--------------------------------------------------
+;人気度の自動変動
+@DAILY_POPULARITY_CHANGE
+#DIM CCOUNT
+
+FLAG:853 = LIMIT(FLAG:853, -100, 100)
+;ゲームオーバーモードでは人気度変動しない
+SIF CHECK_GAMEOVER_F() == 1
+	RETURN 0
+DRAWLINE
+PRINTL 
+FONTBOLD
+PRINTL 人気度の変動　　
+FONTREGULAR
+PRINTFORM 　人気度( {FLAG:853} )　
+;一般評価
+LOCAL:853 = 0
+LOCAL:0 = FLAG:853
+IF FLAG:852 == 0
+	SIF RAND:100 < 5
+		LOCAL:853 -= 1
+	SIF RAND:100 < 5
+		LOCAL:853 -= 1
+	SIF RAND:100 < 5
+		LOCAL:853 -= 1
+ELSEIF FLAG:852 < 1250
+	SIF RAND:100 < 5
+		LOCAL:853 -= 1
+	SIF RAND:100 < 5
+		LOCAL:853 -= 1
+ELSEIF FLAG:852 < 2500
+	SIF RAND:100 < 5
+		LOCAL:853 -= 1
+	SIF RAND:100 < 5
+		LOCAL:853 += 1
+ELSEIF FLAG:852 < 5000
+	SIF RAND:100 < 5
+		LOCAL:853 += 1
+ELSEIF FLAG:852 < 7500
+	SIF RAND:100 < 5
+		LOCAL:853 += 1
+	SIF RAND:100 < 5
+		LOCAL:853 += 1
+ELSE
+	SIF RAND:100 < 5
+		LOCAL:853 += 1
+	SIF RAND:100 < 5
+		LOCAL:853 += 1
+	SIF RAND:100 < 5
+		LOCAL:853 += 1
+ENDIF
+IF LOCAL:853 < 0
+	RESULT = ABS(LOCAL:853)
+	PRINTFORM −　一般評価( {RESULT} )　
+ENDIF
+SIF LOCAL:853 > 0
+	PRINTFORM ＋　一般評価( {LOCAL:853} )　
+FLAG:853 = FLAG:853 + LOCAL:853
+;処女ボーナス
+LOCAL:853 = 0
+FOR CCOUNT, 0, CHARANUM
+	SIF CCOUNT == MASTER
+		CONTINUE
+	IF TALENT:CCOUNT:処女 > 0
+		SIF RAND:100 < 5
+			LOCAL:853 += 1
+	ELSEIF CHARATALENT_F(CCOUNT,0,"オトコ") > 0 && CHARATALENT_F(CCOUNT,1,"オトコ") == 0 && TALENT:CCOUNT:変身時非処女 == 0
+		SIF RAND:100 < 5
+			LOCAL:853 += 1
+	ENDIF
+NEXT
+SIF LOCAL:853 > 0
+	PRINTFORM ＋　処女ボーナス( {LOCAL:853} )　
+FLAG:853 = FLAG:853 + LOCAL:853
+;ファン人気
+LOCAL:853 = 0
+FOR CCOUNT, 0, CHARANUM
+	SIF CCOUNT == MASTER
+		CONTINUE
+	IF EXP:CCOUNT:魅了経験 >= 100
+		SIF RAND:100 < 5
+			LOCAL:853 += 1
+		SIF EXP:CCOUNT:魅了経験 >= 150 && RAND:100 < 5
+			LOCAL:853 += 1
+		SIF EXP:CCOUNT:魅了経験 >= 200 && RAND:100 < 5
+			LOCAL:853 += 1
+	ENDIF
+	SIF TALENT:CCOUNT:清純派 > 0 && RAND:100 < 5
+		LOCAL:853 += 1
+	SIF RAND:100 < MIN(CFLAG:CCOUNT:284 / 4, 10)
+		LOCAL:853 += 1
+	;性格補正
+	SIF TALENT:CCOUNT:母性的 > 0 && RAND:100 < 5
+		LOCAL:853 += 1
+	SIF TALENT:CCOUNT:小悪魔 > 0 && RAND:100 < 5
+		LOCAL:853 += 1
+	SIF TALENT:CCOUNT:目立ちたがり > 0 && RAND:100 < 5
+		LOCAL:853 += 1
+	SIF TALENT:CCOUNT:上品 > 0 && RAND:100 < 5
+		LOCAL:853 += 1
+	SIF TALENT:CCOUNT:泣き虫 > 0 && RAND:100 < 5
+		LOCAL:853 += 1
+	;FEATによる人気度への補正
+	SIF TALENT:CCOUNT:獣性の証 > 0 && RAND:100 < 5
+		LOCAL:853 += 1
+	SIF TALENT:CCOUNT:人外の美貌 > 0 && RAND:100 < 10
+		LOCAL:853 += 1
+NEXT
+SIF LOCAL:853 > 0
+	PRINTFORM ＋　ファン人気( {LOCAL:853} )　
+FLAG:853 = FLAG:853 + LOCAL:853
+;悪いうわさ
+LOCAL:853 = 0
+FOR CCOUNT, 0, CHARANUM
+	SIF CCOUNT == MASTER
+		CONTINUE
+	SIF RAND:50 < MIN(CFLAG:825, 10)
+		LOCAL:853 += 1
+NEXT
+SIF LOCAL:853 > 0
+	PRINTFORM −　悪いうわさ( {LOCAL:853} )
+FLAG:853 = FLAG:853 - LOCAL:853
+FLAG:853 = LIMIT(FLAG:853, -100, 100)
+PRINTFORM ＝　{FLAG:853}　
+IF FLAG:853 < LOCAL:0
+	PRINT (↓下降)
+ELSEIF FLAG:853 > LOCAL:0
+	PRINT (↑上昇)
+ELSE
+	PRINT (変動なし)
+ENDIF
+PRINTL 
+DRAWLINE
+PRINTL 
+
+;--------------------------------------------------
+;時間経過で自動的に体力,気力,性耐性,結界,淫紋が回復する
+@RECOVERY_OVER_TIME
+#DIM CCOUNT
+#DIM LCOUNT
+
+FOR CCOUNT, 0, CHARANUM
+	SIF CCOUNT == MASTER
+		CONTINUE
+	
+	;一日が経過した直後（昼）だと回復量8%
+	IF TIME == 0
+		LOCAL:1 = 8
+		IF TALENT:CCOUNT:回復早い == 1
+			LOCAL:1 += 4
+		ELSEIF TALENT:CCOUNT:回復遅い == 1
+			LOCAL:1 -= 4
+		ENDIF
+		;自動回復アップの効果
+		SIF FLAG:901
+			LOCAL:1 += 4
+	ELSE
+		LOCAL:1 = 0
+		;FEAT効果による回復量補正
+		SIF TALENT:夜魔の貴族 > 0
+			LOCAL:1 += 8
+	ENDIF
+	;休憩設備レベルに応じて自動回復
+	IF FLAG:51 == 1
+		LOCAL:1 += 0
+	ELSEIF FLAG:51 == 2
+		LOCAL:1 += 2
+	ELSEIF FLAG:51 == 3
+		LOCAL:1 += 4
+	ELSEIF FLAG:51 == 4
+		LOCAL:1 += 6
+	ELSEIF FLAG:51 == 5
+		LOCAL:1 += 8
+	ENDIF
+
+	;疲労度に応じて回復量低下（疲労度回復処理の前に計算）
+	IF CFLAG:CCOUNT:99 >= 50
+		LOCAL:1 = LOCAL:1 * 0 / 100
+	ELSEIF CFLAG:CCOUNT:99 >= 40
+		LOCAL:1 = LOCAL:1 * 5 / 100
+	ELSEIF CFLAG:CCOUNT:99 >= 30
+		LOCAL:1 = LOCAL:1 * 25 / 100
+	ELSEIF CFLAG:CCOUNT:99 >= 20
+		LOCAL:1 = LOCAL:1 * 50 / 100
+	ELSEIF CFLAG:CCOUNT:99 >= 10
+		LOCAL:1 = LOCAL:1 * 75 / 100
+	ENDIF
+
+	;幽閉、洗脳、悪堕ち、死亡キャラは体力気力性耐性が０になる
+	IF GROUPMATCH(CFLAG:CCOUNT:0, 状態_幽閉, 状態_洗脳, 状態_悪堕ち, 状態_死亡)
+		BASE:CCOUNT:体力 = 0
+		BASE:CCOUNT:気力 = 0
+		BASE:CCOUNT:性耐性 = 0
+	;回復の処理
+	ELSE
+		LOCAL = MAXBASE:CCOUNT:体力 * LOCAL:1 / 100
+		BASE:CCOUNT:体力 = LIMIT(LOCAL + BASE:CCOUNT:体力, 0, MAXBASE:CCOUNT:体力)
+
+		LOCAL = MAXBASE:CCOUNT:気力 * LOCAL:1 / 100
+		BASE:CCOUNT:気力 = LIMIT(LOCAL + BASE:CCOUNT:気力, 0, MAXBASE:CCOUNT:気力)
+
+		LOCAL = MAXBASE:CCOUNT:性耐性 * LOCAL:1 / 100
+		BASE:CCOUNT:性耐性 = LIMIT(LOCAL + BASE:CCOUNT:性耐性, 0, MAXBASE:CCOUNT:性耐性)
+	ENDIF
+
+	;疲労度自動回復の処理
+	IF CFLAG:CCOUNT:99 > 0 && CFLAG:CCOUNT:0 == 状態_無事
+		LOCAL = 0
+		SIF (FLAG:53 & 観葉植物) && RAND:2 == 0
+			LOCAL += 1
+		SIF (FLAG:53 & 心休まる風景画) && RAND:3 == 0
+			LOCAL += 1
+		SIF (FLAG:53 & オシャレなオブジェ) && RAND:4 == 0
+			LOCAL += 1
+		SIF (FLAG:53 & ゴージャスな噴水) && RAND:2 == 0
+			LOCAL += 1
+		SIF (FLAG:53 & マッサージチェア)
+			LOCAL += 1
+		SIF (FLAG:53 & ビューティサロン)
+			LOCAL += 2
+
+		SIF CFLAG:CCOUNT:100 == 予定_鍛錬 && (FLAG:53 & シャワー設備)
+			LOCAL += 1
+
+		;FEAT効果による疲労の自動回復
+		SIF TALENT:CCOUNT:不老長寿 > 0 && TIME == 0
+			LOCAL += 1 + RAND:2 + RAND:2
+		SIF TALENT:CCOUNT:不老長寿 > 0 && TIME == 1
+			LOCAL += 1 + RAND:2
+
+		SIF CFLAG:CCOUNT:99 <= 0
+			LOCAL = 0
+
+		;回復実行
+		CFLAG:CCOUNT:99 -= LOCAL
+		SIF CFLAG:CCOUNT:99 < 0
+			CFLAG:CCOUNT:99 = 0
+		;過剰疲労時は上限でカット(とりあえず上限200)
+		;洗脳または悪堕ち時は上限50
+		IF GROUPMATCH(CFLAG:CCOUNT:0, 状態_洗脳, 状態_悪堕ち)
+			SIF CFLAG:CCOUNT:99 > 50
+				CFLAG:CCOUNT:99 = 50
+		ELSE
+			SIF CFLAG:CCOUNT:99 > 200
+				CFLAG:CCOUNT:99 = 200
+		ENDIF
+
+		IF CFLAG:CCOUNT:100 != 予定_休憩 && LOCAL > 0
+			IF CFLAG:CCOUNT:99 == 0
+				PRINTFORML %CALLNAME:CCOUNT%の身体から疲労が完全に抜けた！
+			ELSE
+				PRINTFORML %CALLNAME:CCOUNT%の身体から疲労が少し抜けた…
+			ENDIF
+		ENDIF
+
+		;理性回復 概率5%
+		IF TALENT:CCOUNT:繁殖袋 == 1
+			IF RAND(25-CHARANUM_ACTRESS()*4) < 1
+				PRINTL 理性回復
+				PRINTFORML %CHARANUM_ACTRESS() > 0 ? "仲間の献身的な治療による" # "誰にも理由は分からないが、"%絆と愛の力なのかもしれない
+				PRINTFORML 廃人化していた%CALLNAME:CCOUNT%の理性が奇跡的に回復した！
+				TALENT:CCOUNT:繁殖袋 = 0
+				FORCEWAIT
+			ENDIF
+		ENDIF
+		;毁灭倒计时加总
+		;首先如果因为任何原因不再四肢欠损，则倒计时停止
+		IF TALENT:CCOUNT:四肢欠損 < 1
+		TALENT:CCOUNT:毀滅倒計時 = 0
+		ENDIF
+		;如果倒计时开始计算，每回合随机增加数值
+		IF TALENT:CCOUNT:毀滅倒計時 > 0
+		TALENT:CCOUNT:毀滅倒計時 += RAND(1,3)
+		ENDIF
+		;当倒计时增加至15或以上，进入处刑
+		IF TALENT:CCOUNT:毀滅倒計時 >= 15
+		TARGET = CCOUNT
+		;CALL AMPUTEE_EXECUTION,TARGET
+		ENDIF
+
+	ENDIF
+
+	;部位結界の回復
+	FOR LCOUNT, 0, 感覚数
+		LOCAL = 0
+		IF CFLAG:CCOUNT:0 == 状態_無事
+			LOCAL = 3
+			SIF CFLAG:CCOUNT:100 == 予定_休憩
+				LOCAL += 3
+		ENDIF
+		LOCAL = MAXBASE:CCOUNT:(LCOUNT + 30) * LOCAL / 100
+		SIF BASE:CCOUNT:(LCOUNT + 30) > 0
+			BASE:CCOUNT:(LCOUNT + 30) = LIMIT(BASE:CCOUNT:(LCOUNT + 30) + LOCAL, 0, MAXBASE:CCOUNT:(LCOUNT + 30))
+	NEXT
+
+	;社交的な場合、低確率でストーカーフラグが増加
+	SIF TALENT:CCOUNT:社交的 > 0 && RAND:100 < (4 + SQRT(EXP:CCOUNT:魅了経験))
+		CFLAG:CCOUNT:285 += 1
+	;小心者の場合、低確率でストーカーフラグが減少
+	SIF TALENT:CCOUNT:小心者 > 0 && RAND:100 < 8 && CFLAG:CCOUNT:285 > 0
+		CFLAG:CCOUNT:285 -= 1
+
+	;避妊用ピルを処方していれば１つ消費
+	SIF CFLAG:CCOUNT:241 > 0
+		CFLAG:CCOUNT:241 -= 1
+
+	CFLAG:CCOUNT:400 = 0
+
+	IF TIME == 0
+		;日付変更時に生理周期変数を進行させる
+		CALL ESTRUS_CYCLE(CCOUNT)
+	ENDIF
+	
+NEXT
+
+;--------------------------------------------------
+;日数経過による収入・支出のイベント
+@CALC_INCOME_EXPEND
+#DIM CCOUNT
+
+IF DAY == 7
+	PRINTW 国から支援表明の通知が届きました。
+	PRINTW これからは一週間ごとに政府からの支援と市民からの義援金が届きます。
+	PRINTW 防衛成果に応じて金額が増えるので、防衛力に注意しましょう。
+	PRINTL 
+	PRINTL 最初の資金援助が届いています。
+	PRINTW 
+ELSEIF DAY == 21
+	PRINTL 国からの援助金が増額されました。
+	PRINTW 
+ELSEIF DAY == 42
+	PRINTL 不況の影響で、国からの援助金が大幅に減額されました。
+	PRINTW 
+ELSEIF DAY == 63
+	PRINTL 不況の影響で、国からの援助金が打ち切られました。
+	PRINTW 
+ENDIF
+
+;資金援助
+IF DAY % 7 == 0
+	LOCAL = 1000 + ((FLAG:852 +1) / 25)
+	LOCAL:1 = RAND:((FLAG:852 +1) / 10 + 50) + 10
+	IF FLAG:853 <= -50
+		LOCAL:2 = 0
+	ELSeIF FLAG:853 <= -25
+		LOCAL:2 = 200
+	ELSEIF FLAG:853 < 0
+		LOCAL:2 = 600
+	ELSEIF FLAG:853 < 25
+		LOCAL:2 = 1200
+	ELSEIF FLAG:853 < 50
+		LOCAL:2 = 1800
+	ELSEIF FLAG:853 < 75
+		LOCAL:2 = 3600
+	ELSE
+		LOCAL:2 = 7200
+	ENDIF
+	FOR CCOUNT, 0, CHARANUM
+		SIF CCOUNT == MASTER
+			CONTINUE
+		SIF EXP:CCOUNT:魅了経験 > 100
+			LOCAL:2 += SQRT(MAX(EXP:CCOUNT:魅了経験 - 100, 0)) * 500 + RAND:(EXP:CCOUNT:魅了経験)
+	NEXT
+	SIF DAY >= 21
+		LOCAL += 800
+	SIF DAY >= 42
+		LOCAL /= 4
+	SIF DAY >= 63
+		LOCAL = 0
+	SIF DAY < 63
+		PRINTFORML 政府からの援助金として資金${LOCAL}を得た！
+	PRINTFORML 市民からの義援金として資金${LOCAL:1 + LOCAL:2}を得た！
+	MONEY += LOCAL + LOCAL:1 + LOCAL:2
+ENDIF
+
+;支出
+LOCAL:2 = 40 + 20 * CHARANUM_SAFE()
+SIF GAME_OPTION_CHECK_F(OPTION_hardcore)
+	LOCAL:2 *= 3
+IF MONEY >= LOCAL:2
+	PRINTFORML 維持費や生活費として資金${LOCAL:2}を支払った。
+	MONEY -= LOCAL:2
+	WAIT
+ELSE
+	PRINTFORML 維持費や生活費のための資金が不足しています！
+	PRINTFORML 体力と気力を消耗しました……
+	WAIT
+	MONEY = 0
+	FOR CCOUNT, 0, CHARANUM
+		TIMES BASE:CCOUNT:体力 , 0.8
+		TIMES BASE:CCOUNT:気力 , 0.8
+	NEXT
+ENDIF
+
+;--------------------------------------------------
+;淫紋の進行/回復
+@INMON_RECOVERY,ARG
+#DIM LCOUNT
+#DIM CCOUNT
+LOCAL:2 = TARGET
+TARGET = ARG
+;救出後も進行する場合
+IF CONFIG_CHECK_MANIAC_F(9) == 1
+	IF CFLAG:32 > 0 && CFLAG:0 == 状態_無事 && TALENT:触手の虜 == 1
+		;汚染度が上昇する
+		RESULT:1 = 2 + RAND:(LIMIT(SQRT(100 - CFLAG:32 / 10000000000000000),1,8)) + RAND:(MIN(ABL:欲望 + 1,5)) + RAND:(MIN(ABL:触手中毒 + 1,5))
+		RESULT:1 = RESULT:1 * 3 / 4
+		CALL TATTOO_ACCESS, "PROGRESS_VAR"
+		CALL SAVE_TATTOO, LIMIT(RESULT + RESULT:1,0,100)
+		PRINTFORML %CALLNAME%の淫紋が{RESULT:1}％進行した・・・（{CFLAG:32 / 10000000000000000}％）
+		PRINTW 
+
+		;淫紋の進行が汚染度(どれだけ陥落に近付いているか示す内部値)と連動している場合、既定値で陥落悪堕ちする
+		;★これ悪堕ちオプション確認してないけどいいのかな？
+		;
+		CALL TATTOO_ACCESS, "PROGRESS_VAR"
+		IF RESULT >= 100 && CONFIG_CHECK_MANIAC_F(10) == 1
+			;生き残っているボスからランダムに支配者を選択
+			CALL CLEARRANDCHOOSE
+			IF ENEMY_TYPE_CHECK_F("BOSS") == 1
+				CALL GET_BOSS_ERB_NUM
+			ELSE
+				CALL GET_LASTBOSS_ERB_NUM
+			ENDIF
+			FOR LCOUNT, 0, RESULT
+				;裏ボスは対象から除外
+				SIF LCOUNT == 1 && GET_LASTBOSS_PHASE_F() >= 2
+					CONTINUE
+				CALL TENTACLE_BITVALUE, LCOUNT + 1
+				CALL TENTACLE_SURVIVE_CHECK, RESULT
+				SIF RESULT > 0
+					CALL ADDRANDCHOOSE, RESULT
+			NEXT
+			CFLAG:20 = FLAG:10
+			CFLAG:21 = RANDCHOOSE_F()
+
+			;戦闘能力のあるキャラなら必ず悪堕ち
+			IF TALENT:変身能力 >= 0
+				CFLAG:0 = 状態_悪堕ち
+				;変身可能キャラならアウターが変更される
+				SIF TALENT:変身能力 == 1
+					CFLAG:41 = 401
+				;＠中国版　完堕ち装備
+				IF TALENT:完堕ち == 1
+					;変身能力アリなら淫縛の鎖
+					IF TALENT:変身能力 == 1
+						CFLAG:41 = 402
+					;変身能力ナシなら触手の花嫁／noinner
+					ELSE
+						CFLAG:40 = 196
+						CFLAG:42 = 0
+					ENDIF
+				ENDIF
+				;陥落経験を加算
+				EXP:陥落経験 += 1
+
+				;地の文：悪堕ちになった
+				CALL MESSAGE_SHOP_AKUOTI
+				;容姿を変更する
+				CALL CORRUPT_CHANGE_LOOKS_MAIN, TARGET
+				;ソロモードでキャラ全員が洗脳/悪堕ちになるとゲームオーバー
+				IF GAME_OPTION_CHECK_F(OPTION_solo)
+					LOCAL:1 = 0
+					FOR LOCAL,0,CHARANUM
+						SIF CFLAG:LOCAL:0 == 状態_洗脳 || CFLAG:LOCAL:0 == 状態_悪堕ち
+							LOCAL:1 ++
+					NEXT
+					IF (CHARANUM - LOCAL:1) < 2
+						CALL ENDING_4
+						DRAWLINE
+						RETURN
+					ENDIF
+				ENDIF
+				
+				PRINTFORML %STR:2500%の尖兵となった%CALLNAME%に邪悪な力が流れ込む・・・
+				PRINTL 
+				;悪堕ち時に大量の経験値が手に入る
+				CALL TENTACLE_LEVEL
+				IF CFLAG:0 == 状態_洗脳
+					LOCAL = 20 * (5 + ABL:レベル) + RAND:25
+				ELSEIF CFLAG:0 == 状態_悪堕ち
+					LOCAL = 40 * (5 + ABL:レベル) + RAND:50
+				ENDIF
+				SIF LOCAL < 50
+					LOCAL = 50
+				CALL GET_EXP,min(LOCAL,750)
+				;遭遇率アップ効果をリセット
+				CFLAG:23 = 0
+			;戦闘能力がない場合
+			;ＴＳできないオトコ＆男女平等オフなら即座に死亡
+			ELSEIF ISHOLE(TARGET) == 0 && TALENT:変身時ＴＳ < 1 && CONFIG_CHECK_PRISON_F(0) == 0
+				CFLAG:0 = 状態_死亡
+
+				;地の文：自分から幽閉される
+				CALL MESSAGE_SHOP_PRISON
+				PRINTW 
+				;地の文:即死
+				PRINTFORML ……しかしオトコである%PRINT_TRANSCALLNAME(TARGET)%はそのままトドメを刺され、
+				PRINTFORML %STR:2500%に取り込まれていってしまったようだ・・・
+				PRINTW 
+				PRINTFORML %PRINT_TRANSCALLNAME(TARGET)%はロストしました
+				PRINTW 
+
+				;初めての幽閉なら異常経験を付ける
+				SIF EXP:幽閉経験 == 0
+					EXP:異常経験 += 1
+
+					EXP:幽閉経験 += 1
+				;遭遇率アップ効果をリセット
+				CFLAG:23 = 0
+			;女性または女体化可能なら幽閉
+			ELSE
+				CFLAG:0 = 状態_幽閉
+
+				;地の文：自分から幽閉される
+				CALL MESSAGE_SHOP_PRISON
+
+				;初めての幽閉なら異常経験を付ける
+				SIF EXP:幽閉経験 == 0
+				EXP:異常経験 += 1
+				;幽閉経験を加算
+				EXP:幽閉経験 += 1
+				;遭遇率アップ効果をリセット
+				CFLAG:23 = 0
+			ENDIF
+			PRINTW 
+		ENDIF
+		DRAWLINE
+	ENDIF
+;淫紋の回復
+ELSE
+	TARGET = ARG
+	IF CFLAG:32 > 0
+		CALL TATTOO_ACCESS, "PROGRESS_VAR"
+		RESULT = RESULT * 9 / 10
+		IF RESULT == 0
+			CFLAG:32 = 0
+		ELSE
+			CALL SAVE_TATTOO, RESULT
+		ENDIF
+	ENDIF
+ENDIF
+TARGET = LOCAL:2

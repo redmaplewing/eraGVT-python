@@ -1,0 +1,353 @@
+﻿;==============================================================================
+;特別活動：援助交際の地の文と口上呼び出し
+
+;----------------------------------------------------------
+;援助交際の出だし
+@MESSAGE_SEISAN_PROSTITUTION_INTRO
+
+;♀にTS中
+IF ISFEMALE() && TALENT:変身時ＴＳ > 0 && CFLAG:1 > 0
+	IF TALENT:淫乱 > 0 && TALENT:初心 < 1
+		PRINTFORML 女性の姿に変身した%PRINT_TRANSCALLNAME(TARGET)%は、身綺麗にして街に繰り出していた。
+		PRINTW 
+		PRINTFORML 露出の多い服装に下着が見えそうなマイクロミニスカート。
+		PRINTFORML とどめに派手な色のサイハイソックスを身に付けた姿はいかにも腰の軽そうなギャル風だ。
+		PRINTFORML ほどなくして声をかけられた%PRINT_TRANSCALLNAME(TARGET)%は肩を抱かれて街の人ごみの中へと消えていった…
+	ELSEIF TALENT:処女 > 0
+		PRINTFORML 少しでも変身中のカラダに慣れておこうと考え、
+		PRINTFORML %PRINT_TRANSCALLNAME(TARGET)%は女性化した状態で街をぶらつくことにした。
+		PRINTW 
+		PRINTFORML 服装はしっかり整えたつもりでも、変な目で見られていないかと気になってしまう。
+		PRINTFORML すると不意に知らない相手に声をかけられてしまい、
+		PRINTFORML あたふたと慌てているうちに一緒に食事でもどうかと誘われてしまった。
+		PRINTFORML …ナンパだ…！
+		PRINTW 
+		PRINTFORML どう反応するべきか迷っていた%PRINT_TRANSCALLNAME(TARGET)%だったが、
+		PRINTFORML デートに付き合ってくれたらお礼をする、と現金を見せられ、
+		PRINTFORML 一緒に食事する程度なら…と相手に付いていくことにした…
+	ELSE
+		PRINTFORML 資金を稼ぐために、%PRINT_TRANSCALLNAME(TARGET)%は出会い系サイトで知り合った相手と待ち合わせしていた。
+		PRINTFORML 出会い系サイトとは言いつつも、その実態は性的な取引の斡旋場で、
+		PRINTFORML 多少の金額と引き換えにカラダを提供するのだ。
+		PRINTW 
+		PRINTFORML 相手が待ち合わせ場所に現れると、
+		PRINTFORML 自己紹介もそこそこにこちらの全身を舐めるように視姦してくる。
+		IF TALENT:感情乏しい > 0
+			PRINTFORML まったく気にした風もない無愛想な態度の%PRINT_TRANSCALLNAME(TARGET)%だが
+			PRINTFORML 相手はそういうタイプが好みなのかニヤニヤ笑っている…
+		ELSE
+			PRINTFORML 女性へ向けられるそういった視線に晒された経験が薄い%PRINT_TRANSCALLNAME(TARGET)%は
+			PRINTFORML 顔を真っ赤にしながら必死に気持ちを落ち着けている…
+		ENDIF
+	ENDIF
+ELSEIF TALENT:淫乱 > 0 && TALENT:初心 < 1
+	PRINTFORML %PRINT_TRANSCALLNAME(TARGET)%は街で遊んでくれそうな相手を探している…
+	PRINTW 
+	PRINTFORML 露出の多い服装に下着が見えそうなマイクロミニスカート。
+	PRINTFORML とどめに派手な色のサイハイソックスを身に付けた姿はいかにも腰の軽そうなギャル風だ。
+	PRINTFORML ほどなくして声をかけられた%PRINT_TRANSCALLNAME(TARGET)%は肩を抱かれて街の人ごみの中へと消えていった…
+ELSEIF TALENT:処女 > 0
+	PRINTFORML 街で歩いていた%PRINT_TRANSCALLNAME(TARGET)%はふと知らない相手に声を掛けられた。
+	PRINTFORML 一緒に食事でもどうかと誘われているところを見ると、
+	PRINTFORML これが噂に聞くナンパという奴かもしれない。
+	PRINTW 
+	PRINTFORML あまり良い印象が無かったので警戒していた%PRINT_TRANSCALLNAME(TARGET)%だったが、
+	PRINTFORML デートに付き合ってくれたらお礼をする、と現金を見せられ、
+	PRINTFORML 一緒に食事する程度なら…と相手に付いていくことにした…
+ELSE
+	PRINTFORML 資金を稼ぐために、%PRINT_TRANSCALLNAME(TARGET)%は出会い系サイトで知り合った相手と待ち合わせしていた。
+	PRINTFORML 出会い系サイトとは言いつつも、その実態は性的な取引の斡旋場で、
+	PRINTFORML 多少の金額と引き換えにカラダを提供するのだ。
+	PRINTW 
+	PRINTFORML 相手が待ち合わせ場所に現れると、
+	PRINTFORML 自己紹介もそこそこにこちらの全身を舐めるように視姦してくる。
+	IF TALENT:感情乏しい > 0
+		PRINTFORML まったく気にした風もない無愛想な態度の%PRINT_TRANSCALLNAME(TARGET)%だが
+		PRINTFORML 相手はそういうタイプが好みなのかニヤニヤ笑っている…
+	ELSE
+		PRINTFORML これも資金調達のためだ…と自分に言い聞かせながら、
+		PRINTFORML 表情に出てしまわないように気を遣うので精いっぱいだ…
+	ENDIF
+ENDIF
+PRINTL 
+CALL DOT_AFTER, 1
+PRINTL 
+
+;----------------------------------------------------------
+;援助交際：通常の援交・生ハメのお願い
+@MESSAGE_SEISAN_PROSTITUTION_NAMAHAME_REQUEST
+
+PRINTFORML ラブホテルの一室で%PRINT_TRANSCALLNAME(TARGET)%は男の前で膝をついて口で奉仕している。
+PRINTFORML 勃起したペニスを軽く手でしごきながらコンドームを着けさせようとすると、
+PRINTFORML 男に「生ハメさせて欲しい」と頼まれてしまった…
+PRINTL 
+IF TALENT:交際相手 >0 && CFLAG:218 == 0
+	SELECTCASE TALENT:交際相手
+		CASE 1
+			LOCALS=片思いの
+		CASE 2
+			LOCALS=大好きな恋人
+		CASE 3
+			LOCALS=将来を誓ったフィアンセ
+		CASE 4
+			LOCALS=愛する夫
+		CASE 5
+			LOCALS=今は無き夫
+		CASEELSE
+			LOCALS=愛しい ”あの人” 
+	ENDSELECT
+	PRINTL
+	SETCOLOR 255, 96, 96
+	PRINTFORML %LOCALS%相手にすら抵抗のある行為を、この男相手に許してしまってよいものだろうか？
+	RESETCOLOR
+	PRINTL
+ENDIF
+PRINTFORMW お小遣いは弾むから…と言っているが、生で挿入を許すべきだろうか？
+
+
+;----------------------------------------------------------
+;援助交際：通常の援交・相手が射精するまでのプレイ
+; 引数
+;	USE_VAGINA	膣に挿入か（TRUE:Vプレイ、FALSE:Aプレイ）
+;	NAMAHAME	ゴム有り無しの約束(-1:断固拒否, 0:ゴムあり, 1:膣外で出すよう約束, 2:中出しＯＫ)
+;	LOST_VIRGIN	この活動で処女喪失したか
+@MESSAGE_SEISAN_PROSTITUTION_MAINPLAY, USE_VAGINA, NAMAHAME, LOST_VIRGIN
+#DIM USE_VAGINA
+#DIM NAMAHAME
+#DIM LOST_VIRGIN
+
+PRINTFORML 繁華街のハズレのラブホテルに、%PRINT_TRANSCALLNAME(TARGET)%の嬌声が響いている。
+IF RANDOM(4) == 0
+	PRINTFORML %PRINT_TRANSCALLNAME(TARGET)%は歳の離れた男のペニスを受け入れ、激しく突き上げられていた。
+	PRINTFORML 相手は歪んだ欲望を秘めているらしく、%PRINT_TRANSCALLNAME(TARGET)%を自分の娘の名前で呼びながら犯し、
+	PRINTFORML 近親相姦のロールプレイに勤しんでいる…
+	PRINTL 
+	PRINTFORML %PRINT_TRANSCALLNAME(TARGET)%もまた男をパパ、パパと呼んで背徳感を煽り立てつつ、
+	;ランダム分岐フラグ
+	FLAG:900 = 4
+ELSEIF RANDOM(3) == 0
+	PRINTFORML %PRINT_TRANSCALLNAME(TARGET)%は男の上に跨り、騎乗位で\@TALENT:男の娘?乳首を摘ままれ#胸を揉まれ\@ながら自分から腰を振っていた。
+	PRINTFORML 大きく開脚した体勢で尻を上下に叩きつけ、ひたすら\@USE_VAGINA?膣#腸\@肉でペニスを扱き上げていく…
+	PRINTFORML 顔を真っ赤にして相手も見ずにひたすら快楽を貪り続ける%PRINT_TRANSCALLNAME(TARGET)%は
+	;ランダム分岐フラグ
+	FLAG:900 = 3
+ELSEIF RANDOM(2) == 0
+	PRINTFORML %PRINT_TRANSCALLNAME(TARGET)%は壁に手をついた体勢で後ろから男に犯されていた。
+	PRINTFORML 激しさを増していく動きに、肘で体重を支える%PRINT_TRANSCALLNAME(TARGET)%の\@TALENT:男の娘?ペニクリが自身の下腹にぺちぺちと当たる#乳房の前後が加速していく\@…
+	PRINTFORML まるで獣のような交尾快楽に酔いしれた%PRINT_TRANSCALLNAME(TARGET)%は
+	;ランダム分岐フラグ
+	FLAG:900 = 2
+ELSE
+	PRINTFORML 男に圧し掛かられた%PRINT_TRANSCALLNAME(TARGET)%は完全に無防備を晒して何時間も責められ続けていた。
+	PRINTFORML ねちっこい腰使いで執拗に\@USE_VAGINA?子宮口#直腸奥\@を責められ、%PRINT_TRANSCALLNAME(TARGET)%は幾度となく絶頂に導かれてしまう…
+	PRINTFORML 理性が焼き切れるほど官能を昂らせ、少女\@TALENT:男の娘?然としたオトコノコ#\@から牝へと堕とされた%PRINT_TRANSCALLNAME(TARGET)%は
+	;ランダム分岐フラグ
+	FLAG:900 = 1
+ENDIF
+
+IF USE_VAGINA && LOST_VIRGIN
+	PRINTFORML 処女を失ったばかりなのに絶頂させられる快楽に屈服させられてしまった…
+	PRINTW 
+	PRINTL 処女喪失
+ELSEIF !USE_VAGINA && ABL:Ａ感覚 < 2
+	PRINTFORML まだオトコに不慣れな尻穴にペニスを受け入れて絶頂させられる快楽に屈服させられてしまった…
+	PRINTW 
+ELSEIF NAMAHAME > 1
+	PRINTFORML 言われるがまま\@USE_VAGINA?膣内#腸内\@射精のおねだりをさせられ、屈従の証を\@USE_VAGINA?胎内#直腸\@に注ぎ込まれてしまった…
+ELSE
+	PRINTFORML 焦点の合わない目で男と口づけしながら激しく突き上げられている…
+ENDIF
+
+;口上
+IF USE_VAGINA
+	TRYCALLFORM KOJO_ROOT(CFLAG:6, "SEISAN_SYOUHU_normalA")
+ELSE
+	TRYCALLFORM KOJO_ROOT(CFLAG:6, "SEISAN_SYOUHU_normalA_A")
+ENDIF
+
+;----------------------------------------------------------
+;援助交際：通常の援交・射精後の地の文
+; 引数
+;	EJAC_TYPE	どう射精されたか（MESSAGE_SEISAN.ERHで定義）
+;	USE_VAGINA	膣に挿入か（TRUE:Vプレイ、FALSE:Aプレイ）
+@MESSAGE_SEISAN_PROSTITUTION_AFTER_EJAC, EJAC_TYPE, USE_VAGINA
+#DIM EJAC_TYPE
+#DIM USE_VAGINA
+
+SELECTCASE EJAC_TYPE
+	CASE 援助交際挿入_コンドームに射精
+		PRINTL コンドームに射精
+		PRINTL 
+		PRINTFORML 男はゴム越しに%PRINT_TRANSCALLNAME(TARGET)%の\@USE_VAGINA?膣内#腸内\@にたっぷりと欲望を吐き出した。
+		PRINTFORML ペニスを引き抜いてみると、コンドームは濃厚な精液でぷっくり膨らんでいた…
+		PRINTW 
+
+	CASE 援助交際挿入_破れたコンドーム
+		PRINTL 破れたコンドーム
+		PRINTL 
+		PRINTFORML 男はゴム越しに%PRINT_TRANSCALLNAME(TARGET)%の\@USE_VAGINA?膣内#腸内\@にたっぷりと欲望を吐き出した。
+		PRINTFORML …が、どうにも様子がおかしく、何やら\@USE_VAGINA?膣内#腸内\@に妙な感触が広がっていく。
+		PRINTFORML まさかと思いながら慌ててペニスを引き抜かせると、
+		PRINTFORML 案の定コンドームが破れており、濃厚な精液がどろりと\@USE_VAGINA?ワレメ#アナル\@から溢れ出していた…
+		PRINTW 
+		PRINTFORML 男はお詫びと称して、少し盛った金額を握らせてきた…
+
+	CASE 援助交際挿入_無許可中出し
+		PRINTL 無許可中出し
+		PRINTL 
+		PRINTFORML 男は限界に達すると、あろうことかコンドームを取り外して再度挿入し
+		PRINTFORML 制止する%PRINT_TRANSCALLNAME(TARGET)%を無視して生ハメの状態でピストンしはじめた。
+		PRINTFORML レイプ同然の行為に抵抗するも、男はそのまま無許可での\@USE_VAGINA?#アナル\@中出しを敢行した…
+		PRINTW 
+		PRINTFORML 茫然とする%PRINT_TRANSCALLNAME(TARGET)%に、男は何食わぬ顔で少し盛った金額を握らせてきた…
+
+	CASE 援助交際挿入_下腹部射精
+		PRINTFORML \@USE_VAGINA?膣#腸\@外射精
+		PRINTL 
+		PRINTFORML 男が射精寸前でペニスを引き抜くと、
+		PRINTFORML 危うく迸った白濁が%PRINT_TRANSCALLNAME(TARGET)%の下腹部を汚していった…
+		PRINTW 
+
+	CASE 援助交際挿入_口内射精
+		PRINTL 口に射精
+		PRINTL 
+		PRINTFORML 男は射精寸前でペニスを引き抜くと%PRINT_TRANSCALLNAME(TARGET)%にフェラチオさせ、
+		PRINTFORML \@USE_VAGINA?#不浄の味が残る肉棒から\@そのまま喉の奥に欲望を解き放った…
+		PRINTW 
+
+	CASE 援助交際挿入_ワレメ射精
+		PRINTFORML \@USE_VAGINA?ワレメ#お尻の谷間\@に射精
+		PRINTL 
+		PRINTFORML 男は射精寸前でペニスを引き抜くと、%PRINT_TRANSCALLNAME(TARGET)%の\@USE_VAGINA?ワレメ#お尻の谷間\@に欲望を解き放った…
+		PRINTW 
+
+	CASE 援助交際挿入_失敗中出し
+		PRINTFORML \@USE_VAGINA?膣#腸\@内射精
+		PRINTL 
+		PRINTFORML %PRINT_TRANSCALLNAME(TARGET)%が叩きつけられる快楽に流されていると、
+		PRINTFORML 男が突然力尽きて痙攣し、そのまま%PRINT_TRANSCALLNAME(TARGET)%の上にしなだれかかってきた。
+		PRINTFORML まさかと思いながら慌ててペニスを引き抜かせると、
+		PRINTFORML 案の定たっぷりと中出しされた精液がどろりと\@USE_VAGINA?ワレメ#アナル\@から溢れ出していた…
+		PRINTW 
+		PRINTL 男を咎めても後の祭りでしかない。後で\@USE_VAGINA?ピルを飲んで#いきんで出して\@おかなければ…
+
+	CASE 援助交際挿入_引き抜き遅れ中出し
+		PRINTFORML \@USE_VAGINA?膣#腸\@内射精
+		PRINTL 
+		PRINTFORML 男は射精寸前でペニスを引き抜こうとしたが、
+		PRINTFORML もたついて外に出すのが少し遅れてしまったようだ。
+		PRINTFORML %PRINT_TRANSCALLNAME(TARGET)%が指で\@USE_VAGINA?秘裂#菊門\@を押し広げると、僅かだが白濁液が流れ出てきた…
+		PRINTW 
+		PRINTL 男を咎めても後の祭りでしかない。後で\@USE_VAGINA?ピルを飲んで#いきんで出して\@おかなければ…
+
+	CASE 援助交際挿入_約束無視中出し
+		PRINTFORML \@USE_VAGINA?膣#腸\@内射精
+		PRINTL 
+		PRINTFORML 男の限界が近付いていると察した%PRINT_TRANSCALLNAME(TARGET)%は外で出すように頼んだが
+		PRINTFORML 相手は無視してピストンを続け、そのまま\@USE_VAGINA?膣#腸\@内に精液を放出した…
+		PRINTW 
+		PRINTL 男を咎めても悪びれる様子もなく、何食わぬ顔で多めの金額を握らせてきた…
+
+	CASE 援助交際挿入_同意中出し
+		PRINTFORML \@USE_VAGINA?膣#腸\@内射精
+		PRINTL 
+		IF RANDOM(3) == 0
+			PRINTFORML 男は出すぞ！中に出すぞ！と叫びながらピストンを加速させ、
+		ELSEIF RANDOM(2) == 0
+			PRINTFORML 男は卑猥な言葉で煽りながらピストンを加速させ、
+		ELSE
+			PRINTFORML 男は無言のまま鬼気迫る勢いでピストンを加速させ、
+		ENDIF
+		PRINTFORML 痙攣しながら濃厚な欲望を%PRINT_TRANSCALLNAME(TARGET)%の肉穴に解き放った。
+		PRINTFORML 最後の一滴まで出しきってペニスが引き抜かれると、たっぷり注ぎ込まれた精液が
+		PRINTFORML こってりと溢れ出てきた…
+		PRINTW 
+
+ENDSELECT
+
+;----------------------------------------------------------
+;援助交際：口淫奉仕させられる
+@MESSAGE_SEISAN_PROSTITUTION_TRAIN_BLOWJOB
+PRINTFORML 繁華街のハズレのラブホテルに、%PRINT_TRANSCALLNAME(TARGET)%の嬌声が響いている。
+PRINTW 
+PRINTFORML %PRINT_TRANSCALLNAME(TARGET)%は街で知り合った男の前に跪き、硬く反り返った男性器に口で奉仕していた。
+PRINTFORML 男の言うままに%PRINT_TRANSCALLNAME(TARGET)%は洗ってもいない肉棒に舌を這わせ、先走りを啜っていく…
+PRINTFORML 舌の使い方から始まり、最後には喉を性器のように扱う術まで教えられ、
+PRINTFORML %PRINT_TRANSCALLNAME(TARGET)%は男に口で奉仕する術をたっぷりと教え込まれてしまった…
+;口上
+TRYCALLFORM KOJO_ROOT(CFLAG:6, "SEISAN_SYOUHU_normalB")
+
+PRINTL
+PRINTFORML 男による%PRINT_TRANSCALLNAME(TARGET)%の調教は、時間の許す限り続いた…
+
+CALL REDUCIBLE_PRINTW
+
+;----------------------------------------------------------
+;援助交際：キス調教される
+@MESSAGE_SEISAN_PROSTITUTION_TRAIN_KISS
+PRINTFORML 繁華街のハズレのラブホテルに、%PRINT_TRANSCALLNAME(TARGET)%の嬌声が響いている。
+PRINTW 
+PRINTFORML %PRINT_TRANSCALLNAME(TARGET)%を買った男は挿入もせず、ただただ執拗にキスを繰り返していた。
+PRINTFORML 唾液をたっぷりと流し込まれ、口の中で音を立てながら混ぜ合わされ、それを嚥下させられる…
+PRINTFORML 最初はその行為に嫌悪感しかなかった%PRINT_TRANSCALLNAME(TARGET)%だが、男の卓越した舌使いに理性を蕩かされていくに従って
+PRINTFORML %PRINT_TRANSCALLNAME(TARGET)%のほうから男にキスを媚びるまでに狂わされてしまった…
+;口上
+TRYCALLFORM KOJO_ROOT(CFLAG:6, "SEISAN_SYOUHU_normalC")
+
+PRINTL
+PRINTFORML 男による%PRINT_TRANSCALLNAME(TARGET)%の調教は、時間の許す限り続いた…
+
+CALL REDUCIBLE_PRINTW
+
+;----------------------------------------------------------
+;援助交際：変態的なプレイ・女王様になる
+;memo:他の変態的プレイは自由行動と共用なのにこれだけ独自。ありそうな物なのにね
+@MESSAGE_SEISAN_PROSTITUTION_QUEEN
+PRINTFORMW %PRINT_TRANSCALLNAME(TARGET)%はボンテージに身を包み、手した鞭で男を打ち据えていた。
+PRINTFORML 手足を縛られ満足に動くこともできない男を、ヒールで踏みつけながら鞭で嬲り、爪先を舐めさせ、
+PRINTFORML さらに男性自身をヒールで踏みにじり、女王様として崇めさせる、その倒錯的な行為…
+PRINTL 
+PRINTFORML 自分の中のサディズムが目覚めて行くに従い、%PRINT_TRANSCALLNAME(TARGET)%奇妙な胸の高鳴りを感じていた…
+;口上
+TRYCALLFORM KOJO_ROOT(CFLAG:6, "SEISAN_SYOUHU_hentaiD")
+
+;----------------------------------------------------------
+;援助交際：欲求不満なお姉様の相手
+;memo:オトコの相手もあり得るんだからLESじゃねえだろ
+@MESSAGE_SEISAN_PROSTITUTION_LADY
+
+;オンナ
+IF ISFEMALE()
+	PRINTFORMW どぎつい照明に照らされた部屋で、二匹の牝が絡み合っている。
+	PRINTFORML 熱い吐息は次第に浅くなっていき、甲高い嬌声が響き、ぐったりと崩れ落ちる。
+	PRINTFORML 汗にまみれたうなじを舐めあい、重ねた秘処を押し付けあい、再び高め合っていく。
+;男の娘
+ELSEIF TALENT:男の娘 > 0
+	PRINTFORML 街で%PRINT_TRANSCALLNAME(TARGET)%に声を掛けてきたのは女性だった。
+	PRINTFORML どうやらオトコが苦手らしく、女の子ではないといくら説明しても信じてくれない。
+	PRINTFORML 股間の膨らみを見せるとようやくオトコだとは納得してくれたが、
+	PRINTFORML なかば強引にきつい前貼りを着けさせられ、ペニスを折り隠されてしまった…
+	PRINTW 
+	PRINTFORML どぎつい照明に照らされた部屋で、二匹の牝が絡み合っている。
+	PRINTFORML 熱い吐息は次第に浅くなっていき、甲高い嬌声が響き、ぐったりと崩れ落ちる。
+	PRINTFORML 汗にまみれたうなじを舐めあい、重ねた秘処を押し付けあい、再び高め合っていく。
+;オトコ
+ELSE
+	PRINTFORMW 街で%PRINT_TRANSCALLNAME(TARGET)%に声を掛けてきたのは女性だった。
+	IF TALENT:小柄
+		PRINT どうやらショタ趣味のある相手らしく、
+	ELSE
+		PRINT どうやら顔を気に入られたらしく、
+	ENDIF
+	PRINTFORML ホテルに入るなり「可愛い」を連発しながら騎乗位で%PRINT_TRANSCALLNAME(TARGET)%にまたがり、
+	PRINTFORML 逆レイプのような乱暴さで激しく腰を振ってくる。
+	PRINTFORML 決して逆らうことは許されず、射精することも許されず、ただ都合のいい肉棒として
+	PRINTFORML ひたすらに膣肉の感触に耐えることを強いられる。
+	PRINTFORML %PRINT_TRANSCALLNAME(TARGET)%が何度もイきたいと懇願するが、女性は嗜虐的な表情で「ダ・メ」と宣告した…
+ENDIF
+;口上
+TRYCALLFORM KOJO_ROOT(CFLAG:6, "SEISAN_SYOUHU_les")
+PRINTL
+PRINTFORMW %PRINT_TRANSCALLNAME(TARGET)%と若い女の交わりは、時間の許す限り続いた…
+
+CALL REDUCIBLE_PRINTW

@@ -1,0 +1,259 @@
+﻿;---------------------------------------------------------------------
+;悪堕ちキャラの街中遭遇イベント（悪堕ちアタックコピペ改造）
+;悪堕ちキャラがエロいことしてくる
+@PASTIME_AKUOTI_ENCOUNTER, ARG
+#DIM CCOUNT
+VARSET LOCAL
+;時間帯ごとのイベント発生倍率
+IF TIME == 0
+	LOCAL = 40
+ELSE
+	LOCAL = 20
+ENDIF
+;ランダム抽選用に候補をクリア
+CALL CLEARRANDCHOOSE
+FOR CCOUNT, 0, CHARANUM
+	SIF CCOUNT == MASTER
+		CONTINUE
+	;性別フィルタ
+	SIF CFLAG:CCOUNT:0 == 3 && ISHOLE(CCOUNT) && MIN(RAND:(SQRT(FLAG:852) / 2 + 20), 100) < LOCAL
+		CALL ADDRANDCHOOSE,CCOUNT
+NEXT
+;候補がないなら抜ける
+SIF CHOICECOUNT_F() == 0
+	RETURN
+;ここまで抜けたらイベント開始
+DRAWLINE
+FLAG:111 = RANDCHOOSE_F()
+CALL PASTIME_AKUOTI_EVENT
+
+
+@PASTIME_AKUOTI_EVENT
+;PRINTFORML %PRINT_TRANSCALLNAME(FLAG:111)%が現れた！
+PRINTW 逢魔の休日
+PRINTL
+IF TALENT:寄生 > 0
+	PRINTFORML  寄生されている%PRINT_TRANSCALLNAME(TARGET)%
+ENDIF
+IF TALENT:(FLAG:111):寄生 > 0
+	PRINTFORML  寄生されている%PRINT_TRANSCALLNAME(FLAG:111)%
+ENDIF
+
+PRINTFORML %PRINT_TRANSCALLNAME(TARGET)%は人ごみの中で嫌な気配を察知し、
+PRINTFORML 一般人の中に紛れた%PRINT_TRANSCALLNAME(FLAG:111)%の姿を見つけた。
+PRINTFORML %PRINT_TRANSCALLNAME(FLAG:111)%は笑みを浮かべながら、久しい友人のように挨拶をして近づいてくると、
+PRINTFORML %PRINT_TRANSCALLNAME(TARGET)%の手を掴んで小路の影へ強引に連れ込んだ。
+PRINTL 
+PRINTFORML 抵抗する%PRINT_TRANSCALLNAME(TARGET)%に%PRINT_TRANSCALLNAME(FLAG:111)%は、ここで触手の群れを召喚してもいいのかと脅す。
+PRINTFORML 戦うにしても出来るだけ人気のない方が都合が良いのは%PRINT_TRANSCALLNAME(TARGET)%も同じで、
+PRINTFORML 仕方なく%PRINT_TRANSCALLNAME(FLAG:111)%に手を引かれ入り組んだ小路の奥へ進んでいった。
+PRINTW 
+PRINTFORML %PRINT_TRANSCALLNAME(FLAG:111)%曰く、欲求不満なので手頃な人間を捕まえて性欲処理をしようとしたが、
+PRINTFORML %PRINT_TRANSCALLNAME(TARGET)%がその相手をするなら今回は一般人には手出ししない、と。
+PRINTFORML ──%PRINT_TRANSCALLNAME(FLAG:111)%が人間相手をどうしようと、最終的には連れ去られ
+PRINTFORML 男は触手に、女は苗床にされるのがオチである──
+PRINTFORM それならば自分が囮になり、
+IF RAND:2 == 0
+	PRINTFORML うまくすれば%PRINT_TRANSCALLNAME(FLAG:111)%を正気に戻すチャンスかもしれない…と
+ELSE
+	PRINTFORML %PRINT_TRANSCALLNAME(FLAG:111)%の油断をついて反撃すれば…と
+ENDIF
+PRINTFORML %PRINT_TRANSCALLNAME(TARGET)%は%PRINT_TRANSCALLNAME(FLAG:111)%の交換条件を飲んで性処理の相手をすることに決めた。
+PRINTL 
+CALL DOT_AFTER, 1
+PRINTFORML 人目の届かない静かな裏小路に、熱い吐息と水音が響いている。
+PRINTW 
+IF ISFEMALE()
+	SIF EXP:Ｖ経験 < 50
+		PRINT あまり経験の多くない
+	SIF EXP:Ｖ経験 > 100
+		PRINT 経験豊富な
+ELSEIF TALENT:男の娘 > 0
+	SIF EXP:Ａ経験 < 50
+		PRINT あまり経験の多くない
+	SIF EXP:Ａ経験 > 100
+		PRINT 経験豊富な
+ELSE
+	SIF EXP:射精経験 < 50
+		PRINT あまり経験の多くない 
+	SIF EXP:射精経験 > 100
+		PRINT 経験豊富な
+ENDIF
+PRINTFORM %PRINT_TRANSCALLNAME(TARGET)%は
+SIF ABL:従順 > 3
+	PRINT 思考停止して、
+SIF ABL:露出癖 > 3 && ISFEMALE()
+	PRINT 秘部を丸出しにされ、
+SIF ABL:露出癖 > 3 && ISMALE()
+	PRINT 股間を丸出しにされ、
+SIF ABL:マゾっ気 > 3 && TALENT:初心 < 1
+	PRINT うっとりした表情で
+PRINTL 頬を染めている。
+SIF ABL:技巧 > 3 && TALENT:初心 < 1
+	PRINT 舌と指を巧みに使い
+SIF ABL:欲望 > 3 && TALENT:初心 < 1
+	PRINT 欲望の赴くまま
+SIF ABL:奉仕精神 > 3
+	PRINT 熱心な奉仕をし、
+SIF EXP:(FLAG:111):Ｖ経験 > 100 && ISFEMALE(FLAG:111)
+	PRINT 経験豊富な
+SIF EXP:(FLAG:111):Ａ経験 > 100 && TALENT:(FLAG:111):男の娘 > 0
+	PRINT 経験豊富な
+PRINTFORML %PRINT_TRANSCALLNAME(FLAG:111)%をなんとかイカせようとしている。
+
+PRINTFORM %PRINT_TRANSCALLNAME(TARGET)%は%PRINT_TRANSCALLNAME(FLAG:111)%の
+;敵が受け
+;自が攻め	
+IF RAND:3 == 0 && ISHOLE(FLAG:111)
+	SIF ISFEMALE(FLAG:111)
+		PRINT 蜜壺
+	; #region 
+	SIF ISMALE(FLAG:111)
+		PRINT 男根
+	; #endregion
+	SIF RAND:2 == 0
+		PRINT 、乳頭
+	; #region 
+	SIF RAND:2 == 0 || TALENT:(FLAG:111):男の娘 > 0
+		PRINT 、菊門
+	; #endregion
+	SIF TALENT:(FLAG:111):ふたなり > 0 
+		PRINT と男根
+	SIF TALENT:(FLAG:111):寄生 > 0
+		PRINT 、さらに寄生触手
+	PRINT を両手と舌
+	SIF TALENT:巨乳 > 0
+		PRINT と自慢の胸
+	PRINTL で奉仕した……
+	;敵が攻め
+	;自が受け
+ELSEIF RAND:2 == 0	
+	PRINT 両手と舌
+	SIF TALENT:(FLAG:111):巨乳 > 0
+		PRINT と魔性の胸
+	SIF TALENT:(FLAG:111):寄生 > 0
+		PRINT 、さらに寄生触手
+	PRINT で、乳頭
+	; #region 
+	SIF (ISPENIS())
+		PRINT と男根
+	SIF RAND:2 == 0 || TALENT:男の娘 > 0
+		PRINT 、菊門
+	; #endregion
+	SIF ISFEMALE()
+		PRINT 、蜜壺
+	PRINTL を弄ばれた……
+ELSE
+	PRINTL とキスをしながら、お互いの胸や性器を愛撫しあった……
+ENDIF
+
+PRINTW 
+PRINTFORM %PRINT_TRANSCALLNAME(FLAG:111)%は嘲笑いながら
+IF RAND:2 == 0 && ISPENIS()
+	PRINTL 射精を促す。
+ELSE
+	PRINTL 奉仕を促す。
+ENDIF
+SIF ISPENIS()
+	PRINTFORML %PRINT_TRANSCALLNAME(TARGET)%は射精を堪えて%PRINT_TRANSCALLNAME(FLAG:111)%の性器に舌を伸ばした。
+IF TALENT:寄生 > 0
+	PRINTFORML 二人の淫蕩な闘いが%PRINT_TRANSCALLNAME(TARGET)%の内に眠る寄生触手を呼び覚まし、自在に変幻した。
+	PRINTFORML 様々な触手を誰構わず絡めつかせ、淫気をより濃くしようと本能のままに蠢く。
+	PRINTFORML %PRINT_TRANSCALLNAME(TARGET)%は自身の触手からも責め立てられ快感に溺れそうになるが、
+	PRINTFORML %PRINT_TRANSCALLNAME(FLAG:111)%への攻め手が増える好機でもあった。
+ENDIF
+PRINTFORML %PRINT_TRANSCALLNAME(TARGET)%の懸命な愛撫で%PRINT_TRANSCALLNAME(FLAG:111)%はようやく一度目の絶頂を迎えるが、
+PRINTFORML その間に%PRINT_TRANSCALLNAME(TARGET)%は何度目かの絶頂をさせられていた。
+PRINTFORML 触手の巣窟で隅々まで開発された%PRINT_TRANSCALLNAME(FLAG:111)%がその程度で満足するはずもなく、
+;敵が男・双・寄生で自キャラが性別フィルタOKなら竿で攻めてくる
+;悪堕ち男は特に攻めてきやすい
+IF ((RAND:3 == 0 && (ISPENIS(FLAG:111) || TALENT:(FLAG:111):寄生 > 0)) || (RAND:2 == 0 && ISMALE(FLAG:111))) && ISHOLE(TARGET) && CHECK_HOLYVIRGIN_F()==0
+	;竿で攻め
+	IF RAND:2 == 0 && TALENT:(FLAG:111):ふたなり > 0
+		PRINT 涎と愛液にまみれた肉棒を
+	ELSEIF RAND:2 == 0 && ISMALE(FLAG:111)
+		PRINT 涎とカウパーにまみれた肉棒を
+	ELSE
+		PRINT ぬらぬらとうねる触手を
+	ENDIF
+	PRINTFORM %PRINT_TRANSCALLNAME(TARGET)%の
+	;自が♀なら満もあり
+	IF RAND:2 == 0 && (ISFEMALE())
+		PRINT 秘壺に
+		;尻なら性別問わず
+	ELSE
+		PRINT 菊門に
+	ENDIF
+	PRINTFORML 突き入れ動かし始めた。
+	IF ISMALE()
+		;#region
+		PRINTFORML 張り詰めた怒張が%PRINT_TRANSCALLNAME(TARGET)%の肉尻壺を蹂躙するが痛みは微塵も感じない代わりに
+		;#endregion
+	ELSE 
+		PRINTFORML 張り詰めた怒張が%PRINT_TRANSCALLNAME(TARGET)%の肉壺を蹂躙するが痛みは微塵も感じない代わりに
+	ENDIF
+	PRINTFORML 身体の中心に火を付けられるような熱い快楽の波が何度も押し寄せる。
+
+;悪堕ち側が味方に強制攻めさせる
+;悪堕オトコの場合は発生しない(悪堕ち♂としてあまりに情けないため？)
+ELSEIF RAND:2 == 0 && (ISHOLE(FLAG:111))
+	;敵が竿なしか竿を使わないなら満か尻で攻める
+	IF ISMALE(FLAG:111)
+		; #region 
+		PRINT ひくひくと伸縮する淫尻穴を
+		; #endregion
+	ELSEIF RAND:2 == 0
+		PRINT 濡れそぼった淫壺を
+	ELSE
+		PRINT くぱくぱと開閉する淫穴を
+	ENDIF
+	PRINTFORM %PRINT_TRANSCALLNAME(TARGET)%の
+	;双なら珍満
+	IF TALENT:ふたなり > 0
+		IF RAND:2 == 0 
+			PRINTFORML 淫壺にあてがってぐりぐりと押し付けた。
+			PRINTFORML それはまるでもう一つの口でするディープキスのようであり、%PRINT_TRANSCALLNAME(TARGET)%の艶めいた悲鳴があがる。
+		ELSE
+			PRINTFORML 肉棒にあてがって咥えこんだ。
+			PRINTFORML 熱くとろけるような快楽が激しく締め付けたり、優しく包み込んだり
+			PRINTFORML %PRINT_TRANSCALLNAME(TARGET)%を翻弄する。
+		ENDIF
+		;男珍
+	ELSEIF ISMALE(TARGET)
+		; #region 
+		PRINTFORML 肉棒にあてがって咥えこんだ。
+		PRINTFORML 熱くとろけるような快楽が激しく締め付けたり、優しく包み込んだりし%PRINT_TRANSCALLNAME(TARGET)%を翻弄する。
+		; #endregion
+	ELSE
+		PRINTFORML 淫壺にあてがってぐりぐりと押し付けた。
+		PRINTFORML それはまるでもう一つの口でするディープキスのようであり、%PRINT_TRANSCALLNAME(TARGET)%の艶めいた悲鳴があがる。
+	ENDIF
+;汎用
+ELSE
+	PRINTFORML %PRINT_TRANSCALLNAME(TARGET)%の尻穴に指を挿し込み、優しくぐにぐにと内壁を愛撫した。
+	PRINTFORML 動物のような下品な喘ぎ声を出してしまい、%PRINT_TRANSCALLNAME(TARGET)%の頬は羞恥に染まる。
+ENDIF
+PRINTW 
+PRINTFORML %PRINT_TRANSCALLNAME(TARGET)%の乱れっぷりに気を良くした%PRINT_TRANSCALLNAME(FLAG:111)%は
+;寄生
+IF TALENT:(FLAG:111):寄生 > 0
+	PRINT 身体の内から伸びる寄生触手を増殖させ、
+ELSE
+	PRINT ビル影の瘴気の中から触手の群れを召喚し、
+ENDIF
+SIF TALENT:寄生 > 0
+	PRINTFORML %PRINT_TRANSCALLNAME(TARGET)%の寄生触手さえ自在に操って
+PRINTL 空いている穴を埋めるように追い撃ちをかける。
+
+IF TALENT:淫乱 && TALENT:初心 < 1
+	PRINT 喘ぎ声を上げて、更なる快楽を要求しながら
+ELSEIF ABL:従順 > 2 && TALENT:初心 < 1
+	PRINT 喘ぎ声を漏らし、囮になるつもりがすっかり虜になってしまった
+ELSE
+	PRINT 喘ぎ声を堪え、何度も許しを請いながら
+ENDIF
+PRINTFORML %PRINT_TRANSCALLNAME(TARGET)%は
+PRINTFORML %PRINT_TRANSCALLNAME(FLAG:111)%の気が済むまで犯され続けた…
+PRINTW 
+PRINTW 
+RETURN 0

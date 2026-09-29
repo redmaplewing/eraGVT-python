@@ -1,0 +1,25 @@
+﻿;--------------------------------------------------
+;0以上N未満の乱数、つまりRAND:Nを返す式中関数
+;なんでわざわざ関数に？　コードを見ての通りデバッグのため
+;デバッグモード中、変数DEBUG_RANDに非負の値を入れておけばRANDではなくその値を返す
+;DEBUG_RAND:1以降にも続けて値を入れておけば、この関数を呼び出す度に順番に値を返していく
+; 引数
+;	NUM	乱数の上限+1（RANDの添字）
+; 変数
+;	RAND_VALUE	戻り値。普通はRAND:NUMが入る。デバッグモードの場合は既設の値で上書きされうる
+; 戻り値：RAND:NUMと同じ。0以上N未満の数値を返す
+@RANDOM, NUM
+#FUNCTION
+#DIM NUM
+#DIM RAND_VALUE
+RAND_VALUE = RAND:NUM
+[IF_DEBUG]
+IF DEBUG_RAND:0 >= 0
+	DEBUGPRINTFORML RANDOM({NUM}) = {DEBUG_RAND:0}(FORCE)
+	RAND_VALUE = DEBUG_RAND:0
+	ARRAYSHIFT DEBUG_RAND, -1, -1
+ELSE
+	DEBUGPRINTFORML RANDOM({NUM}) = {RAND_VALUE}
+ENDIF
+[ENDIF]
+RETURNF RAND_VALUE

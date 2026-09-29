@@ -1,0 +1,104 @@
+﻿@HANGEKI_TO_TENTACLE, ARG, ARG:1, ARG:2
+;ARGは敵が選んだコマンド
+;ARG:1は敵コマンドの成否判定    0=攻撃(敵が成功)、1=回避またはカス当たり(敵が失敗)、2=範囲外攻撃回避
+;ARG:2はそのターンに反撃で軽減または無効化したダメージ
+
+
+;エアストライクで回避した攻撃も反撃成功と判定する
+;ただし、攻撃範囲外にいると反撃失敗     Ex)Player=(中)  Attack=(近 遠)なら反撃失敗
+IF ARG:1 == 2
+    IF GETBIT(TCVARn:216, 1) && ((TCVARn:0 == 1 && (TFLAG:11 & 1)) || (TCVARn:0 == 2 && (TFLAG:11 & 2)) || (TCVARn:0 == 3 && (TFLAG:11 & 4)))
+    ELSE
+        RETURN 0
+    ENDIF
+ENDIF
+    
+;ＥＸ反撃が成功した場合は「完全防御(被害免疫)」 効果とともに確定反撃成功判定
+;   *通常の反撃も各攻撃ごとに完全防御に成功する可能性を持つ
+;   *「絡みつく」「押し倒す」「距離をとる」は完全防御が不可能
+SIF TCVARn:200 > 0
+    GOTO SKIP
+
+;各コマンドの詳細条件
+;   エアストライクによりARG:1が2の場合は既に上から条件文を付けておりますので
+;   回避時に成功の場合を入れたければARG:1 == 2を条件文に入れてもいいかも
+SELECTCASE ARG
+    ;攻撃
+    CASE 1
+        ;全体攻撃は不可能
+        ;SIF TFLAG:12 == 3
+        ;    RETURN 0
+    ;絡みつく   被弾時には失敗
+    CASE 2
+        SIF ARG:1 == 0
+            RETURN 0
+    ;体液
+    CASE 3
+        ;被弾時には失敗
+        SIF ARG:1 == 0
+            RETURN 0
+    ;距離をとる     確定反撃失敗
+    CASE 4
+        RETURN 0
+    ;押し倒す   被弾時には失敗
+    CASE 5
+        SIF ARG:1 == 0
+            RETURN 0
+    ;波動
+    CASE 6
+        ;被弾時には失敗
+        SIF ARG:1 == 0
+            RETURN 0
+ENDSELECT
+$SKIP
+
+;上記の条件をすべて満たした場合は反撃成功フラグを上げる
+TCVARn:2 = 体勢：ＥＸ反撃
+
+PRINTL 
+FONTBOLD
+SETCOLOR 0, 255, 150
+PRINTL ********** 自分の行動 **********
+RESETCOLOR
+FONTREGULAR
+PRINTL 
+
+;反撃に成功すると防た被害を蓄積する
+TCVARn:205 += ARG:2
+
+;通常の攻撃共通処理を呼び戻す方式で攻撃ターンをもう一度持つ
+CALL COM_ATTACK_COMMON
+
+;反撃に成功すれば戦技がさらに上がる
+IF TALENT:変身能力 != -1
+    SELECTCASE TCVARn:0
+        CASE 1
+            EXP:近距離戦闘経験 += RAND:5 + 1
+	        CALL SENGIUP, TARGET, 0
+        CASE 2
+            EXP:中距離戦闘経験 += RAND:5 + 1
+	        CALL SENGIUP, TARGET, 1
+        CASE 3
+            EXP:遠距離戦闘経験 += RAND:5 + 1
+	        CALL SENGIUP, TARGET, 2
+    ENDSELECT
+ELSE
+    EXP:戦闘基礎経験 += RAND:5 + 1
+	CALL SENGIUP, TARGET, 3
+ENDIF
+
+;行動ポイントを+2
+EX:行動ポイント += 2
+
+;べとべと持続判定   ＥＸ反撃による完全防御で確定回復
+IF (TCVARn:12 & べとべと) && TCVARn:200 > 0 && TFLAG:10 != 4 ;&& RAND:100 < MAX(75 - CFLAG:99 * 3, 25) いくらなんでもＥＸ反撃に確率までつけるのはひどすぎると思って外した
+	PRINTFORML ○ %PRINT_TRANSCALLNAME(TARGET)%は纏わり付いた粘液を振り払った！
+	PRINTFORML 　 %PRINT_TRANSCALLNAME(TARGET)%は[べとべと]状態から回復した！
+	PRINTW 
+	TCVARn:12 -= べとべと
+;ELSEIF (TCVARn:12 & べとべと) &&
+;	PRINTFORML × %PRINT_TRANSCALLNAME(TARGET)%は纏わり付いた粘液を振り払うのに失敗した！
+;	PRINTW 
+ENDIF
+
+RETURN 0

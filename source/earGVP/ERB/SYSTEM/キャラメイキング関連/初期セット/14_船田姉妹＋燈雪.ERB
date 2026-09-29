@@ -1,0 +1,34 @@
+﻿@SHOKISET_NAME_14
+PRINTL [14]４人：船田姉妹＋燈雪
+;-----------------------------
+;船田姉妹＋燈雪に対する説明
+;------------------------------
+@SHOKISET_SETUMEI_14
+PRINTL
+PRINTL
+PRINTL 　　　（出典：アサルトリリィ）
+PRINTL 　　　ガーデン『御台場女学校』のトップレギオン『ロネスネス』から四人。
+PRINTL 　　　7大ヒュージじゃなくて7大触手が相手でも御台場魂で頑張ろう。
+PRINTL 　　　なおバランス未調整。
+PRINTL
+PRINTL
+;-------------------------------
+;グループの選択-船田姉妹＋燈雪
+;-------------------------------
+@SHOKISET_SELECT_14
+
+FLAG:5 = 1
+SAVESTR:10=LGロネスネス
+
+ADDCHARA 3081
+FLAG:8 ++
+ADDCHARA 3080
+FLAG:8 ++
+ADDCHARA 3082
+FLAG:8 ++
+ADDCHARA 3083
+FLAG:8 ++
+
+CALL SHOKISET_CSVFIX
+;JUMP CHARA_MAKE_MAIN, 0
+

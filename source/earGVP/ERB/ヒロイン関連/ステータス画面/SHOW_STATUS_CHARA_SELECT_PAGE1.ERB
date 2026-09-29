@@ -1,0 +1,545 @@
+﻿;================================================================
+;ステータス表示画面の1ページ目（基本ステータス）の表示処理
+; 引数
+;	ARG	対象のキャラ番号
+@SHOW_STATUS_CHARA_SELECT_PAGE1 , ARG
+PRINTL 　　　　　　　　　　　　　　　　　基本ステータス情報　　　　　　　　　　　　　　PAGE(1/5)
+
+;1番目のブロック
+;左側に氏名・呼び名・一人称・性別・種族・性格を出力
+;（2ページ目以降と出力は同じだが右側があるので共通関数を使えない）
+;右側に各種設定変更ボタンを表示
+;（ボタン表示があるので関数に分けないほうがいいと判断した）
+DRAWLINE
+
+;1行目：左側に氏名を出力、右側に主観モード変更ボタンを表示
+PRINTFORM 氏名　：%NAME:ARG, 28, LEFT%
+PRINTPLAIN 　
+PRINTFORM [10]主観モードの変更：\@TALENT:ARG:主観視点 > 0 ? 使用する # 使用しない \@
+PRINTL 
+
+;2行目：左側に呼び名を出力、右側に呼び名の変更ボタンを表示
+PRINTFORM 呼び名：%CALLNAME:ARG, 28, LEFT%
+PRINTPLAIN 　
+;戦闘中は変更不可
+SIF FLAG:700 > 0
+	SETCOLOR 105,105,105
+PRINT [11]呼び名の変更
+RESETCOLOR
+PRINTL 
+
+;3行目：左側に一人称を出力、右側に一人称変更ボタンを表示
+PRINTFORM 一人称：%SELF_CALL(0, 0, ARG), 28, LEFT%
+PRINTPLAIN 　
+;戦闘中は変更不可
+SIF FLAG:700 > 0
+	SETCOLOR 105,105,105
+PRINT [12]一人称の変更
+RESETCOLOR
+PRINTL 
+
+;4行目：左側に性別を出力、右側に口上設定変更ボタンを表示
+;memo:この作りはよくない。口上設定の種類名を返す式中関数を作り、それを呼び出すだけにするべき
+PRINTFORM 性別　：%\@ISMALE(ARG) ? 男 # 女\@, 28, LEFT%
+PRINTPLAIN 　
+IF CFLAG:ARG:6 == -2
+	PRINT [0] 口上設定（現在：非表示）　　　　
+ELSEIF CFLAG:ARG:6 == -1
+	PRINT [0] 口上設定（未教育）　　　　　　　
+ELSEIF CFLAG:ARG:6 == 0
+	PRINT [0] 口上設定（現在：女性汎用）　　　
+ELSEIF CFLAG:ARG:6 == 1
+	PRINT [0] 口上設定（現在：オトコ汎用）　　
+ELSEIF CFLAG:ARG:6 == 2
+	PRINT [0] 口上設定（現在：ロボ風）　　　　
+ELSEIF CFLAG:ARG:6 == 3
+	PRINT [0] 口上設定（現在：あなた）　　　　
+ELSEIF CFLAG:ARG:6 == 4
+	PRINT [0] 口上設定（現在：汎用豹変）　　　
+ELSEIF NO:ARG != 0
+	PRINT [0] 口上設定（現在：専用）　　　　　
+ELSE
+	SETCOLOR 105,105,105
+	PRINTPLAIN [0]口上設定（現在：汎用）　　　　　
+	RESETCOLOR
+ENDIF
+PRINTL 
+
+;5行目：左側に種族を出力
+CALL SHOW_STATUS_CHARA_SYUZOKU, ARG
+PRINTL 
+;6行目：左側に性格を出力
+CALL SHOW_STATUS_CHARA_SEIKAKU, ARG
+PRINTL 
+
+;2番目のブロック
+;変身能力がない場合このブロックは表示されない
+;変身能力がある場合、変身後名と変身時掛け声を出力し、設定変更ボタンを表示
+IF TALENT:ARG:変身能力 == 素質変身能力_あり
+	CALL SHORTLINE
+	PRINTFORM 【変身能力あり】
+	PRINTPLAIN 　　　　　　　　　　　
+	;戦闘中は変更不可
+	SIF FLAG:700 > 0
+		SETCOLOR 105,105,105
+	PRINT [13]変身後名/掛け声の設定
+	RESETCOLOR
+	PRINTL 
+	;変身後名が設定済みなら表示する
+	IF CFLAG:ARG:2
+		PRINTFORM 　変身後名　　：%CSTR:ARG:0%
+		;さらに変身後の呼び名が設定済みで正式名と違うなら、括弧付けで表示
+		SIF CFLAG:ARG:3 && CSTR:ARG:0 != CSTR:ARG:1
+			PRINTFORM （%CSTR:ARG:1%）
+		PRINTL 
+	ENDIF
+	;変身時掛け声が設定済みなら表示する
+	SIF CFLAG:ARG:4
+		PRINTFORML 　変身時かけ声：%CSTR:(ARG:0):2%
+;非戦闘員の場合も、非戦闘員の表示だけする
+ELSEIF TALENT;ARG:変身能力 == 素質変身能力_非戦闘員
+	CALL SHORTLINE
+	PRINTFORML 【非戦闘員】
+ENDIF
+
+;3番目のブロック
+;現在のレベルや戦闘ステータスを出力
+CALL SHORTLINE
+CALL SHOW_STATUS_CHARA_BATTLESTATS, ARG
+
+;4番目のブロック
+;ステータス基礎値と戦技Lvを出力
+CALL SHORTLINE
+CALL SHOW_STATUS_CHARA_BASESTATS, ARG
+CALL SHOW_STATUS_CHARA_SENGI, ARG
+
+;5番目のブロック
+;部位結界を出力（なければブロック自体表示されない）
+IF TALENT:ARG:Ｃ結界 + TALENT:ARG:Ｖ結界 + TALENT:ARG:Ａ結界 + TALENT:ARG:Ｂ結界 + TALENT:ARG:避妊結界
+	PRINTL 
+	CALL SHORTLINE
+	CALL SHOW_STATUS_CHARA_SHIELDS, ARG
+ENDIF
+
+;6番目のブロック
+;淫紋の状態を出力（なければブロック自体表示されない）
+IF CFLAG:ARG:32 > 0
+	PRINTL 
+	CALL SHORTLINE
+	CALL SHOW_STATUS_CHARA_TATTOO, ARG
+ENDIF
+PRINTL 
+
+;7番目のブロック
+;服の状態を出力
+CALL SHORTLINE
+CALL SHOW_STATUS_CHARA_CLOTH, ARG
+DRAWLINE
+PRINTL
+
+;================================================================
+;ステータス表示の1ページ目（基本ステータス）の画面固有コマンド処理
+; 引数
+;	ARG				対象のキャラ番号
+;	INPUT_CMD 		入力されたコマンド番号
+; 戻り値
+;	1:関数内でコマンド処理ができた
+;	0:関数内に対応するコマンドがなかった
+@CMD_STATUS_CHARA_SELECT_PAGE1, ARG, INPUT_CMD
+#DIM LCOUNT
+#DIM INPUT_CMD
+
+SELECTCASE INPUT_CMD
+	;口上設定
+	CASE  0
+		IF CFLAG:ARG:6 == 0
+			CFLAG:ARG:6 = 1
+		ELSEIF CFLAG:ARG:6 == 1
+			CFLAG:ARG:6 = 2
+		ELSEIF CFLAG:ARG:6 == 2
+			CFLAG:ARG:6 = 3
+			TALENT:ARG:主観視点 = 1
+		ELSEIF CFLAG:ARG:6 == 3
+			CFLAG:ARG:6 = 4
+			TALENT:ARG:主観視点 = 0
+		ELSEIF CFLAG:ARG:6 == 4
+			CFLAG:ARG:6 = -2
+		ELSEIF CFLAG:ARG:6 == NO:ARG
+			CFLAG:ARG:6 = 0
+		ELSE
+			CFLAG:ARG:6 = NO:ARG
+		ENDIF
+	;主観モードの変更
+	CASE 10
+		IF TALENT:ARG:主観視点 == 1
+			PRINTL 現在『主観モード』を使用中です
+			PRINTL [0]変更しない
+			PRINTL [1]主観モードを終了する
+			INPUT
+			IF RESULT == 1
+				TALENT:ARG:主観視点 = 0
+				PRINTW 地の文を変更しました
+			ENDIF
+		ELSE
+			PRINTL ※地の文をより主観的な描写に変更します
+			PRINTL 　この設定は個別に適用されます
+			PRINTL [0]使用しない
+			PRINTL [1]使用する
+			INPUT
+			IF RESULT == 1
+				TALENT:ARG:主観視点 = 1
+				PRINTW 地の文を変更しました
+			ENDIF
+		ENDIF
+	;呼び名・一人称・変身後名等の設定（非戦闘中限定）
+	CASE 11,12,13
+		;戦闘中なら処理不可
+		SIF FLAG:700
+			RETURN 0
+		;キャラの呼び名の設定
+		IF INPUT_CMD == 11
+			CALL FIRSTSETTING_CHARA_CALLNAME, ARG
+		;キャラの一人称の設定
+		ELSEIF INPUT_CMD == 12
+			CALL FIRSTSETTING_CHARA_SELFCALL, ARG
+		;キャラの変身後名・呼び名・かけ声・名乗り口上の設定
+		ELSE
+			;変身能力ありでなければ処理不可
+			SIF TALENT:ARG:変身能力 != 素質変身能力_あり
+				RETURN 0
+			LCOUNT = LINECOUNT
+			$LOOP_12
+			PRINTFORML 変更する項目を選択してください
+			CALL SHORTLINE
+			PRINTFORML [0]　変身後名・・・・・・\@(CFLAG:ARG:2 == 1) ?・『%CSTR:ARG:0%』#・ なし\@
+			PRINTFORML [1]　変身後呼び名・・・・\@(CFLAG:ARG:3 == 1) ?・『%CSTR:ARG:1%』#・ なし\@
+			PRINTFORML [2]　変身時かけ声・・・・\@(CFLAG:ARG:4 == 1) ?・『%CSTR:ARG:2%』#・ なし\@
+			PRINTFORML [3]　変身後名乗り口上・・\@(CFLAG:ARG:5 == 1) ?・『%CSTR:ARG:3%』#・ なし\@
+			PRINTL 
+			PRINTFORML [99] 戻る
+			$INPUT_LOOP_12
+			INPUT
+			IF RESULT == 0
+				;キャラの変身後名前の設定
+				CALL FIRSTSETTING_CHARA_TRANSAFTERNAME, ARG
+			ELSEIF RESULT == 1
+				;キャラの変身後呼び名の設定
+				IF CFLAG:ARG:2 == 1
+					;キャラの変身後呼び名フラグを立てる
+					CFLAG:ARG:3 = 1
+					CALL FIRSTSETTING_CHARA_TRANSAFTERCALLNAME, ARG
+				ENDIF
+			ELSEIF RESULT == 2
+				;キャラの変身時のかけ声の設定
+				CALL FIRSTSETTING_CHARA_TRANSCALL, ARG
+			ELSEIF RESULT == 3
+				;キャラの名乗り口上の設定
+				CALL FIRSTSETTING_CHARA_NANORI, ARG
+			ELSEIF RESULT == 99
+				RETURN 1
+			ELSE
+				GOTO INPUT_LOOP_12
+			ENDIF
+			CLEARLINE LINECOUNT - LCOUNT
+			GOTO LOOP_12
+		ENDIF
+	;対応するコマンド処理なし
+	CASEELSE
+		RETURN 0
+ENDSELECT
+RETURN 1
+
+;================================================================
+;	以降、画面表示の各部分を担当する関数群
+;================================================================
+;--------------------------------------------------
+;種族表示
+; 引数
+;	ARG	対象のキャラ番号
+;memo:呼び出してる関数の作りを是正したら1行で書けるので、この関数自体が要らなくなる
+@SHOW_STATUS_CHARA_SYUZOKU, ARG
+PRINT 種族　：
+CALL SYUZOKU_CHECK, "STRING", ARG
+PRINTFORM %RESULTS, 46, LEFT%
+
+;--------------------------------------------------
+;性格表示
+; 引数
+;	ARG	対象のキャラ番号
+;memo:呼び出してる関数の作りを是正したら1行で書けるので、この関数自体が要らなくなる
+@SHOW_STATUS_CHARA_SEIKAKU, ARG
+VARSET LOCALS
+LOCALS += @"<nobr><nonbutton title='%TALENT_INFO(SEIKAKU_CHECK_F(ARG))%'>性格　：%TALENTNAME:(SEIKAKU_CHECK_F(ARG)),46,LEFT%</nonbutton></nobr>"
+HTML_PRINT LOCALS
+
+;--------------------------------------------------
+;基礎的な戦闘ステータスの表示
+; 引数
+;	ARG	対象のキャラ番号
+; 変数
+;	補正後攻撃,補正後防御,補正後敏捷	名前通りの計算結果の格納先
+;	無補正戦闘力,補正後戦闘力			名前通りの画面出力の一時代入先
+@SHOW_STATUS_CHARA_BATTLESTATS, ARG
+#DIM 補正後攻撃
+#DIM 補正後防御
+#DIM 補正後敏捷
+#DIMS 無補正戦闘力
+#DIMS 補正後戦闘力
+
+;レベル、経験値、修練Pを表示
+PRINTFORML レベル：Lv.{ABL:ARG:レベル} （{JUEL:ARG:経験値}％）　修練P：{JUEL:ARG:修練P}P
+
+;体力・気力・性耐性をカラーバー表示
+CALLFORM COLORSENTENCE_BAR("体力", 6, BASE:ARG:体力, MAXBASE:ARG:体力, 20)
+PRINTL 
+CALLFORM COLORSENTENCE_BAR("気力", 6, BASE:ARG:気力, MAXBASE:ARG:気力, 20)
+PRINTL 
+CALLFORM COLORSENTENCE_BAR("性耐性", 6, BASE:ARG:性耐性, MAXBASE:ARG:性耐性, 20)
+PRINTL
+
+;変身前/非戦闘員の攻撃・防御・敏捷補正を計算する（知性には補正はない）
+;memo:このやり方は良くない。実際に戦闘力を使用する処理と同じことを繰り返しているわけだから
+;memo:補正込み戦闘力を返す式中関数があってしかるべき
+補正後攻撃 = MAXBASE:ARG:攻撃 * CFLAG:ARG:10 / 100
+補正後防御 = MAXBASE:ARG:防御 * CFLAG:ARG:10 / 100
+補正後敏捷 = MAXBASE:ARG:敏捷 * CFLAG:ARG:10 / 100
+
+;無補正の戦闘力表示と補正後の戦闘力表示の出力文を作る
+無補正戦闘力 = 攻撃：{MAXBASE:ARG:攻撃,4, RIGHT}  防御：{MAXBASE:ARG:防御,4, RIGHT}  敏捷：{MAXBASE:ARG:敏捷,4, RIGHT}  知性：{MAXBASE:ARG:知性,4, RIGHT}
+補正後戦闘力 = 攻撃：{補正後攻撃,4, RIGHT}  防御：{補正後防御,4, RIGHT}  敏捷：{補正後敏捷,4, RIGHT}  知性：{MAXBASE:ARG:知性,4, RIGHT}
+
+;変身能力別に戦闘力（攻撃・防御・敏捷・知性）を表示
+SELECTCASE TALENT:ARG:変身能力
+	CASE 素質変身能力_なし
+		PRINTFORM 戦闘力　　%無補正戦闘力,46,LEFT%　　
+	CASE 素質変身能力_あり
+		PRINTFORM 変身前　　%補正後戦闘力,46,LEFT%　　
+		PRINTL 
+		PRINTFORM 変身後　　%無補正戦闘力,46,LEFT%　　
+	CASE 素質変身能力_非戦闘員
+		PRINTFORM 戦闘力　　%補正後戦闘力,46,LEFT%　　
+ENDSELECT
+PRINTL 
+
+;--------------------------------------------------
+;基礎値表示
+; 引数
+;	ARG	対象のキャラ番号
+@SHOW_STATUS_CHARA_BASESTATS, ARG
+;基礎値にフィートボーナスを加算して表示する
+LOCALS = 体力：{BASE:ARG:体力基礎+FEAT_BONUS_F(ARG,0)}  気力：{BASE:ARG:気力基礎+FEAT_BONUS_F(ARG,1)}  性耐性：{BASE:ARG:性耐性基礎+FEAT_BONUS_F(ARG,2)} 
+PRINTFORML ◆基礎値  %LOCALS,46,LEFT%
+LOCALS = 攻撃：{BASE:ARG:攻撃+FEAT_BONUS_F(ARG,3),4,RIGHT}  防御：{BASE:ARG:防御+FEAT_BONUS_F(ARG,4),4,RIGHT}  敏捷：{BASE:ARG:敏捷+FEAT_BONUS_F(ARG,5),4,RIGHT}  知性：{BASE:ARG:知性+FEAT_BONUS_F(ARG,6),4,RIGHT}
+PRINTFORML           %LOCALS,46,LEFT%
+
+;--------------------------------------------------
+;戦技表示
+; 引数
+;	ARG	対象のキャラ番号
+@SHOW_STATUS_CHARA_SENGI, ARG
+PRINTFORM ◆戦技Lv  
+;非戦闘員でなければ、近距離・中距離・遠距離Lvを表示
+IF TALENT:ARG:変身能力 != 素質変身能力_非戦闘員
+	PRINTFORM 近距離Lv.{ABL:ARG:近距離}  中距離Lv.{ABL:ARG:中距離}  遠距離Lv.{ABL:ARG:遠距離}  
+;非戦闘員なら戦闘基礎Lvを表示
+ELSE
+	PRINTFORM 戦闘基礎Lv.{ABL:ARG:戦闘基礎}  
+ENDIF
+;最後に空中ダッシュ能力を表示
+PRINTFORM 空中Lv：{MAXBASE:ARG:空中ダッシュ}
+
+;--------------------------------------------------
+;部位結界表示
+; 引数
+;	ARG	対象のキャラ番号
+; 定数
+;	OUTPUT_SEALS		表示する結界TALENTの番号列挙
+;	OUTPUT_DULABILITIES	表示する結界耐久力ABLの番号列挙
+; 変数
+;	PRINTED	既に結界出力を行っているか（初期値0）
+@SHOW_STATUS_CHARA_SHIELDS, ARG
+{
+#DIM CONST OUTPUT_SEALS =
+GETNUM(TALENT, "Ｃ結界"), GETNUM(TALENT, "Ｖ結界"), GETNUM(TALENT, "Ａ結界"), GETNUM(TALENT, "Ｂ結界")
+}
+{
+#DIM CONST OUTPUT_DULABILITIES =
+GETNUM(BASE, "Ｃ結界耐久力"), GETNUM(BASE, "Ｖ結界耐久力"), GETNUM(BASE, "Ａ結界耐久力"), GETNUM(BASE, "Ｂ結界耐久力")
+}
+#DIM DYNAMIC PRINTED = 0
+
+;ＣＶＡＢ結界がどれかひとつでもあれば表示処理
+IF TALENT:ARG:Ｃ結界 + TALENT:ARG:Ｖ結界 + TALENT:ARG:Ａ結界 + TALENT:ARG:Ｂ結界
+	PRINT ◆結界　　
+	;ＣＶＡＢ結界それぞれについて存在を確認
+	REPEAT VARSIZE("OUTPUT_SEALS")
+		SIF TALENT:ARG:(OUTPUT_SEALS:COUNT) == 0
+			CONTINUE
+		;既に出力した後（PRINTED==1）なら改行して字下げする
+		IF PRINTED
+			PRINTL 
+			PRINT 　　　　　
+		ENDIF
+		;結界名を表示
+		PRINTFORM %TALENTNAME:(OUTPUT_SEALS:COUNT)%
+		;対応する結界耐久力を表示する関数を呼び出し
+		CALL SHOW_SHIELD_DURABILITY, ARG, OUTPUT_DULABILITIES:COUNT
+		;出力したフラグを立てる
+		PRINTED = 1
+	REND
+ENDIF
+;避妊結界があれば出力
+IF TALENT:ARG:避妊結界
+	SIF PRINTED
+		PRINTL 
+	PRINTL 　　　　　避妊結界
+ENDIF
+
+;--------------------------------------------------
+;ＣＶＡＢ結界耐久力表示（直上の関数のサブルーチン）
+; 引数	
+;	ARG				対象のキャラ番号
+;	DURABILITY_NUM	対応する結界耐久力のBASE番号
+; 変数
+;	COLOR_R			結界カラーバー描写の色・R
+;	COLOR_G			結界カラーバー描写の色・G
+;	HUE_DIFFER		結界カラーバー描写の背景色相差
+@SHOW_SHIELD_DURABILITY, ARG, DURABILITY_NUM
+#DIM DURABILITY_NUM
+#DIM COLOR_R
+#DIM COLOR_G
+#DIM HUE_DIFFER
+
+;結界耐久力が残っていればカラーバーで現在耐久力を表示する
+IF BASE:ARG:DURABILITY_NUM > 0
+	;残り割合によりカラーバーの色を変える（少ないほど赤くなる）
+	CALL PERCENT_CAL, BASE:ARG:DURABILITY_NUM, MAXBASE:ARG:DURABILITY_NUM
+	COLOR_R = LIMIT(255 - RESULT * RESULT * 4 / 200, 0, 255)
+	COLOR_G = LIMIT(-215 - RESULT * RESULT / 100 + RESULT * 5, 0, 255)
+	HUE_DIFFER = RESULT * 3 / 4 - 160
+	;カラーバー表示処理
+	CALL COLOR_BAR(BASE:ARG:DURABILITY_NUM, MAXBASE:ARG:DURABILITY_NUM, 20, COLOR_R, COLOR_G, 20, HUE_DIFFER, 6, 32, 20, 1, UNICODE(0x25AE), UNICODE(0x25AE))
+
+;耐久力が残っていなければ崩壊と表示
+ELSE
+	SETCOLOR 128, 40, 40
+		PRINT 　　　崩　壊　　　　
+	RESETCOLOR
+ENDIF
+
+;結界耐久力の残りパーセントを表示
+FONTBOLD
+PRINTFORM  {PERCENT_CAL_F(BASE:ARG:DURABILITY_NUM,MAXBASE:ARG:DURABILITY_NUM)}％　
+FONTREGULAR
+;デバッグ用:結界耐久力の実数値を表示
+IF FLAG:999 == 1
+	SETCOLOR 96, 96, 96
+	PRINTFORM  /* debug */ {BASE:ARG:DURABILITY_NUM} / {MAXBASE:ARG:DURABILITY_NUM}
+	RESETCOLOR
+ENDIF
+
+;--------------------------------------------------
+;淫紋表示
+; 引数
+;	ARG	対象のキャラ番号
+;memo:まず呼び出している@TATTOO_ACCESSを書き直さないと手が付けられない
+@SHOW_STATUS_CHARA_TATTOO, ARG
+LOCAL:1 = TARGET
+TARGET = ARG
+
+CALL TATTOO_ACCESS, "POSITION_BIT"
+LOCAL:2 = RESULT
+IF LOCAL:2 > 0
+	LOCALS = ◆淫紋
+	FOR LOCAL, 0, 感覚数
+		IF GETBIT(LOCAL:2, LOCAL)
+			SIF LOCALS != "◆淫紋"
+				PRINTL 
+			PRINTFORM %LOCALS%　　位置：
+			SIF LOCAL == 0
+				PRINT 下腹部
+			SIF LOCAL == 1
+				PRINT 腹部　
+			SIF LOCAL == 2
+				PRINT 右臀部
+			SIF LOCAL == 3
+				PRINT 左乳房
+			PRINT 　　状態：
+			LOCALS = 　　　
+			CALL PRINT_TATTOO, LOCAL
+		ENDIF
+	NEXT
+
+	CALL TATTOO_ACCESS, "TATTOO_TYPE", 7
+	LOCAL:2 = RESULT
+	FOR LOCAL, 0, 8
+		IF GETBIT(LOCAL:2, LOCAL)
+			PRINTL 
+			PRINTFORM 　　　　　位置：
+			SIF LOCAL == 0
+				PRINT 額　　
+			SIF LOCAL == 1
+				PRINT 喉下部
+			SIF LOCAL == 2
+				PRINT 背中　
+			SIF LOCAL == 3
+				PRINT 右頬　
+			SIF LOCAL == 4
+				PRINT 左頬　
+			SIF LOCAL == 5
+				PRINT 右内股
+			SIF LOCAL == 6
+				PRINT 左内股
+			PRINT 　　状態：
+			CALL PRINT_TATTOO, 7, LOCAL
+		ENDIF
+	NEXT
+ENDIF
+TARGET = LOCAL:1
+
+;--------------------------------------------------
+;装備中の衣装表示
+; 引数
+;	ARG	対象のキャラ番号
+@SHOW_STATUS_CHARA_CLOTH, ARG
+
+PRINTL ◆衣装設定
+PRINT 【アウター】
+;変身能力ありの場合は変身前後のアウターをそれぞれ表示する
+IF TALENT:ARG:変身能力 == 素質変身能力_あり
+	;変身前のアウター
+	IF CFLAG:ARG:40 == 0
+		PRINTFORML ┏なし
+	ELSE
+		PRINTFORML %COSTUME_NAME(ARG,0)%
+	ENDIF
+	;変身後のアウター
+	IF CFLAG:ARG:41 == 0
+		PRINTFORML 　　　　　　┗なし
+	ELSE
+		PRINTFORML 　　　　　　┗%COSTUME_NAME(ARG,1)%
+	ENDIF
+;変身能力あり以外の場合はアウターは一種類
+ELSE
+	IF CFLAG:ARG:40 == 0
+		PRINTFORML なし
+	ELSE
+		PRINTFORML %COSTUME_NAME(ARG,0)%
+	ENDIF
+ENDIF
+
+;インナー
+PRINT 【インナー】
+IF CFLAG:ARG:42 == 0
+	PRINTFORML なし
+ELSE
+	PRINTFORML %INNER_NAME(ARG)%
+ENDIF
+
+;その他装備品
+PRINT 【その他　】
+IF CFLAG:ARG:43 == 0
+	PRINTFORML なし
+ELSE
+	PRINTFORML %ITEMNAME:(CFLAG:ARG:43)%
+ENDIF

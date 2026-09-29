@@ -1,0 +1,154 @@
+﻿;ゲームモード毎のオプション
+;資料も兼ねているので、ゲームモードに関わるオプションを増やした場合はここにも記入をお願いします
+;※セットで使われる定数については 開発者向け資料\フラグ一覧 と DIM.ERH を参照
+
+@GAME_OPTION_CUSTUM
+$MASTER_LOOP
+PRINTL 　☆カスタムモード☆
+PRINTL 　☆オプション選択☆
+PRINTFORML [0] 難易度:easy 　　　　　　　　　　【\@GETBIT(FLAG:0,0)?○#×\@】
+PRINTFORML [1] 難易度:normal 　　　　　　　　　【\@GETBIT(FLAG:0,1)?○#×\@】
+PRINTFORML [2] 難易度:hardcore 　　　　　　　　【\@GETBIT(FLAG:0,2)?○#×\@】
+PRINTFORML [3] 一人プレイ　　　　　　　　　　　【\@GETBIT(FLAG:0,3)?○#×\@】
+;SURVIVAL～SANDBOX相当
+PRINTFORML [4] エンドレス　　　　　　　　　　　【\@GETBIT(FLAG:0,4)?○#×\@】
+PRINTFORML [5] 周回引継ぎできない　　　　　　　【\@GETBIT(FLAG:0,5)?○#×\@】
+PRINTFORML [6] ボス撃破時間制限（期限）無し　　【\@GETBIT(FLAG:0,6)?○#×\@】
+PRINTFORML [7] 実績取れない・エンディング無し　【\@GETBIT(FLAG:0,7)?○#×\@】
+PRINTFORML [8] ゲームオーバーにならない　　　　【\@GETBIT(FLAG:0,8)?○#×\@】
+;INSTANT相当
+PRINTFORML [9] プレイヤーの新規作成と引退が可能【\@GETBIT(FLAG:0,9)?○#×\@】
+PRINTFORML [10]敵の攻撃で基礎ステータスが減る　【\@GETBIT(FLAG:0,10)?○#×\@】
+PRINTL 
+SETCOLOR 105,105,105
+FOR COUNT, 0, モードカウント
+	IF FLAG:0 == モードオプション:COUNT
+		PRINTPLAINFORM [{100+COUNT}] %モードネーム:COUNT%モード
+	ELSE
+		PRINTFORMD [{100+COUNT}] %モードネーム:COUNT%モード
+	ENDIF
+	PRINTL 
+NEXT
+RESETCOLOR
+PRINTL 
+PRINT FLAG:0 = 0b
+FOR COUNT, 0, オプションカウント
+	PRINTFORM {GETBIT(FLAG:0,オプションカウント-COUNT-1)}
+NEXT
+PRINTL 
+PRINTFORML FLAG:0 = {FLAG:0}
+PRINTL 
+CALL SET_LIMIT_DAY
+PRINTFORML 1ボス毎の制限日数：{FLAG:2}
+PRINTL 
+PRINTL [1000] 設定終了
+PRINTL 
+$INPUT_LOOP
+INPUT
+IF INRANGE(RESULT, 0, オプションカウント-1)
+	INVERTBIT FLAG:0, RESULT
+	;難易度が複数設定された時
+	IF (GETBIT(FLAG:0, OPTION_easy) + GETBIT(FLAG:0, OPTION_normal) + GETBIT(FLAG:0, OPTION_hardcore)) > 1
+		CLEARBIT FLAG:0, OPTION_easy
+		CLEARBIT FLAG:0, OPTION_normal
+		CLEARBIT FLAG:0, OPTION_hardcore
+		SETBIT FLAG:0, RESULT
+	;ソロと加入引退が同時に設定された時
+	ELSEIF (GETBIT(FLAG:0, OPTION_solo) + GETBIT(FLAG:0, OPTION_加入引退有り)) > 1
+		CLEARBIT FLAG:0, OPTION_solo
+		CLEARBIT FLAG:0, OPTION_加入引退有り
+		SETBIT FLAG:0, RESULT
+	ENDIF
+	GOTO MASTER_LOOP
+ELSEIF INRANGE(RESULT, 100, 99+モードカウント)
+	FLAG:0 = モードオプション:(RESULT-100)
+	GOTO MASTER_LOOP
+ELSEIF RESULT == 1000
+	IF FLAG:0 == 0
+		PRINTW GAMEOVERモードで始めることはできません
+		CLEARLINE 2
+		GOTO INPUT_LOOP
+	ENDIF
+	RETURN
+ELSE
+	CLEARLINE 1
+	GOTO INPUT_LOOP
+ENDIF
+
+
+@GAME_OPTION_SET(ARG:0,ARG:1=-1,ARG:2=-1,ARG:3=-1,ARG:4=-1,ARG:5=-1,ARG:6=-1,ARG:7=-1,ARG:8=-1,ARG:9=-1)
+FOR COUNT, 0, VARSIZE("ARG")
+	SIF ARG:COUNT == -1
+		CONTINUE
+	SETBIT FLAG:0,ARG:COUNT
+NEXT
+RETURN
+
+
+;オプションが指定されているか確認する関数
+@GAME_OPTION_CHECK_F(ARG)
+#FUNCTION
+RETURNF GETBIT(FLAG:0, ARG)
+
+@GAME_OPTION_CHECK_MULTI_F(ARG:0,ARG:1=-1,ARG:2=-1,ARG:3=-1,ARG:4=-1,ARG:5=-1,ARG:6=-1,ARG:7=-1,ARG:8=-1,ARG:9=-1)
+#FUNCTION
+#DIM CO
+CO = 0
+LOCAL = 0,0,0,0,0,0,0,0,0,0
+;ARGで指定されたオプションとFLAG:0のオプションが一致しているか
+FOR COUNT, 0, VARSIZE("ARG")
+	SIF ARG:COUNT == -1
+		CONTINUE
+	LOCAL:CO = GETBIT(FLAG:0, ARG:COUNT)
+	CO ++
+NEXT
+FINDELEMENT LOCAL, 1, 0, CO
+SIF RESULT == -1
+	RETURNF 0
+RETURNF 1
+
+
+;ゲームオーバーモードに入る
+@CHANGE_GAMEOVER_MODE
+FLAG:0 = 0
+DAY:2 = DAY*2+TIME
+;ゲームオーバーモードに入っているなら1、違うなら0
+@CHECK_GAMEOVER_F()
+#FUNCTION
+	RETURNF GAME_MODE_CHECK_F() == MODE_GAMEOVER ? 1 # 0
+
+;現在のモードを返す関数
+;カスタムモードは-1を返す
+;※判定の大半はゲームオーバーモードなので、ほとんど使わないと思っていい
+;　2023年10月現在クリア実績のアンロックにのみ用いられている
+@GAME_MODE_CHECK
+FOR COUNT, 0, モードカウント
+	;ビットの一致するモードを探す 周回要素で時間制限を解除していたら↓を考慮
+	SIF FLAG:0 == (モードオプション:COUNT | (FLAG:906 ? 64 # 0))
+		RETURN COUNT
+NEXT
+RETURN -1
+@GAME_MODE_CHECK_F
+#FUNCTION
+FOR COUNT, 0, モードカウント
+	SIF FLAG:0 == モードオプション:COUNT
+		RETURNF COUNT
+NEXT
+RETURNF -1
+
+
+@BOSS_LIMIT_TIME_CUSTUM
+PRINTL ☆ボス1体当たりの制限日数（1～20）
+PRINTL 　※参考
+PRINTL 　13日：HARDCOREモード
+PRINTL 　12日：SOLOモード
+PRINTL 　11日：NORMALモード、INSTANTモード（基準値）
+PRINTL 　 9日：SANDBOXモード、FREEPLAYモード、SURVIVALモード
+$INPUT_LOOP
+INPUT
+IF INRANGE(RESULT, 1, 20)
+	FLAG:2 = RESULT
+	PRINTFORMW {FLAG:2}日にしました。
+ELSE
+	GOTO INPUT_LOOP
+ENDIF

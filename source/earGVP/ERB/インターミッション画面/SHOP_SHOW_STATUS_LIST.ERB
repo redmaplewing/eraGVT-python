@@ -1,0 +1,188 @@
+﻿;--------------------------------------------------
+;パーティメンバーの基礎情報リスト表示
+; 引数
+;	IS_FORM_MODE	編成画面（@SHOP_ORGANIZE_PARTY）から呼んだか
+; 変数
+;	MAXLEN	各表示項目それぞれの全表示キャラ中最大文字数
+;			（@SHOP_SHOW_STATUS_COUNT_MAXLENに参照渡しして値を詰めてもらう）
+;	CCOUNT	ループカウンタ
+@SHOP_SHOW_STATUS_PARTY_LIST, IS_FORM_MODE
+#DIM IS_FORM_MODE
+#DIM DYNAMIC MAXLEN, ARRYASIZE_MAXLEN
+#DIM CCOUNT
+
+;パーティメンバー全員の、各項目それぞれの最大文字数を調べる
+CALL SHOP_SHOW_STATUS_COUNT_MAXLEN, MAXLEN, FALSE
+
+;パーティメンバー一覧の表示
+FOR CCOUNT, 0, CHARANUM
+	;無事なパーティメンバーでないなら飛ばす
+	SIF CCOUNT == MASTER || CFLAG:CCOUNT:999 == 0 || CFLAG:CCOUNT:0 != 状態_無事
+		CONTINUE
+
+	;編成画面中ならキャラ選択の◆の色を変える
+	IF CCOUNT == TARGET && FLAG:9 == 0
+		SETCOLOR 0, 255, 150
+		SIF IS_FORM_MODE
+			SETCOLOR 250, 180, 50
+		PRINT ◆
+	ELSE
+		PRINT ◇
+	ENDIF
+	;キャラ番号のボタン、名前（フルネーム）と行動予定を出力
+	PRINTFORM [{CCOUNT,2,RIGHT}] %NAME:CCOUNT, MAXLEN:MAXLEN_NAME, LEFT% 　　　
+	CALL SHOP_PRINT_ACTIONPLAN, CFLAG:CCOUNT:100
+	PRINTL
+
+	;次の行に字下げして体力・気力・性耐性・その他各種状態を表示
+	PRINT 　　　　 
+	CALL SHOW_SHOP_STATUS_BASE_ONELINE, CCOUNT, MAXLEN:MAXLEN_体力, MAXLEN:MAXLEN_気力, MAXLEN:MAXLEN_性耐性
+	CALL SHOW_SHOP_STATUS_SIGN, CCOUNT
+	PRINTL 
+NEXT
+
+;--------------------------------------------------
+;控えメンバーの基礎情報リスト表示
+; 引数
+;	IS_FORM_MODE	編成画面（@SHOP_ORGANIZE_PARTY）から呼んだか
+; 変数
+;	MAXLEN	各表示項目それぞれの全表示キャラ中最大文字数
+;			（@SHOP_SHOW_STATUS_COUNT_MAXLENに参照渡しして値を詰めてもらう）
+;	CCOUNT	ループカウンタ
+@SHOP_SHOW_STATUS_RESERVE_LIST, IS_FORM_MODE
+#DIM IS_FORM_MODE
+#DIM DYNAMIC MAXLEN, ARRYASIZE_MAXLEN
+#DIM CCOUNT
+
+;控えメンバー全体で、各項目それぞれの最大文字数を調べる
+CALL SHOP_SHOW_STATUS_COUNT_MAXLEN, MAXLEN, TRUE
+
+;控えメンバーの表示
+PRINTL 
+PRINTL << 控えメンバー >>
+FOR CCOUNT, 0, CHARANUM
+	;無事な控えメンバーでないなら飛ばす
+	SIF CCOUNT == MASTER || CFLAG:CCOUNT:999 != 0 || !GROUPMATCH(CFLAG:CCOUNT:0, 状態_無事, 状態_出産直前, 状態_育児中)
+		CONTINUE
+
+	;編成画面中ならキャラ選択の◆の色を変える
+	IF CCOUNT == TARGET && FLAG:9 == 0
+		SETCOLOR 0, 255, 150
+		SIF IS_FORM_MODE
+			SETCOLOR 250, 180, 50
+		PRINT ◆
+	ELSE
+		PRINT ◇
+	ENDIF
+
+	;キャラ番号のボタン、呼び名と行動予定を出力
+	PRINTFORM [{CCOUNT,2,RIGHT}]%CALLNAME:CCOUNT, MAXLEN:MAXLEN_CALLNAME, LEFT% 　
+	CALL SHOP_PRINT_ACTIONPLAN, CFLAG:CCOUNT:100
+	PRINT  　
+	;体力・気力・性耐性・その他各種状態を続けて表示
+	CALL SHOW_SHOP_STATUS_BASE_ONELINE, CCOUNT, MAXLEN:MAXLEN_体力, MAXLEN:MAXLEN_気力, MAXLEN:MAXLEN_性耐性
+	CALL SHOW_SHOP_STATUS_SIGN, CCOUNT
+	PRINTL 
+NEXT
+
+;==============================================================================
+;以下、関数内で呼ばれるサブ関数
+;==============================================================================
+
+;--------------------------------------------------
+;操作可能なキャラ全体で、各項目それぞれの最大文字数を調べる
+; 引数
+;	MAXLEN		各表示項目それぞれの全表示キャラ中最大文字数
+;	IS_RESERVE	控えメンバーの表示かどうか
+; 変数
+;	CCOUNT	ループカウンタ
+; 戻り値	なし。代わりにMAXLENに値を代入して呼び出し元に返す
+@SHOP_SHOW_STATUS_COUNT_MAXLEN, MAXLEN, IS_RESERVE
+#DIM REF MAXLEN
+#DIM IS_RESERVE
+#DIM CCOUNT
+FOR CCOUNT, 0, CHARANUM
+	SIF CCOUNT == MASTER
+		CONTINUE
+	;控えメンバー表示処理中で控えメンバーでない、またはパーティメンバー表示処理中で控えメンバーなら、対象外
+	SIF CFLAG:CCOUNT:999 == IS_RESERVE
+		CONTINUE
+
+	;無事で操作可能なキャラだけを対象にする
+	IF GROUPMATCH(CFLAG:CCOUNT:0, 状態_無事, 状態_出産直前, 状態_育児中)
+		;キャラ名
+		MAXLEN:MAXLEN_NAME = MAX(MAXLEN:MAXLEN_NAME, STRLENS(NAME:CCOUNT))
+		;キャラ呼び名
+		MAXLEN:MAXLEN_CALLNAME = MAX(MAXLEN:MAXLEN_CALLNAME, STRLENS(CALLNAME:CCOUNT))
+		;体力
+		MAXLEN:MAXLEN_体力 = MAX(MAXLEN:MAXLEN_体力, INTLEN(MAXBASE:CCOUNT:体力))
+		;気力
+		MAXLEN:MAXLEN_気力 = MAX(MAXLEN:MAXLEN_気力, INTLEN(MAXBASE:CCOUNT:気力))
+		;LOCAL:6 性耐性
+		MAXLEN:MAXLEN_性耐性 = MAX(MAXLEN:MAXLEN_性耐性, INTLEN(MAXBASE:CCOUNT:性耐性))
+	ENDIF
+NEXT
+
+;--------------------------------------------------
+;キャラの体力・気力・性耐性を1行で表示する
+; 引数
+;	TGT_CHR	対象キャラ番号
+;	LEN_体力,LEN_気力,LEN_性耐性	各ステータスの最大表示幅
+; 変数
+;	PAD_体力, PAD_気力, PAD_性耐性	各ステータスの字詰めスペース幅（最大表示幅-このキャラの表示幅）
+@SHOW_SHOP_STATUS_BASE_ONELINE, TGT_CHR, LEN_体力, LEN_気力, LEN_性耐性
+#DIM TGT_CHR
+#DIM LEN_体力
+#DIM LEN_気力
+#DIM LEN_性耐性
+#DIM PAD_体力
+#DIM PAD_気力
+#DIM PAD_性耐性
+
+;各ステータスの表示位置調整用に字詰めスペースの幅を算出する
+PAD_体力 = LEN_体力 * 2 - INTLEN(BASE:TGT_CHR:体力) - INTLEN(MAXBASE:TGT_CHR:体力)
+PAD_気力 = LEN_気力 * 2 -  INTLEN(BASE:TGT_CHR:気力) - INTLEN(MAXBASE:TGT_CHR:気力)
+PAD_性耐性 = LEN_性耐性 * 2 - INTLEN(BASE:TGT_CHR:性耐性) - INTLEN(MAXBASE:TGT_CHR:性耐性)
+
+;各ステータスをミニバー付きで表示
+CALLFORM COLORSENTENCE_MINIBAR("体力", BASE:TGT_CHR:体力, MAXBASE:TGT_CHR:体力, 4, "", PAD_体力)
+CALLFORM COLORSENTENCE_MINIBAR("気力", BASE:TGT_CHR:気力, MAXBASE:TGT_CHR:気力, 4, "", PAD_気力)
+CALLFORM COLORSENTENCE_MINIBAR("性耐性", BASE:TGT_CHR:性耐性, MAXBASE:TGT_CHR:性耐性, 4, "", PAD_性耐性)
+
+;--------------------------------------------------
+;キャラの各種状態を並べて表示
+; 引数
+;	TGT_CHR	対象キャラ番号
+; 変数
+;	FATIGUE_COLOR	疲労度合いに応じた[疲労]の色
+@SHOW_SHOP_STATUS_SIGN, TGT_CHR
+#DIM TGT_CHR
+#DIM FATIGUE_COLOR
+
+;疲労の溜まり具合に応じて表示色を決める
+SELECTCASE CFLAG:TGT_CHR:99
+	CASE IS <20
+		FATIGUE_COLOR = 0x32FF5A
+	CASE IS <50
+		FATIGUE_COLOR = 0x289249
+	CASEELSE
+		FATIGUE_COLOR = 0x1E6624
+ENDSELECT
+
+;月経サイクルの表示
+CALL PRINT_ESTRUS_CYCLE(TGT_CHR)
+;消沈度が溜まっている
+SIF CFLAG:TGT_CHR:15 > 0
+	PRINTFORM [憂鬱]
+;疲労が溜まっている
+SIF CFLAG:TGT_CHR:99
+	CALL CPRINT, STRFORM("[疲労 {CFLAG:TGT_CHR:99}]"), FATIGUE_COLOR
+;避妊ピルの残量があるなら
+SIF CFLAG:TGT_CHR:241
+	CALL CPRINT, STRFORM("[避妊 {CFLAG:TGT_CHR:241}]"), 0xFF3CFF
+SIF CHECK_PREGNANT_F(TGT_CHR) > 0
+	CALL CPRINT, "[妊娠]", 0xCD3C3C
+SIF TALENT:TGT_CHR:繁殖袋 > 0 
+	CALL CPRINT, "[繁殖袋]", 0x8B0000
+SIF TALENT:TGT_CHR:四肢欠損 > 0
+	CALL CPRINT, "[四肢欠損]", 0xAA0000

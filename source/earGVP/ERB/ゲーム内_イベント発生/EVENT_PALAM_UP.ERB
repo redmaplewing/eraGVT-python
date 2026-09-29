@@ -1,0 +1,436 @@
+﻿;==============================================================================
+;非戦闘イベントでのパラメータ変動共通処理
+;UPを参照し、終了時に初期化する
+; 引数
+;	IGNORE_SHIELD	結界を無視するかどうか(1:無視する 0:無視しない(デフォルト))
+; 変数
+;	EJAC_NUM	射精回数
+;	SQIRT_NUM	噴乳回数
+;	LCOUNT	ループカウンタ
+@EVENT_PALAM_UP, IGNORE_SHIELD = 0
+#DIM IGNORE_SHIELD
+#DIM DYNAMIC EJAC_NUM
+#DIM DYNAMIC SQIRT_NUM
+#DIM LCOUNT
+
+;半日ずっとですしとりあえず9～10倍に
+;memo:「幽閉が」ということなら、幽閉処理以外から呼び出される方が多いため理屈が破綻している
+;memo:幽閉処理だけ強化したいのなら幽閉処理側の呼び出し直前に補正をかけるべき
+FOR LCOUNT, 0, VARSIZE("調教PALAM")
+	UP:LCOUNT = UP:LCOUNT * 9 + RAND:(UP:LCOUNT + 1)
+NEXT
+
+;上昇値に各種補正をかける
+CALL EVENT_PALAM_HOSEI, IGNORE_SHIELD
+
+;取得予定の珠から絶頂回数の逆算
+VARSET NOWEX
+FOR LCOUNT, 0, VARSIZE("快部位PALAM")
+	SIF UP:LCOUNT > 1000
+		NOWEX:LCOUNT = SQRT(UP:LCOUNT) / 10
+NEXT
+
+;恥情のボーナス計算
+UP:恥情 += FUNC_EVENT_PALAM_CALC_TIJYOU_BONUS()
+
+;欲情のボーナス計算
+UP:欲情 += FUNC_EVENT_PALAM_CALC_YOKUJYOU_BONUS()
+
+
+;ボス触手が相手で生えているなら射精回数を計算
+;Ｃ絶頂回数を除算して計算する（射精中毒が大きいほど除算量が小さい）
+SIF ENEMY_TYPE_CHECK_F("BOSS") == 1 && (ISPENIS())
+	EJAC_NUM = NOWEX:Ｃ絶頂 / MAX(6 - ABL:射精中毒, 1)
+
+;欲情・屈服・恥情に射精回数に応じたボーナス
+UP:欲情 += 200 * EJAC_NUM
+UP:屈服 += 200 * EJAC_NUM
+UP:恥情 += 200 * EJAC_NUM
+
+;母乳体質があるなら噴乳回数を計算
+;Ｂ絶頂回数を除算して計算する（噴乳中毒が大きいほど除算量が小さい）
+SIF TALENT:母乳体質 > 0
+	SQIRT_NUM = NOWEX:Ｂ絶頂 / MAX(6 - ABL:噴乳中毒, 1)
+
+;恭順・欲情・恥情に噴乳回数に応じたボーナス
+UP:恭順 += 200 * SQIRT_NUM
+UP:欲情 += 200 * SQIRT_NUM
+UP:恥情 += 200 * SQIRT_NUM
+
+;幽閉中であれば、刻印の取得処理
+IF CFLAG:0 == 1
+	;快楽刻印 一定量の欲情 また幽閉日数無関係に取得するため、幽閉日数の代わりに適当に高い固定値を投げる
+	CALL GOT_EVENT_SEX_MARK_CHECK, GETNUM(MARK,"快楽刻印"), UP:欲情, 快楽刻印判定基礎値_非戦闘, MARK:快楽刻印防止, 快楽刻印防止係数_非戦闘, 65535
+
+	;苦痛刻印 一定量の苦痛
+	CALL GOT_EVENT_SEX_MARK_CHECK, GETNUM(MARK,"苦痛刻印"), UP:苦痛, 苦痛刻印判定基礎値_非戦闘, MARK:苦痛刻印防止, 苦痛刻印防止係数_非戦闘, CFLAG:31
+
+	;屈服刻印 一定量の屈服
+	CALL GOT_EVENT_SEX_MARK_CHECK, GETNUM(MARK,"屈服刻印"), UP:屈服, 屈服刻印判定基礎値_非戦闘, MARK:屈服刻印防止, 屈服刻印防止係数_非戦闘, CFLAG:31
+
+	;恐怖刻印 一定量の恐怖
+	CALL GOT_EVENT_SEX_MARK_CHECK, GETNUM(MARK,"恐怖刻印"), UP:恐怖, 恐怖刻印判定基礎値_非戦闘, MARK:恐怖刻印防止, 恐怖刻印防止係数_非戦闘, CFLAG:31
+
+	;恥辱刻印 一定量の恥情
+	CALL GOT_EVENT_SEX_MARK_CHECK, GETNUM(MARK,"恥辱刻印"), UP:恥情, 恥辱刻印判定基礎値_非戦闘, MARK:恥辱刻印防止, 恥辱刻印防止係数_非戦闘, CFLAG:31
+ENDIF
+
+;絶頂回数、射精回数、噴乳回数をCOMMON_EXPに記録
+;memo:これいる？
+VARSET COMMON_EXP
+COMMON_EXP:22 = NOWEX:Ｃ絶頂 + NOWEX:Ｖ絶頂 + NOWEX:Ａ絶頂 + NOWEX:Ｂ絶頂
+COMMON_EXP:53 = EJAC_NUM
+COMMON_EXP:54 = SQIRT_NUM
+
+;珠の集計
+;FEAT効果による珠の入手量増加
+IF TALENT:背徳の烙印 > 0
+	FOR LOCAL, 0, VARSIZE("調教PALAM")
+		TIMES UP:LOCAL, 1.35
+	NEXT
+ENDIF
+JUEL:快Ｃ += UP:快Ｃ
+JUEL:快Ｖ += UP:快Ｖ
+JUEL:快Ａ += UP:快Ａ
+JUEL:快Ｂ += UP:快Ｂ
+;JUEL:潤滑 += UP:潤滑
+JUEL:恭順 += UP:恭順
+JUEL:習得 += UP:習得
+JUEL:欲情 += UP:欲情
+JUEL:屈服 += UP:屈服
+JUEL:恥情 += UP:恥情
+JUEL:苦痛 += UP:苦痛
+JUEL:恐怖 += UP:恐怖
+
+VARSET UP
+
+;==============================================================================
+;以下、関数内で呼ばれるサブ関数
+;==============================================================================
+
+;----------------------------------------------------------
+;パラメータ上昇値の補正処理（イベント版）
+;戦闘版と違って対象がバラバラなのでループして計算も全部ここでやる
+; 引数
+;	IGNORE_SHIELD	結界を無視するかどうか(1:無視する 0:無視しない(デフォルト))
+; 変数
+;	PCOUNT ループカウンタ
+@EVENT_PALAM_HOSEI, IGNORE_SHIELD
+#DIM IGNORE_SHIELD
+#DIM PCOUNT
+
+;素質に関する補正
+CALL EVENT_PALAM_CALC_TALENT
+
+;性格に関する補正
+LOCAL = SEIKAKU_CHECK_F(TARGET)
+UP:欲情 = SEIKAKU_HOSEI_PALAM_F(LOCAL, GETNUM(PALAM, "欲情"), UP:欲情)
+UP:屈服 = SEIKAKU_HOSEI_PALAM_F(LOCAL, GETNUM(PALAM, "屈服"), UP:屈服)
+UP:恥情 = SEIKAKU_HOSEI_PALAM_F(LOCAL, GETNUM(PALAM, "恥情"), UP:恥情)
+UP:苦痛 = SEIKAKU_HOSEI_PALAM_F(LOCAL, GETNUM(PALAM, "苦痛"), UP:苦痛)
+UP:恐怖 = SEIKAKU_HOSEI_PALAM_F(LOCAL, GETNUM(PALAM, "恐怖"), UP:恐怖)
+
+;触手に関する補正を全上昇値に掛ける（幽閉中か陥落後の場合のみ）
+IF CFLAG:0 == 1 || CFLAG:0 == 2 || CFLAG:0 == 3 || CFLAG:0 == 9
+	;memo:呼び出し先の作りが根本的に良くないので修正予定
+	CALL TENTACLE_ACCESS_PRISON, TARGET, "PALAM_HOSEI"
+	FOR PCOUNT, 0, VARSIZE("調教PALAM")
+		UP:PCOUNT = RESULT:PCOUNT /100
+	NEXT
+ENDIF
+
+;触手中毒に関する補正
+FOR PCOUNT, 0, VARSIZE("調教PALAM")
+	SELECTCASE ABL:触手中毒
+		CASE 1
+			TIMES UP:PCOUNT, 1.20
+		CASE 2
+			TIMES UP:PCOUNT, 1.50
+		CASE 3
+			TIMES UP:PCOUNT, 2.00
+		CASE 4
+			TIMES UP:PCOUNT, 2.50
+		CASE 5
+			TIMES UP:PCOUNT, 4.00
+	ENDSELECT
+NEXT
+
+;快部位（ＣＶＡＢ）の上昇値に補正
+FOR PCOUNT, 0, VARSIZE("快部位PALAM")
+	;感覚LV6以上補正
+	CALL PALAM_OVERFEEL, TARGET, PCOUNT
+	UP:PCOUNT = UP:PCOUNT * RESULT / 100
+
+	;結界チェック（対応する部位の結界が残っていて
+	IF BASE:(基礎部位結界:PCOUNT) > 0 && IGNORE_SHIELD == 0
+		;デバッグ表示
+		IF FLAG:999 == 1
+			SETCOLOR 96, 96, 96
+			PRINTFORML /* debug */ %BASENAME:(基礎部位結界:PCOUNT)%：{BASE:(基礎部位結界:PCOUNT)} - {UP:PCOUNT * 150 + (UP:PCOUNT > 0) * 2000} = {BASE:(基礎部位結界:PCOUNT) - UP:PCOUNT * 150 + (UP:PCOUNT > 0) * 2000}
+			RESETCOLOR
+		ENDIF
+		BASE:(基礎部位結界:PCOUNT) -= UP:PCOUNT * 150 + (UP:PCOUNT > 0) * 2000
+		SIF UP:PCOUNT > 0
+			CALL MESSAGE_SHIELD_STATE, PCOUNT
+		UP:PCOUNT = 0
+	ENDIF
+NEXT
+
+
+;--------------------------------------------------
+;素質による補正（イベント版）
+@EVENT_PALAM_CALC_TALENT
+;快C
+IF TALENT:Ｃ敏感 > 0
+	TIMES UP:快Ｃ, 2.00
+ELSEIF TALENT:Ｃ鈍感 > 0
+	TIMES UP:快Ｃ, 0.50
+ENDIF
+SIF TALENT:淫核 > 0
+	TIMES UP:快Ｃ, 1.50
+
+;快V
+IF TALENT:Ｖ敏感 > 0
+	TIMES UP:快Ｖ, 2.00
+ELSEIF TALENT:Ｖ鈍感 > 0
+	TIMES UP:快Ｖ, 0.50
+ENDIF
+SIF TALENT:淫壷 > 0
+	TIMES UP:快Ｖ, 1.50
+
+;快A
+IF TALENT:Ａ敏感 > 0
+	TIMES UP:快Ａ, 2.00
+ELSEIF TALENT:Ａ鈍感 > 0
+	TIMES UP:快Ａ, 0.50
+ENDIF
+SIF TALENT:淫尻 > 0
+	TIMES UP:快Ａ, 1.50
+
+;快B
+IF TALENT:Ｂ敏感 > 0
+	TIMES UP:快Ｂ, 2.00
+ELSEIF TALENT:Ｂ鈍感 > 0
+	TIMES UP:快Ｂ, 0.50
+ENDIF
+IF TALENT:貧乳 == 2
+	TIMES UP:快Ｂ, 0.75
+ELSEIF TALENT:貧乳 == 1
+	TIMES UP:快Ｂ, 0.80
+ELSEIF TALENT:巨乳 == 5
+	TIMES UP:快Ｖ, 1.40
+ELSEIF TALENT:巨乳 == 4
+	TIMES UP:快Ｖ, 1.35
+ELSEIF TALENT:巨乳 == 3
+	TIMES UP:快Ｖ, 1.30
+ELSEIF TALENT:巨乳 == 2
+	TIMES UP:快Ｖ, 1.25
+ELSEIF TALENT:巨乳 == 1
+	TIMES UP:快Ｖ, 1.20
+ENDIF
+SIF TALENT:淫乳 > 0
+	TIMES UP:快Ｂ, 1.50
+
+;恭順
+SIF TALENT:触手の虜 > 0
+	TIMES UP:恭順, 2.00
+
+;習得
+
+;欲情
+SIF TALENT:触手の虜 > 0
+	TIMES UP:欲情, 2.00
+SIF TALENT:淫乱 > 0
+	TIMES UP:欲情, 2.00
+
+;屈服
+SIF TALENT:触手の虜 > 0
+	TIMES UP:屈服, 2.00
+
+;恥情
+SIF TALENT:パイパン > 0
+	TIMES UP:恥情, 1.50
+SIF TALENT:淫乱 > 0
+	TIMES UP:恥情, 2.00
+
+;苦痛
+
+;恐怖
+
+;--------------------------------------------------
+;恥情上昇値のボーナス計算（イベント版）
+@FUNC_EVENT_PALAM_CALC_TIJYOU_BONUS
+#FUNCTION
+;戦闘時と同じように快C,快V,快A,快Bの上昇値,絶頂の状態で計算した値を上乗せ
+LOCAL = UP:快Ｃ + (UP:快Ｖ * 2) + (UP:快Ａ * 2) + UP:快Ｂ
+LOCAL:1 = 0
+IF LOCAL == 0
+	LOCAL:1 = 0
+ELSEIF LOCAL < 1000
+	LOCAL:1 = 200
+ELSEIF LOCAL < 3000
+	LOCAL:1= 500
+ELSEIF LOCAL < 5000
+	LOCAL:1 = 1000
+ELSEIF LOCAL < 10000
+	LOCAL:1 = 2000
+ELSEIF LOCAL < 30000
+	LOCAL:1 = 5000
+ELSEIF LOCAL < 50000
+	LOCAL:1 = 10000
+ELSE
+	LOCAL:1 = 20000
+ENDIF
+LOCAL = LOCAL:100 + LOCAL:101 + LOCAL:102 + LOCAL:103
+IF LOCAL < 10
+	TIMES LOCAL:1, 1.00
+ELSEIF LOCAL < 25
+	TIMES LOCAL:1, 2.00
+ELSEIF LOCAL < 50
+	TIMES LOCAL:1, 3.00
+ELSE
+	TIMES LOCAL:1, 4.00
+ENDIF
+
+RETURNF LOCAL:1
+
+;--------------------------------------------------
+;欲情上昇値のボーナス計算（イベント版）
+@FUNC_EVENT_PALAM_CALC_YOKUJYOU_BONUS
+#FUNCTION
+LOCAL = 0
+LOCAL:1 = 0
+LOCAL:2 = 0
+LOCAL:3 = 0
+
+;快C,快V,快A,快B
+LOCAL = UP:快Ｃ + (UP:快Ｖ * 2) + (UP:快Ａ * 2) + UP:快Ｂ
+IF LOCAL == 0
+	LOCAL:1 = 0
+ELSEIF LOCAL < 1000
+	LOCAL:1 = 100
+ELSEIF LOCAL < 3000
+	LOCAL:1 = 200
+ELSEIF LOCAL < 5000
+	LOCAL:1 = 500
+ELSEIF LOCAL < 10000
+	LOCAL:1 = 1000
+ELSEIF LOCAL < 20000
+	LOCAL:1 = 2000
+ELSEIF LOCAL < 35000
+	LOCAL:1 = 5000
+ELSE
+	LOCAL:1 = 10000
+ENDIF
+
+;絶頂回数合計
+LOCAL = NOWEX:Ｃ絶頂 + NOWEX:Ｖ絶頂 + NOWEX:Ａ絶頂 + NOWEX:Ｂ絶頂
+IF LOCAL < 10
+	TIMES LOCAL:1, 1.00
+ELSEIF LOCAL < 25
+	TIMES LOCAL:1, 2.00
+ELSEIF LOCAL < 50
+	TIMES LOCAL:1, 3.00
+ELSE
+	TIMES LOCAL:1, 4.00
+ENDIF
+
+;恥情
+IF UP:恥情 == 0
+	LOCAL:2 = 0
+ELSEIF UP:恥情 < 1000
+	LOCAL:2 = 500
+ELSEIF UP:恥情 < 3000
+	LOCAL:2 = 1000
+ELSEIF UP:恥情 < 5000
+	LOCAL:2 = 2000
+ELSE
+	LOCAL:2 = 5000
+ENDIF
+
+;露出癖
+IF ABL:露出癖 < 2
+	TIMES LOCAL:2, 0.00
+ELSEIF ABL:露出癖 == 2
+	TIMES LOCAL:2, 0.75
+ELSEIF ABL:露出癖 == 3
+	TIMES LOCAL:2, 1.00
+ELSEIF ABL:露出癖 == 4
+	TIMES LOCAL:2, 1.25
+ELSEIF ABL:露出癖 ==5
+	TIMES LOCAL:2, 1.50
+ENDIF
+
+;苦痛
+IF UP:苦痛 == 0
+	LOCAL:3 = 0
+ELSEIF UP:苦痛 < 1000
+	LOCAL:3 = 100
+ELSEIF UP:苦痛 < 3000
+	LOCAL:3 = 200
+ELSEIF UP:苦痛 < 5000
+	LOCAL:3 = 500
+ELSE
+	LOCAL:3 = 1000
+ENDIF
+
+;マゾっ気
+IF ABL:マゾっ気 > 3
+ELSEIF ABL:マゾっ気 == 3
+	TIMES LOCAL:3, 0.50
+ELSEIF ABL:マゾっ気 == 4
+	TIMES LOCAL:3, 1.00
+ELSEIF ABL:マゾっ気 == 5
+	TIMES LOCAL:3, 1.50
+ENDIF
+
+RETURNF LOCAL:1 + LOCAL:2 + LOCAL:3
+
+;--------------------------------------------------
+;刻印取得判定（イベント版）	判定のしきい値となる数値はEVENT_PALAM_UP.ERHに記載
+; 引数
+;	TARGET_MARK		取得対象の刻印（MARK）のID
+;	UPVALUE			刻印取得の比較条件となるパラメータ上昇値（UP）
+;	THRESHOLD_BASE	使用する配列：刻印判定基礎値の参照渡し（EVENT_PALAM_UP.ERHで定義）
+;	PREVENT_MARK	対応するMARK:●●刻印防止の実値
+;	PREVENT_FACTOR	使用する配列：刻印防止係数の参照渡し（EVENT_PALAM_UP.ERHで定義）
+;	IMPRISONED_DAY	幽閉日数
+; 変数
+;	MSG_FUNCNAME	口上関数を呼び出す際の各刻印に対応した関数名の文字列
+;					（定数にしないのは、MARK内の配置が飛び番でも冗長な記述にならないようにするため）
+@GOT_EVENT_SEX_MARK_CHECK, TARGET_MARK_ID, UPVALUE, THRESHOLD_BASE, PREVENT_MARK, PREVENT_FACTOR, IMPRISONED_DAY
+#DIM TARGET_MARK_ID
+#DIM UPVALUE
+#DIM REF THRESHOLD_BASE
+#DIM PREVENT_MARK
+#DIM REF PREVENT_FACTOR
+#DIM IMPRISONED_DAY
+#DIMS MSG_FUNCNAME, VARSIZE("MARK")
+
+MSG_FUNCNAME:(GETNUM(MARK,"快楽刻印")) = KAIRAKU
+MSG_FUNCNAME:(GETNUM(MARK,"苦痛刻印")) = KUTUU
+MSG_FUNCNAME:(GETNUM(MARK,"屈服刻印")) = KUPPUKU
+MSG_FUNCNAME:(GETNUM(MARK,"恐怖刻印")) = KYOUHU
+MSG_FUNCNAME:(GETNUM(MARK,"恥辱刻印")) = TIJYOKU
+
+;刻印が0未満か最大値以上であるなら、判定を打ち切る
+SIF MARK:TARGET_MARK_ID < 0 || MARK:TARGET_MARK_ID >= VARSIZE("THRESHOLD_BASE")
+	RETURN 0
+
+;上昇判定	: UP >= 刻印判定基礎値 + MARK:対象刻印防止 * 刻印防止係数 かつ、幽閉日数が基準値以上
+IF UPVALUE >= (THRESHOLD_BASE:(MARK:TARGET_MARK_ID) + PREVENT_MARK * PREVENT_FACTOR:(MARK:TARGET_MARK_ID)) && IMPRISONED_DAY >= 幽閉日数しきい値
+	;以上を満たせば、刻印が+1される
+	MARK:TARGET_MARK_ID += 1
+	;地の文：刻印取得
+	CALLFORM MESSAGE_SEX_MARK_%MSG_FUNCNAME:TARGET_MARK_ID%_{MARK:TARGET_MARK_ID}
+	;地の文：洗脳/悪堕ちキャラが操作キャラに刻印が付くのを見た
+	SIF CFLAG:20 == 2
+		CALLFORM MESSAGE_OTHER_SEX_MARK_%MSG_FUNCNAME:TARGET_MARK_ID%_{MARK:TARGET_MARK_ID}
+	PRINTFORM %PRINT_TRANSCALLNAME(TARGET)%は
+	FONTBOLD
+	PRINTFORM %MARKNAME:TARGET_MARK_ID%{MARK:TARGET_MARK_ID}
+	FONTREGULAR
+	PRINTFORML を取得した
+	PRINTL 
+ENDIF
+

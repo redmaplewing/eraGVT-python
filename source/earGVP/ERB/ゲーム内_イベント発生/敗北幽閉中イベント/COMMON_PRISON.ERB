@@ -1,0 +1,87 @@
+﻿;memo:このファイルにあった関数群は丸ごとひとつ上の階層のEVENT_PALAM_UP.ERBへ移動した
+;**********************************************************
+;幽閉中パラメータ変動共通処理（旧）
+;ARG:0 快Ｃ
+;ARG:1 快Ｖ
+;ARG:2 快Ａ
+;ARG:3 快Ｂ
+;ARG:4 潤滑 潤滑は未使用
+;ARG:5 恭順
+;ARG:6 習得
+;ARG:7 欲情
+;ARG:8 屈服
+;ARG:9 恥情
+;ARG:10 苦痛
+;ARG:11 恐怖
+
+;ARG:12 結界が反応するかどうか 0=反応する 1=反応しない
+;memo:クソ引数をUPに入れ直すだけのラッパー関数に改変
+;memo:呼び出し元すべてで直接入力するよう修正が終わったら、この関数は削除する
+;memo:ちなみにgrepすると分かるが、半分以上は幽閉イベント外からの呼び出し。関数名で嘘をつくな
+@COMMON_PRISON, ARG:0, ARG:1, ARG:2, ARG:3, ARG:4, ARG:5, ARG:6, ARG:7, ARG:8, ARG:9, ARG:10, ARG:11, ARG:12 = 0
+#DIM LCOUNT
+#DIM CAL_VAR, 2
+
+UP:快Ｃ = ARG:0
+UP:快Ｖ = ARG:1
+UP:快Ａ = ARG:2
+UP:快Ｂ = ARG:3
+UP:潤滑 = ARG:4
+UP:恭順 = ARG:5
+UP:習得 = ARG:6
+UP:欲情 = ARG:7
+UP:屈服 = ARG:8
+UP:恥情 = ARG:9
+UP:苦痛 = ARG:10
+UP:恐怖 = ARG:11
+
+CALL EVENT_PALAM_UP, ARG:12
+
+;**********************************************************
+;経験数を結界に応じて変更
+@COMMON_PRISON_EXP_SH, ARG:0, ARG:1, ARG:2, ARG:3
+;半日ずっとですしとりあえず9～10倍に
+FOR COUNT, 0, 2
+	ARG:COUNT = ARG:COUNT * 9 + RAND:(ARG:COUNT + 1)
+	SIF ARG:COUNT > 20
+		ARG:COUNT = 20 + (ARG:COUNT - 20) / 4
+NEXT
+
+IF SHIELD:1 > 0 && SHIELD:2 <= 0
+	IF ARG:1 > 0
+		ARG:1 += ARG:0
+		ARG:3 += ARG:2
+	ENDIF
+	ARG:0 = 0
+	ARG:2 = 0
+ELSEIF SHIELD:1 <= 0 && SHIELD:2 > 0
+	IF ARG:0 > 0
+		ARG:0 += ARG:1
+		ARG:2 += ARG:3
+	ENDIF
+	ARG:1 = 0
+	ARG:3 = 0
+ELSEIF SHIELD:1 > 0 && SHIELD:2 > 0
+	ARG:0 = 0
+	ARG:1 = 0
+	ARG:2 = 0
+	ARG:3 = 0
+ENDIF
+
+RETURN ARG:0, ARG:1, ARG:2, ARG:3
+
+;**********************************************************
+;経験数の表示
+@COMMON_PRISON_EXP, ARG:0, ARG:1
+LOCAL = ARG:0 - 100
+ARG:1 += COMMON_EXP:LOCAL
+SIF ARG:1 < 1
+	RETURN
+SIF EXPNAME:LOCAL == ""
+	RETURN
+
+EXP:LOCAL += ARG:1
+
+PRINTFORML %EXPNAME:LOCAL%：＋{ARG:1}
+;実績
+CALL GET_STATE_EXPUP,TARGET

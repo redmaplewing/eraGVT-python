@@ -1,0 +1,311 @@
+﻿;================================================================
+;ステータス表示画面の4ページ目（キャラクター相関）の表示処理
+; 引数
+;	ARG	対象のキャラ番号
+@SHOW_STATUS_CHARA_SELECT_PAGE4 , ARG
+
+PRINTL 　　　　　　　　　　　　　　　　　キャラクター相関　　　　　　　　　　　　　　　PAGE(4/5)
+DRAWLINE
+
+;1番目のブロック：名前・呼び名・一人称・レベル・性別の表示
+CALL SHOW_STATUS_CHARA_NAMES_LV, ARG
+CALL SHORTLINE
+
+;2番目のブロック：キャラ間の相関関係、コネクションの表示
+CALL SHOW_STATUS_CHARA_RELATIONS, ARG
+
+;3番目のブロック：触手から生まれたキャラの血統の表示
+;血統の情報がないならブロック自体表示しない
+;memo:このデータ構造はいつか叩き壊してまともなインデックス管理に作り変える
+IF RELATION:ARG:ARG > 0
+	CALL SHORTLINE
+	PRINT 　血統　(
+	SIF GETBIT(RELATION:ARG:ARG, 血統不明)
+		PRINT 　？？？
+	SIF GETBIT(RELATION:ARG:ARG, Ｃ触手)
+		PRINT 　Ｃ触手
+	SIF GETBIT(RELATION:ARG:ARG, Ｖ触手)
+		PRINT 　Ｖ触手
+	SIF GETBIT(RELATION:ARG:ARG, Ａ触手)
+		PRINT 　Ａ触手
+	SIF GETBIT(RELATION:ARG:ARG, Ｂ触手)
+		PRINT 　Ｂ触手
+	SIF GETBIT(RELATION:ARG:ARG, Ｓ触手)
+		PRINT 　Ｓ触手
+	SIF GETBIT(RELATION:ARG:ARG, Ｐ触手)
+		PRINT 　Ｐ触手
+	SIF GETBIT(RELATION:ARG:ARG, Ｈ触手)
+		PRINT 　Ｈ触手
+	PRINTL 　)
+ELSE
+	PRINTL 
+ENDIF
+
+;4番目のブロック：父母の表示
+;父母がどっちも未定義ならブロック自体表示しない
+IF CFLAG:ARG:7 || CFLAG:ARG:9
+	CALL SHORTLINE
+	CALL SHOW_STATUS_CHARA_PARENTS, ARG
+ELSE
+	PRINTL 
+ENDIF
+
+DRAWLINE
+
+;--------------------------------------------------
+;ステータス表示の4ページ目（キャラクター相関）の画面固有コマンド処理
+; 引数
+;	ARG				対象のキャラ番号
+;	INPUT_CMD 		入力されたコマンド番号
+; 戻り値
+;	1:関数内でコマンド処理ができた
+;	0:関数内に対応するコマンドがなかった
+@CMD_STATUS_CHARA_SELECT_PAGE4 , ARG, INPUT_CMD
+#DIM INPUT_CMD
+RETURN 0
+
+;================================================================
+;	以降、画面表示の各部分を担当する関数群
+;================================================================
+;--------------------------------------------------
+;キャラ間の相関関係、コネクションの表示
+; 引数
+;	ARG				対象のキャラ番号
+; 定数
+;	MIN_LINES	最低出力行数
+;				（最終的に出力行数がこの値に満たなければ空行で補う）
+; 変数
+;	LCOUNT		出力した行数
+@SHOW_STATUS_CHARA_RELATIONS, ARG
+#DIM CONST MIN_LINES = 20
+#DIM DYNAMIC LCOUNT = 0
+
+;全キャラについて相関関係があるかを確認
+FOR LOCAL, 0, CHARANUM
+	;MASTERと自分自身については相関関係を出力できないので飛ばす
+	SIF LOCAL == MASTER || LOCAL == ARG
+		CONTINUE
+	;相関関係があるなら出力
+	IF RELATION:ARG:LOCAL
+		CALL GET_RELATION, ARG, LOCAL
+		PRINTFORML 　({LOCAL, 2,RIGHT})　%NAME:LOCAL%　→　%RESULTS%
+		LCOUNT ++
+	ENDIF
+NEXT
+
+;ここまで出力されなかったなら相関関係のあるキャラがいないので、その旨を出力
+IF LCOUNT == 0
+	PRINTL 　　　相関関係のあるキャラ：なし
+	LCOUNT ++
+ENDIF
+;コネクション関係が何かしらあるなら題字を出力
+IF CFLAG:ARG:120 > 0 || CFLAG:ARG:121 > 0 || CFLAG:ARG:122 > 0
+	PRINTL 
+	PRINTL 　　　コネクション：
+	LCOUNT += 2
+ENDIF
+;噂好きな友人
+IF CFLAG:ARG:120 == 1
+	PRINTL 　　　　　　噂好きな友人
+	LCOUNT ++
+ENDIF
+;警察関係者または警察上層部
+IF CFLAG:ARG:121 == 1
+	PRINTL 　　　　　　警察関係者
+	LCOUNT ++
+ELSEIF CFLAG:ARG:121 == 2
+	PRINTL 　　　　　　警察上層部
+	LCOUNT ++
+ENDIF
+;情報屋（風体別に出力）
+;memo:このデータ構造はあまりにも酷い。いつか書き換えてやる
+IF CFLAG:ARG:122 > 0
+	PRINT 　　　　　　情報屋(
+	IF GETBIT(CFLAG:ARG:122, 2) && GETBIT(CFLAG:ARG:122, 3)
+		PRINT 無法者
+	ELSEIF GETBIT(CFLAG:ARG:122, 2) && GETBIT(CFLAG:ARG:122, 4)
+		PRINT お調子者な男
+	ELSEIF GETBIT(CFLAG:ARG:122, 3) && GETBIT(CFLAG:ARG:122, 4)
+		PRINT 老紳士
+	ELSEIF GETBIT(CFLAG:ARG:122, 2)
+		PRINT 下品な男
+	ELSEIF GETBIT(CFLAG:ARG:122, 3)
+		PRINT 上品な男
+	ELSEIF GETBIT(CFLAG:ARG:122, 4)
+		PRINT 探偵風の男
+	ELSE
+		PRINT 特徴の無い男
+	ENDIF
+	PRINTL )
+	LCOUNT ++
+ENDIF
+;裕福な実家
+IF CFLAG:ARG:123 == 1
+	PRINTL 　　　　　　裕福な実家
+	LCOUNT ++
+ENDIF
+
+;最低出力行数に足りない分だけ空行を出力して行数を確保する
+FOR LOCAL, 0, MIN_LINES - LCOUNT
+	PRINTL 
+NEXT
+
+;--------------------------------------------------
+;父母の表示
+; 引数
+;	ARG				対象のキャラ番号
+; 変数
+;	PAPA,MAMA	父親と母親のキャラ番号
+;	INCEST		近親相姦関係の文字列取得先
+;memo:鎮圧困難なマジックナンバー祭り。元凶はCFLAG:9の仕様
+;memo:いつか必ずデータ構造ごと修正してやる
+@SHOW_STATUS_CHARA_PARENTS, ARG
+#DIM DYNAMIC PAPA = 0
+#DIM DYNAMIC MAMA = 0
+#DIMS INCEST
+
+;父親キャラの捜索
+;自身の「父親の固有番号」に父親の固有番号がセットされている可能性があるなら
+IF CFLAG:ARG:9 <= -100
+	;全キャラクターについて調べる
+	FOR LOCAL, 0, CHARANUM
+		;MASTERと自分自身は無関係なので飛ばす
+		SIF LOCAL == MASTER || LOCAL == ARG
+			CONTINUE
+		;自身の「父親の固有番号」と確認したキャラの固有番号が”一致する”なら、それが父親なのでキャラ番号を控える
+		;下の式で一致である、見間違いではない。嘘だろ？
+		SIF CFLAG:LOCAL:240 == CFLAG:ARG:9 * -1 - 100
+			PAPA = LOCAL
+	NEXT
+ENDIF
+
+;母親キャラの捜索
+;自身の「母親の固有番号」に値がセットされているなら
+IF CFLAG:ARG:7 > 0
+	;全キャラクターについて調べる
+	FOR LOCAL, 0, CHARANUM
+		;MASTERと自分自身は無関係なので飛ばす
+		SIF LOCAL == MASTER || LOCAL == ARG
+			CONTINUE
+		;自身の「母親の固有番号」と確認したキャラの固有番号が一致するなら、それが母親なのでキャラ番号を控える
+		SIF CFLAG:LOCAL:240 == CFLAG:ARG:7
+			MAMA = LOCAL
+	NEXT
+ENDIF
+
+;父親が見つかったので出力処理
+IF PAPA > 0
+	PRINTFORM 　実父　:　%NAME:PAPA% 
+	;身体年齢と実年齢が違うなら（？）実年齢を表示
+	;memo:コードの読み取りが足りなくて処理の真意がまだ掴めていない
+	SIF CFLAG:PAPA:34 > 0
+		PRINTFORM ({BASE:PAPA:実年齢})
+	;近親相姦判定
+	INCEST = FUNC_CHECK_CHARA_INCEST(PAPA,MAMA,1)
+	SIF INCEST != ""
+		PRINTFORM 　　(%INCEST%との近親相姦)
+	
+;父親キャラが見つからなかったが、父親が敵キャラの可能性がある
+ELSEIF CFLAG:ARG:9 > 0
+	;ボス触手の名前を取ってくる
+	IF CFLAG:ARG:9 < 100
+			TRYCALLFORM TENTACLE_BOSS_{CFLAG:ARG:9}_GETNAME
+	;ラスボス触手の名前を取ってくる
+	ELSEIF CFLAG:ARG:9 < 200
+			TRYCALLFORM TENTACLE_LASTBOSS_{CFLAG:ARG:9 - 100}_GETNAME
+	;雑魚触手だった
+	ELSEIF CFLAG:ARG:9 == 200
+			RESULTS = 雑魚触手
+	;それ以外のモブ敵の名前を取ってくる
+	ELSE
+			TRYCALLFORM TENTACLE_MOB_{CFLAG:ARG:9 - 200}_GETNAME
+	ENDIF
+	PRINTFORM 　実父　:　%RESULTS%
+	
+;キャラでも敵でもない、誰とも知れない相手が父親
+ELSEIF CFLAG:ARG:9 == -100
+	PRINTFORM 　実父　:　誰とも知れない相手
+ENDIF
+PRINTL 
+
+;母親が見つかったので出力処理
+IF MAMA > 0
+	PRINTFORM 　実母　:　%NAME:MAMA% 
+	;身体年齢と実年齢が違うなら（？）実年齢を表示
+	SIF CFLAG:MAMA:34 > 0
+		PRINTFORM ({BASE:MAMA:実年齢})
+	;近親相姦判定
+	INCEST = FUNC_CHECK_CHARA_INCEST(MAMA,PAPA,0)
+	SIF INCEST != ""
+		PRINTFORM 　　(%INCEST%との近親相姦)
+ENDIF
+PRINTL 
+
+;--------------------------------------------------
+;両親の近親相姦チェック
+; 引数
+;	PARENT_X,PARENT_Y	両親それぞれのキャラ番号
+;	X_IS_PAPA			PARENT_Xの方が父親かどうか(bool)
+; 変数
+;	X_IS_ELDER			PARENT_Xの方が年上かどうか
+; 戻り値
+;	OUTPUT		近親相姦関係の文字列（無いなら空文字列）
+;memo:データ構造を変えない形でできる限り整理したが、この形は根本的に良くない
+;memo:表示でしか使っていないから文字列をそのまま返すが、本来は他で定義した定数値を返す処理であるべき
+;memo:……そもそも、親子関係の名称の定義がコードのどこにもないのがおかしい
+@FUNC_CHECK_CHARA_INCEST, PARENT_X, PARENT_Y, X_IS_PAPA
+#FUNCTIONS
+#DIM PARENT_X
+#DIM PARENT_Y
+#DIM X_IS_PAPA
+#DIM DYNAMIC X_IS_ELDER = 0
+#DIMS DYNAMIC OUTPUT = ""
+
+;親Xが親Yより年上かどうかを先に計算
+SIF (BASE:PARENT_X:実年齢 == BASE:PARENT_Y:実年齢 && CFLAG:PARENT_X:240 < CFLAG:PARENT_Y:240) || BASE:PARENT_X:実年齢 > BASE:PARENT_Y:実年齢
+	X_IS_ELDER = 1
+
+;以下、「親Xにとって親Yは何か」を、「保存済みの関係性フラグ」「親Xの方が年上か」「親Xが父親か」を比較して求める
+;親Xと親Yが親子関係なら
+IF GETBIT(RELATION:PARENT_X:PARENT_Y,親子)
+	;親Xの方が年上なら、親Xにとって親Yは子、つまり息子か娘
+	IF X_IS_ELDER
+		;親Xが父親なら親Yは親Xの娘、そうでないなら親Yは親Xの息子
+		OUTPUT += \@X_IS_PAPA?娘#息子\@
+	;親Yの方が年上なら、親Xにとって親Yは親、つまり父か母
+	ELSE
+		;親Xが父親なら親Yは親Xの母、そうでないなら親Yは親Xの父
+		OUTPUT += \@X_IS_PAPA?母#父\@
+	ENDIF
+	;以下の判定も関係性の名前が違うだけで手順は同じなので、コメントは省略する
+
+	;今出力した関係性以外の関係性が他にあるなら/で繋ぐ
+	SIF GETBIT(RELATION:PARENT_X:PARENT_Y,兄弟姉妹) || GETBIT(RELATION:PARENT_X:PARENT_Y,祖父祖母孫) || GETBIT(RELATION:PARENT_X:PARENT_Y,おじおば) || GETBIT(RELATION:PARENT_X:PARENT_Y,甥姪)
+		OUTPUT += "/"
+ENDIF
+IF GETBIT(RELATION:PARENT_X:PARENT_Y,兄弟姉妹)
+	IF X_IS_ELDER
+		OUTPUT += \@X_IS_PAPA?妹#弟\@
+	ELSE
+		OUTPUT += \@X_IS_PAPA?姉#兄\@
+	ENDIF
+	SIF GETBIT(RELATION:PARENT_X:PARENT_Y,祖父祖母孫) || GETBIT(RELATION:PARENT_X:PARENT_Y,おじおば) || GETBIT(RELATION:PARENT_X:PARENT_Y,甥姪)
+		OUTPUT += "/"
+ENDIF
+IF GETBIT(RELATION:PARENT_X:PARENT_Y,祖父祖母孫)
+	IF X_IS_ELDER
+		OUTPUT += "孫"
+	ELSE
+		OUTPUT += \@X_IS_PAPA?祖母#祖父\@
+	ENDIF
+	SIF GETBIT(RELATION:PARENT_X:PARENT_Y,おじおば) || GETBIT(RELATION:PARENT_X:PARENT_Y,甥姪)
+		OUTPUT += "/"
+ENDIF
+IF GETBIT(RELATION:PARENT_X:PARENT_Y,おじおば)
+		OUTPUT += \@X_IS_PAPA?おば#おじ\@
+ELSEIF GETBIT(RELATION:PARENT_X:PARENT_Y,甥姪)
+		OUTPUT += \@X_IS_PAPA?姪#甥\@
+ENDIF
+
+;これまで導き出した関係性をまとめて文字列で返す
+RETURNF OUTPUT

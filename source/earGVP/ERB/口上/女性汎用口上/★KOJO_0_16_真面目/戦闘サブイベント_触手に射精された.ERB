@@ -1,0 +1,423 @@
+﻿
+
+;●触手に射精されたときの処理
+;イベント中や触手服、悪堕ちヒロインに射精される可能性もある
+;射精を伴う行動時に必ず呼ばれる【とは限りない】　(地の文側・被弾口上側で射精を描写する技もある)
+;触手以外の射精源(つまりペニス)は射精処理の中で口上を呼んでいない(イベント口上内部で完結等)
+
+;ワレメは地の文のみ
+
+;気絶時は口上が呼ばれない
+
+;　丸呑み(この場合意識は取り戻す)即死中に呼ばれる可能性もある
+;	(既に全身犯されながら精液プール漬けになっている状態で)
+;	７回(Ｂ手ＭＭＶ割れ目Ａ)を２セット１４回(ちなみに男は５回５回)射精テキスト呼び出され
+;	直後に敗北する
+;IF TFLAG:23 == 1
+;ENDIF
+
+
+;射精暴発（ぶっかけ）
+;--------------------------------------------------
+@KOJO_0_SEX_TENTACLE_SYASEI_EXPLODE
+
+;膣に通常射精
+;--------------------------------------------------
+@KOJO_0_SEX_TENTACLE_SYASEI_VAGINA_16
+
+;★異常妊娠中・妊娠中・望まぬ妊娠中
+
+;★見られてる
+
+;★初めて中出しされた
+
+;屈服刻印Lv3
+IF MARK:屈服刻印 >= 3
+	PRINTDATAL
+	DATAFORM 「んおぉお……熱いのぉ、いっぱいひぃ……」
+	DATAFORM 「おぉおぉ……なか、膣内にッ、でて、ぁへぁぁ…ッ！」
+	DATAFORM 「あぁあ…%SELF_CALL(3)%…孕まされ、ぁあ……」
+	ENDDATA
+ELSEIF MARK:快楽刻印 >=3
+	PRINTDATAL
+	DATAFORM 「ああぁっ！？ ダメ、孕んじゃう、こんなのダメ……ダメぇっ！」
+	DATAFORM 「やぁあっ！ お願い！ ダメ、出しちゃダメ……ぅぅうっ！」
+	ENDDATA
+ELSE
+	PRINTDATAL
+	DATAFORM 「ぁ……う、嘘よ……こんなの…%SELF_CALL()%……」
+	DATAFORM 「う…嘘……膣内に…出され…」
+	ENDDATA
+	SELECTCASE RAND:2
+	CASE 0
+		PRINTFORMW %CALLNAME%は絶望したような表情で膣口を見つめている。
+	CASE 1
+		PRINTFORM %CALLNAME%は
+		CALL TENTACLE_ACCESS, "NAME"
+		PRINTFORMW を鋭くにらみつけている。
+	ENDSELECT
+
+ENDIF
+
+;膣に大量射精　噴き出す
+;--------------------------------------------------
+@KOJO_0_SEX_TENTACLE_SYASEI_VAGINA_HI_16
+
+;丸呑み即死から呼ばれた場合
+IF 真面目_フラグ_最終被弾=="丸呑み精液責め"
+	
+	CALL KOJO_0_SEX_SPCOM13_16
+	RETURN
+ENDIF
+
+;★異常妊娠中・妊娠中・望まぬ妊娠中
+
+;屈服刻印Lv3
+IF MARK:屈服刻印 >= 3
+	PRINTDATAL
+	DATAFORM 「あはぁああっ！ 精液おほぉぉ！ さいこおぉおぉぉ！」
+	DATAFORM 「も、もっとっ！ %SELF_CALL()%に熱いの、吐き出ひゃ、あぁうぁぁ！」
+	DATAFORM 「だ、出されてるぅ……%触手市民("下等生物","性犯罪者")%なんかのせーえき、%SELF_CALL()%の中にぃぃ……」
+	ENDDATA
+ELSEIF MARK:快楽刻印 >=3
+	PRINTDATAL
+	DATAFORM 「こん、なっ、や、ぁあ……あっ、あっ、あぁあああ！」
+	DATAFORM 「出て、でて……うぅうう、こんな、こんなのでぇぇ…っ」
+	DATAFORM 「中が、ぅああ、やめぇ……孕んじゃう、ママになっちゃう……っ」
+	ENDDATA
+ELSE
+	PRINTDATAL
+	DATAFORM 「ぁ……う、嘘よ…こんな……こんなの…%SELF_CALL()%……」
+	DATAFORM 「う…嘘でしょ……こんな…膣内に……」
+	ENDDATA
+	SELECTCASE RAND:2
+	CASE 0
+		PRINTFORMW %CALLNAME%は絶望したような表情で精液の溢れる膣口を見つめている。
+	CASE 1
+		PRINTFORM %CALLNAME%は
+	CALL TENTACLE_ACCESS, "NAME"
+		PRINTFORMW を鋭くにらみつけている。
+	ENDSELECT
+
+ENDIF
+
+
+;アナルに通常射精
+;--------------------------------------------------
+@KOJO_0_SEX_TENTACLE_SYASEI_ANAL_16
+IF TALENT:触手の虜|| ABL:触手中毒 > 3|| ABL:精液中毒 > 3
+	PRINTDATAL
+	DATAFORM 「ぉ、おぢり゛っ？！ お゛じりに出てるぅぅうぅっ！」
+	DATAFORM 「ぁがあああっ？！ 浣腸は、許ひて、おね、おねが、お゛ぉ゛ぉ゛お゛！？」
+	DATAFORM 「む゛、無理っ、お゛じり゛む゛り゛ぃっ、あ゛あ゛ぁ゛ぁ゛ぁ！？」
+	ENDDATA
+ELSE
+	PRINTDATAL
+	DATAFORM 「ひ……い、や……こんな場所に…出され…ぅうっ……」
+	DATAFORM 「う、嘘でしょ、こんな、場所に……」
+	ENDDATA
+	SELECTCASE RAND:2
+	CASE 0
+		PRINTFORMW %CALLNAME%は嫌悪の表情で菊座を見つめている。
+	CASE 1
+		PRINTFORM %CALLNAME%は
+		CALL TENTACLE_ACCESS, "NAME"
+		PRINTFORMW を鋭くにらみつけている。
+	ENDSELECT
+ENDIF
+
+
+;アナルに大量射精　噴き出す　精液ボテになる
+;--------------------------------------------------
+@KOJO_0_SEX_TENTACLE_SYASEI_ANAL_HI_16
+
+;丸呑み即死から呼ばれた場合
+IF 真面目_フラグ_最終被弾=="丸呑み精液責め"
+	
+	CALL KOJO_0_SEX_SPCOM13_16
+	RETURN
+ENDIF
+
+
+IF TALENT:触手の虜|| ABL:触手中毒 > 3|| ABL:精液中毒 > 3
+	PRINTDATAL
+	DATAFORM 「んごぉぉおおおッ！ おな、が、やぶれ゛……う……！」
+	DATAFORM 「あ゛づいぃいい！ おな、か、はち、きれ……！」
+	ENDDATA
+ELSE
+	PRINTDATAL
+	DATAFORM 「ひ……い、や……こんな場所に…出され…ぅうっ……」
+	DATAFORM 「う、嘘でしょ、こんな奴らに、こんな場所に……」 
+	ENDDATA
+	SELECTCASE RAND:2
+	CASE 0
+		PRINTFORMW %CALLNAME%は嫌悪の表情で精液の溢れる菊座を見つめている。
+	CASE 1
+		PRINTFORM %CALLNAME%は
+		CALL TENTACLE_ACCESS, "NAME"
+		PRINTFORMW を鋭くにらみつけている。
+	ENDSELECT
+ENDIF
+
+
+;手に通常射精
+;--------------------------------------------------
+@KOJO_0_SEX_TENTACLE_SYASEI_HAND_16
+;屈服刻印Lv3
+IF MARK:屈服刻印 >= 3
+	PRINTFORML 「%SELF_CALL_SINGLE()%、%SELF_CALL()%の手…ぬめぬめって……あぁ……」
+	PRINTFORMW %CALLNAME%は手に付着した精液を物欲しそうに見つめている。
+ELSE
+	PRINTFORML 「なっ、何なの……汚らわしい……」
+	SELECTCASE RAND:2
+	CASE 0
+		PRINTFORMW %CALLNAME%は手に付着した精液を忌々しげに見つめている。
+	CASE 1
+		PRINTFORM %CALLNAME%は
+		CALL TENTACLE_ACCESS, "NAME"
+		PRINTFORMW を鋭くにらみつけている。
+	ENDSELECT
+ENDIF
+
+
+;手に大量射精
+;--------------------------------------------------
+@KOJO_0_SEX_TENTACLE_SYASEI_HAND_HI_16
+;丸呑み即死から呼ばれた場合
+IF 真面目_フラグ_最終被弾=="丸呑み精液責め"
+	
+	CALL KOJO_0_SEX_SPCOM13_16
+	RETURN
+ENDIF
+
+
+;屈服刻印Lv3
+IF MARK:屈服刻印 >= 3
+	PRINTFORML 「%SELF_CALL_SINGLE()%、%SELF_CALL()%の手…どろどろに……ぁん……」
+	PRINTFORMW 精液をすくった手椀を%CALLNAME%は幸せそうに見つめている。
+ELSE
+	PRINTFORML 「ああぁあ……こんな……%SELF_CALL()%の手が……」
+	SELECTCASE RAND:2
+	CASE 0
+		PRINTFORMW %CALLNAME%は手に付着した精液を忌々しげに見つめている。
+	CASE 1
+		PRINTFORM %CALLNAME%は
+		CALL TENTACLE_ACCESS, "NAME"
+		PRINTFORMW を鋭くにらみつけている。
+	ENDSELECT
+ENDIF
+
+;口内に通常射精
+;--------------------------------------------------
+@KOJO_0_SEX_TENTACLE_SYASEI_MOUTH_16
+
+IF TALENT:触手の虜|| ABL:触手中毒 > 3|| ABL:精液中毒 > 3
+	PRINTDATAL
+	DATAFORM 「んきゅ……んんぅ❤」
+	DATAFORM 「こく、こく……んん、ぅん❤」
+	ENDDATA
+	PRINTDATAW
+	DATAFORM %CALLNAME%は嬉しそうに精液を飲み干している。
+	DATAFORM 精液を飲む%CALLNAME%はこの上なく幸せそうだ。
+	ENDDATA
+ELSE
+	SELECTCASE RAND:3
+	CASE 0
+		PRINTFORML 「んぐ！？　……げほっげほっ」
+		PRINTFORMW 吐き出された精液を反射的に飲んでしまい、%CALLNAME%はむせている。
+	CASE 1
+		PRINTFORML 「ん！？　ん……こく」
+		PRINTFORMW 口をふさがれてしまい、%CALLNAME%は仕方なく精液を飲み干している。
+	CASE 2
+		IF ABL:精液中毒
+		PRINTFORML 「ぅぶっ？！ げぶっ、おぶ……じゅるっ、じゅるるる……ッ！」
+		PRINTFORMW 口をふさがれたまま精液を吐き出され、%CALLNAME%は本能に踊らされ喉を鳴らして飲み干している。
+		ELSE
+		PRINTFORML 「ぅぶっ？！ げぶっ、おぶ……っぐ、ぐげおぼごぼおごぉおおッ！」
+		PRINTFORMW 吐き出されたネバネバの精液を反射的に飲んでしまい、%CALLNAME%はあられもない姿で苦しんでいる。
+		ENDIF
+	ENDSELECT
+ENDIF
+
+
+
+;口内に大量射精
+;--------------------------------------------------
+@KOJO_0_SEX_TENTACLE_SYASEI_MOUTH_HI_16
+
+;丸呑み即死から呼ばれた場合
+IF 真面目_フラグ_最終被弾=="丸呑み精液責め"
+	
+	CALL KOJO_0_SEX_SPCOM13_16
+	RETURN
+ENDIF
+
+
+IF TALENT:触手の虜|| ABL:触手中毒 > 3|| ABL:精液中毒 > 3
+	PRINTDATAL
+	DATAFORM 「んきゅ……んんぅ❤」
+	DATAFORM 「こく、こく……んん、んぅー❤」
+	ENDDATA
+	SELECTCASE RAND:2
+	CASE 0
+		PRINTFORMW %CALLNAME%は嬉しそうに精液を飲み干している。
+		PRINTFORMW 飲みきれない精液を与えられた%CALLNAME%はとても幸せそうだ……
+	CASE 1
+		PRINTFORMW 喉を鳴らして精液を飲む%CALLNAME%はこの上なく幸せそうにしている。
+		PRINTFORMW 飲みきれない精液を与えられた%CALLNAME%は口と顔を精液まみれにされながらも嬉しそうだ……。
+	ENDSELECT
+
+ELSE
+	SELECTCASE RAND:3
+	CASE 0
+		PRINTFORML 「んぐ！？　……げほっげほっ」
+		PRINTFORMW 吐き出された精液を反射的に飲んでしまい、%CALLNAME%はむせている。
+	CASE 1
+		PRINTFORML 「ん！？　ん……こく」
+		PRINTFORMW 口をふさがれてしまい、%CALLNAME%は仕方なく精液を飲み干している。
+	CASE 2
+		IF ABL:精液中毒
+		PRINTFORML 「げぼっ、おぶ、っぐぶぉ゛……ごぎゅ、ぐ、っぐぶ……げぼ……！」
+		PRINTFORMW 口をふさがれたまま大量の精液を吐き出され、%CALLNAME%は本能のままに飲み込まされている。
+		ELSE
+		PRINTFORML 「うぶぅっ！？ ぶぷっ、げはっ、ごぼぉ…！？ ぶごぉごぼおげおぉぉ！」
+		PRINTFORMW 吐き出されたネバネバの精液を反射的に飲んでしまい、%CALLNAME%はあられもない姿で苦しんでいる。
+		ENDIF
+	ENDSELECT
+ENDIF
+
+
+CALL TENTACLE_ACCESS, "NAME"
+PRINTFORMW から離れた%CALLNAME%の口からは精液がこぼれている。
+
+;胸に通常射精
+;--------------------------------------------------
+@KOJO_0_SEX_TENTACLE_SYASEI_BUST_16
+IF TALENT:触手の虜|| ABL:触手中毒 > 3|| ABL:精液中毒 > 3
+	PRINTDATAL
+	DATAFORM 「あ……❤」
+	DATAFORM 「……あ……せーえき❤」
+	ENDDATA
+	;ひんｎ（ｒｙ
+	IF TALENT:貧乳
+		SELECTCASE RAND:2
+			CASE 0
+				PRINTFORM %CALLNAME%は精液の付いた薄い胸を
+				PRINTDATAW
+				DATAFORM 嬉しそうに見下ろしている。
+				DATAFORM 少し残念そうに見下ろしている。
+				ENDDATA
+			CASE 1
+				PRINTFORM %CALLNAME%は嬉しそうに精液を
+				PRINTDATAW
+				DATAFORM 舐めとろうとした。
+				DATAFORM 舐めとった。
+				ENDDATA
+		ENDSELECT
+	ELSE
+		PRINTDATAW
+		DATAFORM %CALLNAME%は嬉しそうに精液を舐めとった。
+		DATAFORM %CALLNAME%は精液に濡れた胸を嬉しそうに見つめている。
+		ENDDATA
+	ENDIF
+;屈服刻印Lv3
+ELSEIF MARK:屈服刻印 >= 3
+	PRINTFORML 「む、胸が熱い…%SELF_CALL()%の胸、まさか、こんなの、こんなのかけられてっ！？」
+ELSE
+	IF ENEMY_TYPE_CHECK_F("AKUOTI")
+		PRINTFORML 「なっ、何よ？！%SELF_CALL()%の胸にこんなっ！？」
+	ELSE
+		PRINTFORML 「なっ、何よ？！ こ、この下等生物、%SELF_CALL()%の胸にこんなっ！？」
+	ENDIF
+	SELECTCASE RAND:2
+		CASE 0
+			;ひん（ｒｙ
+			IF TALENT:貧乳
+				PRINTFORMW %CALLNAME%は薄い胸に付着した精液を忌々しげに見下ろしている。
+			ELSE
+				PRINTFORMW %CALLNAME%は胸に付着した精液を忌々しげに見つめている。
+			ENDIF
+		CASE 1
+			PRINTFORM %CALLNAME%は
+			CALL TENTACLE_ACCESS, "NAME"
+			PRINTFORMW を鋭くにらみつけている。
+	ENDSELECT
+ENDIF
+
+
+;胸に大量射精
+;--------------------------------------------------
+@KOJO_0_SEX_TENTACLE_SYASEI_BUST_HI_16
+
+;丸呑み即死から呼ばれた場合
+IF 真面目_フラグ_最終被弾=="丸呑み精液責め"
+	
+	CALL KOJO_0_SEX_SPCOM13_16
+	RETURN
+ENDIF
+
+
+IF TALENT:触手の虜|| ABL:触手中毒 > 3|| ABL:精液中毒 > 3
+	PRINTDATAL
+	DATAFORM 「あ……こんなに…たくさん❤」
+	DATAFORM 「……あ……せーえき❤」
+	ENDDATA
+	;ひんｎ（ｒｙ
+	IF TALENT:貧乳
+		SELECTCASE RAND:2
+			CASE 0
+				PRINTFORM %CALLNAME%は精液に覆われた薄い胸を
+				PRINTDATAW
+				DATAFORM 嬉しそうに見下ろしている。
+				DATAFORM 少し残念そうに見下ろしている。
+				ENDDATA
+			CASE 1
+				PRINTFORM %CALLNAME%は嬉しそうに精液を
+				PRINTDATAW
+				DATAFORM 舐めとろうとした。
+				DATAFORM 舐めとった。
+				ENDDATA
+		ENDSELECT
+	ELSE
+		PRINTDATAW
+		DATAFORM %CALLNAME%は嬉しそうに精液を舐めとった。
+		DATAFORM %CALLNAME%は精液に覆われた胸を嬉しそうに見つめている。
+		ENDDATA
+	ENDIF
+;屈服刻印Lv3
+ELSEIF MARK:屈服刻印 >= 3
+	PRINTFORML 「ぅああ…%SELF_CALL_SINGLE()%、%SELF_CALL()%の胸、こんな、ど、どろどろで真っ白に……」
+ELSE
+	PRINTFORML 「ぅう、臭い……お願い、もう%SELF_CALL()%を汚さないで……」
+	SELECTCASE RAND:2
+		CASE 0
+			;ひん（ｒｙ
+			IF TALENT:貧乳
+				PRINTFORMW %CALLNAME%は薄い胸を覆う精液を忌々しげに見下ろしている。
+			ELSE
+				PRINTFORMW %CALLNAME%は胸に付着した精液を忌々しげに見つめている。
+			ENDIF
+		CASE 1
+			PRINTFORM %CALLNAME%は
+			CALL TENTACLE_ACCESS, "NAME"
+			PRINTFORMW を鋭くにらみつけている。
+	ENDSELECT
+ENDIF
+
+
+;触手ワレメ射精　★未実装
+;--------------------------------------------------
+@KOJO_0_SEX_TENTACLE_SYASEI_WAREME
+
+;触手ワレメ大量射精　★未実装
+;--------------------------------------------------
+@KOJO_0_SEX_TENTACLE_SYASEI_WAREME_HI_16
+;丸呑み即死から呼ばれた場合
+IF 真面目_フラグ_最終被弾=="丸呑み精液責め"
+	
+	CALL KOJO_0_SEX_SPCOM13_16
+	RETURN
+ENDIF
+
+
+

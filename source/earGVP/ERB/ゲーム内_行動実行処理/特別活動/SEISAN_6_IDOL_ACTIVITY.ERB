@@ -1,0 +1,228 @@
+﻿;==============================================================================
+;特別活動：アイドル活動
+;魅了経験により下積み～本格活動に分岐する
+;SEISAN_IDOL.ERHも参照
+; 変数
+;	AUDIENCE	観客
+;	SALES		商品の販売数
+;	PAYMENT		支払額
+;	PHOTOBOOK_TITLE		写真集のタイトル
+;	CHARM_UP	魅了経験上昇量
+@SEISAN_IDOL_ACTIVITY
+#DIM DYNAMIC AUDIENCE
+#DIM DYNAMIC SALES
+#DIM DYNAMIC PAYMENT
+#DIMS DYNAMIC PHOTOBOOK_TITLE
+#DIM DYNAMIC CHARM_UP
+;アイドルレベル（魅了経験によるしきい値）で判定
+SELECTCASE IDOL_LV(TARGET)
+
+	;レベル0（売り出し）
+	CASE 0
+		PRINTL アイドル活動（売り出し）
+		PRINTL 
+		;地の文と口上
+		CALL MESSAGE_SEISAN_IDOL_BUDDING
+		;日数経過により最初の知名度が変わる
+		IF DAY < 14
+			;魅了経験の上昇計算（最低でも下積みレベルまでは上がる）
+			CALL SEISAN_IDOL_CHARMUP, 30, 5, 5, アイドルレベル条件:0
+			
+			;下積みを飛ばして一気にプロデビューレベルまで行ったか
+			CALL MESSAGE_SEISAN_IDOL_DEBUT, プロデビュー_無名
+		ELSE
+			;魅了経験の上昇計算（日数によりボーナスあり、最低でも下積みレベル＋αまでは上がる）
+			CALL SEISAN_IDOL_CHARMUP, 25 + MIN(DAY,28), 5, 5, アイドルレベル条件:0 + 5
+			
+			;下積みを飛ばして一気にプロデビューレベルまで行ったか
+			CALL MESSAGE_SEISAN_IDOL_DEBUT, プロデビュー_有名
+		ENDIF
+
+	;レベル1（下積み）
+	CASE 1
+		PRINTL アイドル活動（下積み）
+		PRINTL 
+		;路上ライブ
+		IF RANDOM(3) == 0
+			;地の文と口上
+			CALL MESSAGE_SEISAN_IDOL_STREET_LIVE
+			
+			;路上ライブは資金稼ぎ計算が発生する
+			CALL CALC_SEISAN, 特別活動_アイドル活動, アイドル活動_路上ライブ
+			AUDIENCE = RESULT:0
+			PAYMENT = RESULT:1
+			
+			;観客がある程度いればボーナスを貰える
+			IF AUDIENCE > 10
+				PAYMENT += 200
+				PRINTFORML {AUDIENCE}人の聴衆から喝采を受け、{PAYMENT}＄の資金を稼いだ。
+			ELSE
+				PRINTFORML {AUDIENCE}人が投げ銭を行い、{PAYMENT}＄の資金を稼いだ。
+			ENDIF
+			
+			;魅了経験の上昇計算
+			CALL SEISAN_IDOL_CHARMUP, 2, 2, 4
+			
+			;この活動でプロデビューレベルまで行ったか
+			CALL MESSAGE_SEISAN_IDOL_DEBUT, プロデビュー_路上ライブ
+		;芸能プロダクションへの売り込み
+		ELSE
+			;地の文と口上
+			CALL MESSAGE_SEISAN_IDOL_SALES
+			
+			;魅了経験の上昇計算
+			CALL SEISAN_IDOL_CHARMUP, 4, 2, 2
+			
+			;この活動でプロデビューレベルまで行ったか
+			CALL MESSAGE_SEISAN_IDOL_DEBUT, プロデビュー_売り込み
+		ENDIF
+
+	;レベル2～（プロデビュー後）
+	CASEELSE
+		;グラビア撮影
+		IF RANDOM(3) == 0 && CFLAG:42 != 400 && ISHOLE() == 1
+			PRINTL アイドル活動（グラビア撮影）
+			PRINTL 
+			;たまにエロイベ（マニア向け撮影の名目のため写真集は売り出されない）
+			IF RANDOM(3) == 0
+				;地の文と口上
+				CALL MESSAGE_SEISAN_IDOL_PORNO_PHOTOSHOOT
+			;普通の撮影
+			ELSE
+				;地の文と口上、写真集のタイトルを返す
+				CALL MESSAGE_SEISAN_IDOL_GRAVURE_PHOTOSHOOT, PHOTOBOOK_TITLE
+				
+				;資金稼ぎ計算
+				CALL CALC_SEISAN, 特別活動_アイドル活動, アイドル活動_グラビア撮影
+				SALES = RESULT:0
+				PAYMENT = RESULT:1
+				PRINTFORML 写真集%PHOTOBOOK_TITLE%は{SALES}部売れ、ギャラとして{PAYMENT}＄の資金を稼いだ。
+				SAVESTR:(23 + TARGET) = %PHOTOBOOK_TITLE%
+			ENDIF
+			
+			;魅了経験の上昇計算（アイドルレベル5以上なら上昇量増）
+			IF IDOL_LV(TARGET) >= 5
+				CALL SEISAN_IDOL_CHARMUP, 8, 4, 6
+			ELSE
+				CALL SEISAN_IDOL_CHARMUP, 4, 2, 4
+			ENDIF
+		;テレビ出演
+		ELSEIF RANDOM(4) == 0
+			PRINTL アイドル活動（テレビ出演）
+			PRINTL 
+			;地の文と口上
+			CALL MESSAGE_SEISAN_IDOL_TVSHOW
+			
+			;資金稼ぎ計算
+			CALL CALC_SEISAN, 特別活動_アイドル活動, アイドル活動_テレビ出演
+			PAYMENT = RESULT:1
+			PRINTFORML %PRINT_TRANSCALLNAME(TARGET)%はギャラとして{PAYMENT}＄の資金を稼いだ。
+			
+			;魅了経験の上昇計算
+			CALL SEISAN_IDOL_CHARMUP, 4, 2, 2
+		;新曲の収録
+		ELSEIF RANDOM(3) == 0
+			PRINTL アイドル活動（新曲の収録）
+			PRINTL 
+			;地の文と口上
+			CALL MESSAGE_SEISAN_IDOL_RECORDING
+			
+			;資金稼ぎ計算
+			CALL CALC_SEISAN, 特別活動_アイドル活動, アイドル活動_CD収録
+			SALES = RESULT:0
+			PAYMENT = RESULT:1
+			PRINTFORML ＣＤは{SALES}枚売れ、ギャラとして{PAYMENT}＄の資金を稼いだ。
+
+			;魅了経験の上昇計算（アイドルレベル5以上なら上昇量増）
+			IF IDOL_LV(TARGET) >= 5
+				CALL SEISAN_IDOL_CHARMUP, 12, 6, 4
+			ELSE
+				CALL SEISAN_IDOL_CHARMUP, 6, 3, 2
+			ENDIF
+		;エロレッスン
+		ELSEIF RANDOM(2) == 0
+			;地の文と口上
+			CALL MESSAGE_SEISAN_IDOL_EROTIC_LESSON
+			
+			;資金稼ぎ計算（報酬はなし）
+			;memo:こんなヤリたい放題やられてるのを通常営業と同じ計算でいいのか？
+			CALL CALC_SEISAN, 特別活動_アイドル活動, アイドル活動_営業
+			
+			;魅了経験の上昇計算（アイドルレベル5以上なら上昇量増）
+			IF EXP:魅了経験 >= 250
+				CALL SEISAN_IDOL_CHARMUP, 10, 5, 4
+			ELSE
+				CALL SEISAN_IDOL_CHARMUP, 8, 4, 4
+			ENDIF
+		;通常営業
+		ELSE
+			PRINTL アイドル活動（通常営業）
+			PRINTL 
+			;地の文と口上
+			CALL MESSAGE_SEISAN_IDOL_NORMAL_EVENT
+			
+			;資金稼ぎ計算（報酬はなし）
+			CALL CALC_SEISAN, 特別活動_アイドル活動, アイドル活動_営業
+			
+			;魅了経験の上昇計算（アイドルレベル5以上なら上昇量増）
+			IF EXP:魅了経験 >= 250
+				CALL SEISAN_IDOL_CHARMUP, 10, 5, 4
+			ELSE
+				CALL SEISAN_IDOL_CHARMUP, 8, 4, 4
+			ENDIF
+		ENDIF
+		;人気度の上昇（レア）
+		LOCAL:2 = 0
+		SIF RANDOM(100) < 10
+			LOCAL:2 += 1
+		SIF RANDOM(100) < 10
+			LOCAL:2 += 1
+		IF LOCAL:2 > 0
+			FLAG:853 += LOCAL:2
+			PRINTFORML 人気度が{LOCAL:2}上がった
+		ENDIF
+ENDSELECT
+
+;==============================================================================
+;以下、関数内で呼ばれるサブ関数
+;==============================================================================
+;------------------------------------------------------------------------------
+;魅了経験によりアイドルレベルを算出し返す（判定値はSEISAN_IDOL.ERHにて定義）
+; 引数
+;	TGTNUM	対象のキャラ番号
+; 変数
+;	LEVEL	条件の配列を確認する添字（ループカウンタ）
+; 戻り値	魅了経験のしきい値を超えなかった時のLEVEL＝アイドルレベル
+@IDOL_LV(TGTNUM)
+#FUNCTION
+#DIM TGTNUM
+#DIM LEVEL
+FOR LEVEL, 0, VARSIZE("アイドルレベル条件")
+	SIF EXP:TGTNUM:魅了経験 < アイドルレベル条件:LEVEL
+		RETURNF LEVEL
+NEXT
+RETURNF LEVEL
+
+;------------------------------------------------------------------------------
+;魅了経験上昇の計算と表示
+; 引数
+;	CHARM_BASE	上昇量基礎値
+;	FEAT_RAND	FEATによる変動の乱数値
+;	CHARM_RAND	乱数変動値
+;	MINIMUM		最低上昇量（未設定なら0）
+; 変数
+;	CHARM_UP	魅了経験上昇量
+; 戻り値：		CHARM_UPを返す
+@SEISAN_IDOL_CHARMUP, CHARM_BASE, FEAT_RAND, CHARM_RAND, MINIMUM = 0
+#DIM CHARM_BASE
+#DIM FEAT_RAND
+#DIM CHARM_RAND
+#DIM MINIMUM
+#DIM CHARM_UP
+
+CHARM_UP = MAX(CHARM_BASE + CALC_CHARM_FEAT_IDOL(TARGET, FEAT_RAND) + RANDOM(CHARM_RAND), MINIMUM)
+IF CHARM_UP > 0
+	EXP:魅了経験 += CHARM_UP
+	PRINTFORML 魅了経験が{CHARM_UP}上がった
+ENDIF
+RETURN CHARM_UP

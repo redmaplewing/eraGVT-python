@@ -1,0 +1,301 @@
+﻿;==============================================================================
+;特別活動：アルバイトの地の文と口上呼び出し
+
+;----------------------------------------------------------
+;新聞配達の出だし
+@MESSAGE_SEISAN_PART_TIME_SHINBUN_INTRO
+PRINTFORML %PRINT_TRANSCALLNAME(TARGET)%は新聞配達のアルバイトをすることにしました。
+PRINTFORML
+
+;----------------------------------------------------------
+;新聞配達：アクメ自転車に犯される
+@MESSAGE_SEISAN_PART_TIME_SHINBUN_ACMECYCLE
+PRINTFORMW 意気揚々と自転車に跨ると、突如サドルが蠢いた。
+PRINTFORML 驚いて腰を浮かせようとした%PRINT_TRANSCALLNAME(TARGET)%だが、
+PRINTFORML サドルから伸びた触手に腰骨を抱え込まれてしまう。
+PRINTFORMW
+PRINTFORML %PRINT_TRANSCALLNAME(TARGET)%の股間に密着したサドル触手は
+PRINTFORML \@ISMALE()?陰茎#陰核\@を突き上げるように振動子を隆起させ、
+PRINTFORML 更に別の触手が%PRINT_TRANSCALLNAME(TARGET)%の\@TALENT:処女 < 1 && ISFEMALE()?前後#後ろ\@の穴に潜り込み
+PRINTFORML ペダルの回転に連動するかのようにピストン運動を始めた。
+PRINTFORMW
+PRINTFORML たまらず足を止めると、奥まで潜った触手が大きくうねりながら
+PRINTFORML \@ISMALE()?陰茎#陰核\@の振動子ともども激しく振動し、探り当てた\@TALENT:処女 < 1 && ISFEMALE()?Ｇスポット#性感帯\@を責め立てる。
+PRINTFORML 抵抗する意味も時間も無い事を悟った%PRINT_TRANSCALLNAME(TARGET)%は、
+PRINTFORML 快感で砕けかけた足腰になけなしの力を込めてペダルを踏み込んだ。
+PRINTFORML
+;口上
+TRYCALLFORM KOJO_ROOT(CFLAG:6, "SEISAN_SHINBUN_acmecycle")
+PRINTFORML
+PRINTFORML %PRINT_TRANSCALLNAME(TARGET)%は通り道に水跡を残しながらも、何とか新聞を配り終えた。
+PRINTFORML
+IF CFLAG:42 == 400
+	PRINTFORML %PRINT_TRANSCALLNAME(TARGET)%の\@ISMALE()?尻穴#秘所\@に喰い付いたサドル触手はそのまま下着に同化し、
+	PRINTFORMW %PRINT_TRANSCALLNAME(TARGET)%を弄び続ける拘束具へと変貌を遂げた…
+ELSE
+	PRINTFORML 配達を終えて店に戻った所でサドルは元に戻った。
+	PRINTFORML 自転車を降りて\@ISMALE()?腸液#愛液\@が滴るサドルをよく調べても、
+	PRINTFORML これといった異常は見つけられなかった…
+ENDIF
+
+;----------------------------------------------------------
+;新聞配達：配達中の新聞のトップ記事が自分の痴態だった
+@MESSAGE_SEISAN_PART_TIME_SHINBUN_TOPNEWS
+PRINTFORMW 配達中のスポーツ紙の記事が%PRINT_TRANSCALLNAME(TARGET)%の目に止まった。
+PRINTFORML
+IF RANDOM(3) == 0 && EXP:魅了経験 >= 100
+	PRINTFORML 「独占スクープ！アイドル魔法\@ISMANLY()?少年#少女\@%PRINT_TRANSCALLNAME(TARGET)%、陵辱の瞬間！？」
+	PRINTFORML 「元スタッフに突撃インタビュー。魔法\@ISMANLY()?少年#少女\@の実態に迫る！」
+	PRINTFORML 「事務所はコメント拒否の一点張り。陵辱の事実や如何に」
+ELSEIF RANDOM(2) == 0 && INRANGE(TALENT:学生, 1, 2)
+	PRINTFORML 「清純なる魔法\@ISMANLY()?少年#少女\@、散華の瞬間をカメラは捉えた！」
+	PRINTFORML 「未成熟でも容赦無し！幼いアソコを触手が貫く！」
+	PRINTFORML 「関係者が明かす陵辱の実態、触手の好みは○学生！？」
+ELSE
+	PRINTFORML 「激写！魔法\@ISMANLY()?少年#少女\@陵辱、その全てを緊急レポート！」
+	PRINTFORML 「無惨に晒された素肌！飛び散る\@ISMANLY()?腸液#愛液\@！艶めかしく響く嬌声！」
+	PRINTFORML 「あなたの街の触手スポット。魔法\@ISMANLY()?少年#少女\@に会うならココ！」
+ENDIF
+PRINTFORML
+PRINTFORMW 顔は辛うじて隠れ、局部に修正も入っているが、
+PRINTFORML 写真はどう見ても%PRINT_TRANSCALLNAME(TARGET)%本人だ。見る人が見ればその正体も、
+PRINTFORMW ……完全に「挿入ってる」事も分かるだろう。
+PRINTFORML
+;口上
+TRYCALLFORM KOJO_ROOT(CFLAG:6, "SEISAN_SHINBUN_topnews")
+PRINTFORML
+PRINTFORML 新聞を破り捨てたくなる衝動をすんでのところでこらえ、
+PRINTFORML %PRINT_TRANSCALLNAME(TARGET)%は１面を飾る自らの痴態を郵便受けに捩じ込んだ。
+
+;----------------------------------------------------------
+;新聞配達：雑魚触手を退治
+@MESSAGE_SEISAN_PART_TIME_SHINBUN_ENCOUNT
+PRINTFORMW まだ薄暗い公園の緑地帯に妙な気配を感じる……
+PRINTFORML 基地に連絡を入れつつ、いつでも戦闘に入れるよう
+PRINTFORML 注意深く公園に足を踏み入れる%PRINT_TRANSCALLNAME(TARGET)%。
+PRINTFORMW (もう少し先……ここ！）
+PRINTFORML
+PRINTFORML 意を決して「気配」の元に飛び込む%PRINT_TRANSCALLNAME(TARGET)%。
+PRINTFORML そこには、数体の子触手が半裸の女性に群がっていた！
+PRINTFORML
+;口上
+TRYCALLFORM KOJO_ROOT(CFLAG:6, "ENCOUNT_MOB")
+PRINTFORML
+PRINTFORMW 手早く子触手を片付ける%PRINT_TRANSCALLNAME(TARGET)%。
+PRINTFORML
+IF RANDOM(2) == 0
+	PRINTFORML 女性は%PRINT_TRANSCALLNAME(TARGET)%にお礼を言うと、身なりを整え
+	PRINTFORML 多少フラつきながらも帰路についた。
+ELSE
+	PRINTFORML 「ちょっと！邪魔しないでよ！」
+	PRINTFORMW 何故か助けた女性から罵声が飛んできた。
+	PRINTFORML 話を聞くと、いつもここで触手オナニーをしていたらしい……
+	PRINTFORML %PRINT_TRANSCALLNAME(TARGET)%は、その行為の危険性についてかいつまんだ説明をした後、
+	PRINTFORML 女性を後にして配達に戻った。
+ENDIF
+
+;----------------------------------------------------------
+;新聞配達：野外プレイを目撃
+@MESSAGE_SEISAN_PART_TIME_SHINBUN_DEBAGAME
+PRINTFORMW まだ薄暗い公園の緑地帯に妙な気配を感じる……
+PRINTFORML 基地に連絡を入れつつ、いつでも戦闘に入れるよう
+PRINTFORML 注意深く公園に足を踏み入れる%PRINT_TRANSCALLNAME(TARGET)%。
+PRINTFORMW (もう少し先……ここ！）
+PRINTFORML
+PRINTFORML 意を決して「気配」の元に飛び込む%PRINT_TRANSCALLNAME(TARGET)%。
+PRINTFORML そこには、絡み合う若い男女の姿があった。
+PRINTFORMW
+PRINTFORML しとどに濡れた秘裂、そこに飲み込まれる逞しい肉棒、
+PRINTFORML 揉みしだかれ自在に形を変える乳房、唾液の糸が掛かる口と口、
+PRINTFORMW お互いに相手の事しか見えていない「愛しあう２人」がそこに居た。
+PRINTFORML
+PRINTFORML 何の因果か、「愛のあるセックス」にはとんと縁のない%PRINT_TRANSCALLNAME(TARGET)%は
+PRINTFORML イケナイ事だと知りつつも、その尊い行為から目が離せない……
+PRINTFORML
+;口上
+TRYCALLFORM KOJO_ROOT(CFLAG:6, "SEISAN_SHINBUN_debagame")
+PRINTFORML
+PRINTFORML ハッと我に返った%PRINT_TRANSCALLNAME(TARGET)%は、動悸の止まない胸を押さえながら
+PRINTFORML 逃げるように配達に戻った。
+
+;----------------------------------------------------------
+;新聞配達：特筆すべき事件はなし
+@MESSAGE_SEISAN_PART_TIME_SHINBUN_NORMAL
+;口上
+TRYCALLFORM KOJO_ROOT(CFLAG:6, "SEISAN_SHINBUN")
+
+;----------------------------------------------------------
+;ヒーローショーの出だし
+@MESSAGE_SEISAN_PART_TIME_HERO_INTRO
+PRINTFORML %PRINT_TRANSCALLNAME(TARGET)%は活動費を稼ぐためにヒーローショーに出演するアルバイトをすることにしました。
+IF EXP:魅了経験 >= 200 && ISHOLE() == 1
+	PRINTL 「大きいお兄さん」の数がかなり多いようです…
+ELSEIF EXP:魅了経験 >= 100 && ISHOLE() == 1
+	PRINTL 親子連れの観客の中に場違いな「大きいお兄さん」がちらほら混ざっています…
+ELSE
+	PRINTL 観客はほとんどが親子連れのようです…
+ENDIF
+PRINTL 
+
+;----------------------------------------------------------
+;ヒーローショー：触手拘束具の暴走から凌辱ショーへ
+@MESSAGE_SEISAN_PART_TIME_HERO_RYOJOKU
+PRINTFORML ショーの途中で悪の組織に捕まる場面に差し掛かると、
+PRINTFORML 不意に服の下で%ITEMNAME:(CFLAG:42)%が激しく動き出した。
+PRINTFORML 出かかった嬌声を何とか飲み込みながらも台詞を口にする%PRINT_TRANSCALLNAME(TARGET)%。
+PRINTL 
+PRINTFORML しかし%ITEMNAME:(CFLAG:42)%の発する瘴気に当てられた怪人や戦闘員達が
+PRINTFORML 生気を失った表情で%PRINT_TRANSCALLNAME(TARGET)%の身体中を弄り回し始めた。
+PRINTFORML \@TALENT:感情乏しい > 0?止めるように#必死に\@説得する%PRINT_TRANSCALLNAME(TARGET)%だが、%ITEMNAME:(CFLAG:42)%によって扇情的なポーズを強制されてしまう。
+PRINTFORML 和やかなはずのヒーローショーは、%PRINT_TRANSCALLNAME(TARGET)%の公開陵辱ショーへと変貌した。
+
+CALL REDUCIBLE_PRINTW
+
+;口上
+TRYCALLFORM KOJO_ROOT(CFLAG:6, "SEISAN_HERO_ryoujoku")
+PRINTFORML 
+PRINTFORML 観客が呼んだ警備隊に助け出されるまで、%PRINT_TRANSCALLNAME(TARGET)%は痴態を晒し続けた…
+
+;----------------------------------------------------------
+;ヒーローショー：触手拘束具の暴走により絶頂
+@MESSAGE_SEISAN_PART_TIME_HERO_SYOKUSYU
+PRINTFORML ショーが佳境に差し掛かったとき不意に服の下で%ITEMNAME:(CFLAG:42)%が激しく動き、
+PRINTFORML %PRINT_TRANSCALLNAME(TARGET)%は衆人環視の中で絶頂を迎えてしまった。
+;口上
+TRYCALLFORM KOJO_ROOT(CFLAG:6, "SEISAN_HERO_syokusyu")
+PRINTL
+PRINTFORML 無理矢理誤魔化してショーを続行したものの、触手絶頂を迎える姿を見られてしまった…
+
+;----------------------------------------------------------
+;ヒーローショー：転んで失敗
+@MESSAGE_SEISAN_PART_TIME_HERO_KOROBI
+PRINTFORML %PRINT_TRANSCALLNAME(TARGET)%は怪人にとどめを刺す肝心な場面で足を滑らせ派手にすっ転び、
+IF ISHOLE() == 1
+	;履いてない
+	IF CFLAG:42 == 0
+		PRINTFORML 下履きを履いていなかったばかりに、\@TALENT:パイパン == 1?毛も生えていない#\@アソコを
+	ELSE
+		PRINTFORML 下に履いていた%ITEMNAME:(CFLAG:42)%を
+	ENDIF
+ELSE
+	PRINTFORM 無様に転倒する姿を
+ENDIF
+PRINTFORML 観客の眼に晒す羽目になってしまった…
+;口上
+TRYCALLFORM KOJO_ROOT(CFLAG:6, "SEISAN_HERO_korobi")
+
+;----------------------------------------------------------
+;ヒーローショー：怪人役に痴漢されて絶頂
+@MESSAGE_SEISAN_PART_TIME_HERO_CHIKAN
+PRINTFORML ショーの途中で悪の組織に捕まる場面に差し掛かると、
+PRINTFORML 後ろから羽交い絞めにされた%PRINT_TRANSCALLNAME(TARGET)%の身体を、怪人役がさりげなく弄り回していく。
+PRINTL 
+PRINTFORML 初めは何とか台詞を口にしていたものの大胆になっていく愛撫に耐えきれず、
+PRINTFORML ついには舞台の上で絶頂を迎える姿を見られてしまった…
+;口上
+TRYCALLFORM KOJO_ROOT(CFLAG:6, "SEISAN_HERO_chikan")
+
+;----------------------------------------------------------
+;ヒーローショー：怪人役にスカートをめくられる
+@MESSAGE_SEISAN_PART_TIME_HERO_SKIRTMEKURI
+PRINTFORML アクションシーンの途中で%PRINT_TRANSCALLNAME(TARGET)%は怪人にスカートを捲られてしまい、
+;履いてない
+IF CFLAG:42 == 0
+	PRINTFORM 下履きを履いていなかったばかりに、\@TALENT:パイパン == 1?毛も生えていない#\@アソコを
+ELSE
+	PRINTFORM 下に履いていた%ITEMNAME:(CFLAG:42)%を
+ENDIF
+PRINTFORML 観客の眼に晒す羽目になってしまった…
+;口上
+TRYCALLFORM KOJO_ROOT(CFLAG:6, "SEISAN_HERO_skirtmekuri")
+
+;----------------------------------------------------------
+;ヒーローショー：無事成功
+@MESSAGE_SEISAN_PART_TIME_HERO_NORMAL
+;口上
+TRYCALLFORM KOJO_ROOT(CFLAG:6, "SEISAN_HERO_normal")
+
+;----------------------------------------------------------
+;ウェイトレスの出だし
+@MESSAGE_SEISAN_PART_TIME_FAMILY_INTRO
+PRINTFORML %PRINT_TRANSCALLNAME(TARGET)%はファミレスでウェイトレスのアルバイトをすることにしました。
+
+;----------------------------------------------------------
+;ウェイトレス：痴漢
+@MESSAGE_SEISAN_PART_TIME_FAMILY_CHIKAN
+PRINTFORML 接客の最中、お客さんに身体を触られました。
+;口上
+TRYCALLFORM KOJO_ROOT(CFLAG:6, "SEISAN_FAMILY_chikan")
+
+;----------------------------------------------------------
+;ウェイトレス：特筆すべき事件はなし
+@MESSAGE_SEISAN_PART_TIME_FAMILY_NORMAL
+;口上
+TRYCALLFORM KOJO_ROOT(CFLAG:6, "SEISAN_FAMILY_normal")
+
+;----------------------------------------------------------
+;厨房手伝いの出だし
+@MESSAGE_SEISAN_PART_TIME_SYOKUDOU_INTRO
+PRINTFORML %PRINT_TRANSCALLNAME(TARGET)%は食堂で厨房手伝いのアルバイトをすることにしました。
+
+;----------------------------------------------------------
+;厨房手伝い：同僚に痴漢される
+@MESSAGE_SEISAN_PART_TIME_SYOKUDOU_CHIKAN
+PRINTFORML 卵のケースを運ぶ途中、同僚が%PRINT_TRANSCALLNAME(TARGET)%のお尻を撫で回した。
+PRINTFORML 
+IF TALENT:感情乏しい > 0
+	PRINTFORML まったく反応しない%PRINT_TRANSCALLNAME(TARGET)%の態度に行為はエスカレートしていき
+	PRINTFORML 尻を揉み回して下着に手を入れようとしたところで、
+	PRINTFORML %PRINT_TRANSCALLNAME(TARGET)%の冷ややかな視線に気付いた同僚は慌ててそっぽを向いて誤魔化した…
+ELSEIF TALENT:臆病 || TALENT:恥ずかしがり屋 || TALENT:悲観的
+	PRINTFORML 驚いた%PRINT_TRANSCALLNAME(TARGET)%が思わず身を竦ませると
+	PRINTFORML ケースが傾いて卵が幾つか地面に落ちてしまった。
+	PRINTFORML 恨めしそうに同僚を見ると知らんぷりで誤魔化されてしまった…
+ELSE
+	PRINTFORML 引っ叩いてやろうと思った%PRINT_TRANSCALLNAME(TARGET)%だが、
+	PRINTFORML 下手に暴れたら店の卵を割ってしまう。
+	PRINTFORML 相手を睨みつけてやると同僚は何事も無かったかのような態度で誤魔化した…
+ENDIF
+;口上
+TRYCALLFORM KOJO_ROOT(CFLAG:6, "SEISAN_SYOKUDOU_chikan")
+
+;----------------------------------------------------------
+;厨房手伝い：店長に一服盛られる
+@MESSAGE_SEISAN_PART_TIME_SYOKUDOU_DRUG
+PRINTFORML 身体が重い…顔が熱い…
+PRINTFORMW そして…肢体が…疼く
+PRINTFORML （何か…変）
+PRINTFORML
+PRINTFORMW 身体の異常に戸惑う%PRINT_TRANSCALLNAME(TARGET)%。
+PRINTFORML
+PRINTFORML 実のところ、今感じている感覚には覚えがある。しかし
+PRINTFORML （何故今ここで？）
+PRINTFORMW 熱に浮かされた頭で考える。ここに触手は居ない…はず
+PRINTFORML
+PRINTFORML そんな思考は、何者かに羽交い締めにされ遮られた。
+PRINTFORML 振り解こうと力を込めた%PRINT_TRANSCALLNAME(TARGET)%だが、
+PRINTFORML 胸元を一撫でされただけで腰砕けになってしまう。
+PRINTFORML
+PRINTFORM 「デュフフ、
+IF RANDOM(3) == 0
+	PRINTFORM T-L Potion
+ELSEIF RANDOM(2) == 0
+	PRINTFORM TEMPTATION XXX
+ELSE
+	PRINTFORM スレイヴメーカー
+ENDIF
+PRINTFORM 、噂に違わぬ効果だな」
+PRINTFORML 声の主は店長だった。
+PRINTFORML どうやら賄いに一服盛られたらしい。
+PRINTFORML
+;口上
+TRYCALLFORM KOJO_ROOT(CFLAG:6, "SEISAN_SYOKUDOU_drug")
+PRINTFORML
+PRINTFORML 薬の効果で発情しきった%PRINT_TRANSCALLNAME(TARGET)%は
+PRINTFORML ろくに抵抗も出来ないまま、意識がトぶまでイかされた・・・
+
+;----------------------------------------------------------
+;厨房手伝い：特筆すべき事件はなし
+@MESSAGE_SEISAN_PART_TIME_SYOKUDOU_NORMAL
+;口上
+TRYCALLFORM KOJO_ROOT(CFLAG:6, "SEISAN_SYOKUDOU")

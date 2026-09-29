@@ -1,0 +1,91 @@
+﻿;==============================================================================
+;特別活動：雑魚触手退治の地の文と口上呼び出し
+
+;----------------------------------------------------------
+;雑魚触手退治の出だし
+@MESSAGE_SEISAN_PEST_CONTROL_INTRO
+PRINTFORML %PRINT_TRANSCALLNAME(TARGET)%は駆除依頼の出ていた極々弱い雑魚触手を狩りに出ました。
+
+;----------------------------------------------------------
+;雑魚触手退治：わざと負けて嬲られる（触手の虜持ち）
+; 変数
+;	LOST_VIRGIN	この活動中に処女喪失したかどうか
+@MESSAGE_SEISAN_PEST_CONTROL_TORIKO, LOST_VIRGIN
+#DIM LOST_VIRGIN
+
+PRINTFORML それは一般人でも容易に殲滅できるほどの雑魚触手の群れだったが、
+PRINTFORML 既に触手の虜に成り下がっている%PRINT_TRANSCALLNAME(TARGET)%は服を脱ぎ捨て、自らその触手の群れに身体を差し出してしまった。
+PRINTL 
+IF LOST_VIRGIN
+	PRINTL 処女喪失
+	PRINTL 
+ENDIF
+IF RANDOM(2) == 0
+	PRINTFORML 上等な餌を前にした触手たちは先を争うように%PRINT_TRANSCALLNAME(TARGET)%の身体に殺到し、穴という穴を陵辱していく。
+	PRINTFORML 仲間達にはひた隠しにしていた昏い欲望を解き放った%PRINT_TRANSCALLNAME(TARGET)%は、触手の玩具として貪られる悦びに溺れていく。
+	PRINTFORML 帰りが遅いのを不審に思い探しに来てくれた仲間が見たのは、気を失ってなお絶頂し続けている%PRINT_TRANSCALLNAME(TARGET)%の姿だった…
+ELSE
+	PRINTFORML 触手たちは%PRINT_TRANSCALLNAME(TARGET)%の身体に殺到し、穴という穴に汚濁を注ぎ込んでいく。
+	PRINTFORML %PRINT_TRANSCALLNAME(TARGET)%は本気を出せば小指でひねれる程度の強さの触手にさらなる陵辱を媚び、快楽の泥沼に溺れていく。
+	PRINTFORML 帰りが遅いのを不審に思い探しに来てくれた仲間が見たのは、獣のような声をあげて陵辱されている%PRINT_TRANSCALLNAME(TARGET)%の姿だった…
+ENDIF
+;口上
+TRYCALLFORM KOJO_ROOT(CFLAG:6, "SEISAN_BATTLE_toriko")
+
+CALL REDUCIBLE_PRINTW
+
+;----------------------------------------------------------
+;雑魚触手退治：敗北した
+; 変数
+;	LOST_VIRGIN	この活動中に処女喪失したかどうか
+@MESSAGE_SEISAN_PEST_CONTROL_DEFEAT, LOST_VIRGIN
+#DIM LOST_VIRGIN
+
+PRINTFORML それは万に一つも負ける可能性もない程度の雑魚触手の群れだったが、
+PRINTFORML 不意に動いた%ITEMNAME:(CFLAG:42)%に意識が逸れた隙を突かれ、
+PRINTFORML %PRINT_TRANSCALLNAME(TARGET)%は触手の群れに飲み込まれるようにして地面に縫い付けられてしまった。
+PRINTL 
+IF RANDOM(2) == 0
+	PRINTFORML 触手たちはまるで狩人に制裁を加えるかのように、身体を鞭のようにくねらせて%PRINT_TRANSCALLNAME(TARGET)%の身体を打ち据える。
+	PRINTFORML %PRINT_TRANSCALLNAME(TARGET)%の衣装はみるみるうちに裂けてボロボロになり、柔肌に赤い傷が刻まれていく。
+	IF TALENT:感情乏しい > 0
+		PRINTFORML 容赦のない責め苦に%PRINT_TRANSCALLNAME(TARGET)%が力尽きると、
+		PRINTFORML 周囲を取り囲む触手たちは我先にと凌辱を開始した…
+	ELSE
+		PRINTFORML 苦痛に満ちた責め苦にやがて%PRINT_TRANSCALLNAME(TARGET)%も心を折られ、泣き叫んで許しを請うが、
+		PRINTFORML それが聞き届けられることなどあるはずもない…
+	ENDIF
+	IF LOST_VIRGIN
+		PRINTL 
+		PRINTL 処女喪失
+		PRINTL 
+	ENDIF
+	;口上
+	TRYCALLFORM KOJO_ROOT(CFLAG:6, "SEISAN_BATTLE_haibokuA")
+ELSE
+	PRINTFORML 触手たちは哀れな獲物の身体をぬめぬめと這い回り、
+	PRINTFORML 媚毒がたっぷり含まれた粘液を%PRINT_TRANSCALLNAME(TARGET)%の皮膚に塗り込んだ。
+	PRINTFORM やがて%PRINT_TRANSCALLNAME(TARGET)%の準備が整うと、触手たちは
+	SIF ISFEMALE() && CHECK_HOLYVIRGIN_F()==0
+		PRINTL 膣に、
+	PRINTFORML 尻穴に、口に、尿道に、臍に、耳穴に、鼻腔にと、
+	PRINTFORML ありとあらゆる穴に潜り込み、敗北の証を刻みつけるように汚濁を吐き出していく…
+	IF LOST_VIRGIN
+		PRINTL 
+		PRINTL 処女喪失
+		PRINTL 
+	ENDIF
+	;口上
+	TRYCALLFORM KOJO_ROOT(CFLAG:6, "SEISAN_BATTLE_haibokuB")
+ENDIF
+
+CALL REDUCIBLE_PRINTW
+
+;----------------------------------------------------------
+;雑魚触手退治：普通に勝利
+@MESSAGE_SEISAN_PEST_CONTROL_NORMAL
+PRINTFORML %PRINT_TRANSCALLNAME(TARGET)%は特に苦戦することもなく、触手の群れを蹴散らした。
+;口上
+TRYCALLFORM KOJO_ROOT(CFLAG:6, "SEISAN_BATTLE_normal")
+
+CALL REDUCIBLE_PRINTW

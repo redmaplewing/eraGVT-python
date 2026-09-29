@@ -1,0 +1,529 @@
+﻿;【状態】	【選択不可になるコマンド】
+;気絶		全ての行動　口上もスキップされるので考慮する必要はない
+;変身前		中遠距離攻撃、暴れる(、エアストライク)、全てのSP系
+;麻痺		Ｖ防御、暴れる、ひきはがす
+;恍惚		(バースト攻撃、エアストライク)
+;		Ｖ防御、ひきはがす、暴れる、睨みつける、罵倒する、反抗する、説得する(、救出)
+;強拘束(挿入中)	Ｖ防御、振り解く、暴れる(、救出)
+;腰くだけ	距離を取る、背後に回る、[現在の位置以外]距離攻撃
+;疲労(50以上)	距離を取る、背後に回る(、バースト攻撃、エアストライク)
+
+
+;★口上用の戦闘シチュエーション確認
+;撮影/野次馬	…身勝手さに怒る。堕落時は悦ぶ
+;市民		…避難を促す。応援されてる場合もある
+;生徒		…女子高救出イベント。(戦闘中メッセージは出ないが)体育館や礼拝堂で決戦、雑魚触手に女子生徒たちが襲われている
+;奇襲		…夜間襲来。自分一人が狙われて逃げ場も無い耐久戦
+;@KOJO_BATTLE_SET_SITUATION
+
+
+;●被捕獲時コマンド
+
+
+;TFLAG:20 == 1006	;前ターンに強制自慰
+
+;SPバースト　(触手や拘束を吹き飛ばし、確定で振り解く被捕獲時コマンド)
+;--------------------------------------------------
+@KOJO_1_BATTLE_CHARA_SP_BURST_16
+PRINTL 「悪いけどこれ以上は……遠慮させてもらう！！」
+
+
+
+;●物理抵抗系コマンド
+
+
+;暴れる　ダメージ目当てにもがく
+;強拘束・麻痺・恍惚中・変身前は不可
+;失敗パターンは多様※ だが結果表示時は口上を呼んでいない
+;(※びくともしない、力負けする、きりがない、手足抑え込まれる、組み伏せられる、締め上げや愛撫で力が抜ける)
+;--------------------------------------------------
+@KOJO_1_BATTLE_CHARA_ABARERU_16
+IF BASE:気力<MAXBASE:気力/4
+	PRINTDATAL
+	DATAFORM 「やめろっ、いやだっ！ このぉぉっ！」
+	DATAFORM 「この、いい加減離せ…ひッ！？」
+	DATAFORM 「くぅっ、いや、だあぁぁ…っ！」
+	DATAFORM 「ん゛うぅぅうッ！？ この！ このぉっ！」
+	ENDDATA
+	PRINTDATA
+	DATAFORM %CALLNAME%はがむしゃらに暴れているが、
+	DATAFORM %CALLNAME%は必死に抵抗を試みているが、
+	ENDDATA
+	PRINTDATAL
+	DATAFORM 心なしか動きが弱々しい……
+	DATAFORM 振り回す手足の動きは弱々しい……
+	DATAFORM その動きは最早か弱い一般女性とさほど変わらない……
+	ENDDATA
+ELSE
+	PRINTDATAL
+	DATAFORM 「この……離せって言ってるっ！」
+	DATAFORM 「いやだっ！ 触るな、触るなよっ！」
+	DATAFORM 「離、せぇ……！」
+	DATAFORM 「くっ、こいつどこ触って…離せ、よっ！」
+	DATAFORM 「この……くっ、うぅっ！」
+	ENDDATA
+	PRINTDATAL
+	DATAFORM %CALLNAME%はがむしゃらに暴れている…
+	DATAFORM %CALLNAME%は必死にもがき、抵抗を試みている…
+	ENDDATA
+ENDIF
+
+
+;振り解き　非挿入中に「拘束逃れ目的で」暴れる
+;強拘束中は不可
+;--------------------------------------------------
+@KOJO_1_BATTLE_CHARA_HURIHODOKU_16
+PRINTDATAL
+DATAFORM 「こ、この……いい加減放せっ、化け物っ……！」
+DATAFORM 「あっち行けよ、汚ないだろ！」
+DATAFORM 「は、放せっ、こいつっ！」
+DATAFORM 「放せ、このっ、化け物が……っ！」
+ENDDATA
+IF BASE:気力<MAXBASE:気力/4
+	PRINTDATAL
+	DATAFORM (早く…振り解かないと、%SELF_CALL()%…っ！)
+	DATAFORM (このままじゃ…！)
+	DATAFORM (…くっ、力が…はいらな……)
+	ENDDATA
+ENDIF
+
+;振り解き成功　緩んで脱出
+;--------------------------------------------------
+@KOJO_1_BATTLE_CHARA_HURIHODOKU_SUCCESS_16
+
+IF BASE:気力<MAXBASE:気力/4
+	PRINTDATAL
+	DATAFORM 「ど、どうだ、思い、知ったか……っ！」
+	DATAFORM 「ぐ……この屈辱、どうっ、晴らして、やろうかっ…！」
+	DATAFORM 「こ、この変態め、絶対に、許さないっ、百万倍にして…返してやるからな…っ！」
+	DATAFORM 「はぁ、ひあっ、くうっ……そ、そろそろ、%SELF_CALL()%の番だなっ！」
+	DATAFORM 「す、好き放題してくれたな……ここからは、%SELF_CALL()%の攻撃を、味わわせてやるっ…」
+	ENDDATA
+	PRINTDATAL
+	DATAFORM 乱れた髪をうなじに貼り付け、%CALLNAME%は無理矢理余裕の笑みを浮かべた。
+	DATAFORM 息も絶え絶えといった様子で、%CALLNAME%は必死に虚勢を張った。
+	DATAFORM \@FLAG:73==0 ? 触手から零れ落ちるように地面に降りた # 自身を取り囲むペニスから辛うじて逃れた \@%CALLNAME%は、粘液に塗れた武器を慌てて構え直した。
+	ENDDATA
+
+ELSE
+	PRINTDATAL
+	DATAFORM 「思い知ったか……っ！」
+	DATAFORM 「ぐ……この屈辱、どう晴らしてやろうか！」
+	DATAFORM 「この変態め、絶対に許さない、百万倍にして返してやるよ！」
+	DATAFORM 「……そろそろ%SELF_CALL()%の番だなっ！」
+	DATAFORM 「好き放題してくれたな……ここからは%SELF_CALL()%の攻撃を味わわせてやる！」
+	ENDDATA
+	IF FLAG:73==0
+		PRINTDATAL
+		DATAFORM 一旦地面に降りた%CALLNAME%は、油断なく武器を構え直した。
+		DATAFORM 転げ落ちるように地面に降りた%CALLNAME%は、急いで武器を構え直した。
+		DATAFORM 触手から逃れて地面に降りた%CALLNAME%は、回収した武器を力強く構え直した。
+		DATAFORM 拘束を解いた%CALLNAME%は、回収した武器を優雅に構え直した。
+		ENDDATA
+	ELSE
+		PRINTDATAL
+		DATAFORM 隙を突いて男たちを突き飛ばした%CALLNAME%は、油断なく武器を構え直した。
+		DATAFORM しなやかな動きで男たちの包囲から逃れた%CALLNAME%は、急いで武器を構え直した。
+		DATAFORM 自身を取り囲むペニスの包囲網を潜り抜けた%CALLNAME%は、回収した武器を力強く構え直した。
+		DATAFORM 男たちの腕を振り払った%CALLNAME%は、回収した武器を優雅に構え直した。
+		ENDDATA
+	ENDIF
+ENDIF
+
+IF TALENT:触手の虜|| ABL:触手中毒 > 3
+	IF ISMALE()
+		;#region
+		PRINTFORMW だが、%CALLNAME%の尻穴の内側は暗い期待に潤んでいた……
+		;#endregion
+	ELSE 
+		PRINTFORMW だが、%CALLNAME%の秘所は新たな蜜に潤んでいた……
+	ENDIF
+ENDIF
+
+;振り解き失敗　拘束びくともせず　女の子じゃ仕方ないね
+;--------------------------------------------------
+@KOJO_1_BATTLE_CHARA_HURIHODOKU_FALSE_16
+PRINTDATAL
+DATAFORM 「ぐっ、ちが、ゆ、許してッ！ %SELF_CALL_SINGLE()%、%SELF_CALL()%は、%SELF_CALL_SUBSTRING(0, 2, 2)%、ぁ゛がぁっ！
+DATAFORM 「そんなっ、なんで……あぐ、ぐぷぇ……！ あ゛がっ……がぐげぅ……！」
+DATAFORM 「ぜ、全然駄目なのか？　%SELF_CALL_SINGLE()%、%SELF_CALL()%、このままじゃ……げう゛っ！？」
+ENDDATA
+IF RAND:2
+	PRINTDATAL
+	DATAFORM 逃れようと暴れる生意気な獲物の肢体を、
+	DATAFORM 立場を理解しない生意気な獲物の肢体を、
+	ENDDATA
+	IF FLAG:73==0
+		PRINTDATAL
+		DATAFORM ぬらつく触手がぎちぎちと締め直した。
+		DATAFORM べとつく触手が嬲るように締め上げた。
+		ENDDATA
+	ELSE
+		PRINTDATAL
+		DATAFORM 男たちの腕が乱暴に締め直した。
+		DATAFORM 男たちの腕が嬲るように締め上げた。
+		ENDDATA
+	ENDIF
+ELSE
+	PRINTDATAL
+	DATAFORM 獲物の勘違いを正そうとするように、
+	DATAFORM 獲物に立場を教え込むつもりか、
+	DATAFORM 生意気な獲物を躾けるつもりか、
+	ENDDATA
+	
+	PRINTDATA
+	DATAFORM %CALLNAME%の肢体を
+	DATAFORM %CALLNAME%の全身を
+	DATAFORM %CALLNAME%の首を
+	DATAFORM %CALLNAME%の手足を
+	ENDDATA
+	IF FLAG:73==0
+		PRINTDATAL
+		DATAFORM ぬらつく触手がぎちぎちと締め直した。
+		DATAFORM べとつく触手が嬲るように締め上げた。
+		ENDDATA
+	ELSE
+		PRINTDATAL
+		DATAFORM 男たちの腕が乱暴に締め直した。
+		DATAFORM 男たちの腕が嬲るように締め上げた。
+		ENDDATA
+	ENDIF
+	
+
+ENDIF
+
+
+
+;Ｖ挿入防御　「せめて膣への挿入だけでも防ごうと身構えた」
+;強拘束・麻痺・恍惚中は不可	実行していてもSP系の攻撃など一部は貫通する
+;なりふり構わず処女だけを守り通す構えです
+;調教が進むと使えなくなるのであまり調教が進んでいない状況を想定しましょう
+@KOJO_1_BATTLE_CHARA_ANTI_V_16
+IF TALENT:処女 > 0
+	PRINTDATAL
+	DATAFORM 「%SELF_CALL()%の身体は、おまえたちのオモチャじゃない……！」
+	DATAFORM 「初めてだけは絶対に奪わせない……！」
+	DATAFORM 「化け物に、初めてを捧げたい女の子なんかいるかよっ…！」
+	DATAFORM 「%SELF_CALL()%の初めては渡さない……！」
+	DATAFORM 「中にだけは……絶対に許すものかっ！」
+	ENDDATA
+
+	PRINTDATAL
+	DATAFORM （冗談じゃない、あんなの挿れられたら…！）
+	DATAFORM （あんなの挿れられたら…絶対防がないと…！）
+	DATAFORM （あんなの挿れられてたまるもんか…！）
+	ENDDATA
+
+	PRINTDATAL
+	DATAFORM %CALLNAME%は必死に秘部を庇い、乙女の尊厳を守ろうと抵抗している…
+	DATAFORM %CALLNAME%は必死に秘部を庇い、処女を守るために最後の抵抗を続けている…
+	DATAFORM %CALLNAME%は処女性器への挿入を断固阻止しようとしている…
+	ENDDATA
+ELSE
+	PRINTDATAL
+	DATAFORM 「%SELF_CALL()%の身体はおまえたちのオモチャじゃない……！」
+	DATAFORM 「これ以上好きにはさせるか……！」
+	DATAFORM 「これ以上好き放題させるものか……！」
+	ENDDATA
+
+	;★触手に侵された経験があるなら分岐？
+
+	PRINTDATAL
+	DATAFORM %CALLNAME%は必死に秘部を庇い、女性としての尊厳を守ろうと抵抗している…
+	DATAFORM %CALLNAME%は必死に秘部を庇い、最後の抵抗を続けている…
+	DATAFORM %CALLNAME%は性器への挿入を断固阻止しようとしている…
+	ENDDATA
+ENDIF
+
+
+;引き剥がす　膣を犯されながら激しく抵抗する
+;麻痺・恍惚中は不可
+;ペニス持ちorＢorＣ …突き飛ばして中出しを防ごうとする
+;その他エネミー	　　…挿入されている触手を掴んで引き抜こうとする
+@KOJO_1_BATTLE_CHARA_HIKIHAGASU_16
+;ふたなりヒロイン
+IF ENEMY_TYPE_CHECK_F("AKUOTI") == 1 && ISTENTACLER(FLAG:111) == 0 && (TALENT:(FLAG:111):ふたなり > 0 || ISMALE(FLAG:111))
+
+;Ｃ触手　巨大イモ虫の頭部に無数の触手
+ELSEIF (LOCALS:1 == "Ｃ触手")
+
+;Ｂ触手(巨大な赤ん坊のような見た目　触手の先端が壷　開口部がぱくぱくと動く)の授乳レイプSP攻撃中
+ELSEIF (LOCALS:1 == "Ｂ触手" && TFLAG:20 == 1011)
+
+;Ａ触手(不定形スライム)
+ELSEIF (LOCALS:1 == "Ａ触手")
+
+;その他(通常の触手凌辱)
+ELSE
+
+ENDIF
+
+;引き剥がす成功時
+@KOJO_1_BATTLE_CHARA_HIKIHAGASU_SUCCESS_16
+;ふたなりヒロイン
+IF ENEMY_TYPE_CHECK_F("AKUOTI") == 1 && ISTENTACLER(FLAG:111) == 0 && (TALENT:(FLAG:111):ふたなり > 0 || ISMALE(FLAG:111))
+
+;Ｃ触手　巨大イモ虫の頭部に無数の触手
+ELSEIF LOCALS:1 == "Ｃ触手"
+
+;Ｂ触手(巨大な赤ん坊のような見た目　触手の先端が壷　開口部がぱくぱくと動く)の授乳レイプSP攻撃中
+ELSEIF (LOCALS:1 == "Ｂ触手" && TFLAG:20 == 1011)
+
+;Ａ触手
+ELSEIF LOCALS:1 == "Ａ触手"
+
+ELSE
+
+ENDIF
+
+;引き剥がす失敗時
+@KOJO_1_BATTLE_CHARA_HIKIHAGASU_FALSE_16
+;●激しいピストンで姿勢を崩されてしまう
+	;ふたなりヒロイン
+	IF ENEMY_TYPE_CHECK_F("AKUOTI") == 1 && ISTENTACLER(FLAG:111) == 0 && (TALENT:(FLAG:111):ふたなり > 0 || ISMALE(FLAG:111))
+
+	;Ｃ触手
+	ELSEIF LOCALS:1 == "Ｃ触手"
+
+	;Ｂ触手
+	ELSEIF (LOCALS:1 == "Ｂ触手" && TFLAG:20 == 1011)
+
+;●相手が不定形では空しい抵抗でしかない
+	;Ａ触手(スライム)状
+	ELSEIF LOCALS:1 == "Ａ触手"
+
+;●絶妙なタイミングでズンと突き上げられて力が抜けてしまった
+;伸ばした手を別の触手に拘束された
+;ぬるぬるした粘液で滑る触手を上手く掴めなかった
+;からランダム地の文
+	ELSE
+
+	ENDIF
+
+
+
+;●精神抵抗系コマンド
+
+;睨みつける
+;	種付けフィニッシュ直後・強制自慰直後・堕落・絶望・気力切れ・恍惚中は不可
+;--------------------------------------------------
+@KOJO_1_BATTLE_CHARA_NIRAMI_16
+;受けている攻撃で直前の地の文が分岐　＋弱気な性格だと涙目だったりする
+
+;射精暴発、手に射精　精液で全身を汚されながら
+IF (TFLAG:5 & 暴発) > 0
+	
+;前遊系　手も足も出ない悔しさを堪えながら
+ELSEIF TFLAG:20 == 0 || TFLAG:20 == 1 || TFLAG:20 == 2 || TFLAG:20 == 4 || TFLAG:20 == 6 || TFLAG:20 == 7 || TFLAG:20 == 8 || TFLAG:20 == 1007
+	
+;口辱系
+ELSEIF TFLAG:20 == 11 || TFLAG:20 == 12
+	;射精後、涎と精液垂らしながら
+	IF (TFLAG:5 & 口) > 0
+
+	;口を犯されながら
+	ELSE
+
+	ENDIF
+;ＳＭ系　苦痛に息を荒げながら
+ELSEIF TFLAG:20 == 9 || TFLAG:20 == 1004 || TFLAG:20 == 1008 || TFLAG:20 == 1015
+
+;本番系
+ELSEIF TFLAG:20 == 3 || TFLAG:20 == 5 || TFLAG:20 == 15 || TFLAG:20 == 16 || TFLAG:20 == 1001 || TFLAG:20 == 1002 || TFLAG:20 == 1009 || TFLAG:20 == 1010 || TFLAG:20 == 1011 || TFLAG:20 == 1014
+	;ＶＡ射精後
+	IF (TFLAG:5 & 膣) > 0 && (TFLAG:5 & アナル) > 0
+
+	;Ｖ射精後
+	ELSEIF (TFLAG:5 & 膣) > 0
+
+	;Ａ射精後
+	ELSEIF (TFLAG:5 & アナル) > 0
+
+	ELSE
+		;戦意を失わずに
+	ENDIF
+;激しい凌辱に悶え乱れながらも
+ELSEIF TFLAG:20 == 1000 || TFLAG:20 == 1003 || TFLAG:20 == 1005 || TFLAG:20 == 1012
+
+;それ以外　自分を鼓舞するように
+ELSE
+
+ENDIF
+
+;罵倒
+;	種付けフィニッシュ直後・強制自慰直後・堕落・フェラ/イラマチオ直後・気力75%～・恍惚中は不可
+;	弱気な性格(臆病・恥ずかしがり屋・悲観的)は選択不可
+;	悪堕ち相手の罵倒は強気な性格(勝気・古風・乱暴者)限定
+;--------------------------------------------------
+@KOJO_1_BATTLE_CHARA_BATOU_16
+;言葉に勢いがない　虚勢
+IF (MESSAGE_BRANCH_F(TARGET) & 絶望)
+	
+;口汚く罵倒するが快楽で呂律が回っていない　強がり
+ELSEIF (MESSAGE_BRANCH_F(TARGET) & 快楽蕩け)
+	
+;罵って戦意を奮い起こす
+ELSEIF (MESSAGE_BRANCH_F(TARGET) & 苦戦)
+
+;負けないという意思を込めて口汚く罵る(？)
+ELSE
+
+ENDIF
+
+;反抗する
+;	種付けフィニッシュ直後・強制自慰直後・堕落・フェラ/イラマチオ直後・気力75%～・恍惚中は不可
+;	弱気な性格(臆病・恥ずかしがり屋・悲観的)は選択不可
+;	悪堕ち相手の罵倒は強気な性格(勝気・古風・乱暴者)限定
+;--------------------------------------------------
+@KOJO_1_BATTLE_CHARA_RESISTANCE_16
+;心折れ　形だけの抵抗
+IF (MESSAGE_BRANCH_F(TARGET) & 絶望)
+
+;快楽漬け　形だけ
+ELSEIF (MESSAGE_BRANCH_F(TARGET) & 快楽蕩け)
+
+;まだ諦めていない　態度で示す
+ELSEIF (MESSAGE_BRANCH_F(TARGET) & 苦戦)
+
+;まだ凌辱に屈していない　態度で示す
+ELSE
+
+ENDIF
+
+;説得する　「こんなことを止めるように説得しようとしている」　地の文分岐はない
+;	攻撃(近中遠暴れる)した後は使用不可
+;	種付けフィニッシュ直後・強制自慰直後・フェラ/イラマチオ直後・恍惚中は使用不可
+;	敵が元ヒロインの場合限定(この世界の触手はガチ勢なので説得できるような相手ではない)
+;--------------------------------------------------
+@KOJO_1_BATTLE_CHARA_PERSUADE_16
+
+
+
+;●受け入れ系コマンド
+;耐える
+;	敗北確定時・堕落・快楽漬け・絶望・他の受け入れ系出現中かつPALAM多めなら使用不可
+;「あまり調教が進んでおらず、闘志が残っている状態です
+;　情報を集めるため、油断を誘うためなど、まだ諦めていないような口上が相応しいでしょう」
+;「ぐっと唇を噛んで」
+;--------------------------------------------------
+@KOJO_1_BATTLE_CHARA_TAERU_16
+
+;★取得すると堕落確定なので死に分岐になってるよ！
+;触手の虜取得後
+IF TALENT:触手の虜
+	PRINTFORML （今はチャンスを待つんだ……で、でも、%SELF_CALL()%、何を待ってるんだ……？）
+ELSE
+	PRINTDATAL
+	DATAFORM （今は機を待つんだ……それまで耐えないと……）
+	DATAFORM （こいつ、好き放題に……今に目にもの見せてやる……！）
+	DATAFORM （早く油断してくれ……%SELF_CALL()%が、%SELF_CALL()%でいられるうちに……）
+	DATAFORM （見てろよ……一瞬でも油断した時がおまえの最後だ……）
+	ENDDATA
+ENDIF
+
+
+;なすがまま
+;	【必要条件】敗北確定時or苦戦or恐怖刻印＋苦痛刻印４以上
+;苦痛や恐怖が高くなって翻弄されている状態です
+;余裕がなくなった様子を描写するのが良いでしょう
+;「身を竦ませ」「陵辱になすがままに」
+;--------------------------------------------------
+@KOJO_1_BATTLE_CHARA_NASUGAMAMA_16
+PRINTFORML 「……もう、いい……好きに、してくれ……」
+;触手の虜取得後
+IF TALENT:触手の虜
+	PRINTDATAL
+	DATAFORM （身体が疼く……熱くて、ダメ、だなんて……）
+	DATAFORM （\@FLAG:73==0 ? 化け物なんか # こんな奴ら \@を相手に、%SELF_CALL()%は何を……）
+	DATAFORM （あぁ……次はどう嬲られちゃうのかな……？）
+	ENDDATA
+ELSE
+	PRINTFORM  %CALLNAME%は薄目を開けて
+	CALL TENTACLE_ACCESS, "NAME"
+	PRINTFORML が油断する時を待っている
+ENDIF
+
+
+;受け入れる
+;	【必要条件】性抵抗or欲望＋快楽刻印＋恥辱刻印６以上
+;「屈服で心が折れたか、快楽に流されている状態です
+;　普段よりも快楽に素直になっている様子を描写するのが良いでしょう」
+;「快楽をすすんで受け入れた」
+;--------------------------------------------------
+@KOJO_1_BATTLE_CHARA_UKEIRERU_16
+
+IF TALENT:触手の虜 && RAND:4==0
+	PRINTFORML 「……ねえ…きて❤」
+	PRINTFORM 縛られたまま器用に体勢を変え、%CALLNAME%は媚びる牝の声で
+	CALL TENTACLE_ACCESS, "NAME"
+	PRINTFORMW を誘った。
+ELSEIF ABL:触手中毒 > 3
+	PRINTDATAL
+	DATAFORM 「……もう、%SELF_CALL()%はおまえたちの物だからさ……好きにして……」
+	DATAFORM 「……もう、%SELF_CALL()%はおまえたちの物でいいから……どうにでもしてよ……」
+	ENDDATA
+	PRINTFORML 
+	PRINTDATAL
+	DATAFORM （あぁ……%SELF_CALL()%はもう、こいつらに逆らえないんだ……）
+	DATAFORM （%SELF_CALL()%、身も心も……もう……）
+	DATAFORM （あぁ、そうか……%SELF_CALL()%、飼いならされてしまったんだ……）
+	DATAFORM （あぁ…次はどんな風に壊されるのかな……）
+	DATAFORM （こんなの、もう戻れるわけが――）
+	DATAFORM （あぁ、やっと分かった……女の子はみんな…こうやって\@FLAG:73==0 ? 触手 # おちんちん \@に犯されるために産まれてきたんだ――）
+	DATAFORM （こんな屈辱的な事してるのに…%SELF_CALL()%、身体も心も悦んでる……）
+	ENDDATA
+	SIF ISMALE()
+		PRINTFORML （%SELF_CALL()%、オトコ、なのにぃ……牝にされて……牝にされちゃった、から、もう……）
+	PRINTFORMD 諦めたように全身の力を抜き、%CALLNAME%は無意識に腰を揺らしながら%STR:2500%
+	PRINTFORMDW を誘った。
+ELSE
+	SELECTCASE RAND:4
+		CASE 0
+			PRINTFORML （ほんの少し、だけ……）
+			IF ABL:触手中毒 >= 1
+				PRINTFORMW \@FLAG:73==0 ? 触手 # ペニス \@の快楽を忘れられず、%CALLNAME%は知らず身体を開いていた。
+			ELSEIF  MARK:屈服刻印 >= 3
+				PRINTFORMW 心の内で何度目かわからない言い訳をして、%CALLNAME%は\@FLAG:73==0 ? 触手 # ペニス \@に屈した。
+			ELSE
+				PRINTFORMW 仕方なくといった風に、%CALLNAME%は身体を差し出した。
+			ENDIF
+		CASE 1
+			PRINTFORML （後で、絶対に殺す……っ）
+			IF ABL:触手中毒 >= 1
+				PRINTFORMW 心の内の戦意とは裏腹に、身体は\@FLAG:73==0 ? 触手 # ペニス \@からの快感に期待している。
+			ELSEIF  MARK:屈服刻印 >= 3
+				PRINTFORMW 戦意が挫けないよう、%CALLNAME%は心の中でだけ強く思おうとした。
+			ELSE
+				PRINTFORM %CALLNAME%は昏い殺意を秘めながら、
+				CALL TENTACLE_ACCESS, "NAME"
+				PRINTFORMW に身体を開いた。
+			ENDIF
+		CASE 2
+			PRINTFORML 「好きに、しろよ……」
+			IF ABL:触手中毒 >= 1
+				PRINTFORMW 開かれた%CALLNAME%の身体は淡い期待感に蕩けていた。
+			ELSEIF  MARK:屈服刻印 >= 3
+				PRINTFORMW %CALLNAME%は全てを諦めたように身を差し出した。
+			ELSE
+				PRINTFORMW %CALLNAME%は視線を逸らしながらつぶやいた。
+			ENDIF
+		CASE 3
+			PRINTFORML 「……ああもう、最悪だよ……」
+			IF ABL:触手中毒 >= 1
+				IF ISMALE()
+					;#region
+					PRINTFORMW 苦々しげな表情とは裏腹に、%CALLNAME%の尻穴はひくついている。
+					;#endregion
+				ELSE 
+					PRINTFORMW 苦々しげな表情とは裏腹に、%CALLNAME%の秘所は潤んでいる。
+				ENDIF
+			ELSEIF  MARK:屈服刻印 >= 3
+				PRINTFORMW %CALLNAME%は全てを諦めたように身を差し出した。
+			ELSE
+				PRINTFORMW %CALLNAME%は諦め顔で抵抗をやめた。
+			ENDIF
+	ENDSELECT
+
+ENDIF
+
+

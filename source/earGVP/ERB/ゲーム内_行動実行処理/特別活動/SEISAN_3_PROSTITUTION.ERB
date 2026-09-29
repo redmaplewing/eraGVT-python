@@ -1,0 +1,334 @@
+﻿;==============================================================================
+;特別活動：援助交際
+; 変数
+;	PAYMENT		支払額
+@SEISAN_PROSTITUTION
+#DIM DYNAMIC PAYMENT
+
+PRINTL 援助交際
+PRINTL 
+;出だしの地の文
+CALL MESSAGE_SEISAN_PROSTITUTION_INTRO
+
+;通常の援交(GIRLY限定)
+IF RANDOM(5) != 0 && ISGIRLY()
+	;ちょっと長いので別関数へ
+	CALL SEISAN_PROSTITUTION_NORMAL
+	PAYMENT = RESULT
+	PRINTFORML %PRINT_TRANSCALLNAME(TARGET)%は街で声をかけてきた男に{PAYMENT}＄のお小遣いをもらった
+
+;ねちっこく調教される
+ELSEIF RANDOM(3) == 0
+	
+	;フェラ調教
+	IF RANDOM(2) == 0 && ISHOLE() == 1
+		;地の文と口上
+		CALL MESSAGE_SEISAN_PROSTITUTION_TRAIN_BLOWJOB
+		;珠と経験の増加
+		JUEL:習得 += 100
+		EXP:フェラ経験 += 3
+		EXP:精液経験 += 3
+	;キス調教
+	ELSE
+		;地の文と口上
+		CALL MESSAGE_SEISAN_PROSTITUTION_TRAIN_KISS
+		;珠と経験の増加
+		JUEL:習得 += 50
+	ENDIF
+	CALL CALC_SEISAN, 特別活動_援助交際, 特別活動結果_成功
+	PAYMENT = RESULT:1
+	PRINTFORML %PRINT_TRANSCALLNAME(TARGET)%は街で声をかけてきた男に{PAYMENT}＄のお小遣いをもらった
+
+;変態的なプレイをされる
+ELSEIF RANDOM(2) == 0
+	PRINTFORMW 黴臭いビルの地下室で、
+	;浣腸プレイ（自由行動と共用）
+	IF RANDOM(4) == 0
+		;地の文と口上
+		CALL MESSAGE_CITIZEN_TRAIN_KANCHO(TARGET,"男","特別活動")
+		;珠と経験の増加
+		JUEL:快Ａ += 15 * ABL:Ａ感覚
+		JUEL:習得 += 150
+		EXP:Ａ経験 += 3
+		EXP:フェラ経験 += 1
+		EXP:精液経験 += 1
+	;豚プレイ（自由行動と共用）
+	ELSEIF RANDOM(3) == 0
+		;地の文と口上
+		CALL MESSAGE_CITIZEN_TRAIN_PIG(TARGET,"男","特別活動")
+		;珠と経験の増加
+		JUEL:習得 += 150
+		JUEL:苦痛 += 300
+		EXP:苦痛快楽経験 += 3
+		EXP:フェラ経験 += 1
+		EXP:精液経験 += 1
+	;犬プレイ（自由行動と共用）
+	ELSEIF RANDOM(2) == 0
+		;地の文と口上
+		CALL MESSAGE_CITIZEN_TRAIN_DOG(TARGET,"男","特別活動")
+		;珠と経験の増加
+		JUEL:習得 += 150
+		JUEL:苦痛 += 100
+		JUEL:欲情 += 100
+		JUEL:恥情 += 100
+		EXP:苦痛快楽経験 += 2
+		EXP:フェラ経験 += 1
+		EXP:精液経験 += 1
+	;女王様になる
+	ELSE
+		;地の文と口上
+		CALL MESSAGE_SEISAN_PROSTITUTION_QUEEN
+		;珠と経験の増加
+		JUEL:習得 += 100
+		JUEL:欲情 += 100
+		EXP:フェラ経験 += 1
+		EXP:精液経験 += 1
+	ENDIF
+	CALL REDUCIBLE_PRINTW
+	CALL CALC_SEISAN, 特別活動_援助交際, 特別活動結果_成功
+	PAYMENT = RESULT:1
+	PRINTFORML %PRINT_TRANSCALLNAME(TARGET)%は街で声をかけてきた変態趣味の男に{PAYMENT}＄のお小遣いをもらった
+
+;欲求不満のお姉様のお相手
+ELSE
+	;地の文と口上
+	CALL MESSAGE_SEISAN_PROSTITUTION_LADY
+	;珠と経験の増加
+	;♀
+	IF ISFEMALE()
+		JUEL:習得 += 150
+		JUEL:欲情 += 100
+	;男の娘
+	ELSEIF TALENT:男の娘 > 0
+		JUEL:習得 += 150
+		JUEL:欲情 += 100
+	;オトコ
+	ELSE
+		JUEL:習得 += 150
+		JUEL:欲情 += 100
+		EXP:射精経験 += 2
+	ENDIF
+	CALL CALC_SEISAN, 特別活動_援助交際, 特別活動結果_成功
+	PAYMENT = RESULT:1
+	PRINTFORML %PRINT_TRANSCALLNAME(TARGET)%は街で声をかけてきた欲求不満のおねえさまに{PAYMENT}＄のお小遣いをもらった
+ENDIF
+
+LOCAL:2 = 0
+SIF RANDOM(100) < 20
+	LOCAL:2 += 1
+SIF RANDOM(100) < (EXP:魅了経験 / 8)
+	LOCAL:2 += 1
+IF LOCAL:2 > 0
+	FLAG:853 += LOCAL:2
+	PRINTFORML 人気度が{LOCAL:2}上がった
+ENDIF
+SIF RANDOM(100) < 25
+	CFLAG:825 += 1
+
+;==============================================================================
+;以下、関数内で呼ばれるサブ関数
+;==============================================================================
+;------------------------------------------------------------------------------
+;通常の援交
+; 変数
+;	PAYMENT		支払額
+;	USE_VAGINA	膣に挿入か（TRUE:Vプレイ、FALSE:Aプレイ）
+;	NAMAHAME	ゴム有り無しの約束(-1:断固拒否, 0:ゴムあり, 1:膣外で出すよう約束, 2:中出しＯＫ)
+;	LOST_VIRGIN	この活動中に処女喪失したかどうか
+;	NAKADASHI	中出しされたか(値は妊娠判定の係数そのまま 男女を見ていないので別途条件必要)
+; 戻り値；	メッセージ表示のためPAYMENTを返す
+@SEISAN_PROSTITUTION_NORMAL
+#DIM DYNAMIC PAYMENT
+#DIM DYNAMIC USE_VAGINA
+#DIM DYNAMIC NAMAHAME
+#DIM DYNAMIC LOST_VIRGIN
+#DIM DYNAMIC NAKADASHI
+
+;男の娘でない(それでこの処理に入ってきた=女性)ならV使用する
+USE_VAGINA = FALSE
+SIF TALENT:男の娘 == 0
+	USE_VAGINA = TRUE
+
+;処女には生挿入しない。優しい世界（？）
+IF USE_VAGINA && TALENT:処女 > 0
+	NAMAHAME = 0
+;男の娘のアナルが未開発ならゴムを付けてくれる。優しい世界
+ELSEIF !USE_VAGINA && ABL:Ａ感覚 < 2
+	NAMAHAME = 0
+;生ハメのお願い
+ELSE
+	;地の文
+	CALL MESSAGE_SEISAN_PROSTITUTION_NAMAHAME_REQUEST
+	;回答入力
+	CALL SEISAN_PROSTITUTION_NAMAHAME_ANSWER
+	NAMAHAME = RESULT
+	CALL DOT_AFTER, 2
+ENDIF
+
+;処女は問答無用で喪失する
+IF USE_VAGINA && TALENT:処女 > 0
+	CFLAG:206 = 8
+	TALENT:処女 *= -1
+	LOST_VIRGIN = TRUE
+ENDIF
+
+;射精までの地の文
+CALL MESSAGE_SEISAN_PROSTITUTION_MAINPLAY, USE_VAGINA, NAMAHAME, LOST_VIRGIN
+
+;珠と経験の増加
+IF USE_VAGINA
+	JUEL:快Ｖ += 15 * ABL:Ｖ感覚
+	EXP:Ｖ経験 += 3
+ELSE
+	JUEL:快Ａ += 15 * ABL:Ａ感覚
+	EXP:Ａ経験 += 3
+ENDIF
+JUEL:習得 += 250
+EXP:精液経験 += 3
+
+;基本報酬
+CALL CALC_SEISAN, 特別活動_援助交際, 特別活動結果_成功
+PAYMENT = RESULT:1
+PRINTW 
+
+;事前の合意と射精の状況により追加報酬と地の文が変わる
+;同意の上で中出し
+IF NAMAHAME == 2
+	;地の文（Vプレイ=TRUE）
+	CALL MESSAGE_SEISAN_PROSTITUTION_AFTER_EJAC, 援助交際挿入_同意中出し, USE_VAGINA
+	;追加報酬
+	PAYMENT += 500
+	MONEY += 500
+	;中出しされた
+	NAKADASHI = 3
+;外出し
+ELSEIF NAMAHAME == 1
+	;避妊失敗
+	IF RANDOM(5) == 0
+		;約束を無視して中出しした
+		IF RANDOM(8) == 0
+			;地の文（Vプレイ=TRUE）
+			CALL MESSAGE_SEISAN_PROSTITUTION_AFTER_EJAC, 援助交際挿入_約束無視中出し, USE_VAGINA
+			;追加報酬
+			PAYMENT += 200
+			MONEY += 200
+			;中出しされた
+			NAKADASHI = 3
+		;引き抜くのが遅れてちょっと中出しした
+		ELSEIF RANDOM(2) == 0
+			;地の文（Vプレイ=TRUE）
+			CALL MESSAGE_SEISAN_PROSTITUTION_AFTER_EJAC, 援助交際挿入_引き抜き遅れ中出し, USE_VAGINA
+			;追加報酬
+			PAYMENT += 250
+			MONEY += 250
+			;ちょろっと中出しされた
+			NAKADASHI = 1
+		;脱力してしまい中出しした
+		ELSE
+			;地の文（Vプレイ=TRUE）
+			CALL MESSAGE_SEISAN_PROSTITUTION_AFTER_EJAC, 援助交際挿入_失敗中出し, USE_VAGINA
+			;追加報酬
+			PAYMENT += 300
+			MONEY += 300
+			;中出しされた
+			NAKADASHI = 3
+		ENDIF
+	;引き抜いて股間に射精
+	ELSEIF RANDOM(3) == 0
+		;地の文（Vプレイ=TRUE）
+		CALL MESSAGE_SEISAN_PROSTITUTION_AFTER_EJAC, 援助交際挿入_ワレメ射精, USE_VAGINA
+		;追加報酬
+		PAYMENT += 250
+		MONEY += 250
+	;引き抜いて口に射精
+	;アナルセックスの場合は念のためスカトロフィルターチェック
+	ELSEIF RANDOM(2) == 0 && (USE_VAGINA || CONFIG_CHECK_MANIAC_F(15) == 1)
+		;地の文（Vプレイ=TRUE）
+		CALL MESSAGE_SEISAN_PROSTITUTION_AFTER_EJAC, 援助交際挿入_口内射精, USE_VAGINA
+		;追加報酬
+		PAYMENT += 250
+		MONEY += 250
+	;引き抜いて下腹部に射精
+	ELSE
+		;地の文（Vプレイ=TRUE）
+		CALL MESSAGE_SEISAN_PROSTITUTION_AFTER_EJAC, 援助交際挿入_下腹部射精, USE_VAGINA
+		;追加報酬
+		PAYMENT += 250
+		MONEY += 250
+	ENDIF
+;生ハメを断った
+ELSEIF NAMAHAME < 1
+	;避妊失敗
+	IF RANDOM(10) == 0
+		;中出しされた
+		NAKADASHI = 3
+		;断固拒否したのに無視してコンドームを外した
+		IF RANDOM(4) == 0 && NAMAHAME == -1
+			;地の文（Vプレイ=TRUE）
+			CALL MESSAGE_SEISAN_PROSTITUTION_AFTER_EJAC, 援助交際挿入_無許可中出し, USE_VAGINA
+			;追加報酬
+			PAYMENT += 150
+			MONEY += 150
+		;コンドームが破れた
+		ELSE
+			;地の文（Vプレイ=TRUE）
+			CALL MESSAGE_SEISAN_PROSTITUTION_AFTER_EJAC, 援助交際挿入_破れたコンドーム, USE_VAGINA
+			;報酬減額
+			PAYMENT += 100
+			MONEY += 100
+		ENDIF
+	;コンドームに射精
+	ELSE
+		;地の文（Vプレイ=TRUE）
+		CALL MESSAGE_SEISAN_PROSTITUTION_AFTER_EJAC, 援助交際挿入_コンドームに射精, USE_VAGINA
+		;断固拒否(-1)時は報酬減額
+		PAYMENT += NAMAHAME * 100
+		MONEY += NAMAHAME * 100
+	ENDIF
+ENDIF
+
+;腟内出しされた場合、アフターピル使用処理・妊娠判定を行う
+IF USE_VAGINA && NAKADASHI > 0
+	;アフターピル
+	CALL AFTER_PILL, TARGET, 35, 誰とも知れない相手
+	;妊娠判定
+	CALL NINSIN_HANTEI, NAKADASHI, 800, 誰とも知れない相手
+ENDIF
+
+RETURN PAYMENT
+
+;------------------------------------------------------------------------------
+;生ハメのお願いへの回答選択
+; 戻り値：	ゴム有りなしの約束状況（呼び出し元でNAMAHAMEに格納）
+;			-1:断固拒否, 0:ゴムあり, 1:膣外で出すよう約束, 2:中出しＯＫ
+@SEISAN_PROSTITUTION_NAMAHAME_ANSWER
+#DIM NAMAHAME
+
+PRINTL 
+PRINTFORML [0]断固拒否する（報酬減少）
+PRINTFORML [1]やんわりと断る（交渉失敗率{ABL:従順 * 15 + 15}％）
+PRINTFORML [2]外で出すよう約束させる（報酬増加・小）
+PRINTFORML [3]中出しＯＫする（報酬増加・大）
+;想定値を入力するまでループする
+WHILE TRUE
+	INPUT
+	SELECTCASE RESULT
+		CASE 0
+			PRINTL 有無を言わさぬ雰囲気で男にコンドームを着けさせた…
+			RETURN -1
+		CASE 1
+			IF RANDOM(100) < ABL:従順 * 15 + 15
+				PRINTL 男を説得しようとしたが、雰囲気に流され押し切られてしまった…
+				RETURN 1 + RANDOM(2)
+			ELSE
+				PRINTL 男はしぶしぶコンドームを着けることを受け入れた…
+				RETURN 0
+			ENDIF
+		CASE 2
+			PRINTL 中出しＮＧを条件に要求を受け入れた…
+			RETURN 1
+		CASE 3
+			PRINTL 中出ししても良いと伝えると、男の目が興奮の色に変わった…
+			RETURN 2
+	ENDSELECT
+WEND

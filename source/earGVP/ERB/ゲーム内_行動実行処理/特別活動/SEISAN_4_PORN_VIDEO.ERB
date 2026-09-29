@@ -1,0 +1,140 @@
+﻿;==============================================================================
+;特別活動：AV出演
+; 変数
+;	SALES		売上本数
+;	PAYMENT		支払額
+;	VIDEO_TITLE	AVのタイトル
+@SEISAN_PORN_VIDEO
+#DIM SALES
+#DIM PAYMENT
+#DIMS DYNAMIC VIDEO_TITLE
+
+PRINTL AV出演
+PRINTL 
+CALL MESSAGE_SEISAN_PORN_VIDEO_INTRO
+
+;最初に結果計算する
+CALL CALC_SEISAN, 特別活動_AV出演, 特別活動結果_成功
+SALES = RESULT:0
+PAYMENT = RESULT:1
+
+;AVの内容分岐
+;破滅的ドM＠中国版より逆輸入
+IF ISFEMALE() && (((ABL:マゾっ気 > 4 && ABL:欲望 > 4) || TALENT:マゾ気質 > 0 || (TALENT:乳首ピアス + TALENT:クリピアス > 5) ) && EXP:戦闘経験 > 0 && RANDOM(5) < 1) || TALENT:完堕ち > 0
+	CFLAG:282 = 12
+	IF TALENT:変身能力 == 1
+		IF EXP:魅了経験 > 200
+			VIDEO_TITLE = 『アイドル魔法少女%PRINT_TRANSCALLNAME(TARGET)%、大長編６時間ノンストップ雌畜調教大公開！』
+		ELSE
+			VIDEO_TITLE = 『魔法少女天使%PRINT_TRANSCALLNAME(TARGET)%、大長編４時間ノンストップ雌畜調教大公開！』
+		ENDIF
+	ELSE
+		IF EXP:魅了経験 > 200
+			VIDEO_TITLE = 『美少女アイドル戦士%PRINT_TRANSCALLNAME(TARGET)%、大長編６時間ノンストップ雌畜調教大公開！』
+		ELSE
+			VIDEO_TITLE = 『美少女天使%PRINT_TRANSCALLNAME(TARGET)%、大長編４時間ノンストップ雌畜調教大公開！』
+		ENDIF
+	ENDIF
+	PAYMENT = RESULT:1 * RAND(200,400) / 100
+;メイドもの　セックスするため聖処女は除外
+ELSEIF RANDOM(11) == 0 && CHECK_HOLYVIRGIN_F()==0
+	CFLAG:282 = 11
+	VIDEO_TITLE = 『おしおきされてイキまくるドジっ娘メイド %NAME%』
+;サド系
+ELSEIF RANDOM(10) == 0 && TALENT:マゾ気質 < 1
+	CFLAG:282 = 3
+	VIDEO_TITLE = 『サディスティック魔法少女 \@TALENT:変身能力 == 1?#すぷらったー☆\@%PRINT_TRANSCALLNAME(TARGET)%』
+;魔法少女もの
+ELSEIF RANDOM(9) == 0
+	CFLAG:282 = 1
+	VIDEO_TITLE = 『コスプレ魔法少女　\@TALENT:変身能力 == 1?#マジカル☆\@%PRINT_TRANSCALLNAME(TARGET)%』
+;生えてるGIRLY
+ELSEIF (ISGIRLY() && ISPENIS()) && RANDOM(8) == 0		
+	CFLAG:282 = 4
+	VIDEO_TITLE = 『ふたなりな妹とえっちしてみませんか？ %NAME%』
+;妊娠中限定
+ELSEIF CHECK_PREGNANT_F(TARGET) > 0 && RANDOM(7) == 0
+	CFLAG:282 = 5
+	VIDEO_TITLE = 『私の子●はお父さんとの子 腹ボテ小○生 鬼畜父親中出し 近親相姦成長記録』
+;ネコ耳もの
+ELSEIF RANDOM(6) == 0
+	CFLAG:282 = 6
+	VIDEO_TITLE = 『ネコ耳%PRINT_TRANSCALLNAME(TARGET)%のニャンニャンしちゃうぞ』
+;淫語もの
+ELSEIF RANDOM(5) == 0
+	CFLAG:282 = 7
+	VIDEO_TITLE = 『淫語 卑猥語 BEST SELECTION %NAME%』
+;コスプレもの
+ELSEIF RANDOM(4) == 0
+	CFLAG:282 = 8
+	VIDEO_TITLE = 『萌え萌えコスプレ7 %NAME%』
+;女子校生もの
+ELSEIF RANDOM(3) == 0
+	CFLAG:282 = 9
+	VIDEO_TITLE = 『かわゆ過ぎる%PRINT_TRANSCALLNAME(TARGET)%と僕のパコパコ同棲性活』
+;アナルセックスもの
+ELSEIF RANDOM(2) == 0
+	CFLAG:282 = 10
+	VIDEO_TITLE = 『無理矢理犯されるアナル 4時間』
+;マゾ凌辱もの
+ELSE
+	CFLAG:282 = 2
+	VIDEO_TITLE = 『凌辱ヒロイン \@TALENT:変身能力 == 1?#プリティー☆\@%PRINT_TRANSCALLNAME(TARGET)% セカンドシーズン』
+ENDIF
+
+;AVの説明文を表示
+CALL MESSAGE_SEISAN_PORN_VIDEO_CAPTION, CFLAG:282
+PRINTFORMW %VIDEO_TITLE%は{SALES}本売れ、{PAYMENT}＄の報酬を得ました。
+
+;実績取得判定
+IF PAYMENT >= 2000
+	CALL UNLOCK_ACHIEVEMENT(257,"ＡＶ女優")
+ENDIF
+
+PRINTL
+PRINTL どうやらサンプルディスクが郵送されてきたようだ。
+IF CFLAG:281 == 0
+	PRINTL ……ちょっとだけ見てみようか？
+	PRINTL [0] はい
+	PRINTL [1] いいえ
+	PRINTL [9] はい　（次から確認しない）
+	PRINTL [10]いいえ（次から確認しない）
+	INPUT
+ELSE
+	RESULT=(CFLAG:281==1)? 9 # 10
+	IF RESULT==9
+		PRINTL ……ちょっとだけ見てみよう。
+	ENDIF
+ENDIF
+IF RESULT == 0 || RESULT == 9
+	CFLAG:281 = RESULT==9 ? 1 # 0
+	
+	;口上と地の文
+	CALL MESSAGE_SEISAN_PORN_VIDEO_SAMPLE, CFLAG:282
+
+ELSEIF RESULT == 1 || RESULT == 10
+	CFLAG:281 = RESULT==10 ? 2 # 0
+	PRINTFORML %PRINT_TRANSCALLNAME(TARGET)%はパッケージを見て顔を真っ赤にしている。
+ELSE
+	PRINTL 正しい値を入力してください
+ENDIF
+
+SAVESTR:(20 + TARGET) = %VIDEO_TITLE%
+SIF RANDOM(100) < 75
+	CFLAG:285 += 1
+
+;いまのところ珠と経験は一括処理
+JUEL:習得 += 150
+IF ISFEMALE() && CHECK_HOLYVIRGIN_F()==0
+	EXP:Ｖ経験 += 2
+	JUEL:快Ｖ += 10 * ABL:Ｖ感覚
+ELSE
+	EXP:Ａ経験 += 2
+	JUEL:快Ａ += 10 * ABL:Ａ感覚
+ENDIF
+EXP:Ａ経験 += 2
+JUEL:快Ａ += 10 * ABL:Ａ感覚
+EXP:フェラ経験 += 1
+EXP:精液経験 += 5
+;ＡＶ業界では避妊がしっかりしているので妊娠判定はなし
+

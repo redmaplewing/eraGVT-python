@@ -1,0 +1,51 @@
+﻿;==============================================================================
+;色指定＋PRINT命令関数群
+;第1引数で出力文字列を指定、第2引数で文字色を指定
+;呼び出し前後の本来の文字色を保持する
+;PRINTFORM系をやりたい場合は第1引数をSTRFORM(書式文字列)としてください
+;==============================================================================
+;--------------------------------------------------
+;CPRINT 色指定+PRINT
+;他のすべての関数のベースになる
+; 引数（以降の関数群も共通する場合は省略）
+;	STRING	出力する文字列（書式処理しないが、ボタン化判定はされる）
+;	COLOR	文字色（16進数指定）
+; 変数
+;	STORED_COLOR	呼び出し時の文字色
+@CPRINT, STRING, COLOR
+#DIMS STRING
+#DIM COLOR
+#DIM STORED_COLOR
+
+STORED_COLOR = GETCOLOR()
+SETCOLOR COLOR
+PRINTS STRING
+SETCOLOR STORED_COLOR
+
+;--------------------------------------------------
+;CPRINTL 色指定+PRINTL = CPRINT + PRINTL
+@CPRINTL, STRING, COLOR
+#DIMS STRING
+#DIM COLOR
+CALL CPRINT, STRING, COLOR
+PRINTL 
+
+;--------------------------------------------------
+;CPRINTW 色指定+PRINTL = CPRINT + PRINTW
+@CPRINTW, STRING, COLOR
+#DIMS STRING
+#DIM COLOR
+CALL CPRINT, STRING, COLOR
+PRINTW 
+
+;--------------------------------------------------
+;CPRINTPLAIN 色指定+PRINTPLAIN
+@CPRINTPLAIN, STRING, COLOR
+#DIMS STRING
+#DIM COLOR
+#DIM STORED_COLOR
+
+STORED_COLOR = GETCOLOR()
+SETCOLOR COLOR
+PRINTPLAINFORM %STRING%
+SETCOLOR STORED_COLOR

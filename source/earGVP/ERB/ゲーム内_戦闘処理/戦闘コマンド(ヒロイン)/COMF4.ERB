@@ -1,0 +1,44 @@
+﻿;防御
+@COM4
+
+;刻印による行動制限判定　１で行動できない
+CALL ACT_LIMIT
+SIF RESULT == 1
+	RETURN 1
+
+;滞空中なら着地状態になる
+IF GETBIT(TCVARn:216, 1)
+	TCVARn:216 = 4
+	;FEAT効果による着地時の反動
+	SIF TALENT:有翼 > 0
+		TFLAG:99 += 1
+ELSE
+	TCVARn:216 = 0
+ENDIF
+
+;距離表示
+CALL PRINT_DISTANCE
+PRINTL 
+
+;[反撃]スタイルの特殊効果
+IF FSTYLE_NAME_F(TARGET, TCVARn:0) == "反撃"
+	;地の文：ＥＸ反撃
+	CALL MESSAGE_BATTLE_CHARA_HANGEKI_EX
+	;地の文：洗脳/悪堕ちキャラが操作キャラのＥＸ反撃体勢を見た
+	SIF ENEMY_TYPE_CHECK_F("AKUOTI") == 1
+		CALL MESSAGE_OTHER_BATTLE_CHARA_HANGEKI_EX
+	TCVARn:2 = 体勢：ＥＸ反撃
+;それ以外は防御フラグを立てる
+ELSE
+	;地の文：防御
+	CALL MESSAGE_BATTLE_CHARA_DEFENSE
+	;地の文：洗脳/悪堕ちキャラが操作キャラの防御を見た
+	SIF ENEMY_TYPE_CHECK_F("AKUOTI") == 1
+		CALL MESSAGE_OTHER_BATTLE_CHARA_DEFENSE
+	TCVARn:2 = 体勢：防御
+ENDIF
+
+;行動ポイントを+1
+EX:行動ポイント += 1
+
+RETURN 1

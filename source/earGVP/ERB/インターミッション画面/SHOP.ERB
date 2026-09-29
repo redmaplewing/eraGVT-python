@@ -1,0 +1,721 @@
+﻿;**********************************************************
+;インターミッション画面(SHOP)の表示処理
+;データロード後、または新たなターンの開始とオートセーブ処理後に遷移してくる
+;**********************************************************
+@SHOW_SHOP
+#DIM CCOUNT
+
+;選択中のキャラが編成外なら自動target変更
+IF TARGET>CHARANUM || (FLAG:63 == 0 && (CFLAG:TARGET:999 == 0 || !GROUPMATCH(CFLAG:TARGET:0, 状態_無事, 状態_出産直前, 状態_育児中)))
+	FOR LOCAL,1,CHARANUM
+		IF (CFLAG:(LOCAL):999 == 1 && GROUPMATCH(CFLAG:local:0, 状態_無事, 状態_出産直前, 状態_育児中))
+			TARGET = LOCAL
+			BREAK
+		ENDIF
+	NEXT
+ENDIF
+
+;途中ロード用
+;memo:このリセット要る？
+FLAG:799 = 0
+
+;画面を改行送りして画面表示処理を開始
+CALL LB
+
+;昼夜で背景色を変える
+IF FLAG:999
+	SETBGCOLOR 0,0,40
+ELSE
+	IF TIME == 0
+		LOCALS = 昼
+		SETBGCOLOR 背景色昼
+	ELSEIF TIME == 1
+		LOCALS = 夜
+		SETBGCOLOR 背景色夜
+	ENDIF
+ENDIF
+
+;フラッシュニュース更新
+DRAWLINE
+CALL FLASHNEWS
+
+;触手の探索/発見/交戦状況、悪堕ちキャラの表示
+DRAWLINE
+CALL SHOP_SHOW_BOSS_INFO
+
+;最後に選択していたキャラの詳細ステータス
+DRAWLINE
+CALL SHOP_SHOW_STATUS_TARGET
+
+;パーティーキャラのステータス一覧（ソロモード以外かつ仲間が2人以上の場合）
+IF (!GAME_OPTION_CHECK_F(OPTION_solo) && CHARANUM_PLAYABLE()>=2)
+	PRINTL
+	PRINTFORML パーティ人数( {CHARANUM_PARTYCHECK(1)} / {パーティ人数最大値} )
+	CALL SHOP_SHOW_STATUS_PARTY_LIST, FALSE
+	;キャラ全表示中で控えメンバーがいるなら控えメンバーリストも表示
+	SIF FLAG:61 && CHARANUM_RESERVE()
+		CALL SHOP_SHOW_STATUS_RESERVE_LIST, FALSE
+ENDIF
+
+;一括設定（仲間が2人以上の場合・選択中なら強調表示する）
+IF CHARANUM_SAFE() >= 2
+	IF FLAG:9 == 1
+		FONTBOLD
+		SETCOLOR 255, 150, 0
+	ELSE
+		SETCOLOR 120, 60, 0
+	ENDIF
+	PRINTFORM [90]一括設定
+	RESETCOLOR
+	FONTREGULAR
+ELSE
+	PRINT 　　　　　　
+ENDIF
+
+
+PRINTPLAIN                          
+
+;パーティ編成ボタン（仲間が2人以上、無事なキャラが1人以上いる場合）
+;memo:やっぱりCHARANUM > 2で「仲間が2人以上」は無理があるって。このバリアントに「あなた」は要らないだろ
+IF CHARANUM > 2 && CHARANUM_SAFE()>0
+	PRINT 　　　　　　　　　　　
+	PRINT [50] パーティ編成　
+	PRINTPLAIN  
+	FONTREGULAR
+ELSE
+	PRINTPLAIN                
+ENDIF
+;キャラ全表示中で、パーティキャラがいるなら操作キャラのみ表示ボタンを表示
+IF CHARANUM_SAFE_PARTYCHECK(0) && FLAG:61
+	PRINT     [60] ▲操作キャラのみ
+;キャラ全表示中ではなく、控えメンバーがいるなら、全表示ボタンを表示
+ELSEIF CHARANUM_RESERVE()
+	PRINT         [60] ▼全表示
+ENDIF
+
+PRINTL 
+
+;実施不可行動のインフォメーション表示
+CALL SHOP_NG_ACTION_INFO
+
+SIF GAME_OPTION_CHECK_F(OPTION_solo) == 0
+	DRAWLINE
+
+;一括選択中なら、一口メッセージ口上のために無事なキャラの中からランダムに1人選択
+IF FLAG:9 && CHARANUM_SAFE_PARTYCHECK() > 0
+	$HITOKUCHI_LOOP
+	TARGET = RAND:(CHARANUM-1) + 1
+	SIF CFLAG:TARGET:999 == 0 || !GROUPMATCH(CFLAG:TARGET:0, 状態_無事, 状態_出産直前, 状態_育児中)
+		GOTO HITOKUCHI_LOOP
+ENDIF
+;選択したキャラが無事なら無事なキャラの一口メッセージ口上を呼び出す
+IF CFLAG:TARGET:0 == 状態_無事 && TARGET != MASTER
+	CALL MESSAGE_HITOKUTI_SHOP
+	;口上の発言行数を差し引いて空行表示（合計4行）
+	REPEAT LIMIT(4 - RESULT, 0, 4)
+		PRINTL
+	REND
+ELSE
+	PRINTL
+	PRINTL
+	PRINTL
+	PRINTL
+ENDIF
+
+;日数・残り期限・資金・防衛力・人気度の表示
+CALL SHOP_INTERMISSON_HEADER
+
+;下部メニュー項目の表示
+CALL CPRINTL, "[100]★行動開始★", 文字色時間帯:TIME
+PRINTL 
+RESETCOLOR
+;行動選択（ゲームオーバーでない場合）
+IF CHECK_GAMEOVER_F() == 0
+	CALL CPRINT, "[101]出撃する　　　 ", 文字色薄赤
+	CALL CPRINT, "[102]鍛錬する　　　 ", 文字色薄黄
+	CALL CPRINT, "[103]休憩する　　　 ", 文字色薄青
+	CALL CPRINT, "[104]特別活動　　　 ", 文字色薄水
+	PRINTL 
+	IF !GAME_OPTION_CHECK_F(OPTION_solo)
+		CALL CPRINT, "[105]拠点防衛　　　 ", 文字色薄桃
+	ELSE
+		CALL CPRINTPLAIN, "[105]拠点防衛　　　 ", 文字色無効
+	ENDIF
+	IF CHARANUM >= 3
+		CALL CPRINT, "[106]戦闘支援　　　 ", 文字色薄緑
+	ELSE
+		CALL CPRINTPLAIN, "[106]戦闘支援　　　 ", 文字色無効
+	ENDIF
+	CALL CPRINT, "[107]情報収集　　　 ", 文字色黄色
+	CALL CPRINT, "[108]自由行動", 文字色水色
+	PRINTL 
+ENDIF
+PRINTL 
+PRINT [110]ステータス表示 
+IF CHECK_GAMEOVER_F() == 0
+	PRINT [111]キャラの強化   
+	PRINT [112]衣装の設定　　 
+	PRINTL [113]メディカルルーム
+	PRINT [120]衣装の購入　　 
+ENDIF
+PRINT [130]状況の確認　　 
+
+IF CHECK_GAMEOVER_F() == 0
+	PRINT [150]施設の拡張　　 
+	;選択キャラが無事でなければスケジュール設定は選択不可
+	IF CFLAG:TARGET:0 != 状態_無事 || TARGET == MASTER || FLAG:9 != 0
+		CALL CPRINTPLAIN, "[160]スケジュール設定", 文字色無効
+	ELSE
+		PRINT [160]スケジュール設定
+	ENDIF
+ENDIF
+PRINTL 
+
+;INSTANTモードなら引退&新人加入を可能に
+IF GAME_OPTION_CHECK_F(OPTION_加入引退有り)
+	PRINT 　　　　　　　　　　[169]引退者名簿
+	PRINT 　　　[170]引退させる　　 
+	PRINTL [180]新人を入れる　 
+ENDIF
+
+
+PRINT [200]セーブ　　　　 
+PRINT [300]ロード　　　　 
+PRINT [700]コンフィグ　　 
+PRINT [800]トロフィー確認 
+
+
+;**********************************************************
+;メインメニューで選んだコマンドの処理(USERSHOP)
+; 変数
+;	CCOUNT			ループカウンタ
+@USERSHOP
+#DIM CCOUNT
+
+SELECTCASE RESULT
+
+	;操作キャラの選択
+	CASE 1 TO CHARANUM -1
+		IF CHARANUM > RESULT && CFLAG:RESULT:999 != 0 && CFLAG:RESULT:0 == 状態_無事
+			FLAG:9 = 0
+			TARGET = RESULT
+			PRINTL 
+			PRINTFORML 操作キャラを%CALLNAME%に変更しました
+			PRINTL 
+		ENDIF
+
+	;編成モードへの移行
+	CASE 50
+		IF CHARANUM > 2 && CHARANUM_SAFE()>0
+			PRINTL 編成モードに移行します
+			TARGET = 0
+			CALL SHOP_ORGANIZE_PARTY
+		ENDIF
+
+	;控え表示切り替え
+	CASE 60
+		IF CHARANUM_SAFE_PARTYCHECK(0)
+			IF FLAG:61
+				PRINTL キャラを全員表示します
+				FLAG:61 = 0
+			ELSE
+				PRINTL パーティのみ表示します
+				FLAG:61 = 1
+			ENDIF
+		ENDIF
+
+	;一括設定
+	CASE 90
+		IF CHARANUM_SAFE() >= 2
+			SIF TARGET == MASTER
+				TARGET = RAND:(CHARANUM-1) + 1
+			IF FLAG:9 == 0
+				PRINTL 一括設定モードに変更しました
+				FLAG:9 = 1
+			ENDIF
+		ENDIF
+
+	;行動開始
+	CASE 100
+		CALL USERSHOP_ACTION_CONFIRM
+
+	;行動選択コマンド
+	CASE 予定_出撃, 予定_鍛錬, 予定_休憩, 予定_活動, 予定_防衛, 予定_支援, 予定_情報, 予定_自由
+		CALL USERSHOP_SET_ACTION, RESULT, FLAG:9
+
+	;ステータス表示
+	CASE 110
+		TARGET = LIMIT(TARGET, 1, CHARANUM-1)
+		CALL SHOW_STATUS_CHARA_SELECT, TARGET
+
+	;キャラの強化
+	CASE 111
+		SIF CHECK_GAMEOVER_F() == 0 && CHARANUM_ACTIVE()
+			CALL CHARA_POWERUP, TARGET
+
+	;衣装の設定
+	CASE 112
+		SIF CHECK_GAMEOVER_F() == 0 && CHARANUM_ACTIVE()
+			CALL CLOTH_WEAR
+
+	;メディカルルーム
+	CASE 113
+		SIF CHECK_GAMEOVER_F() == 0 && FLAG:63 == 0
+			CALL DRUG_PREPARATION
+
+	;衣服の購入
+	CASE 120
+		SIF CHECK_GAMEOVER_F() == 0 && FLAG:63 == 0
+			CALL SHOW_SHOP_CLOTH
+
+	;状況の確認
+	CASE 130
+		CALL SHOP_SHOW_SITUATION_LIST
+
+	;施設の拡張
+	CASE 150
+		SIF  CHECK_GAMEOVER_F() == 0
+			CALL HOME_ENHANCING
+
+	;スケジュール設定
+	CASE 160
+		IF CFLAG:0 != 状態_無事 || TARGET == MASTER || FLAG:9
+			PRINTW スケジュールを設定するキャラクターが選択されていません
+		ELSE
+			CALL SCHEDULE
+		ENDIF
+
+	;ここからINSTANTモード向けの引退&新人加入処理呼び出し
+	CASE 169 && GAME_OPTION_CHECK_F(OPTION_加入引退有り)
+		CALL CHAR_INTAI_LIST
+	CASE 170 && CHARANUM > 1 && GAME_OPTION_CHECK_F(OPTION_加入引退有り)
+		CALL CHARA_INTAI
+	CASE 180 && CHARANUM <= 登録最大人数 - 1 && GAME_OPTION_CHECK_F(OPTION_加入引退有り)
+		CALL TSUIKAYOUSEI_NORMAL
+	;ここまでINSTANTモード向けの引退&新人加入処理呼び出し
+
+	;セーブ・ロード・コンフィグ・実績
+	CASE 200
+		SAVEGAME
+	CASE 300
+		LOADGAME
+	CASE 700
+		CALL CONFIG
+	CASE 800
+		CALL SHOW_TROPHY
+
+ENDSELECT
+;==============================================================================
+;以下、関数内で呼ばれるサブ関数
+;==============================================================================
+
+;--------------------------------------------------
+;最後にTARGETしたキャラの詳細情報表示
+;
+@SHOP_SHOW_STATUS_TARGET
+SIF CFLAG:0 != 状態_無事 || (CFLAG:999 == 0 && FLAG:61 == 0)
+	RETURN 0
+;
+PRINTFORM ◆%NAME:TARGET%(%ISFEMALE(TARGET)?"♀"#"♂"%)
+
+IF CSTR:0 != "" && CSTR:0 != NAME:TARGET
+	PRINTFORM 《%CSTR:0%》
+ENDIF
+
+PRINTFORM  Lv.{ABL:レベル}
+CALL SHOW_SHOP_STATUS_SIGN, TARGET
+PRINTL 
+CALLFORM COLORSENTENCE_BAR(BASENAME:0, 6, BASE:体力, MAXBASE:体力, 20)
+PRINTL 
+CALLFORM COLORSENTENCE_BAR(BASENAME:1, 6, BASE:気力, MAXBASE:気力, 20)
+PRINTL 
+CALLFORM COLORSENTENCE_BAR(BASENAME:2, 6, BASE:性耐性, MAXBASE:性耐性, 20)
+PRINTL 
+IF GAME_OPTION_CHECK_F(OPTION_solo) || CHARANUM_ACTIVE() == 1
+	;ソロなら行動予定も併記
+	PRINT 行動予定：
+	CALL SHOP_PRINT_ACTIONPLAN, CFLAG:100
+	PRINTL 
+ENDIF
+CALL SHORTLINE
+
+;--------------------------------------------------
+;ショップ画面の実施不可行動のインフォメーション表示
+; 変数
+;	ACTION_NAME		行動の名称（CFLAG.ERHで定義）
+;	CCOUNT			ループカウンタ
+@SHOP_NG_ACTION_INFO
+#DIMS ACTION_NAME
+#DIM CCOUNT
+
+;行動に必要な体力などのチェック
+FOR CCOUNT, 0, CHARANUM
+	SIF CCOUNT == MASTER
+		CONTINUE
+	IF CFLAG:CCOUNT:0 == 状態_無事 && IS_ACTION_INCAPABLE(CFLAG:CCOUNT:100, CCOUNT)
+
+		;行動の名称を取得
+		;Emueraには辞書型がないためこうせざるを得ない
+		ACTION_NAME = %キャラ行動予定名称:(FINDELEMENT(キャラ行動予定, CFLAG:CCOUNT:100))%
+		
+		SETCOLORBYNAME RED
+		PRINTFORM *%CALLNAME:CCOUNT%は
+
+		SIF IS_ACTION_INCAPABLE(CFLAG:CCOUNT:100, CCOUNT, 行動制約_廃人)
+			PRINTFORML 廃人化しているため、休憩以外の行動ができません
+
+		SIF IS_ACTION_INCAPABLE(CFLAG:CCOUNT:100, CCOUNT, 行動制約_欠損)
+			PRINTFORML 四肢欠損しているため、%ACTION_NAME%ができません
+
+		SIF IS_ACTION_INCAPABLE(CFLAG:CCOUNT:100, CCOUNT, 行動制約_妊娠)
+			PRINTFORML 妊娠中なので、%ACTION_NAME%ができません
+
+		SIF IS_ACTION_INCAPABLE(CFLAG:CCOUNT:100, CCOUNT, 行動制約_夜魔)
+			PRINTFORML 「夜魔の貴族」なため、昼間は%ACTION_NAME%ができません
+
+		SIF IS_ACTION_INCAPABLE(CFLAG:CCOUNT:100, CCOUNT, 行動制約_戦士)
+			PRINTFORML 「生粋の戦士」なため、%ACTION_NAME%ができません
+
+		SIF IS_ACTION_INCAPABLE(CFLAG:CCOUNT:100, CCOUNT, 行動制約_体力)
+			PRINTFORML %ACTION_NAME%に必要な体力がありません
+	ENDIF
+NEXT
+
+;--------------------------------------------------
+;日数・残り期限・資金・防衛力・人気度の表示
+; 変数
+;	TIMELEFT	次の触手の殲滅猶予日数
+; 定数
+;	DAYOFWEEK	曜日
+;memo:他の場所でも使うならERHに置くべきか
+@SHOP_INTERMISSON_HEADER
+#DIM TIMELEFT
+#DIMS CONST DAYOFWEEK = "日","月","火","水","木","金","土"
+
+SETCOLOR 文字色時間帯:TIME
+DRAWLINE
+PRINTFORM インターミッション
+FONTBOLD
+PRINTFORM  \@TIME == 0?[☀昼]#[🌙夜]\@  {DAY} 日目(%DAYOFWEEK:(DAY % 7)%)
+FONTREGULAR
+RESETCOLOR
+
+;ボスの殲滅猶予日数の表示
+;ゲームオーバーモードなら何も表示しない
+IF CHECK_GAMEOVER_F() == 1
+	PRINTL 
+;日数制限解除の効果(周回引き継ぎorフリープレイモード)
+ELSEIF GAME_OPTION_CHECK_F(OPTION_制限時間無し)
+	PRINTFORML （完全殲滅まで∞日）
+;それ以外で通常ボスの出現中
+ELSEIF ENEMY_TYPE_CHECK_F("BOSS") == 1
+	;
+	CALL TENTACLE_SURVIVE, "NUM"
+	TIMELEFT = (FLAG:3 - RESULT + 1) * FLAG:2 - DAY + DAY:1
+	SELECTCASE TIMELEFT
+		CASE IS <= 3 
+			SETCOLORBYNAME Red
+		CASE IS <=5 
+			SETCOLORBYNAME Orange
+		CASE IS <=7 
+			SETCOLORBYNAME Yellow
+	ENDSELECT
+	PRINTFORM （{FLAG:3 - RESULT + 1}体目殲滅猶予
+	FONTBOLD
+	PRINTFORM  {TIMELEFT} 
+	FONTREGULAR
+	IF GAME_OPTION_CHECK_F(OPTION_endless)
+		PRINTFORML 日/完全殲滅まで∞日）
+	ELSE
+		PRINTFORML 日/完全殲滅まで{FLAG:1 - DAY + DAY:1}日）
+	ENDIF
+;ラスボス出現後
+ELSEIF GET_LASTBOSS_PHASE_F() >= 1
+	IF GAME_OPTION_CHECK_F(OPTION_endless)
+		PRINTFORML （完全殲滅まで∞日）
+	ELSE
+		PRINTFORML （完全殲滅まで{FLAG:1 - DAY + DAY:1}日）
+	ENDIF
+ENDIF
+FONTREGULAR
+
+;資金
+PRINTFORM 資金：{MONEY}＄　
+;防衛力
+SELECTCASE FLAG:852
+	CASE 0
+		SETCOLOR 120,0,0
+	CASE IS < 1250
+		SETCOLOR 250,0,0
+	CASE IS < 2500
+		SETCOLOR 250,250,100
+	CASE IS < 10000
+		SETCOLOR 0,250,60
+	CASE IS < 20000
+		SETCOLOR 0,200,255
+	CASEELSE
+		SETCOLOR 200,0,255
+ENDSELECT
+PRINTFORM 防衛力：{FLAG:852}　　
+;人気度
+SELECTCASE FLAG:853
+	CASE IS <= -75
+		SETCOLOR 180,0,0
+	CASE IS <= -50
+		SETCOLOR 250,50,50
+	CASE IS < 0
+		SETCOLOR 250,200,200
+	CASE IS < 50
+		SETCOLOR 200,250,200
+	CASE IS < 75
+		SETCOLOR 100,250,150
+	CASEELSE
+		SETCOLOR 100,250,200
+ENDSELECT
+PRINTFORM 人気度：{FLAG:853}
+RESETCOLOR
+PRINTL 
+
+SETCOLOR 文字色時間帯:TIME
+PRINTL 
+DRAWLINE
+FONTREGULAR
+RESETCOLOR
+
+;--------------------------------------------------
+;出撃または防衛予定の人数チェック
+; 変数
+;	CCOUNT			ループカウンタ
+@NUMBER_ON_FRONTLINE
+#FUNCTION
+#DIM CCOUNT
+LOCAL = 0
+FOR CCOUNT, 0, CHARANUM
+	SIF CCOUNT == MASTER
+		CONTINUE
+	SIF (CFLAG:CCOUNT:100 == 予定_出撃 || CFLAG:CCOUNT:100 == 予定_防衛 )&& !IS_ACTION_INCAPABLE(CFLAG:CCOUNT:100, CCOUNT)
+		LOCAL += 1
+NEXT
+RETURNF LOCAL
+
+;--------------------------------------------------
+;行動開始の確認
+@USERSHOP_ACTION_CONFIRM
+IF FLAG:40 == 0 && CHECK_GAMEOVER_F() == 0
+	DRAWLINE
+	PRINTL 
+	PRINTL 各キャラの行動予定は下のようです
+	PRINTL 
+	CALL USERSHOP_ACTION_PLANDISP
+	PRINTL 
+	PRINTL この設定で行動を開始しますか？
+	PRINTL ※ 行動を設定していないキャラは自動的に休憩になります
+	IF NUMBER_ON_FRONTLINE() == 0 && !GAME_OPTION_CHECK_F(OPTION_solo)
+		PRINTL ※ 誰も出撃しない場合は防衛力が低下します
+	ENDIF
+	DRAWLINE
+	PRINTL [0]いいえ
+	PRINTL [1]はい
+	PRINTL [9]はい（次から確認しない）
+	INPUT
+	SELECTCASE RESULT
+		;次から確認しない場合のフラグセット
+		CASE 9
+			FLAG:40 = 1
+			;注意を一回で済ませた場合
+			IF NUMBER_ON_FRONTLINE() == 0 && !GAME_OPTION_CHECK_F(OPTION_solo)
+				FLAG:40 = 2
+			ENDIF
+		;はい以外の値入力なら全部いいえとし、中断
+		CASEELSE
+			RETURN 0
+	ENDSELECT
+;出撃もしくは防衛できるキャラがいない
+ELSEIF FLAG:40 == 1 && NUMBER_ON_FRONTLINE() == 0 && !GAME_OPTION_CHECK_F(OPTION_solo) && CHECK_GAMEOVER_F() == 0
+	DRAWLINE
+	PRINTL 
+	PRINTL 出撃・防衛を行う予定のキャラが一人も居ません
+	PRINTL 
+	CALL USERSHOP_ACTION_PLANDISP
+	PRINTL 
+	PRINTL このまま行動を開始して宜しいですか？
+	PRINTL ※ 出撃または防衛しないことにより防衛力が低下します
+	DRAWLINE
+	PRINTL [0]いいえ
+	PRINTL [1]はい
+	PRINTL [9]はい（次から確認しない）
+	INPUT
+	SELECTCASE RESULT
+		;次から確認しない場合のフラグセット
+		CASE 9
+			FLAG:40 = 2
+		;はい以外の値入力なら全部いいえとし、中断
+		CASEELSE
+			RETURN 0
+	ENDSELECT
+ENDIF
+;中断せずに抜けてきたなら行動開始
+JUMP ACTION_MAIN
+
+;----------------------------------------------------------
+;行動予定を表示する関数
+; 変数
+;	CCOUNT			ループカウンタ
+@USERSHOP_ACTION_PLANDISP
+#DIM CCOUNT
+VARSET LOCAL
+PRINTL 【行動予定】
+FOR CCOUNT, 0, CHARANUM
+	SIF CCOUNT == MASTER || CFLAG:CCOUNT:999 == 0
+		CONTINUE
+
+	IF CFLAG:CCOUNT:0 != 状態_無事
+		LOCAL += 1
+		CONTINUE
+	ENDIF
+
+	SIF LOCAL:2 % 3 == 0 && LOCAL:2 != 0
+		PRINTL 
+	PRINTPLAINFORM [{CCOUNT}]%CALLNAME:CCOUNT%：
+	CALL SHOP_PRINT_ACTIONPLAN, CFLAG:CCOUNT:100
+	PRINT   
+	;実行可能性のチェック
+	SIF IS_ACTION_INCAPABLE(CFLAG:CCOUNT:100, CCOUNT, 行動制約_体力)
+		PRINT （体力不足）
+	SIF IS_ACTION_INCAPABLE(CFLAG:CCOUNT:100, CCOUNT, 行動制約_夜魔)
+		PRINT （夜魔の貴族＆昼）
+	SIF IS_ACTION_INCAPABLE(CFLAG:CCOUNT:100, CCOUNT, 行動制約_戦士)
+		PRINT （生粋の戦士）
+	SIF IS_ACTION_INCAPABLE(CFLAG:CCOUNT:100, CCOUNT, 行動制約_支援無効)
+		PRINT （支援無効）
+	SIF IS_ACTION_INCAPABLE(CFLAG:CCOUNT:100, CCOUNT, 行動制約_妊娠)
+		PRINT （妊娠中）
+	SIF IS_ACTION_INCAPABLE(CFLAG:CCOUNT:100, CCOUNT, 行動制約_欠損)
+		PRINT （四肢欠損）
+	SIF IS_ACTION_INCAPABLE(CFLAG:CCOUNT:100, CCOUNT, 行動制約_廃人)
+		PRINT （廃人）
+	
+	LOCAL:2 += 1
+
+NEXT
+
+;--------------------------------------------------
+;行動選択コマンドを選んだ場合の行動予定のセット処理
+; 引数
+;	SELECTACT	インターミッション画面で選んだ行動の番号（CFLAG.ERHで定義）
+;	MULTISET	一括選択中かどうか
+; 変数
+;	HAS_INCAPABLE	1キャラでも何らかの行動制約にかかったかどうか
+;	CCOUNT			ループカウンタ
+@USERSHOP_SET_ACTION, SELECTACT, MULTISET
+#DIM SELECTACT
+#DIM MULTISET
+#DIM DYNAMIC HAS_INCAPABLE = FALSE
+#DIM CCOUNT
+
+;ゲームオーバーモードか、一括選択中でない時に行動可能なキャラが選択されていないなら中止
+SIF CHECK_GAMEOVER_F() || TARGET == MASTER || (CFLAG:0 != 状態_無事 && !MULTISET)
+	RETURN 0
+;ソロモードの場合防衛は選択できない（コマンド直打ち対策）
+SIF SELECTACT == 予定_防衛 && GAME_OPTION_CHECK_F(OPTION_solo)
+	RETURN 0
+;パーティメンバーが2人以上いないと支援は選択できない（コマンド直打ち対策）
+SIF SELECTACT == 予定_支援 && CHARANUM < 3
+	RETURN 0
+
+;一括選択中でないなら
+IF MULTISET == 0
+	;なんらかの行動制約にかかっているか？
+	IF IS_ACTION_INCAPABLE(SELECTACT, TARGET)
+		HAS_INCAPABLE = TRUE
+	ELSE
+		;行動制約にかかっていないなら行動予定をセット
+		CFLAG:100 = SELECTACT
+	ENDIF
+	;行動予定（もしくは行動不可理由）の画面表示
+	CALL USERSHOP_PRINT_ACTION_MSG, SELECTACT, TARGET
+
+;一括選択中なら全キャラクターに対してセットする
+ELSE
+	FOR CCOUNT, 0, CHARANUM
+		;パーティメンバーでなければ飛ばす
+		SIF CCOUNT == MASTER || CFLAG:CCOUNT:999 == 0
+			CONTINUE
+		;操作可能な状態でなければ飛ばす
+		;memo:この判定いる？　そもそもこの状態ならパーティメンバーから外れているはず
+		;memo:判定漏れ対策というのなら条件が抜けてる（無事以外は不可にすべきでは）
+		SIF GROUPMATCH(CFLAG:CCOUNT:0, 状態_幽閉, 状態_洗脳, 状態_クズ監禁, 状態_死亡)
+			CONTINUE
+		;なんらかの行動制約にかかっているか？
+		IF IS_ACTION_INCAPABLE(SELECTACT, CCOUNT)
+			HAS_INCAPABLE = TRUE
+		ELSE
+			;行動制約にかかっていないなら行動予定をセット
+			CFLAG:CCOUNT:100 = SELECTACT
+		ENDIF
+		;行動予定（もしくは行動不可理由）の画面表示
+		CALL USERSHOP_PRINT_ACTION_MSG, SELECTACT, CCOUNT
+	NEXT
+ENDIF
+
+;行動制約にかかったキャラがいた（＝行動不可理由の表示があった）ならウェイトを入れて表示を見せる
+SIF HAS_INCAPABLE == TRUE
+	WAIT
+
+;--------------------------------------------------
+;行動予定（もしくは行動不可理由）の画面表示
+; 引数
+;	SELECTACT	インターミッション画面で選んだ行動の番号（CFLAG.ERHで定義）
+;	TGTNUM		行動対象のキャラ番号
+; 変数
+;	ACTION_NAME	行動の名称（CFLAG.ERHで定義）
+; 定数
+;	ACTION_STR	行動予定の出力文（CFLAG.ERHの「キャラ行動予定」と同じ順序で並べること）
+@USERSHOP_PRINT_ACTION_MSG, SELECTACT, TGTNUM
+#DIM SELECTACT
+#DIM TGTNUM
+#DIMS ACTION_NAME
+{
+#DIMS CONST ACTION_STR =
+"",
+"出撃することにしました",
+"鍛錬をすることにしました",
+"休憩することにしました",
+"資金を稼ぐことにしました",
+"拠点を防衛することにしました",
+"後方で戦闘支援に徹します",
+"後方で情報収集に徹します",
+"自由に行動することにしました"
+}
+
+;行動の名称を取得
+;Emueraには辞書型がないためこうせざるを得ない
+ACTION_NAME = %キャラ行動予定名称:(FINDELEMENT(キャラ行動予定, SELECTACT))%
+
+PRINTL 
+;体力が低下しているとできない
+IF IS_ACTION_INCAPABLE(SELECTACT, TGTNUM, 行動制約_体力)
+	PRINTFORML %CALLNAME:TGTNUM%は%ACTION_NAME%に必要な体力がありません
+;妊娠中はできない
+ELSEIF IS_ACTION_INCAPABLE(SELECTACT, TGTNUM, 行動制約_妊娠)
+	PRINTFORML %CALLNAME:TGTNUM%は妊娠中のため%ACTION_NAME%ができません
+;四肢欠損ならほとんどの行動ができない
+ELSEIF IS_ACTION_INCAPABLE(SELECTACT, TGTNUM, 行動制約_欠損)
+	PRINTFORML %CALLNAME:TGTNUM%は四肢欠損しているため%ACTION_NAME%ができません
+;廃人なら休息以外できない
+ELSEIF IS_ACTION_INCAPABLE(SELECTACT, TGTNUM, 行動制約_廃人)
+	PRINTFORML %CALLNAME:TGTNUM%は廃人化しているため%ACTION_NAME%ができません
+;FEAT効果によるコマンド制限
+ELSEIF IS_ACTION_INCAPABLE(SELECTACT, TGTNUM, 行動制約_夜魔)
+	SETCOLOR 文字色橙色
+	PRINTFORML %CALLNAME:TGTNUM%は[夜魔の貴族]の効果で昼間は外出できません！
+	RESETCOLOR
+ELSEIF IS_ACTION_INCAPABLE(SELECTACT, TGTNUM, 行動制約_戦士)
+	SETCOLOR 文字色橙色
+	PRINTFORML %CALLNAME:TGTNUM%は[生粋の戦士]の効果で%ACTION_NAME%に参加できません！
+	RESETCOLOR
+;どの制限もないなら行動予定を表示
+ELSE
+	PRINTFORM %CALLNAME:TGTNUM%は%ACTION_STR:(FINDELEMENT(キャラ行動予定, SELECTACT))%
+ENDIF
+PRINTL

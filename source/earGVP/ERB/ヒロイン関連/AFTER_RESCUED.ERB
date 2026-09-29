@@ -1,0 +1,61 @@
+﻿;================================================================
+;救出されたキャラの処理
+@AFTER_RESCUED,ARG
+#DIM LCOUNT
+LCOUNT = TARGET
+TARGET = ARG
+
+;イベント衣装のまま幽閉されていたら解除する
+CALL EVENT_BATTLE_RESET_COSTUME(TARGET)
+
+
+PRINTL 
+PRINTFORML %CALLNAME%は治療を受けています・・・
+CALL TRANSFORM, 0
+;行動予定をリセット
+CFLAG:ARG:100 = 予定_休憩
+;淫紋の進行度が低下
+;完堕ちすると低下しない
+CALL TATTOO_ACCESS, "PROGRESS_VAR"
+SIF TALENT:完堕ち != 1
+	RESULT = RESULT * 7 / 10
+IF RESULT == 0
+	FLAG:32 = 0
+ELSE
+	CALL SAVE_TATTOO, RESULT
+ENDIF
+
+;悪堕ち中であれば容姿復帰処理
+SIF GETBIT(CFLAG:ARG:80, 2) == 1
+	CALL RECOVER_CORRUPTION, ARG
+
+IF CHECK_PREGNANT_F(ARG) > 0
+	PRINTFORML 妊娠していたため、大事を取って特別病棟に移りました・・・
+	PRINTL 
+	CFLAG:ARG:0 = 状態_出産直前
+	CALL SET_PARTYMEMBER
+ELSEIF TALENT:ARG:繁殖袋 == 1
+	PRINTFORML 完全に意識不明で、いつ回復するかも分かりません・・・
+	PRINTFORML 
+	PRINTL 
+	CFLAG:ARG:0 = 0
+	CALL RECOVER_TO_PARTY, ARG
+ELSEIF TALENT:ARG:四肢欠損 == 1
+	PRINTFORML 全く動くことができず、今後の生活がどうなるかわかりません。・・・
+	PRINTFORML もしかしたら触手を使った研究の成果で復元できるかも？
+	PRINTL 
+	CFLAG:ARG:0 = 0
+	CALL RECOVER_TO_PARTY, ARG
+ELSEIF TALENT:ARG:完堕ち > 0
+	PRINTFORML 妙な事を言ったり、奇妙な名前を名乗ったりしています
+	PRINTFORML 目の前にいるのは本当に同一人物なのでしょうか…
+	PRINTL 
+	CFLAG:ARG:0 = 0
+	CALL RECOVER_TO_PARTY, ARG
+ELSE
+	PRINTFORML 幸い命に別条はないようです・・・
+	PRINTL 
+	CFLAG:ARG:0 = 状態_無事
+	CALL RECOVER_TO_PARTY, ARG
+ENDIF
+TARGET = LCOUNT

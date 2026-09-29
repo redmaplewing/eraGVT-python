@@ -1,0 +1,9 @@
+﻿;口上用の式中関数　触手と男(クズ市民)戦の簡易的な呼び分け
+;0:vs触手  1:vsクズ市民
+@触手市民(ARGS:0,ARGS:1)
+#FUNCTIONS
+	IF FLAG:73>0
+		RETURNF ARGS:1
+	ELSE
+		RETURNF ARGS:0
+	ENDIF

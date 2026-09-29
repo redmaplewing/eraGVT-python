@@ -1,0 +1,226 @@
+﻿;==============================================================================
+;特別活動の稼ぎ・経験計算
+;体力・気力・性耐性の減少量計算にLOSEBASEを使用（終了時にリセット）
+; 引数
+;	CATEGORY	選んだ特別活動の種類
+;	ACT_RESULT	種類内で選ばれた仕事とその結果
+; 変数
+;	COEF			パラメータ減少・報酬計算の係数(COEFficient)を取得する配列
+;					（体力係数, 気力係数, 性耐性係数, 稼ぎ除数, 稼ぎレベル係数, 稼ぎ加算）
+;	CUSTOMER_NUM	客の人数（初期値0）
+;	EARN			稼いだお金（初期値0）
+;	PROFIT_MULTI	金銭獲得倍率
+; 戻り値
+;	客の人数と稼いだ金額（RESULT:0 = CUSTOMER_NUM, RESULT:1 = EARN）
+@CALC_SEISAN, CATEGORY, ACT_RESULT
+#DIM CATEGORY
+#DIM ACT_RESULT
+#DIM COEF, VARSIZE("特活報酬添字")
+#DIM DYNAMIC CUSTOMER_NUM
+#DIM DYNAMIC EARN
+#DIM PROFIT_MULTI
+
+VARSET LOSEBASE
+
+;パラメータの減少量計算・報酬計算の係数をあらかじめ格納した配列から持ってくる
+;呼び出し先で、COEF:～に必要な係数値が格納される
+CALL GET_EARN_COEFFCIENT, COEF, CATEGORY, ACT_RESULT
+
+;金銭獲得倍率
+PROFIT_MULTI = 100
+;FEAT効果による効率アップ
+SIF TALENT:ラッキーチャーム > 0
+	PROFIT_MULTI = 125
+
+;体力・気力・性耐性の減少量を求める（性耐性は下がらない活動なら絶対下がらない）
+LOSEBASE:体力 = SYOUHI_KEIGEN(TARGET, MAXBASE:体力 * (COEF:特活報酬_体力係数 + RANDOM(特活報酬_体力乱数)) / 100, 体力)
+LOSEBASE:気力 = SYOUHI_KEIGEN(TARGET, MAXBASE:気力 * (COEF:特活報酬_気力係数 + RANDOM(特活報酬_気力乱数)) / 100, 気力)
+SIF COEF:特活報酬_性耐性係数 > 0
+	LOSEBASE:性耐性 = MAXBASE:性耐性 * (COEF:特活報酬_性耐性係数 + RANDOM(特活報酬_性耐性乱数)) / 100
+LOSEBASE:体力 = LIMIT(LOSEBASE:体力, 0, BASE:体力)
+LOSEBASE:気力 = LIMIT(LOSEBASE:気力, 0, BASE:気力)
+LOSEBASE:性耐性 = LIMIT(LOSEBASE:性耐性, 0, BASE:性耐性)
+
+;客の人数の基礎値は体力減少量
+CUSTOMER_NUM = LOSEBASE:体力
+
+;特別活動の種類別の特殊補正について
+SELECTCASE CATEGORY
+
+	CASE 特別活動_アルバイト
+		;現状結果による差異はなし
+
+	CASE 特別活動_研究
+		;現状結果による差異はなし
+
+	CASE 特別活動_雑魚触手退治
+		SELECTCASE ACT_RESULT
+
+			CASE 特別活動結果_成功
+
+			CASE 特別活動結果_失敗
+				;客の数＝触手の数はおおむね半減させて計算する
+				CUSTOMER_NUM = CUSTOMER_NUM * (50 + RANDOM(3)) / 100
+				;性的な経験を上昇させる（敗北凌辱なので上昇量増し増し）
+				CALL CALC_SEISAN_SEXUAL_EXP, CUSTOMER_NUM, TRUE
+		ENDSELECT
+
+	;援助交際・AV出演・公衆便所は客の数が体力減少量だと多すぎなので5～10%程度まで減らす
+	CASE 特別活動_援助交際
+		CUSTOMER_NUM = CUSTOMER_NUM * (7 + RANDOM(3)) / 100
+		;性的な経験を上昇させる
+		CALL CALC_SEISAN_SEXUAL_EXP, CUSTOMER_NUM, FALSE
+
+	CASE 特別活動_AV出演
+		;客の人数に、魅了経験によるボーナスが付く（アイドルデビューできる程経験があるなら跳ね上がる）
+		CUSTOMER_NUM = CUSTOMER_NUM * (5 + RANDOM(3)) / 100 + RANDOM(EXP:魅了経験 * 5 + 1) + MAX(EXP:魅了経験 - 100,0) * 50
+		;性的な経験を上昇させる
+		CALL CALC_SEISAN_SEXUAL_EXP, CUSTOMER_NUM, FALSE
+
+	CASE 特別活動_公衆便所
+		CUSTOMER_NUM = CUSTOMER_NUM * (6 + RANDOM(3)) / 100
+		;性的な経験を上昇させる
+		CALL CALC_SEISAN_SEXUAL_EXP, CUSTOMER_NUM, FALSE
+		;公衆便所の稼ぎ額固有計算（人気とか頑張りとかを一切考慮しない無慈悲なランダム値）
+		EARN = 1 + PROFIT_MULTI * RANDOM(50) / 100
+
+	;アイドル活動（魅了度によるボーナスをかけ、観客数としてまともな数になるよう補正する）
+	CASE 特別活動_アイドル活動
+		SELECTCASE ACT_RESULT
+
+			CASE アイドル活動_路上ライブ
+				CUSTOMER_NUM /= 200
+
+			CASE アイドル活動_テレビ出演
+				CUSTOMER_NUM += EXP:魅了経験 * テレビ出演視聴者係数:(IDOL_LV(TARGET))
+				CUSTOMER_NUM /= 10
+
+			CASE アイドル活動_グラビア撮影
+				CUSTOMER_NUM += EXP:魅了経験 * グラビア発行部数係数:(IDOL_LV(TARGET))
+				CUSTOMER_NUM /= 100
+
+			CASE アイドル活動_CD収録
+				CUSTOMER_NUM += EXP:魅了経験 * CD販売枚数係数:(IDOL_LV(TARGET))
+				CUSTOMER_NUM /= 100
+
+			CASE アイドル活動_営業
+				
+		ENDSELECT
+
+	CASE 特別活動_枕営業
+		;現状結果による差異はなし
+
+	CASE 特別活動_ライブ公演
+		CUSTOMER_NUM += EXP:魅了経験 * ライブ観客係数:(IDOL_LV(TARGET))
+		SELECTCASE ACT_RESULT
+			;失敗、絶頂失敗は魅了経験によりフォロー成功するかどうか判定
+			CASE 特別活動結果_失敗, 特別活動結果_絶頂失敗
+				SIF EXP:魅了経験 < 200
+					CUSTOMER_NUM /= 4
+
+			CASE 特別活動結果_成功
+			CASE 特別活動結果_大成功
+		ENDSELECT
+ENDSELECT
+
+;選んだ特別活動とその結果が、稼ぎになるものかつ特殊な稼ぎ計算をしていないなら、共通の計算式で稼ぎを求める
+SIF IS_PROFITABLE(CATEGORY, ACT_RESULT) && IS_NORMAL_EARN(CATEGORY, ACT_RESULT)
+	EARN = PROFIT_MULTI * CUSTOMER_NUM / COEF:特活報酬_稼ぎ除数 + ABL:レベル * COEF:特活報酬_稼ぎレベル係数 + RANDOM(特活報酬_稼ぎ乱数) + COEF:特活報酬_稼ぎ加算
+
+;体力・気力・性耐性を減らし、資金を増やす
+BASE:体力 -= LOSEBASE:体力
+BASE:気力 -= LOSEBASE:気力
+BASE:性耐性 -= LOSEBASE:性耐性
+MONEY += EARN
+
+VARSET LOSEBASE
+RETURN CUSTOMER_NUM, EARN
+
+;==============================================================================
+;以下、関数内で呼ばれるサブ関数
+;==============================================================================
+;------------------------------------------------------------------------------
+;稼ぎになる特別活動・活動結果かどうか
+; 引数
+;	CATEGORY	選んだ特別活動の種類
+;	ACT_RESULT	種類内で選ばれた仕事とその結果
+; 戻り値	特別活動と結果の組み合わせが稼ぎ0になるなら0, 稼ぎが出るなら1
+@IS_PROFITABLE, CATEGORY, ACT_RESULT
+#FUNCTION
+#DIM CATEGORY
+#DIM ACT_RESULT
+
+;雑魚触手退治に失敗すると報酬がない
+SIF CATEGORY == 特別活動_雑魚触手退治 && ACT_RESULT == 特別活動結果_失敗
+	RETURNF 0
+
+;公衆便所で野犬に犯されると誰も投げ銭してくれない
+SIF CATEGORY == 特別活動_公衆便所 && ACT_RESULT == 特別活動公衆便所_牝犬
+	RETURNF 0
+
+;アイドルのドサ回りにはギャラが出ない
+;memo:いくらなんでもそれはおかしくない？
+SIF CATEGORY == 特別活動_アイドル活動 && ACT_RESULT == アイドル活動_営業
+	RETURNF 0
+
+;枕営業には金銭報酬はない
+SIF CATEGORY == 特別活動_枕営業
+	RETURNF 0
+
+;それ以外なら稼ぎあり
+RETURNF 1
+
+;------------------------------------------------------------------------------
+;稼ぎ計算が普通かどうか
+; 引数
+;	CATEGORY	選んだ特別活動の種類
+;	ACT_RESULT	種類内で選ばれた仕事とその結果
+; 戻り値	その活動で特殊な稼ぎ計算を行っているなら0, 共通計算式を使うなら1
+@IS_NORMAL_EARN, CATEGORY, ACT_RESULT
+#FUNCTION
+#DIM CATEGORY
+#DIM ACT_RESULT
+
+;公衆便所の稼ぎは特殊
+SIF CATEGORY == 特別活動_公衆便所
+	RETURNF 0
+
+;それ以外は共通の稼ぎ計算を行う
+RETURNF 1
+
+;------------------------------------------------------------------------------
+;性的な特別活動を行った結果の経験上昇
+; 引数
+;	CUSTOMER_NUM	客の人数
+;	IS_DEFEAT		敗北して凌辱されたか（係数10倍にし、快楽経験を積まない）
+; 変数
+;	MULTI		上昇量の倍率（IS_DEFEAT == TRUEなら10倍）
+@CALC_SEISAN_SEXUAL_EXP, CUSTOMER_NUM, IS_DEFEAT
+#DIM CUSTOMER_NUM
+#DIM IS_DEFEAT
+#DIM DYNAMIC MULTI = 1
+
+;敗北して凌辱されたなら係数10倍
+SIF IS_DEFEAT
+	MULTI = 10
+
+EXP:被姦経験 += CUSTOMER_NUM * (2 * MULTI + RANDOM(3)) / 100
+SIF ISFEMALE()
+	EXP:Ｖ経験 += CUSTOMER_NUM * (1 * MULTI + RANDOM(3)) / 100
+EXP:Ａ経験 += CUSTOMER_NUM * (1 * MULTI + RANDOM(3)) / 100
+EXP:絶頂経験 += CUSTOMER_NUM * (1 * MULTI + RANDOM(2)) / 100
+EXP:精液経験 += CUSTOMER_NUM * (1 * MULTI + RANDOM(2)) / 100
+EXP:フェラ経験 += CUSTOMER_NUM * (1 * MULTI + RANDOM(2)) / 100
+;敗北凌辱でないなら快楽経験を計算する
+IF !IS_DEFEAT
+	EXP:露出快楽経験 += CUSTOMER_NUM * (2 * MULTI + RANDOM(3)) / 100
+	EXP:奉仕快楽経験 += CUSTOMER_NUM * (2 * MULTI + RANDOM(3)) / 100
+	EXP:苦痛快楽経験 += CUSTOMER_NUM * (2 * MULTI + RANDOM(3)) / 100
+ENDIF
+EXP:自慰経験 += CUSTOMER_NUM * (2 * MULTI + RANDOM(3)) / 100
+SIF ISPENIS()
+	EXP:射精経験 += CUSTOMER_NUM * (1 * MULTI + RANDOM(3) * 1) / 100
+SIF TALENT:母乳体質 > 0
+	EXP:噴乳経験 += CUSTOMER_NUM * (1 * MULTI + RANDOM(3)) / 100
+SIF TALENT:お漏らし癖 > 0
+	EXP:放尿経験 += CUSTOMER_NUM * (1 * MULTI + RANDOM(3)) / 100

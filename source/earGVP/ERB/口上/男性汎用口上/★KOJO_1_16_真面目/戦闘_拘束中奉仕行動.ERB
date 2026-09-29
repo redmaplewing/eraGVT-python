@@ -1,0 +1,141 @@
+﻿
+
+
+
+
+;悪堕ちヒロインが友人以上だった場合はコメントさせてもいいかも
+
+
+;--------------------------------------------------------------------------------------------------------------------------------------------------------
+;●キャラによる自発的な性コマンド
+;--------------------------------------------------------------------------------------------------------------------------------------------------------
+
+;奉仕する(受け入れコマンド)
+;	【必要条件】堕落or従順＋奉仕精神＋触手中毒６以上
+;恭順する気持ちから触手を満足させようとしている状態です
+;口では言い訳しつつ、心の底では触手のことが大好きです
+;「熱心な奉仕」　かなり堕ちかけ　そりゃそうだ
+;--------------------------------------------------
+@KOJO_1_BATTLE_CHARA_HOUSI_16
+;触手の虜取得後
+IF TALENT:触手の虜
+	IF ABL:触手中毒 >= 5
+		PRINTFORML 「あぁ、%SELF_CALL()%の口で…気持ち良く……んんぅ❤」
+		PRINTFORMW %CALLNAME%は\@ISGIRLY() ? # オトコとは思えない \@発情しきった雌の顔で\@FLAG:73==0 ? 触手 # ペニス \@を銜え込み奉仕を始めた。
+		PRINTDATAL
+		DATAFORM (こんな凄い臭い……\@ISMALE() ? 雌になっちゃうの、 # 女が \@我慢できるわけない……)
+		DATAFORM (これが美味しいだなんて……%SELF_CALL()%の舌、もう……)
+		DATAFORM (臭い、苦い、不味い、のに……美味しい……)
+		DATAFORM (油断させる作戦、だったはずなのに……%SELF_CALL()%もう、心から…❤)
+		DATAFORM (ダメ…この臭い…何も、考えられなく――)
+		ENDDATA
+	ELSE
+		PRINTDATAL
+		DATAFORM 「んむぅ、むぐっ、ぢゅぷ、ちゅぷぁ……」
+		DATAFORM 「ちゅぱっ……はむっ、むちゅぅ……」
+		DATAFORM 「はむっ……んぐっ……ちゅぱっ……」
+		DATAFORM 「じゅぽっ、じゅぽっ……ちゅぷ……」
+		ENDDATA
+		PRINTFORMW %CALLNAME%は近くの\@FLAG:73==0 ? 触手 # ペニス \@を銜え込み奉仕を始めた。
+		PRINTDATAL
+		DATAFORM (こ、この味……もう何も考えられない……)
+		DATAFORM (これが美味しいだなんて……%SELF_CALL()%の舌、もう……)
+		DATAFORM (臭い、不味い……もっと……)
+		DATAFORM (臭い、はずなのに…この臭い…気持ち良すぎて…)
+		DATAFORM (ダメ…この臭い…何も、考えられなく――)
+		ENDDATA
+	ENDIF
+ELSE
+	SELECTCASE RAND:4
+		CASE 0
+			PRINTDATAL
+			DATAFORM （あくまで作戦通りだ……手近なところから弱らせてやればいいんだから――）
+			DATAFORM （まだ負けていないんだ……これは油断させるための策なんだから……）
+			DATAFORM （別に屈したわけじゃない……これは立派な作戦なんだから……）
+			DATAFORM （あくまで油断させるため、これは作戦、作戦なんだ……）
+			ENDDATA
+			PRINTFORML 
+			IF ABL:触手中毒 >= 1
+				PRINTFORMW 心の内で何度目かわからない言い訳をして、%CALLNAME%は\@FLAG:73==0 ? 触手 # ペニス \@に屈した。
+			ELSEIF  MARK:屈服刻印 >= 3
+				PRINTFORMW 心の内で何度目かわからない言い訳をして、%CALLNAME%は\@FLAG:73==0 ? 触手 # ペニス \@に屈した。
+			ELSE
+				PRINTFORMW 仕方なくといった風に、%CALLNAME%は身体を差し出した。
+			ENDIF
+		CASE 1
+			PRINTDATAL
+			DATAFORM （後で、絶対に殺す……）
+			DATAFORM （今に覚えてろよ……）
+			DATAFORM （絶対後で仕留めてやるからな……）
+			DATAFORM （この屈辱、絶対に忘れるもんか……）
+			ENDDATA
+			IF ABL:触手中毒 >= 1
+				PRINTFORMW 心の内の戦意とは裏腹に、身体は\@FLAG:73==0 ? 触手 # ペニス \@を丁寧に愛撫している。
+			ELSEIF  MARK:屈服刻印 >= 3
+				PRINTFORMW 心の内の戦意とは裏腹に、身体は\@FLAG:73==0 ? 触手 # ペニス \@を丁寧に愛撫している。
+			ELSE
+				PRINTFORML %CALLNAME%は昏い殺意を秘めながら、手近な\@FLAG:73==0 ? 触手 # ペニス \@を口に含んだ。
+			ENDIF
+		CASE 2
+			PRINTDATAL
+			DATAFORM （ぅぷ……生臭い……ひどい味、臭い……）
+			DATAFORM （くうぅ……生臭い……最低の臭いだ……）
+			DATAFORM （うぅ…こんな奴相手に奉仕だなんて……）
+			ENDDATA
+			IF ABL:触手中毒 >= 1
+				PRINTFORMW %CALLNAME%は仕方なくといった様子で、けれど身体は率先して\@FLAG:73==0 ? 触手 # ペニス \@を愛撫している。
+			ELSEIF  MARK:屈服刻印 >= 3
+				PRINTFORMW %CALLNAME%は仕方なくといった様子で、けれど身体は率先して\@FLAG:73==0 ? 触手 # ペニス \@を愛撫している。
+			ELSE
+				PRINTFORMW %CALLNAME%は視線を逸らしながら\@FLAG:73==0 ? 触手 # ペニス \@を手に取った。
+			ENDIF
+		CASE 3
+			IF ABL:触手中毒 >= 1
+				PRINTDATAL
+				DATAFORM 「…………」
+				DATAFORM 「……覚えてろ――んむっ…」
+				DATAFORM 「……こんな、最低――はむっ…」
+				ENDDATA
+				PRINTFORMW 朱の差した表情で、%CALLNAME%は\@FLAG:73==0 ? 触手 # ペニス \@を銜え込んだ。
+			ELSE
+				PRINTDATAL
+				DATAFORM 「………くっ…分かったよ、奉仕すればいいんだろ……」
+				DATAFORM 「……殺されるか奉仕するか、選べって事か…」
+				DATAFORM 「…………最っ低だ…」
+				DATAFORM 「……絶対に許さないからな…」
+				DATAFORM 「……\@ISMALE() ? オトコに # 女に \@こんな事させるなんて、本当に最低だな…」
+				DATAFORM 「……くっ、覚えてろよ…」
+				ENDDATA
+				IF  MARK:屈服刻印 >= 3|| MARK:恐怖刻印 >= 3
+					PRINTDATAW
+					DATAFORM あまりの屈辱に朱に染まった表情で、%CALLNAME%は\@FLAG:73==0 ? 触手 # ペニス \@を銜え込んだ。
+					DATAFORM 屈辱と羞恥に顔を真っ赤に染め、%CALLNAME%は\@FLAG:73==0 ? 触手 # ペニス \@を銜え込んだ。
+					ENDDATA
+				ELSE
+					PRINTFORMW %CALLNAME%は悔しそうに\@FLAG:73==0 ? 触手 # ペニス \@を銜え込んだ。
+				ENDIF
+			ENDIF
+	ENDSELECT
+ENDIF
+
+
+;手淫攻撃
+;--------------------------------------------------
+@KOJO_1_BATTLE_CHARA_SEX_ATTACK100_16
+
+;フェラ攻撃
+;--------------------------------------------------
+@KOJO_1_BATTLE_CHARA_SEX_ATTACK101_16
+
+;足コキ攻撃
+;--------------------------------------------------
+@KOJO_1_BATTLE_CHARA_SEX_ATTACK102_16
+
+;素股焦らし攻撃
+;--------------------------------------------------
+@KOJO_1_BATTLE_CHARA_SEX_ATTACK103_16
+
+;腰を振る攻撃
+;--------------------------------------------------
+@KOJO_1_BATTLE_CHARA_SEX_ATTACK104_16
+

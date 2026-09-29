@@ -1,0 +1,199 @@
+﻿;**********************************************************
+;キャラの行動実行のメイン処理
+; 変数
+;	CCOUNT	ループカウンタ
+;----------------------------------------------------------
+@ACTION_MAIN
+#DIM CCOUNT
+
+;まだ誰も行動していない
+IF FLAG:799 == 0
+	FLAG:798 = TARGET
+	PRINTL 
+	PRINTL 行動開始！
+ENDIF
+
+;次のキャラを行動させる
+FLAG:799 += 1
+
+;全員の行動が終わった
+SIF FLAG:799 >= CHARANUM
+	BEGIN TURNEND
+
+;戦闘支援人数をカウント
+FLAG:43 = 0
+FOR CCOUNT, 0, CHARANUM
+	SIF CCOUNT == MASTER
+		CONTINUE
+	SIF IS_ACTION_INCAPABLE(予定_支援,CCOUNT) > 0
+		CONTINUE
+	SIF CFLAG:CCOUNT:0 == 状態_無事 && CFLAG:CCOUNT:100 == 予定_支援
+		FLAG:43 ++
+NEXT
+SIF FLAG:43 >= CHARANUM_ACTIVE()
+	FLAG:43 = 0
+
+;戦闘関連フラグ初期化
+FLAG:10 = 0
+FLAG:11 = 0
+FLAG:45 = 0
+FLAG:48 = 0
+
+;操作不能なキャラは飛ばす
+SIF CFLAG:(FLAG:799):0 != 状態_無事
+	BEGIN TURNEND
+
+;キャラの入れ替え
+TARGET = FLAG:799
+
+;控えメンバーは強制的に休憩する
+IF CFLAG:999 == 0
+	CALL REST
+	BEGIN TURNEND
+ENDIF
+
+;予定が入ってない場合は休憩にする
+SIF CFLAG:100 == 予定_無し
+	CFLAG:100 = 予定_休憩
+
+;行動ごとに改行を入れる
+PRINTL 
+PRINTL 
+PRINTL 
+PRINTFORML 【%CALLNAME%の行動：%キャラ行動予定名称:(FINDELEMENT(キャラ行動予定, CFLAG:100))%】
+DRAWLINE
+
+;選択した行動ができない場合は強制的に休憩にする
+IF IS_ACTION_INCAPABLE(CFLAG:100, TARGET)
+	PRINTL 
+	PRINTFORML %ACTION_NGREASON(TARGET,CFLAG:100)%
+	CALL REST
+	BEGIN TURNEND
+ENDIF
+
+SELECTCASE CFLAG:100
+	CASE 予定_出撃
+		;同時出撃人数をカウント
+		FLAG:41 ++
+
+		;悪堕ち・ボスエンカウント判定
+		CALL ENCOUNT
+		;ボス遭遇無しなら今度はザコとエンカウント判定
+		SIF RESULT == 0
+			CALL MOB_TENTACLE_ENCOUNT
+
+		;エンカウントしなかった
+		IF RESULT == 0
+			IF CONFIG_CHECK_SCREEN_F(3) == 0
+				PRINTW 
+			ELSE
+				PRINTL 
+			ENDIF
+			BEGIN TURNEND
+		;ボス/ラスボス/対キャラにエンカウントした
+		ELSEIF RESULT > 0
+			BEGIN TRAIN
+		ENDIF
+
+	CASE 予定_鍛錬
+		;ソロモードのみ同時出撃人数をカウント
+		SIF GAME_OPTION_CHECK_F(OPTION_solo)
+			FLAG:41 ++
+
+		CALL TRAINING
+		BEGIN TURNEND
+
+	CASE 予定_休憩
+		CALL REST
+		BEGIN TURNEND
+
+	CASE 予定_活動
+		CALL SEISAN
+		BEGIN TURNEND
+
+	CASE 予定_防衛
+		;同時出撃人数をカウント
+		FLAG:41 ++
+
+		;エンカウント、および雑魚触手戦闘処理
+		CALL GUARD
+
+		;遭遇がなく、雑魚触手処理で終わった
+		IF RESULT == 0
+			PRINTL 
+			SIF CONFIG_CHECK_SCREEN_F(3) == 0
+				WAIT
+			BEGIN TURNEND
+		;雑魚戦システム時は戦闘画面へ遷移
+		ELSE
+			BEGIN TRAIN
+		ENDIF
+
+	CASE 予定_支援
+		;戦闘に参加するキャラが居ない場合は休憩する
+		IF NUMBER_ON_FRONTLINE() == 0 && FLAG:41 == 0
+			PRINTL 
+			PRINTL 戦闘を行うメンバーが居ないため、休憩にします
+			CALL REST
+			FLAG:43 --
+			BEGIN TURNEND
+		ENDIF
+
+		CALL SUPPORT
+		BEGIN TURNEND
+
+	CASE 予定_情報
+		;ソロモードのみ同時出撃人数をカウント
+		SIF GAME_OPTION_CHECK_F(OPTION_solo)
+			FLAG:41 ++
+
+		CALL GATHER_INFORMATION
+		IF FLAG:73 > 0
+			BEGIN TRAIN
+		ELSE
+			BEGIN TURNEND
+		ENDIF
+
+	CASE 予定_自由
+		CALL PASTIME
+		IF FLAG:73 > 0
+			BEGIN TRAIN
+		ELSE
+			BEGIN TURNEND
+		ENDIF
+ENDSELECT
+
+
+;==============================================================================
+;以下、関数内で呼ばれるサブ関数
+;==============================================================================
+
+;--------------------------------------------------
+;行動不可理由の文字列を返す
+; 引数
+;	TGTNUM	対象のキャラ番号
+;	ACTION	行動予定
+; 変数
+;	ACTION_NAME		行動の名称（CFLAG.ERHで定義）
+@ACTION_NGREASON(TGTNUM, ACTION)
+#FUNCTIONS
+#DIM TGTNUM
+#DIM ACTION
+#DIMS ACTION_NAME
+
+;行動の名称を取得
+;Emueraには辞書型がないためこうせざるを得ない
+ACTION_NAME = %キャラ行動予定名称:(FINDELEMENT(キャラ行動予定, ACTION))%
+
+IF IS_ACTION_INCAPABLE(ACTION, TGTNUM, 行動制約_廃人)
+	RESULTS = %CALLNAME:TGTNUM%は廃人化しているため、休憩以外何もできません
+ELSEIF IS_ACTION_INCAPABLE(ACTION, TGTNUM, 行動制約_欠損)
+	RESULTS = %CALLNAME:TGTNUM%は四肢欠損していて%ACTION_NAME%できないため、休憩します
+ELSEIF IS_ACTION_INCAPABLE(ACTION, TGTNUM, 行動制約_妊娠)
+	RESULTS = %CALLNAME:TGTNUM%は妊娠中なため、休憩します
+ELSEIF IS_ACTION_INCAPABLE(ACTION, TGTNUM, 行動制約_夜魔) || IS_ACTION_INCAPABLE(ACTION, TGTNUM, 行動制約_戦士)
+	RESULTS = %CALLNAME:TGTNUM%は%ACTION_NAME%でき\@IS_ACTION_INCAPABLE(ACTION, TGTNUM, 行動制約_体力) ? ず、体力も残り少ない # ない\@ため、休憩します
+ELSE
+	RESULTS = %CALLNAME:TGTNUM%は体力が残り少ないため、休憩します
+ENDIF
+RETURNF RESULTS

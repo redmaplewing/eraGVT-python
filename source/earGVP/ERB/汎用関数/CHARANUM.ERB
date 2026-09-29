@@ -1,0 +1,154 @@
+﻿;==============================================================================
+;キャラの総数を返す式中関数群
+
+;--------------------------------------------------
+;無事なキャラの総数を返す式中関数
+;控えメンバー含めて計算
+;※「無事」とは人類社会の庇護下で自己決定権のもと生存している状態を示す
+;　具体的には操作可能or入院中のキャラ数
+@CHARANUM_SAFE
+#FUNCTION
+LOCAL = CHARANUM-1
+FOR LOCAL:1, 1, CHARANUM
+	SIF CFLAG:(LOCAL:1):0 != 0 && CFLAG:(LOCAL:1):0 != 10 && CFLAG:(LOCAL:1):0 != 11
+		LOCAL -= 1
+NEXT
+RETURNF LOCAL
+
+;無事かつパーティー編成可能なキャラの総数
+@CHARANUM_PLAYABLE
+#FUNCTION
+LOCAL = CHARANUM-1
+FOR LOCAL:1, 1, CHARANUM
+	SIF CFLAG:(LOCAL:1):0 != 0
+		LOCAL -= 1
+NEXT
+RETURNF LOCAL
+
+;自発的に行動可能なキャラ数(SAFEから四肢喪失と繁殖袋を除外)
+@CHARANUM_ACTRESS
+#FUNCTION
+LOCAL = CHARANUM-1
+FOR LOCAL:1, 1, CHARANUM
+	SIF CFLAG:(LOCAL:1):0 != 0 || TALENT:(LOCAL:1):四肢欠損 || TALENT:(LOCAL:1):繁殖袋
+		LOCAL -= 1
+NEXT
+RETURNF LOCAL
+
+
+;無事ではないキャラの総数( CHARANUM-CHARANUM_SAFE() )を返す式中関数
+@CHARANUM_LOST
+#FUNCTION
+LOCAL = CHARANUM-1
+FOR LOCAL:1, 1, CHARANUM
+	SIF CFLAG:(LOCAL:1):0 != 1 && CFLAG:(LOCAL:1):0 != 2 && CFLAG:(LOCAL:1):0 != 3 && CFLAG:(LOCAL:1):0 != 4 && CFLAG:(LOCAL:1):0 != 9
+		LOCAL -= 1
+NEXT
+RETURNF LOCAL
+
+;現在幽閉中or洗脳悪堕ち中のキャラ数を返す式中関数(取り込まれ死亡キャラを除外して数える)
+@CHARANUM_PRISON
+#FUNCTION
+LOCAL = CHARANUM-1
+FOR LOCAL:1, 1, CHARANUM
+	SIF CFLAG:(LOCAL:1):0 != 1 && CFLAG:(LOCAL:1):0 != 2 && CFLAG:(LOCAL:1):0 != 3
+		LOCAL -= 1
+NEXT
+RETURNF LOCAL
+
+;現在洗脳悪堕ち中のキャラ数を返す式中関数
+@CHARANUM_DARKEN
+#FUNCTION
+LOCAL = CHARANUM-1
+FOR LOCAL:1, 1, CHARANUM
+	SIF CFLAG:(LOCAL:1):0 != 2 && CFLAG:(LOCAL:1):0 != 3
+		LOCAL -= 1
+NEXT
+RETURNF LOCAL
+
+;クズ市民に監禁・性奴隷化されているキャラ数を返す
+@CHARANUM_ENSLAVED
+#FUNCTION
+LOCAL = 0
+FOR LOCAL:1, 1, CHARANUM
+	SIF CFLAG:(LOCAL:1):0 == 4
+		LOCAL++
+NEXT
+RETURNF LOCAL
+
+;今なお人類の希望であるヒロインの総数を返す
+;(「無事」または「幽閉中/監禁中だが悪堕ちやロストには至っていない」キャラ数を返す)
+@CHARANUM_HOPE
+#FUNCTION
+LOCAL = CHARANUM-1
+FOR LOCAL:1, 1, CHARANUM
+	SIF CFLAG:(LOCAL:1):0 == 2 || CFLAG:(LOCAL:1):0 == 3 || CFLAG:(LOCAL:1):0 == 9
+		LOCAL -= 1
+NEXT
+RETURNF LOCAL
+
+;女性扱いされるキャラの数
+@CHARANUM_GIRLY()
+#FUNCTION
+LOCAL = 0
+FOR LOCAL:1, 1, CHARANUM
+	SIF ISGIRLY(LOCAL:1)
+		LOCAL++
+NEXT
+RETURNF LOCAL
+;男性扱いされるキャラの数
+@CHARANUM_MANLY()
+#FUNCTION
+LOCAL = 0
+FOR LOCAL:1, 1, CHARANUM
+	SIF ISMANLY(LOCAL:1)
+		LOCAL++
+NEXT
+RETURNF LOCAL
+
+
+
+;--------------------------------------------------
+;生存中かつ管理状態(PT編成中)が当てはまるキャラの総数を返す式中関数
+;ARGは引き継ぎフラグ用
+@CHARANUM_SAFE_PARTYCHECK, ARG
+#FUNCTION
+LOCAL = CHARANUM-1
+FOR LOCAL:1, 1, CHARANUM
+	SIF CFLAG:(LOCAL:1):0 == 1 || CFLAG:(LOCAL:1):0 == 2 || CFLAG:(LOCAL:1):0 == 3 || CFLAG:(LOCAL:1):0 == 4 || CFLAG:(LOCAL:1):0 == 9 || CFLAG:(LOCAL:1):999 == 0
+		LOCAL -= 1
+NEXT
+RETURNF LOCAL
+;--------------------------------------------------
+;操作中(パーティー編成に加わっている、無事、(出産準備含めて)控えには回っていない)キャラの総数を返す式中関数
+@CHARANUM_ACTIVE
+#FUNCTION
+LOCAL = CHARANUM-1
+FOR LOCAL:1, 1, CHARANUM
+	SIF CFLAG:(LOCAL:1):0 != 0 || CFLAG:(LOCAL:1):999 == 0
+		LOCAL -= 1
+NEXT
+RETURNF LOCAL
+
+;--------------------------------------------------
+;安否を問わず、ゲーム内に配置されている(控えに回っていない)キャラの総数を返す式中関数
+@CHARANUM_PARTYCHECK, ARG
+#FUNCTION
+LOCAL = CHARANUM-1
+FOR LOCAL:1, 1, CHARANUM
+	SIF CFLAG:(LOCAL:1):999 == 0
+		LOCAL -= 1
+NEXT
+RETURNF LOCAL
+
+;--------------------------------------------------
+;控えに回っているキャラの総数を返す式中関数
+@CHARANUM_RESERVE
+#FUNCTION
+LOCAL = CHARANUM-1
+FOR LOCAL:1, 1, CHARANUM
+	SIF CFLAG:(LOCAL:1):999 == 1
+		LOCAL -= 1
+NEXT
+RETURNF LOCAL
+

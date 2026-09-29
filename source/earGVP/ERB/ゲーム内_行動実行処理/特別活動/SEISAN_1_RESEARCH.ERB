@@ -1,0 +1,70 @@
+﻿;==============================================================================
+;特別活動：研究助手または被験者
+; 変数
+;	PAYMENT	支払額
+;	SHAVED	剃毛されたかどうか（子宮検査で使用）
+@SEISAN_RESEARCH
+#DIM DYNAMIC PAYMENT
+#DIM DYNAMIC SHAVED
+
+;出産経験がある・もしくは触手を妊娠中だと子宮の調査
+;memo:触手出産経験があって現在まっとうな人の子の妊娠中でも引っかかるんだけどいいんですかね？
+IF (EXP:出産経験 && RANDOM(2) == 0) || TALENT:妊娠 == 1 || TALENT:妊娠 == 3
+	PRINTL 研究所で検査協力（子宮）
+	PRINTL 
+	;剃ってないなら剃毛される
+	IF TALENT:パイパン == 0
+		TALENT:パイパン = 1
+		SHAVED = TRUE
+	ENDIF
+	;地の文と口上
+	CALL MESSAGE_SEISAN_RESEARCH_UTERUS, SHAVED
+	;体力・気力・性耐性減少量と稼ぎ額の計算
+	CALL CALC_SEISAN, 特別活動_研究, 特別活動研究_子宮
+	PAYMENT = RESULT:1
+	PRINTFORML %PRINT_TRANSCALLNAME(TARGET)%は検査協力の報酬として{PAYMENT}＄を得ました
+	;珠と経験の増加
+	JUEL:習得 += 25
+	JUEL:恥情 += 50
+	EXP:露出快楽経験 += 1
+
+;母乳体質だと搾乳試験
+ELSEIF TALENT:母乳体質
+	PRINTL 研究所で検査協力（搾乳）
+	PRINTL 
+	;地の文と口上
+	CALL MESSAGE_SEISAN_RESEARCH_MILKING
+	;体力・気力・性耐性減少量と稼ぎ額の計算
+	CALL CALC_SEISAN, 特別活動_研究, 特別活動研究_搾乳
+	PAYMENT = RESULT:1
+	PRINTFORML %PRINT_TRANSCALLNAME(TARGET)%は検査協力の報酬として{PAYMENT}＄を得ました
+	;珠と経験の増加
+	JUEL:習得 += 25
+	JUEL:恥情 += 50
+	SIF TALENT:ふたなり > 0
+		EXP:射精経験 += 1 + RANDOM(5)
+	EXP:噴乳経験 += 1 + RANDOM(5)
+
+;研究所助手
+ELSE
+	PRINTL 研究所助手
+	PRINTL 
+	;地の文と口上
+	CALL MESSAGE_SEISAN_RESEARCH_ASSISTANT
+	;体力・気力減少量と稼ぎ額の計算
+	CALL CALC_SEISAN, 特別活動_研究, 特別活動研究_助手
+	;知性により稼ぎ額に増分がかかる
+	PAYMENT = RESULT:1 * MAXBASE:知性 / 100
+	PRINTFORML %PRINT_TRANSCALLNAME(TARGET)%はアルバイトの報酬として{PAYMENT}＄を得ました
+	;知性の増加
+	IF TALENT:変身能力 == -1 && RANDOM(4) == 0
+		BASE:知性 += 3
+		PRINTFORML 知性の基礎値が3上がった
+	ELSEIF RANDOM(3) == 0
+		BASE:知性 += 2
+		PRINTFORML 知性の基礎値が2上がった
+	ELSEIF RANDOM(3) < 2
+		BASE:知性 += 1
+		PRINTFORML 知性の基礎値が1上がった
+	ENDIF
+ENDIF

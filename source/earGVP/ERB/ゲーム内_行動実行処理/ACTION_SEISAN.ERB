@@ -1,0 +1,194 @@
+﻿;--------------------------------------------------
+;特別活動
+@SEISAN
+
+;特別活動結果のパラメータ減少・報酬計算係数配列の初期化
+CALL SEISAN_INIT
+
+;稼ぐ方法
+LOCAL:141 = 0
+
+;変身可能キャラは変身状態になるか選べる
+CALL ACTION_TRANSFORMATION_SELECT, TARGET, "特別活動"
+
+PRINTFORM [{特別活動_アルバイト}]アルバイト　　　　
+IF EXP:出産経験 > 0 || TALENT:妊娠 == 1 || TALENT:妊娠 == 3
+	PRINTFORM [{特別活動_研究}]研究所で検査協力　
+ELSE
+	PRINTFORM [{特別活動_研究}]研究所助手　　　　
+ENDIF
+PRINTFORM [{特別活動_雑魚触手退治}]雑魚触手退治　　　
+PRINTL 
+;欲望で援助交際解放
+SIF ABL:欲望 > 0 && ISHOLE() == 1
+	PRINTFORM [{特別活動_援助交際}]援助交際　　　　　
+;欲望と露出癖、または枕営業回数でAV出演解放
+SIF ((ABL:欲望 + ABL:露出癖) >= 5 || CFLAG:283 >= 10) && ISHOLE() == 1
+	PRINTFORM [{特別活動_AV出演}]AV出演　　　　　　
+;欲望とマゾっ気で公衆便所解放
+SIF (ABL:欲望 + ABL:マゾっ気) >= 5 && ISHOLE() == 1
+	PRINTFORM [{特別活動_公衆便所}]公衆便所　　　　　
+PRINTL 
+;デビュー後かつ週末ならライブ公演
+IF EXP:魅了経験 > 99 && (DAY % 7 == 0 || DAY % 7 == 6)
+	SETCOLORBYNAME HOTPINK
+	PRINTFORM [{特別活動_ライブ公演}]★ライブ公演　　　
+	RESETCOLOR
+ELSE
+	PRINTFORM [{特別活動_アイドル活動}]アイドル活動　　　
+ENDIF
+;デビュー後なら枕営業解放
+SIF EXP:魅了経験 > 99 && ISHOLE() == 1
+	PRINTFORM [{特別活動_枕営業}]枕営業　　　　　　
+
+PRINTL 
+DRAWLINE
+
+;スケジュール設定による自動入力も絡めた入力処理
+;memo:乱雑だが、そもそもスケジュール機能を将来全面的に作り直す予定なので触らないでおく
+IF CFLAG:111 > 0
+	CALL RES_SCHEDULE, 111
+	IF RESULT == 0
+		PRINTL 
+		PRINT スケジュール：アルバイト
+		PRINTL 
+	ENDIF
+	IF RESULT == 1
+		PRINTL 　
+		IF EXP:出産経験 > 0 || TALENT:妊娠 == 1 || TALENT:妊娠 == 3
+			PRINT スケジュール：研究所で検査協力　
+		ELSE
+			PRINT スケジュール：研究所助手　　　　
+		ENDIF
+		PRINTL 
+	ENDIF
+	IF RESULT == 2
+		PRINTL 
+		PRINT スケジュール：雑魚触手退治
+		PRINTL 
+	ENDIF
+	IF RESULT == 3
+		PRINTL 
+		PRINT スケジュール：援助交際
+		IF ABL:欲望 == 0 || (ISHOLE() == 0)
+			PRINT （実行不能）
+			PRINTL 
+			PRINTL 手動で行動を選択してください
+			GOTO INPUT_LOOP
+		ENDIF
+	ENDIF
+	IF RESULT == 4
+		PRINTL 
+		PRINT スケジュール：AV出演
+		IF ((ABL:欲望 + ABL:露出癖) < 5 && CFLAG:283 < 10) || (ISHOLE() == 0)
+			PRINT （実行不能）
+			PRINTL 
+			PRINTL 手動で行動を選択してください
+			GOTO INPUT_LOOP
+		ENDIF
+	ENDIF
+	IF RESULT == 5
+		PRINTL 
+		PRINT スケジュール：公衆便所
+		IF (ABL:欲望 + ABL:マゾっ気) < 5 || (ISHOLE() == 0)
+			PRINT （実行不能）
+			PRINTL 
+			PRINTL 手動で行動を選択してください
+			GOTO INPUT_LOOP
+		ENDIF
+	ENDIF
+	IF RESULT == 6
+		;デビュー後アイドル土日はライブ公演
+		IF (EXP:魅了経験 >= 100) && (DAY % 7 == 0 || DAY % 7 == 6)
+			RESULT = 8
+		ELSE
+			PRINTL 
+			PRINT スケジュール：アイドル活動
+			PRINTL 
+		ENDIF
+	ENDIF
+	IF RESULT == 7
+		PRINTL 
+		PRINT スケジュール：枕営業
+		IF (EXP:魅了経験 < 100) || ISHOLE() == 0
+			PRINT （実行不能）
+			PRINTL 
+			PRINTL 手動で行動を選択してください
+			GOTO INPUT_LOOP
+		ENDIF
+	ENDIF
+	IF RESULT == 8
+		PRINTL 
+		PRINT スケジュール：アイドル活動《★ライブ公演》
+		IF (EXP:魅了経験 < 100) || (DAY % 7 != 0 && DAY % 7 != 6)
+			PRINT （実行不能）
+			PRINTL 
+			PRINTL 手動で行動を選択してください
+			GOTO INPUT_LOOP
+		ENDIF
+	ENDIF
+ELSE
+	$INPUT_LOOP
+	INPUT
+ENDIF
+
+PRINTL 
+
+;デビュー後アイドル土日はライブ公演
+IF RESULT == 6 && (EXP:魅了経験 >= 100) && (DAY % 7 == 0 || DAY % 7 == 6)
+	RESULT = 8
+ENDIF
+
+
+;男なら一部のコマンドは選択不可
+IF ISHOLE() == 0 && (RESULT == 3 || RESULT == 4 || RESULT == 5 || RESULT == 7)
+	PRINTL 正しい値を入力してください
+	GOTO INPUT_LOOP
+;その他の実行不可コマンド入力時
+ELSEIF RESULT < 0 || RESULT > 8 || (ABL:欲望 < 1 && RESULT == 3) || (ABL:欲望 + ABL:露出癖 < 5 && CFLAG:283 < 10 && RESULT == 4) || ((ABL:欲望 + ABL:マゾっ気) < 5 && RESULT == 5) || (EXP:魅了経験 < 100 && RESULT == 7) || ((EXP:魅了経験 < 100 || (DAY % 7 != 0 && DAY % 7 != 6)) && RESULT == 8)
+	PRINTL 正しい値を入力してください
+	GOTO INPUT_LOOP
+ELSE
+	CFLAG:TARGET:101 = RESULT
+ENDIF
+
+;選んだ特別活動の処理を呼び出す
+DRAWLINE
+SELECTCASE CFLAG:TARGET:101
+	;アルバイト
+	CASE 特別活動_アルバイト
+		CALL SEISAN_PART_TIME
+	;研究所助手
+	CASE 特別活動_研究
+		CALL SEISAN_RESEARCH
+	;雑魚触手退治
+	CASE 特別活動_雑魚触手退治
+		CALL SEISAN_PEST_CONTROL
+	;援助交際
+	CASE 特別活動_援助交際
+		CALL SEISAN_PROSTITUTION
+	;AV出演
+	CASE 特別活動_AV出演
+		CALL SEISAN_PORN_VIDEO
+	;公衆便所
+	CASE 特別活動_公衆便所
+		CALL SEISAN_TOILET
+	;アイドル活動　魅了経験が一定以上でアイドルデビュー、それまでは下積み
+	CASE 特別活動_アイドル活動
+		CALL SEISAN_IDOL_ACTIVITY
+	;枕営業(アイドル限定)
+	CASE 特別活動_枕営業
+		CALL SEISAN_IDOL_PROSTITUTION
+	;ライブ公演(アイドル限定)
+	CASE 特別活動_ライブ公演
+		CALL SEISAN_IDOL_LIVE
+ENDSELECT
+;行動結果表示のためのウェイト
+PRINTW 
+
+CALL _ABLUP, 1
+SIF CFLAG:1 > 0
+	CALL TRANSFORM, 0
+BEGIN TURNEND
+
+

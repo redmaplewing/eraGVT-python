@@ -1,0 +1,89 @@
+﻿;--------------------------------------------------
+;特別活動の報酬計算用定数を格納する配列の値代入処理
+;この関数を実行すると、3次元配列 特活報酬 に特別活動の種類:結果:参照する定数 の形で値が格納される
+;例：特活報酬:特別活動_アイドル活動:アイドル活動_路上ライブ:特活報酬_体力係数 == 20
+;memo:Emueraに多次元配列の初期値代入の機能があればこんなかったるい事しなくて済むのに
+@SEISAN_INIT
+
+;既に値設定が済んでいるなら終了
+SIF 特活報酬_IS_ALREADY_SET
+	RETURN 0
+
+CALL EARN_ARRAY_SET, 特別活動_アルバイト, 特別活動結果_成功, 特活報酬_アルバイト_成功
+CALL EARN_ARRAY_SET, 特別活動_アルバイト, 特別活動結果_失敗, 特活報酬_アルバイト_成功
+CALL EARN_ARRAY_SET, 特別活動_アルバイト, 特別活動結果_絶頂失敗, 特活報酬_アルバイト_絶頂失敗
+
+CALL EARN_ARRAY_SET, 特別活動_研究, 特別活動研究_助手, 特活報酬_研究_助手
+CALL EARN_ARRAY_SET, 特別活動_研究, 特別活動研究_搾乳, 特活報酬_研究_搾乳
+CALL EARN_ARRAY_SET, 特別活動_研究, 特別活動研究_子宮, 特活報酬_研究_子宮
+
+CALL EARN_ARRAY_SET, 特別活動_雑魚触手退治, 特別活動結果_成功, 特活報酬_退治_成功
+CALL EARN_ARRAY_SET, 特別活動_雑魚触手退治, 特別活動結果_失敗, 特活報酬_退治_失敗
+
+CALL EARN_ARRAY_SET, 特別活動_援助交際, 特別活動結果_成功, 特活報酬_援助交際
+
+CALL EARN_ARRAY_SET, 特別活動_AV出演, 特別活動結果_成功, 特活報酬_AV出演
+
+CALL EARN_ARRAY_SET, 特別活動_公衆便所, 特別活動公衆便所_肉便器, 特活報酬_公衆便所
+CALL EARN_ARRAY_SET, 特別活動_公衆便所, 特別活動公衆便所_牝犬, 特活報酬_公衆便所
+
+CALL EARN_ARRAY_SET, 特別活動_アイドル活動, アイドル活動_路上ライブ, 特活報酬_アイドル活動_路上ライブ
+CALL EARN_ARRAY_SET, 特別活動_アイドル活動, アイドル活動_テレビ出演, 特活報酬_アイドル活動_テレビ出演
+CALL EARN_ARRAY_SET, 特別活動_アイドル活動, アイドル活動_グラビア撮影, 特活報酬_アイドル活動_グラビア撮影
+CALL EARN_ARRAY_SET, 特別活動_アイドル活動, アイドル活動_CD収録, 特活報酬_アイドル活動_CD収録
+CALL EARN_ARRAY_SET, 特別活動_アイドル活動, アイドル活動_営業, 特活報酬_アイドル活動_営業
+
+CALL EARN_ARRAY_SET, 特別活動_枕営業, 枕営業_Ｐにフェラ, 特活報酬_枕営業_Ｐにフェラ
+CALL EARN_ARRAY_SET, 特別活動_枕営業, 枕営業_Ｐとセックス, 特活報酬_枕営業_Ｐとセックス
+CALL EARN_ARRAY_SET, 特別活動_枕営業, 枕営業_Ｖマニア, 特活報酬_枕営業_Ｖマニア
+CALL EARN_ARRAY_SET, 特別活動_枕営業, 枕営業_Ａマニア, 特活報酬_枕営業_Ａマニア
+CALL EARN_ARRAY_SET, 特別活動_枕営業, 枕営業_輪姦, 特活報酬_枕営業_輪姦
+
+CALL EARN_ARRAY_SET, 特別活動_ライブ公演, 特別活動結果_成功, 特活報酬_ライブ公演_成功
+CALL EARN_ARRAY_SET, 特別活動_ライブ公演, 特別活動結果_失敗, 特活報酬_ライブ公演_失敗
+CALL EARN_ARRAY_SET, 特別活動_ライブ公演, 特別活動結果_絶頂失敗, 特活報酬_ライブ公演_絶頂失敗
+CALL EARN_ARRAY_SET, 特別活動_ライブ公演, 特別活動結果_大成功, 特活報酬_ライブ公演_大成功
+
+;値設定が済んだので済フラグを立てる
+特活報酬_IS_ALREADY_SET = 1
+
+;--------------------------------------------------
+;特活報酬の3次元目に参照渡しした配列の値を順番に詰め込むサブ関数
+; 引数
+;	ACTIVITY_TYPE	特別活動の種類（特活報酬の第1次数の探索に使う）
+;	SECOND_IDX	特活報酬の第2次数（特別活動の分岐または結果）
+;	INPUT_ARRAY	3次数目に代入する値を詰めた配列の参照渡し
+; 変数
+;	THIRD_IDX	代入先の要素番号（ループカウンタ）
+@EARN_ARRAY_SET, ACTIVITY_TYPE, SECOND_IDX, INPUT_ARRAY
+#DIM ACTIVITY_TYPE
+#DIM SECOND_IDX
+#DIM REF INPUT_ARRAY
+#DIM FIRST_IDX
+#DIM THIRD_IDX
+
+;特別活動の種類が特別活動の第1次数の何番目に当たるか＝特別活動の何番目に並べられているかを求める
+FIRST_IDX = FINDELEMENT(特別活動, ACTIVITY_TYPE)
+
+;渡された代入値を詰める
+FOR THIRD_IDX, 0, VARSIZE("INPUT_ARRAY")
+	特活報酬:FIRST_IDX:SECOND_IDX:THIRD_IDX = INPUT_ARRAY:THIRD_IDX
+NEXT
+
+;--------------------------------------------------
+;特活報酬から参照渡しした配列に値を詰め込むサブ関数
+; 引数
+;	OUTPUT_ARRAY	値を詰める配列の参照渡し
+;	ACTIVITY_TYPE	特別活動の種類（特活報酬の第1次数の探索に使う）
+;	ACTIVITY_RESULT	特活報酬の第2次数（特別活動の分岐または結果）
+; 変数
+;	IDX	代入先の要素番号（ループカウンタ）
+@GET_EARN_COEFFCIENT, OUTPUT_ARRAY, ACTIVITY_TYPE, ACTIVITY_RESULT
+#DIM REF OUTPUT_ARRAY
+#DIM ACTIVITY_TYPE
+#DIM ACTIVITY_RESULT
+#DIM IDX
+
+FOR IDX, 0, VARSIZE("OUTPUT_ARRAY")
+	OUTPUT_ARRAY:IDX = 特活報酬:FINDELEMENT(特別活動, ACTIVITY_TYPE):ACTIVITY_RESULT:IDX
+NEXT

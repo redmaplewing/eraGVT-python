@@ -1,0 +1,5256 @@
+﻿;2018/06/16作成（第７支部の>>252）
+;2024/08/12加筆
+;2024/08/18加筆
+;-------------------------------------------------
+;eraGVT口上テンプレ（汎用キャラ用）
+;汎用キャラ（キャラ番号0のキャラ）用の口上テンプレです
+;性格によって口上ファイルを分ける目的でこのファイルは用意されています
+;-------------------------------------------------
+;乱暴者口上。TALENT:アクセサリ==3（お嬢様）だと悪役令嬢、無いとヤンキーになる。
+;エロ系の部分はほとんど未完成。だれか書き足して
+;-------------------------------------------------
+;使用しているCFLAG（2018/6/16現在）
+;CFLAG:100　ショップ画面でのスケジュール
+;CFLAG:206　処女喪失の状況
+
+;FLAG:53　リラクゼーション施設
+;FLAG:110　敵が洗脳/悪堕ちキャラなら =1
+;FLAG:111:交戦中の洗脳/悪堕ちキャラのキャラ番号
+
+;＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝
+;口上色設定
+;-------------------------------------------------
+@KOJO_0_COLOR_27
+SETCOLOR 0xF08030
+
+
+;＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝
+;MESSAGE.ERB
+;＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝
+;最初
+;-------------------------------------------------
+@KOJO_0_FIRST_27
+
+;ターンエンド
+;-------------------------------------------------
+@KOJO_0_TURNEND_27
+
+;ショップ画面一口メッセージ
+;-------------------------------------------------
+@KOJO_0_HITOKUTI_SHOP_27
+;強制回復で分岐
+IF BASE:体力 <= 強制休憩体力
+	IF RAND:2 == 0
+		PRINTFORML 「zzz……っ！？……zzz……」
+		PRINTFORMDL  %CALLNAME%は寝落ち寸前だ……
+	ELSE
+		PRINTFORML （……）
+		PRINTFORMDL  %CALLNAME%はボーっとしている……
+	ENDIF
+;お嬢様
+ELSEIF TALENT:アクセサリ==3
+	IF TALENT:夜魔の貴族 > 0 && TIME == 0 && RAND:2 == 0
+		PRINTFORML 「昼間だ\わ……」
+		PRINTFORMDL  %CALLNAME%は憎々し気な顔でカーテンの隙間から入る光を見ている……
+	ELSEIF CFLAG:100 == 予定_出撃
+		PRINTFORML 「今日の獲物は何\かしら」
+		PRINTFORMDL  %CALLNAME%は期待に胸を膨らませている……
+	ELSEIF CFLAG:100 == 予定_鍛錬
+		PRINTFORML 「体を動かそうかしら」
+		PRINTFORMDL  %CALLNAME%は心を弾ませている……
+	ELSEIF CFLAG:100 == 予定_休憩
+		PRINTFORML 「何をしようかしら」
+		PRINTFORMDL  %CALLNAME%は暇つぶし方法を考えている……
+	ELSEIF CFLAG:100 == 予定_活動
+		PRINTFORML 「うぅん。 確かにお金は必要だけれど……」
+		PRINTFORMDL  %CALLNAME%は考え込んでいる
+	ELSEIF CFLAG:100 == 予定_防衛
+		PRINTFORML 「何が起きるかしら」
+		PRINTFORMDL  %CALLNAME%は期待に胸を膨らませている……
+	ELSEIF CFLAG:100 == 予定_支援
+		PRINTFORML 「できれば%SELF_CALL()%が戦いたいわ……」
+		PRINTFORMDL  %CALLNAME%は気が重そうだ
+	ELSEIF CFLAG:100 == 予定_情報
+		PRINTFORML 「別に%SELF_CALL()%がやらなくてもいいんじゃないかしら……」
+		PRINTFORMDL  %CALLNAME%は気が重そうだ
+	ELSE
+		PRINTFORML 「今日は何をしようかしら？」
+	ENDIF
+ELSE
+	IF TALENT:夜魔の貴族 > 0 && TIME == 0 && RAND:2 == 0
+		PRINTFORML 「昼間だな……」
+		PRINTFORMDL  %CALLNAME%は憎々し気な顔でカーテンの隙間から入る光を見ている
+	ELSEIF CFLAG:100 == 予定_出撃
+		PRINTFORML 「今日の獲物は何だ？」
+		PRINTFORMDL  %CALLNAME%は期待に胸を膨らませている……
+	ELSEIF CFLAG:100 == 予定_鍛錬
+		PRINTFORML 「さって、どっかでひと暴れすっか」
+		PRINTFORMDL  %CALLNAME%は心を弾ませている……
+	ELSEIF CFLAG:100 == 予定_休憩
+		PRINTFORML 「何して遊ぶか」
+		PRINTFORMDL  %CALLNAME%は暇つぶし方法を考えている……
+	ELSEIF CFLAG:100 == 予定_活動
+		PRINTFORML 「確かに金は必要だけどよぉ……」
+		PRINTFORMDL  %CALLNAME%は考え込んでいる
+	ELSEIF CFLAG:100 == 予定_防衛
+		PRINTFORML 「見つけた奴、片っ端からぶっ飛ばせばいいんだよな」
+		PRINTFORMDL  %CALLNAME%は期待に胸を膨らませている……
+	ELSEIF CFLAG:100 == 予定_支援
+		PRINTFORML 「できれば%SELF_CALL()%が戦いたいんだけどな……」
+		PRINTFORMDL  %CALLNAME%は気が重そうだ
+	ELSEIF CFLAG:100 == 予定_情報
+		PRINTFORML 「別に%SELF_CALL()%がやらなくてもいいんじゃないか？」
+		PRINTFORMDL  %CALLNAME%は気が重そうだ……
+	ELSEIF RAND:2 == 0
+		PRINTFORML 「どっかに殴り飛ばす相手でもいねーかな」
+	ELSE
+		PRINTFORML 「何をしようか？」
+	ENDIF
+ENDIF
+PRINTL 
+
+;鍛錬
+;鍛錬開始
+;-------------------------------------------------
+@KOJO_0_TRAINING_BEGIN_27
+PRINTFORML 「\@ TALENT:アクセサリ==3 ? そろそろ始めましょう # ぼちぼち始める \@か」
+
+;鍛錬終了
+;-------------------------------------------------
+@KOJO_0_TRAINING_END_27
+IF RESULT == 0 || (RESULT >= 3 && RESULT <= 8) || RESULT == 10
+	;お嬢様
+	IF TALENT:アクセサリ==3
+		IF RAND:2 == 0
+			PRINTFORML 「ノルマクリアですわ」
+		ELSE
+			PRINTFORML 「いい汗かきましたわ」
+		ENDIF
+	ELSE
+		IF RAND:2 == 0
+			PRINTFORML 「おわったぜ～」
+		ELSE
+			PRINTFORML 「いい汗かいたな」
+		ENDIF
+	ENDIF
+ELSE
+	PRINTFORML 「ふう、終わった\@ TALENT:アクセサリ==3 ? わ # な \@」
+ENDIF
+
+;走りこみ
+;-------------------------------------------------
+@KOJO_0_TRAINING_HASHIRI_27
+;妊娠
+IF CHECK_PREGNANT_F(TARGET) > 0
+	PRINTFORML 「はぁ、はぁ、げほっ……妊婦、舐めてた\@ TALENT:アクセサリ==3 ? わ #  \@……」
+	PRINTFORMDL  %CALLNAME%は普段よりのたのたと走りつつ、頻繁に休憩を入れている。
+;お嬢様
+ELSEIF TALENT:アクセサリ==3
+	IF RAND:2 == 0
+		PRINTFORML 「はぁ、はぁ……ま、まだまだですわ……」
+		PRINTFORMDL  %CALLNAME%は最低限の休憩だけとって、ノルマ達成のためにまた走り始めた。
+	ELSE
+		PRINTFORML 「設定間違っていません？？」
+		PRINTFORMDL ランニングマシーンに設定された距離を見て疑問をぶつける %CALLNAME%だが
+		PRINTFORMDL 『同じ距離では訓練にならない』とトレーナーに言いくるめられてしまった
+	ENDIF
+ELSE
+	IF RAND:2 == 0
+		PRINTFORML 「ぜぇ、はぁ、ぜぇ、はぁ……ま、まだまだぁ……」
+		PRINTFORMDL  %CALLNAME%は最低限の休憩だけとって、ノルマ達成のためにまた走り始めた。
+	ELSE
+		PRINTFORML 「おい…この前よりノルマ増えてんじゃねぇかぁ？」
+		PRINTFORMDL ランニングマシーンに設定された距離を見て疑問をぶつける %CALLNAME%だが
+		PRINTFORMDL 『同じ距離では訓練にならない』とトレーナーに言いくるめられてしまった
+	ENDIF
+ENDIF
+
+;精神鍛錬
+;-------------------------------------------------
+@KOJO_0_TRAINING_SEISHIN_27
+PRINTFORML 「……」
+PRINTFORMD  %CALLNAME%は真剣に
+;お嬢様
+IF TALENT:アクセサリ==3
+	IF RAND:2 == 0
+		PRINTFORMDL \@ BASE:TARGET:気力>=7000 ? セーター # マフラー \@を編んでいる……
+	ELSE
+		PRINTFORMDL \@ BASE:TARGET:知性>=400 ? ミルク # ジグソー \@パズルを解いている……
+	ENDIF
+ELSE
+	IF RAND:2 == 0
+		PRINTFORMDL \@ BASE:TARGET:気力>=7000 ? 戦艦 # 人型ロボット \@のプラモデルを作っている……
+	ELSE
+		SELECTCASE RAND:6
+			CASE 0
+				PRINTFORMD クロンダイク
+			CASE 1
+				PRINTFORMD マインスイーパ
+			CASE 2
+				PRINTFORMD ゴミ箱 −GOMIBAKO−
+			CASE 3
+				PRINTFORMD ハローキティといっしょ!ブロッククラッシュ123!!
+			CASE 4
+				PRINTFORMD ずるい龍
+			CASE 5
+				PRINTFORMD たけしの挑戦状
+		ENDSELECT
+	PRINTFORMDL を攻略している……
+	ENDIF
+ENDIF
+
+;瞑想
+;-------------------------------------------------
+@KOJO_0_TRAINING_MEISOU_27
+PRINTFORMDL  %CALLNAME%は\@ TALENT:アクセサリ==3 ? 椅子に姿勢よく座り # 畳の上で座禅を組んで \@目を閉じている……
+PRINTFORML 「すぅー……ふぅー……」
+PRINTFORML （無心……無心\@ TALENT:アクセサリ==3 ? よ # だ \@……）
+PRINTL 
+IF RAND:2 == 0
+	PRINTFORMDL  %CALLNAME%は無心というより、何も考えていないようだ……
+ELSE
+	PRINTFORMDL  %CALLNAME%は考え事をしている……
+ENDIF
+
+;筋トレ
+;-------------------------------------------------
+@KOJO_0_TRAINING_KINTORE_27
+;妊娠
+IF CHECK_PREGNANT_F(TARGET) > 0
+	PRINTFORML 「ふぐっ、うぅっ……」
+	PRINTFORMDL  %CALLNAME%は思い通りに動かない体にイラつき、大きくなった腹を思わず睨みつけた。
+ELSE
+	PRINTFORML 「ふ\@ TALENT:アクセサリ==3 ? ふっ！ ふっ # ふんっ！ ふんっ \@……！」
+	PRINTFORMDL  %CALLNAME%は着実にノルマをこなしていく。
+	PRINTFORML （もっと強く……！）
+ENDIF
+
+;自衛訓練
+;-------------------------------------------------
+@KOJO_0_TRAINING_JIEI_27
+;お嬢様
+IF TALENT:アクセサリ==3
+	PRINTFORML 「えいやぁ！！」
+	PRINTFORMDL  %CALLNAME%は過剰防衛気味の攻撃を対戦相手に叩き込む。
+	IF RAND:2 == 0
+		PRINTFORML 「人間相手だと加減が面倒だわ」
+	ELSE
+		PRINTFORML 「やっぱり、人間相手じゃ物足りないわねぇ」
+	ENDIF
+ELSE
+	PRINTFORML 「うらぁ！！」
+	PRINTFORMDL  %CALLNAME%は過剰防衛気味の攻撃を対戦相手に叩き込む。
+	IF RAND:2 == 0
+		PRINTFORML 「やっぱり、人間相手じゃ物足りないなぁ」
+	ELSE
+		PRINTFORML 「おら、この程度で倒れてんなよ」
+	ENDIF
+ENDIF
+PRINTFORMDL  倒れた対戦相手を足蹴にしつつ、%CALLNAME%は触手に思いを馳せている……。
+
+;ダッシュ
+;-------------------------------------------------
+@KOJO_0_TRAINING_DASH_27
+IF CHECK_PREGNANT_F(TARGET) > 0
+	PRINTFORML （もっと速く……っ！？）
+	PRINTFORML 「ふごぉっ！？」
+	PRINTFORMDL  %CALLNAME%は膨らんだ腹部のせいで、バランスを崩して転んだ……。
+ELSE
+	PRINTFORML （もっと速く……！）
+	PRINTFORMDL  %CALLNAME%は真面目に走り込みをしている……。
+ENDIF
+
+;近距離戦闘訓練
+;-------------------------------------------------
+@KOJO_0_TRAINING_SHORT_27
+PRINTFORML 「\@ TALENT:アクセサリ==3 ? えい！ やあ！ はぁっ！ ……ふぅ、次 # うりゃ！ そいや！ でりゃっ！ ……ふぅ、次来いやぁ \@！」
+;妊娠
+IF CHECK_PREGNANT_F(TARGET) > 0
+	PRINTFORMDL  腹部が大きくなっている%CALLNAME%は動きに精彩を欠いている。
+	PRINTFORML 「あっ！？\@ RAND:2==0 ? へぶっ # ぶふっ \@……。」
+	IF RAND:3 == 0
+		PRINTFORMDL  飛んできたボールが顔にクリーンヒットした……
+	ELSEIF RAND:2 == 0
+		PRINTFORMDL  足を滑らせて床にキスする羽目になった……
+	ELSE
+		PRINTFORMDL  攻撃がスカって顔からターゲットにぶつかってしまった……
+	ENDIF
+ELSE
+	PRINTFORMDL  危なげなく飛んできたボールを避け、確実にターゲットに攻撃を当てていく。
+ENDIF
+
+;中距離戦闘訓練
+;-------------------------------------------------
+@KOJO_0_TRAINING_MIDDLE_27
+PRINTFORML 「っ！ \@ TALENT:アクセサリ==3 ? えいやぁ！ ……ふっ # せいやっ！ ……チェストォ \@！」
+;妊娠
+IF CHECK_PREGNANT_F(TARGET) > 0
+	PRINTFORMDL  腹部が大きくなっている%CALLNAME%は動きが鈍くなっている。
+	PRINTFORML 「あっ！？\@ RAND:2==0 ? げふっ # ぐふっ \@……。」
+	IF RAND:3 == 0
+		PRINTFORMDL  飛んできたボールが顔にクリーンヒットした……
+	ELSEIF RAND:2 == 0
+		PRINTFORMDL  止まりきれず、突きをした棒に胸から突っ込んでしまった……
+	ELSE
+		PRINTFORMDL  攻撃がスカって顔からターゲットにぶつかってしまった……
+	ENDIF
+ELSE
+	PRINTFORMDL  身の丈以上の棒を持ち、危なげなく飛んできたボールを避け、確実にターゲットに棒を叩き込んでいく。
+ENDIF
+
+;遠距離戦闘訓練
+;-------------------------------------------------
+@KOJO_0_TRAINING_LONG_27
+PRINTFORML 「次はっ！？ そこ\@ TALENT:アクセサリ==3 ? ねっ！ ……当たりっ # かっ！ ……やりぃ \@！」
+;妊娠
+IF CHECK_PREGNANT_F(TARGET) > 0
+	PRINTFORMDL  腹部が大きくなっている%CALLNAME%は動きが鈍くなっている。
+	PRINTFORML 「あっ！？\@ RAND:2==0 ? げふっ # ぐふっ \@……。」
+	IF RAND:3 == 0
+		PRINTFORMDL  飛んできたボールが顔にクリーンヒットした……
+	ELSEIF RAND:2 == 0
+		PRINTFORMDL  足を滑らせて床にキスする羽目になった……
+	ELSE
+		PRINTFORMDL  ボールを踏みつけて背中を床に強く打ち付けた……
+	ENDIF
+ELSE
+	PRINTFORMDL  \@ RAND:2==0 ? モデルガン # ソフトテニスボール数個 \@を持ち、危なげなく飛んできたボールを避け、弾を時々補給しつつ確実にターゲットに当てていく。
+ENDIF
+
+;戦闘基礎訓練
+;-------------------------------------------------
+@KOJO_0_TRAINING_BASIS_27
+PRINTFORMD  %CALLNAME%は
+;お嬢様
+IF TALENT:アクセサリ==3
+	SELECTCASE RAND:4
+		CASE 0
+			PRINTFORMD システマ
+		CASE 1
+			PRINTFORMD 太極拳
+		CASE 2
+			PRINTFORMD 薙刀術
+		CASE 3
+			PRINTFORMD 弓術
+	ENDSELECT
+ELSE
+	SELECTCASE RAND:4
+		CASE 0
+			PRINTFORMD 銃剣術
+		CASE 1
+			PRINTFORMD 日本拳法
+		CASE 2
+			PRINTFORMD 杖術
+		CASE 3
+			PRINTFORMD 砲術
+	ENDSELECT
+ENDIF
+PRINTFORMDL の稽古をしている……
+
+;戦術研究訓練
+;-------------------------------------------------
+@KOJO_0_TRAINING_TACTICS_27
+;お嬢様
+IF TALENT:アクセサリ==3
+	IF RAND:2 == 0
+		PRINTFORML 「へえ、弱点はここにあるのね……」
+	ELSE
+		PRINTFORML 「へえ、苦手な動きなんてあるのね@……」
+	ENDIF
+ELSE
+	IF RAND:2 == 0
+		PRINTFORML 「あいつら、ココが弱点なのか……」
+	ELSE
+		PRINTFORML 「へえ、苦手な動きなんてあるのか……」
+	ENDIF
+ENDIF
+
+LOCAL:0 = RAND:2
+PRINTFORMDL  %CALLNAME%は\@ LOCAL:0==0 ? 過去の映像 # 蓄積されたデータ \@を元に研究をしている。
+IF RAND:2 == 0 && LOCAL:0 == 0
+	PRINTFORML 「……あっ！」
+	PRINTFORMD  画面上で
+	IF RAND:3 == 0 && EXP:TARGET:被姦経験 > 0
+		PRINTFORMD 自身の
+	ELSE
+		PRINTFORMD 他の女性の
+	ENDIF
+	PRINTFORMDL 慮辱が始まったため、
+	IF TALENT:TARGET:触手の虜 > 0
+		PRINTFORMDL  %CALLNAME%は我慢できずオナニーを初めてしまった……
+	ELSE
+		PRINTFORMDL  %CALLNAME%は思わず電源を消してしまった……
+	ENDIF
+ELSEIF RAND:2 == 0 && LOCAL:0 == 1
+	PRINTFORML 「……あっ！」
+	PRINTFORMDL  資料には推定被害者数の項目もあり、その多さを見て、
+	IF TALENT:TARGET:触手の虜 > 0
+		PRINTFORMDL  %CALLNAME%は自身の凌辱される様子を想像してオナニーを初めてしまった……
+	ELSE
+		PRINTFORMDL  %CALLNAME%は気炎を上げた……
+	ENDIF
+ELSE
+	PRINTFORML 「ふぅん……」
+	PRINTFORMDL  %CALLNAME%は大人しく研究をしている。
+ENDIF
+
+;触手拘束具が鍛錬の邪魔をする
+;-------------------------------------------------
+@KOJO_0_TRAINING_TENTACLECLOTH_27
+PRINTFORML 「あふぅ……い、いきなり動\@ TALENT:アクセサリ==3 ? かないで # くな \@っ……！」
+
+
+;＊＊＊＊＊＊＊＊＊＊＊＊
+;戦闘メッセージ
+;＊＊＊＊＊＊＊＊＊＊＊＊
+;＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝
+;MESSAGE_BATTLE.ERB
+;＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝
+;触手と遭遇
+;ザコ触手と戦闘（自動勝利）
+;-------------------------------------------------
+@KOJO_0_ENCOUNT_MOB_27
+IF TALENT:触手の虜 > 0
+	;お嬢様
+	IF TALENT:アクセサリ==3
+		SELECTCASE RAND:2
+			CASE 0
+				PRINTFORML 「弱いわね…… 物足りないわ……」
+			CASE 1
+				PRINTFORML 「もっと耐えなさいよ。 早すぎるわ」
+		ENDSELECT
+	ELSE
+		SELECTCASE RAND:2
+			CASE 0
+				PRINTFORML 「弱い…… 物足りないな……」
+			CASE 1
+				PRINTFORML 「もっと耐えろよ。 早すぎるって」
+		ENDSELECT
+	ENDIF
+ELSE
+	SELECTCASE RAND:3
+		CASE 0
+			PRINTFORML 「他に壊していいもの無いか\@ TALENT:アクセサリ==3 ? しらねぇ # なぁ \@……」
+		CASE 1
+			PRINTFORML 「まるで話になら\@ TALENT:アクセサリ==3 ? ないわ # ねえな \@……」
+		CASE 2
+			PRINTFORML 「雑魚\@ TALENT:アクセサリ==3 ? ね。 物足りないわ # だな。 物足りないな \@……」
+	ENDSELECT
+ENDIF
+
+;雑魚触手と戦闘
+;-------------------------------------------------
+@KOJO_0_ENCOUNT_MOB_BATTLE_27
+IF TALENT:触手の虜 > 0
+	PRINTFORML 「こんな奴に負けたら……」
+	PRINTFORMDL %CALLNAME%は舌なめずりしている……
+ELSE
+	PRINTFORML 「今回の獲物は\@ TALENT:アクセサリ==3 ? あれね # あいつか \@……」
+	PRINTFORMDL %CALLNAME%は舌なめずりしている……
+ENDIF
+
+;ボス触手と戦闘
+;-------------------------------------------------
+@KOJO_0_ENCOUNT_BOSS_27
+IF TALENT:触手の虜 > 0
+	PRINTFORML 「あれは……！」
+	RESETCOLOR
+	CALL TENTACLE_ACCESS, "NAME"
+	PRINTFORM を目にした途端、%CALLNAME%
+	SELECTCASE RAND:3
+		CASE 0
+			PRINTFORMDL はゴクリと唾を飲み込んだ……
+		CASE 1
+			PRINTFORMDL は思わず内股を摺り合わせていた……
+		CASE 2
+			PRINTFORMDL の顔が喜悦に歪んだ……
+	ENDSELECT
+ELSEIF MARK:恐怖刻印 >= 3
+	;お嬢様
+	IF TALENT:アクセサリ==3
+		SELECTCASE RAND:4
+			CASE 0
+				PRINTFORML 「それ以上近づかないでっ！」
+			CASE 1
+				PRINTFORML 「%SELF_CALL()%は…… 勝つ……！」
+			CASE 2
+				PRINTFORML 「そこに居なさい！　%SELF_CALL()%が殺してあげるっ！」
+			CASE 3
+				PRINTFORML 「これ、負けたら……」
+		ENDSELECT
+	ELSE
+		SELECTCASE RAND:4
+			CASE 0
+				PRINTFORML 「それ以上近づくなよっ！」
+			CASE 1
+				PRINTFORML 「%SELF_CALL()%は……負けねぇ……！」
+			CASE 2
+				PRINTFORML 「そこに居ろよ！　%SELF_CALL()%が殺してやるっ！」
+			CASE 3
+				PRINTFORML 「負けたら監禁レイプじゃねぇか……」
+		ENDSELECT
+	ENDIF
+	RESETCOLOR
+	PRINTFORMD  %CALLNAME%は
+	CALL TENTACLE_ACCESS, "NAME"
+	PRINTFORMDL の異様に委縮し、体の震えが止まらない。
+	CALL KOJO_0_COLOR_27
+	PRINTFORML 「\@ TALENT:アクセサリ==3 ? 行くわよ # スッゾコラー \@！」
+	PRINTFORMDL  %CALLNAME%は震えをごまかすために咆哮した……
+ELSE
+	;お嬢様
+	IF TALENT:アクセサリ==3
+		SELECTCASE RAND:4
+			CASE 0
+				PRINTFORML 「出たわね、化け物！　%SELF_CALL()%が相手よ！」
+			CASE 1
+				PRINTFORML 「来なさい、生きたサンドバックのくせに！」
+			CASE 2
+				PRINTFORML 「ふん、%SELF_CALL()%を倒せるとでも思ってるのかしら、哀れね」
+			CASE 3
+				PRINTFORML 「醜悪な姿…消してあげますわ」
+		ENDSELECT
+	ELSE
+		SELECTCASE RAND:4
+			CASE 0
+				PRINTFORML 「出たな、クソ野郎！　%SELF_CALL()%が相手だ！」
+			CASE 1
+				PRINTFORML 「来いよ、生きたサンドバック風情が！」
+			CASE 2
+				PRINTFORML 「ふん、%SELF_CALL()%を倒せるとでも思ってるのか、クソが」
+			CASE 3
+				PRINTFORML 「テメェがボスか、とっとと終わらせてやるぜ」
+		ENDSELECT
+	ENDIF
+
+
+	PRINTFORMDL  %CALLNAME%は肉食獣のような笑みを浮かべながら、\@ TALENT:アクセサリ==3 ? 優雅な # 喧嘩慣れした \@動作で戦闘態勢を取った……
+ENDIF
+
+;ボス触手襲来
+;-------------------------------------------------
+@KOJO_0_RAID_BOSS_27
+
+;ラスボス触手と戦闘
+;-------------------------------------------------
+@KOJO_0_ENCOUNT_LASTBOSS_27
+PRINTFORML 「これで、最後\@ TALENT:アクセサリ==3 ? ね # か \@……」
+IF TALENT:触手の虜 > 0
+	PRINTFORMDL  %CALLNAME%は寂しさを感じつつも、戦意は鈍っていないようだ。
+ELSEIF MARK:恐怖刻印 >= 3
+	PRINTFORMDL  %CALLNAME%は震える体を抑えるために、頬を叩いて気合を入れている。
+ELSE
+	PRINTFORMDL  %CALLNAME%はウォーミングアップを終え、笑みを浮かべながら相対した。
+ENDIF
+PRINTFORML 「行\@ TALENT:アクセサリ==3 ? きます # くぞ \@！」
+
+;ラスボス触手襲来
+;-------------------------------------------------
+@KOJO_0_RAID_LASTBOSS_27
+
+;初めて洗脳キャラと対峙した
+;-------------------------------------------------
+@KOJO_0_ENCOUNT_SENNOU_FIRST_27
+PRINTFORML 「\@ TALENT:アクセサリ==3 ? あら # お \@？ サンドバックになりに来\@ TALENT:アクセサリ==3 ? まし #  \@たか？」
+PRINTFORMDL  %CALLNAME%は%PRINT_TRANSCALLNAME(FLAG:111)%を張り倒す気満々だ。
+
+;洗脳キャラと対峙
+;-------------------------------------------------
+@KOJO_0_ENCOUNT_SENNOU_27
+IF TALENT:触手の虜 > 0
+	PRINTFORML 「くっ、%SELF_CALL()%は、違う……！」
+	PRINTFORMDL  %CALLNAME%は、快楽に屈した%PRINT_TRANSCALLNAME(FLAG:111)%を見て羨ましそうにしながらも、\@ RAND:2==0 ? ギリギリと歯を噛み締めて # 爪が刺さるほど拳を握りしめて \@自制している。
+ELSE
+	PRINTFORML 「\@ TALENT:アクセサリ==3 ? うふ、うふふふふ # はは、やってやろうじゃん \@！」
+	PRINTFORMDL  %CALLNAME%は人間を合法的にボコボコにできることに興奮して、嗜虐的な笑みを浮かべている……
+ENDIF
+
+;始めて悪堕ちキャラと対峙した
+;-------------------------------------------------
+@KOJO_0_ENCOUNT_AKUOTI_FIRST_27
+PRINTFORML 「\@ TALENT:アクセサリ==3 ? 黙りなさい。 斜め45度で手刀を食らわせてあげるわよ。 # うるせぇ！ 黙って殴られとけ！ \@」
+PRINTFORMDL  %CALLNAME%は%PRINT_TRANSCALLNAME(FLAG:111)%を張り倒す気満々だ。
+
+;悪堕ちキャラと対峙
+;-------------------------------------------------
+@KOJO_0_ENCOUNT_AKUOTI_27
+IF TALENT:触手の虜 > 0
+	PRINTFORML 「くっ、%SELF_CALL()%は、違う……！」
+	PRINTFORMDL  %CALLNAME%は、快楽に屈した%PRINT_TRANSCALLNAME(FLAG:111)%を見て羨ましそうにしながらも、\@ RAND:2==0 ? ギリギリと歯を噛み締めて # 爪が刺さるほど拳を握りしめて \@自制している。
+ELSE
+	PRINTFORML 「ごちゃごちゃうるさい\@ TALENT:アクセサリ==3 ? わね # な \@。 さっさと戦\@ TALENT:アクセサリ==3 ? いましょう？ # おうぜ \@」
+	PRINTFORMDL  %CALLNAME%は人間を合法的に殴り倒せることに興奮して、嗜虐的な笑みを浮かべている……
+ENDIF
+
+
+;戦闘関連の口上
+;キャラの行動
+;変身前のかけ声
+;口上オリジナルのかけ声を使用する場合のみコメントアウトを外して記述してください
+;-------------------------------------------------
+;@KOJO_0_BATTLE_CHARA_TRANSFORMCALL_27
+
+;変身後の名乗り
+;口上オリジナルの名乗りを使用する場合のみコメントアウトを外して記述してください
+;-------------------------------------------------
+;@KOJO_0_BATTLE_CHARA_NANORI_27
+
+;気力が尽きて変身が強制的に解けた
+;-------------------------------------------------
+@KOJO_0_BATTLE_CHARA_TRANSRELEASE_27
+IF TALENT:触手の虜 > 0
+	PRINTFORML 「あ、あぁ……」
+ELSEIF MARK:恐怖刻印 >= 3
+	IF RAND:2 == 0
+		PRINTFORML 「うっ、\@ TALENT:アクセサリ==3 ? この # クソ \@っ……」
+	ELSE
+		PRINTFORML 「こんな時に変身が……」
+	ENDIF
+ELSE
+	;お嬢様
+	IF TALENT:アクセサリ==3
+		IF RAND:2 == 0
+			PRINTFORML 「この、バカにしないで！」
+		ELSE
+			PRINTFORML 「変身しなくても余裕ですわ、かかってらっしゃい！」
+		ENDIF
+	ELSE
+		IF RAND:2 == 0
+			PRINTFORML 「この、なめんじゃねえぞ！」
+		ELSE
+			PRINTFORML 「変身しなくても余裕だぜ、かかって来いよ！」
+		ENDIF
+	ENDIF
+ENDIF
+
+;絶頂で変身が強制的に解けた
+;-------------------------------------------------
+@KOJO_0_BATTLE_CHARA_TRANSRELEASE_ECS_27
+;お嬢様
+IF TALENT:アクセサリ==3
+	IF RAND:2 == 0
+		PRINTFORML 「はうっ……！ こ、このっ……！」
+	ELSE
+		PRINTFORML 「イっちゃいけない時に……このっ……！」
+	ENDIF
+ELSE
+	PRINTFORML 「はうっ……！ こ、このクソがっ……！」
+ENDIF
+
+;撤退成功
+;-------------------------------------------------
+@KOJO_0_BATTLE_CHARA_TETTAI_SUCCESS_27
+IF BASE:体力 < MAXBASE:体力 / 4
+	PRINTFORML 「はぁ……はぁ…… 次は\@ TALENT:アクセサリ==3 ? 殺るわ # ぶっ殺す \@……」
+;お嬢様
+ELSEIF TALENT:アクセサリ==3
+	SELECTCASE RAND:2
+		CASE 0
+			PRINTFORML 「見逃して\あげるわ！」
+		CASE 1
+			PRINTFORML 「ふん！ 調子が出ないわね！」
+	ENDSELECT
+ELSE
+	SELECTCASE RAND:2
+		CASE 0
+			PRINTFORML 「見逃してやるよ！」
+		CASE 1
+			PRINTFORML 「ふん！ 調子が出ないな！」
+	ENDSELECT
+ENDIF
+
+;撤退失敗
+;-------------------------------------------------
+@KOJO_0_BATTLE_CHARA_TETTAI_FALSE_27
+IF BASE:体力 < MAXBASE:体力 / 4
+	PRINTFORML 「……ちっ！ 逃げれない\@ TALENT:アクセサリ==3 ? わね # な \@」
+;お嬢様
+ELSEIF TALENT:アクセサリ==3
+	SELECTCASE RAND:3
+		CASE 0
+			PRINTFORML 「まだ殴られ足りないみたいね？」
+		CASE 1
+			PRINTFORML 「%SELF_CALL()%に止めを刺されたいのね……！」
+		CASE 2
+			PRINTFORML 「しつこいわね！」
+	ENDSELECT
+ELSE
+	SELECTCASE RAND:3
+		CASE 0
+			PRINTFORML 「まだ殴られてぇみたいだな？」
+		CASE 1
+			PRINTFORML 「%SELF_CALL()%に止めを刺されたいんだな……！」
+		CASE 2
+			PRINTFORML 「しつこい！」
+	ENDSELECT
+ENDIF
+
+;COMF1：近距離攻撃
+;-------------------------------------------------
+@KOJO_0_BATTLE_CHARA_ATTACK_RANGE_SHORT_27
+;お嬢様
+IF TALENT:アクセサリ==3
+	SELECTCASE RAND:3
+	CASE 0
+		;近距離得意
+		IF TALENT:180 > 0
+			PRINTFORML 「近接戦は得意ですわ」
+		;近距離苦手
+		ELSEIF TALENT:181 > 0
+			PRINTFORML 「近接戦は苦手なんですが」
+		ELSE
+			PRINTFORML 「チェストォ！」
+		ENDIF
+	CASE 1
+		PRINTFORML 「食らえっ！」
+	CASE 2
+		PRINTFORML 「倒れなさい！」
+	ENDSELECT
+ELSE
+	SELECTCASE RAND:3
+	CASE 0
+		;近距離得意
+		IF TALENT:180 > 0
+			PRINTFORML 「インファイトは得意だぜ」
+		;近距離苦手
+		ELSEIF TALENT:181 > 0
+			PRINTFORML 「インファイトは得意じゃないんだが」
+		ELSE
+			PRINTFORML 「チェストォ！」
+		ENDIF
+	CASE 1
+		PRINTFORML 「チェェイ！」
+	CASE 2
+		PRINTFORML 「コイツで倒れな！」
+	ENDSELECT
+ENDIF
+
+;COMF2：中距離攻撃
+;-------------------------------------------------
+@KOJO_0_BATTLE_CHARA_ATTACK_RANGE_MIDDLE_27
+;お嬢様
+IF TALENT:アクセサリ==3
+	SELECTCASE RAND:2
+	CASE 0
+		;中距離得意
+		IF TALENT:182 > 0
+			PRINTFORML 「中距離戦は得意ですわ」
+		;中距離苦手
+		ELSEIF TALENT:183 > 0
+			PRINTFORML 「中距離戦は苦手なんですが」
+		ELSE
+			PRINTFORML 「逃がさないわ！」
+		ENDIF
+	CASE 1
+		PRINTFORML 「当てるわ！」
+	ENDSELECT
+ELSE
+	SELECTCASE RAND:2
+	CASE 0
+		;中距離得意
+		IF TALENT:182 > 0
+			PRINTFORML 「ミドルレンジは得意だぜ」
+		;中距離苦手
+		ELSEIF TALENT:183 > 0
+			PRINTFORML 「ミドルレンジは得意じゃないんだが」
+		ELSE
+			PRINTFORML 「逃がすか！」
+		ENDIF
+	CASE 1
+		PRINTFORML 「当てる！」
+	ENDSELECT
+ENDIF
+
+;COMF3：遠距離攻撃
+;-------------------------------------------------
+@KOJO_0_BATTLE_CHARA_ATTACK_RANGE_LONG_27
+;お嬢様
+IF TALENT:アクセサリ==3
+	SELECTCASE RAND:2
+		CASE 0
+		;遠距離得意
+		IF TALENT:182 > 0
+			PRINTFORML 「遠距離戦は得意ですわ」
+		;遠距離苦手
+		ELSEIF TALENT:183 > 0
+			PRINTFORML 「遠距離戦は苦手なんですが」
+		ELSE
+			PRINTFORML 「当たれっ！」
+		ENDIF
+	CASE 1
+		PRINTFORML 「止まりなさい！」
+	ENDSELECT
+ELSE
+	SELECTCASE RAND:2
+	CASE 0
+		;遠距離得意
+		IF TALENT:182 > 0
+			PRINTFORML 「アウトレンジは得意だぜ」
+		;遠距離苦手
+		ELSEIF TALENT:183 > 0
+			PRINTFORML 「アウトレンジは苦手なんだが」
+		ELSE
+			PRINTFORML 「当たれっ！」
+		ENDIF
+	CASE 1
+		PRINTFORML 「動くな！」
+	ENDSELECT
+ENDIF
+
+;攻撃がクリティカルヒット
+;-------------------------------------------------
+@KOJO_0_BATTLE_CHARA_ATTACK_CRITICAL_HIT_27
+;お嬢様
+IF TALENT:アクセサリ==3
+	SELECTCASE RAND:2
+		CASE 0
+			PRINTFORML 「まともに入ったわね」
+		CASE 1
+			PRINTFORML 「このまま押し切る！」
+	ENDSELECT
+ELSE
+	SELECTCASE RAND:2
+		CASE 0
+			PRINTFORML 「まともに入ったな」
+		CASE 1
+			PRINTFORML 「こいつで倒れな！」
+	ENDSELECT
+ENDIF
+
+;攻撃が通常ヒット
+;-------------------------------------------------
+@KOJO_0_BATTLE_CHARA_ATTACK_HIT_27
+;お嬢様
+IF TALENT:アクセサリ==3
+	SELECTCASE RAND:2
+		CASE 0
+			PRINTFORML 「悪くはないわね」
+		CASE 1
+			PRINTFORML 「よし、当たった！」
+	ENDSELECT
+ELSE
+	SELECTCASE RAND:2
+		CASE 0
+			PRINTFORML 「悪くはねぇな」
+		CASE 1
+			PRINTFORML 「オラッ、痛いか？」
+	ENDSELECT
+ENDIF
+
+;攻撃失敗・カス当たり
+;-------------------------------------------------
+@KOJO_0_BATTLE_CHARA_ATTACK_FALSE_27
+;お嬢様
+IF TALENT:アクセサリ==3
+	SELECTCASE RAND:2
+		CASE 0
+			PRINTFORML 「削っただけですわ」
+		CASE 1
+			PRINTFORML 「あっ、手元が狂ったわ」
+	ENDSELECT
+ELSE
+	SELECTCASE RAND:2
+		CASE 0
+			PRINTFORML 「避けるんじゃねえ！」
+		CASE 1
+			PRINTFORML 「ちっ！　手元が狂った！」
+	ENDSELECT
+ENDIF
+
+;COMF4：防御
+;-------------------------------------------------
+@KOJO_0_BATTLE_CHARA_DEFENSE_27
+;お嬢様
+IF TALENT:アクセサリ==3
+	SELECTCASE RAND:2
+		CASE 0
+			PRINTFORML 「今は耐えるしかないわね…」
+		CASE 1
+			PRINTFORML 「くっ！　煩わしい……！」
+	ENDSELECT
+ELSE
+	SELECTCASE RAND:2
+		CASE 0
+			PRINTFORML 「今は耐えるしかないな…」
+		CASE 1
+			PRINTFORML 「くっ！　うざったい……！」
+	ENDSELECT
+ENDIF
+
+;COMF5：距離をとる
+;-------------------------------------------------
+@KOJO_0_BATTLE_CHARA_TAKEAWAY_27
+;お嬢様
+IF TALENT:アクセサリ==3
+	SELECTCASE RAND:3
+		CASE 0
+			PRINTFORML 「すぅー、ふぅー……」
+			PRINTFORML 「落ち着いて、深呼吸…」
+		CASE 1
+			PRINTFORML 「……まだまだ行くわよっ！」
+		CASE 2
+			PRINTFORML 「一旦距離を取りまして…」
+	ENDSELECT
+ELSE
+	SELECTCASE RAND:2
+		CASE 0
+			PRINTFORML 「すぅー、ふぅー……」
+		CASE 1
+			PRINTFORML 「……まだまだ行くぞっ！」
+	ENDSELECT
+ENDIF
+
+;COMF6：背後に回る
+;-------------------------------------------------
+@KOJO_0_BATTLE_CHARA_STEPIN_27
+;お嬢様
+IF TALENT:アクセサリ==3
+	IF ENEMY_TYPE_CHECK_F("AKUOTI") == 0 && RAND:2 == 0
+		PRINTFORML 「こいつの死角ってどこよ！」
+	ELSE
+		PRINTFORML 「鬼さん、こちらっと！」
+	ENDIF
+ELSE
+	IF ENEMY_TYPE_CHECK_F("AKUOTI") == 0 && RAND:2 == 0
+		PRINTFORML 「こいつの死角ってどこだ」
+	ELSE
+		PRINTFORML 「後ろがガラ空きだぜ！」
+	ENDIF
+ENDIF
+
+;COMF7：見切り
+;-------------------------------------------------
+@KOJO_0_BATTLE_CHARA_SEETHROUGH_27
+;お嬢様
+IF TALENT:アクセサリ==3
+	SELECTCASE RAND:2
+		CASE 0
+			PRINTFORML （どう来る……？）
+		CASE 1
+			PRINTFORML 「来なさい……！」
+	ENDSELECT
+ELSE
+	SELECTCASE RAND:2
+		CASE 0
+			PRINTFORML （どう来やがる……？）
+		CASE 1
+			PRINTFORML 「来いよ……！」
+	ENDSELECT
+ENDIF
+
+;COMF69：何もしない
+;-------------------------------------------------
+@KOJO_0_BATTLE_CHARA_NOACTION_27
+PRINTFORML （……）
+PRINTFORML 「はっ！？」
+PRINTFORMDL  %PRINT_TRANSCALLNAME(TARGET)%はボーっとしていたようだ。
+
+;COMF8：振り解く開始
+;-------------------------------------------------
+@KOJO_0_BATTLE_CHARA_HURIHODOKU_27
+;お嬢様
+IF TALENT:アクセサリ==3
+	SELECTCASE RAND:2
+		CASE 0
+			PRINTFORML 「はな…れ……な…さいっ…！」
+		CASE 1
+			PRINTFORML 「うぐぐぐ……！」
+	ENDSELECT
+ELSE
+	SELECTCASE RAND:2
+		CASE 0
+			PRINTFORML 「離れろ…よ……！」
+		CASE 1
+			PRINTFORML 「くぉのぉ……！」
+	ENDSELECT
+ENDIF
+
+;振り解く成功
+;-------------------------------------------------
+@KOJO_0_BATTLE_CHARA_HURIHODOKU_SUCCESS_27
+;お嬢様
+IF TALENT:アクセサリ==3
+	SELECTCASE RAND:2
+		CASE 0
+			PRINTFORML 「ふぅ……反撃開始よ」
+		CASE 1
+			PRINTFORML 「絶対に、仕留める……！」
+	ENDSELECT
+ELSE
+	SELECTCASE RAND:2
+		CASE 0
+			PRINTFORML 「ふぅ……反撃開始だ」
+		CASE 1
+			PRINTFORML 「絶対にぶっ殺す……！」
+	ENDSELECT
+ENDIF
+
+;振り解く失敗
+;-------------------------------------------------
+@KOJO_0_BATTLE_CHARA_HURIHODOKU_FALSE_27
+SELECTCASE RAND:2
+	CASE 0
+		PRINTFORML 「離っ、ちょっ…… うぐっ！」
+	CASE 1
+		PRINTFORML 「ぐっ！ 離れっ…… がっ！」
+ENDSELECT
+
+;COMF9：暴れる
+;-------------------------------------------------
+@KOJO_0_BATTLE_CHARA_ABARERU_27
+SELECTCASE RAND:2
+	CASE 0
+		PRINTFORML 「このっ、このっ！」
+	CASE 1
+		PRINTFORML 「食ら\@ TALENT:アクセサリ==3 ? え # いやがれ \@！」
+ENDSELECT
+
+;COMF10：耐える
+;-------------------------------------------------
+@KOJO_0_BATTLE_CHARA_TAERU_27
+IF TALENT:触手の虜 > 0
+	;お嬢様
+	IF TALENT:アクセサリ==3
+		SELECTCASE RAND:2
+			CASE 0
+				PRINTFORML （これは耐えているだけ）
+				PRINTFORML （襲ってくるのを待っている訳では…）
+			CASE 1
+				PRINTFORML 「どう攻めてくるのかしら？」
+		ENDSELECT
+	ELSE
+		SELECTCASE RAND:2
+			CASE 0
+				PRINTFORML （これは耐えているだけで）
+				PRINTFORML （襲ってくるのを待っている訳じゃ…）
+			CASE 1
+				PRINTFORML 「へっ、次はどうきやがる❤」
+		ENDSELECT
+	ENDIF
+ELSE
+	SELECTCASE RAND:2
+		CASE 0
+			PRINTFORML （今は、耐えるしかない……！）
+		CASE 1
+			PRINTFORML （く\@ TALENT:アクセサリ==3 ?  # そ \@っ…… タイミングが……！）
+	ENDSELECT
+ENDIF
+
+;COMF11：なすがまま
+;-------------------------------------------------
+@KOJO_0_BATTLE_CHARA_NASUGAMAMA_27
+IF TALENT:触手の虜 > 0
+	SELECTCASE RAND:2
+		CASE 0
+			PRINTFORML 「はぁ、はぁ…… もっとぉ……」
+		CASE 1
+			PRINTFORML 「\@ TALENT:アクセサリ==3 ? き、来なさい。受けて立つわ # こ、来いよ。ふんっ \@」
+	ENDSELECT
+	PRINTFORML （ああっ、すごい……）
+ELSE
+	PRINTFORML 「っ……」
+	SELECTCASE RAND:2
+		CASE 0
+			PRINTFORML （油断を突くしかない\@ TALENT:アクセサリ==3 ? わね # な \@……）
+		CASE 1
+			PRINTFORML （く\@ TALENT:アクセサリ==3 ? 、後で磨り潰してあげる # そ、後でぶっ殺す \@っ……！）
+	ENDSELECT
+ENDIF
+
+;COMF12：受け入れる
+;-------------------------------------------------
+@KOJO_0_BATTLE_CHARA_UKEIRERU_27
+IF TALENT:触手の虜 > 0
+	SELECTCASE RAND:2
+		CASE 0
+			PRINTFORML 「%SELF_CALL()%……」
+		CASE 1
+			PRINTFORML 「あ……」
+	ENDSELECT
+	PRINTFORML （もう……どうなってもいい\@ TALENT:アクセサリ==3 ? わ #  \@……）
+ELSE
+	PRINTFORML 「っ……」
+	SELECTCASE RAND:2
+		CASE 0
+			PRINTFORML （く\@ TALENT:アクセサリ==3 ?  # そ \@……油断を誘うためとはいえ、こんなことをっ！）
+		CASE 1
+			PRINTFORML （自由になったら百倍返し\@ TALENT:アクセサリ==3 ? よ # だ \@！）
+	ENDSELECT
+ENDIF
+
+;COMF13：奉仕する
+;-------------------------------------------------
+@KOJO_0_BATTLE_CHARA_HOUSI_27
+IF TALENT:触手の虜 > 0
+	PRINTFORML 「今度は%SELF_CALL()%から……」
+	SELECTCASE RAND:3
+		CASE 0
+			PRINTFORML （好き…… もっとしたい……）
+		CASE 1
+			PRINTFORML （あぁん…… もっとぉ……）
+		CASE 2
+			PRINTFORML 「お互い気持ち良く\@ TALENT:アクセサリ==3 ? なりましょ # なろうぜ \@❤」
+	ENDSELECT
+ELSE
+	PRINTFORML 「くっ…… こんなことを、しな\@ TALENT:アクセサリ==3 ? いとならないなんて # くちゃいけないなんて \@……」
+	SELECTCASE RAND:2
+		CASE 0
+			PRINTFORML （……殺す殺す殺す殺す殺す……）
+		CASE 1
+			PRINTFORML （……早く倒れ\@ TALENT:アクセサリ==3 ? なさい # ろ \@……）
+	ENDSELECT
+ENDIF
+
+;COMF14：Ｖ挿入防御
+;-------------------------------------------------
+@KOJO_0_BATTLE_CHARA_ANTI_V_27
+IF TALENT:触手の虜 > 0
+	IF TALENT:処女 == 1 || TALENT:処女 == 2
+		PRINTFORML 「まだ処女はあげない\@ TALENT:アクセサリ==3 ? わよ # からな \@……」
+	ELSE
+		PRINTFORML 「まだ挿れさせない\@ TALENT:アクセサリ==3 ? わ # からな \@……」
+	ENDIF
+ELSE
+	IF TALENT:処女 == 1 || TALENT:処女 == 2
+		;お嬢様
+		IF TALENT:アクセサリ==3
+			SELECTCASE RAND:2
+				CASE 0
+					PRINTFORML 「お前なんかに初めてをあげるわけないでしょ！」
+				CASE 1
+					PRINTFORML 「無駄な努力でしたね」
+			ENDSELECT
+		ELSE
+			SELECTCASE RAND:2
+				CASE 0
+					PRINTFORML 「てめぇなんかに初めてやる訳ねぇだろっ！」
+				CASE 1
+					PRINTFORML 「はっ、てめぇの小さいモノなんかじゃ入る訳ねぇだろ！」
+			ENDSELECT
+;			PRINTFORML 「%触手市民("化け物 # こんな奴ら \@なんかに初めてを\@ TALENT:アクセサリ==3 ? あげるわけないでしょう","やるもんか")%っ！」
+		ENDIF
+	ELSE
+		PRINTFORML 「%触手市民("化け物","こんな奴ら")%のモノなんかっ……！」
+	ENDIF
+ENDIF
+
+;COMF40：引き剥がす
+;-------------------------------------------------
+@KOJO_0_BATTLE_CHARA_HIKIHAGASU_27
+CALL KOJO_0_BATTLE_CHARA_HURIHODOKU_27
+;お嬢様
+IF TALENT:アクセサリ==3
+	PRINTFORML 「離れ…な…さいっ！」
+ELSE
+	PRINTFORML 「離れろ…！」
+
+ENDIF
+
+;引き剥がす成功
+;振り解く成功と同じみたいなのですべてコメント化
+;-------------------------------------------------
+@KOJO_0_BATTLE_CHARA_HIKIHAGASU_SUCCESS_27
+CALL KOJO_0_BATTLE_CHARA_HURIHODOKU_SUCCESS_27
+;お嬢様
+;IF TALENT:アクセサリ==3
+;	PRINTFORML 「反撃開始ですわ！」
+;ELSE
+;	PRINTFORML 「反撃開始だっ！」
+;ENDIF
+
+;引き剥がす失敗
+;-------------------------------------------------
+@KOJO_0_BATTLE_CHARA_HIKIHAGASU_FALSE_27
+CALL KOJO_0_BATTLE_CHARA_HURIHODOKU_FALSE_27
+;お嬢様
+;IF TALENT:アクセサリ==3
+;	SELECTCASE RAND:2
+;		CASE 0
+;			PRINTFORML 「ちっ！ ……まだ離れないわね」
+;		CASE 1
+;			PRINTFORML 「しつこい！」
+;	ENDSELECT
+;ELSE
+;	SELECTCASE RAND:2
+;		CASE 0
+;			PRINTFORML 「ちっ！ ……まだ離れねぇか」
+;		CASE 1
+;			PRINTFORML 「はがれろぉっ！」
+;	ENDSELECT
+;ENDIF
+
+
+;COMF44：睨みつける
+;-------------------------------------------------
+@KOJO_0_BATTLE_CHARA_NIRAMI_27
+;激しい凌辱
+IF TFLAG:20 == 1000 || TFLAG:20 == 1003 || TFLAG:20 == 1005 || TFLAG:20 == 1012
+	;お嬢様
+	IF TALENT:アクセサリ==3
+		SELECTCASE RAND:2
+			CASE 0
+				PRINTFORML （こんな責めなど…！）
+			CASE 1
+				PRINTFORML （まだ…%SELF_CALL()%の心は折れてませんわ……）
+		ENDSELECT
+	ELSE
+		SELECTCASE RAND:2
+			CASE 0
+				PRINTFORML （こんな責めしやがって…！）
+			CASE 1
+				PRINTFORML （まだだ、%SELF_CALL()%の心は折れちゃいねぇ！）
+		ENDSELECT
+	ENDIF
+;本番系
+ELSEIF TFLAG:20 == 3 || TFLAG:20 == 5 || TFLAG:20 == 15 || TFLAG:20 == 16 || TFLAG:20 == 1001 || TFLAG:20 == 1002 || TFLAG:20 == 1009 || TFLAG:20 == 1010 || TFLAG:20 == 1011 || TFLAG:20 == 1014
+	;お嬢様
+	IF TALENT:アクセサリ==3
+		SELECTCASE RAND:2
+			CASE 0
+				PRINTFORML （こんな事…犬にでも噛まれた様なもの……）
+			CASE 1
+				PRINTFORML （許しませんわ…許しませんわ……！）
+		ENDSELECT
+	ELSE
+		SELECTCASE RAND:2
+			CASE 0
+				PRINTFORML （こんなの犬にでも噛まれたぐらいだ……）
+			CASE 1
+				PRINTFORML （人をオモチャみたいに使いやがって……！）
+		ENDSELECT
+	ENDIF
+ELSE
+	;お嬢様
+	IF TALENT:アクセサリ==3
+		PRINTFORML （この程度…負けませんわ！）
+	ELSE
+		PRINTFORML （この程度じゃ…負けねぇ！）
+	ENDIF
+ENDIF
+
+;COMF45：罵倒する
+;-------------------------------------------------
+@KOJO_0_BATTLE_CHARA_BATOU_27
+IF TALENT:触手の虜 > 0
+	;お嬢様
+	IF TALENT:アクセサリ==3
+		PRINTFORML 「その程度ですか？　大した事ありませんね」
+	ELSE
+		PRINTFORML 「ここから抜け出したら、十分なお礼をさせて頂きますわ」
+	ENDIF
+ELSE
+	;お嬢様
+	IF TALENT:アクセサリ==3
+		PRINTFORML 「はっ、その程度かよ。大した事ねぇな」
+	ELSE
+		PRINTFORML 「抜け出したら、お礼はたっぷりしてやるからな」
+	ENDIF
+ENDIF
+
+;COMF46：反抗する
+;-------------------------------------------------
+@KOJO_0_BATTLE_CHARA_RESISTANCE_27
+
+;COMF47：説得する
+;-------------------------------------------------
+@KOJO_0_BATTLE_CHARA_PERSUADE_27
+
+;COMF73：SP変身
+;-------------------------------------------------
+@KOJO_0_BATTLE_CHARA_SP_TRANSFORMCALL_27
+SELECTCASE RAND:2
+	CASE 0
+		PRINTFORML 「まだまだ\@ TALENT:アクセサリ==3 ? これからよ # やるぜ \@っ！！」
+	CASE 1
+		PRINTFORML 「ここから反撃開始\@ TALENT:アクセサリ==3 ? よ # だ \@っ！」
+ENDSELECT
+
+;COMF70：SPバースト
+;-------------------------------------------------
+@KOJO_0_BATTLE_CHARA_SP_BURST_27
+SELECTCASE RAND:2
+	CASE 0
+		PRINTFORML 「まだまだ\@ TALENT:アクセサリ==3 ? これからよ # やるぜ \@っ！！」
+	CASE 1
+		PRINTFORML 「これで仕切り直し\@ TALENT:アクセサリ==3 ? よ # だ \@っ！」
+ENDSELECT
+
+
+;触手側の行動（攻撃など）
+;攻撃
+;-------------------------------------------------
+@KOJO_0_BATTLE_TENTACLE_ATTACK_27
+
+;触手の攻撃がクリティカルヒット
+;-------------------------------------------------
+@KOJO_0_BATTLE_TENTACLE_ATTACK_CRITICAL_HIT_27
+SELECTCASE RAND:2
+	CASE 0
+		PRINTFORML 「おごぉっ！？ ～～っ！！ ぐうぅっ……！」
+	CASE 1
+		PRINTFORML 「ぐげぇっ！？ ……げほっ、ごほっ！」
+ENDSELECT
+
+;ACTION1：触手の攻撃が通常ヒット
+;-------------------------------------------------
+@KOJO_0_BATTLE_TENTACLE_ATTACK_HIT_27
+SELECTCASE RAND:4
+	CASE 0
+		PRINTFORML 「ぐふっ！？」
+	CASE 1
+		PRINTFORML 「ふべっ！？」
+	CASE 2
+		PRINTFORML 「ひぐっ！？」
+	CASE 3
+		PRINTFORML 「げふッ！？」
+ENDSELECT
+
+;触手の攻撃を回避
+;-------------------------------------------------
+@KOJO_0_BATTLE_TENTACLE_ATTACK_FALSE_27
+IF BASE:体力 < MAXBASE:体力 / 4
+	SELECTCASE RAND:2
+		CASE 0
+			PRINTFORML 「うぁっ……！ 危なかった\@ TALENT:アクセサリ==3 ? わ #  \@……！」
+		CASE 1
+			PRINTFORML 「あぶっ……！ ちっ！」
+	ENDSELECT
+ELSE
+	SELECTCASE RAND:2
+		CASE 0
+			PRINTFORML 「遅い\@ TALENT:アクセサリ==3 ? わよ # な \@」
+		CASE 1
+			PRINTFORML 「\@ TALENT:アクセサリ==3 ? あら、この程度かしら # ふん、この程度か \@？」
+	ENDSELECT
+ENDIF
+
+;攻撃がカス当たり
+;-------------------------------------------------
+@KOJO_0_BATTLE_TENTACLE_ATTACK_GRAZE_27
+SELECTCASE RAND:2
+	CASE 0
+		PRINTFORML 「いたっ！ ……\@ TALENT:アクセサリ==3 ? やったわね # やりやがったな \@……！」
+	CASE 1
+		PRINTFORML 「くっ！ \@ TALENT:アクセサリ==3 ? 痛いじゃないの # いてぇな、こいつ \@！」
+ENDSELECT
+
+;ACTION2：絡みつく
+;-------------------------------------------------
+@KOJO_0_BATTLE_TENTACLE_KARAMITUKU_27
+
+;触手の絡みつくが成功
+;-------------------------------------------------
+@KOJO_0_BATTLE_TENTACLE_KARAMITUKU_SUCCESS_27
+IF TALENT:触手の虜 > 0
+	PRINTFORML 「……あっ！？」
+ELSE
+	SELECTCASE RAND:2
+		CASE 0
+			PRINTFORML 「やめ\@ TALENT:アクセサリ==3 ? なさい # ろ \@、変態！」
+		CASE 1
+			PRINTFORML 「なっ！ どこを触って\@ TALENT:アクセサリ==3 ? いるのよ # やがる \@！」
+	ENDSELECT
+ENDIF
+
+;触手の絡みつくを回避
+;-------------------------------------------------
+@KOJO_0_BATTLE_TENTACLE_KARAMITUKU_FALSE_27
+IF TALENT:触手の虜 > 0
+	PRINTFORML 「い、今はダメ\@ TALENT:アクセサリ==3 ? よ # だ \@」
+ELSE
+	SELECTCASE RAND:2
+	CASE 0
+		PRINTFORML 「捕ま\@ TALENT:アクセサリ==3 ? らないわ # るか \@よ！」
+	CASE 1
+		PRINTFORML 「危ない\@ TALENT:アクセサリ==3 ? わね # な \@！」
+	ENDSELECT
+ENDIF
+
+
+;ACTION3：触手が体液を吐く
+;-------------------------------------------------
+@KOJO_0_BATTLE_TENTACLE_TAIEKI_27
+
+;触手の体液を吐くがヒット
+;-------------------------------------------------
+@KOJO_0_BATTLE_TENTACLE_TAIEKI_HIT_27
+SELECTCASE RAND:2
+	CASE 0
+		PRINTFORML 「うぷっ…… くっ、臭いっ……」
+	CASE 1
+		PRINTFORML 「むぐっ！？ おげぇ……っ」
+ENDSELECT
+
+;触手の体液を吐くを回避
+;-------------------------------------------------
+@KOJO_0_BATTLE_TENTACLE_TAIEKI_FALSE_27
+SELECTCASE RAND:2
+	CASE 0
+		PRINTFORML 「……汚\@ TALENT:アクセサリ==3 ? らわしいわね # いな \@……！」
+	CASE 1
+		PRINTFORML 「そんなの当たる\@ TALENT:アクセサリ==3 ? はずがないでしょう # わけないだろ \@！」
+ENDSELECT
+
+;その距離にはいない
+;-------------------------------------------------
+@KOJO_0_BATTLE_TENTACLE_ABSENCE_27
+;お嬢様
+IF TALENT:アクセサリ==3
+	SELECTCASE RAND:2
+		CASE 0
+			PRINTFORML 「そこに%SELF_CALL()%はいませんわ」
+		CASE 1
+			PRINTFORML 「あら？　今のは攻撃でしたの？」
+		CASE 2
+			PRINTFORML 「%SELF_CALL()%はココですよ」
+	ENDSELECT
+ELSE
+	SELECTCASE RAND:2
+		CASE 0
+			PRINTFORML 「そんな所に%SELF_CALL()%はいねぇぜ」
+		CASE 1
+			PRINTFORML 「あ？　今の攻撃だったのか？」
+		CASE 2
+			PRINTFORML 「%SELF_CALL()%はココだぜ」
+	ENDSELECT
+ENDIF
+
+
+;ACTION4：触手が距離をとる
+;-------------------------------------------------
+@KOJO_0_BATTLE_TENTACLE_TAKEAWAY_27
+SELECTCASE RAND:2
+	CASE 0
+		PRINTFORML 「逃げ\@ TALENT:アクセサリ==3 ? る # ん \@な……！」
+	CASE 1
+		PRINTFORML 「\@ TALENT:アクセサリ==3 ? 小賢しい真似を # 大人しくしてろ \@！」
+ENDSELECT
+
+;ACTION5：敵キャラが押し倒すを開始
+;-------------------------------------------------
+@KOJO_0_BATTLE_TENTACLE_OSHITAOSU_27
+
+;敵キャラの押し倒す成功
+;-------------------------------------------------
+@KOJO_0_BATTLE_TENTACLE_OSHITAOSU_SUCCESS_27
+CALL KOJO_0_BATTLE_TENTACLE_KARAMITUKU_SUCCESS_27
+;お嬢様
+IF TALENT:アクセサリ==3
+	SELECTCASE RAND:2
+		CASE 0
+			PRINTFORML 「マウントとったつもりですか？」
+		CASE 1
+			PRINTFORML 「このくらいの力でしたらいつでも抜け出して見せますわ」
+	ENDSELECT
+ELSE
+	SELECTCASE RAND:2
+		CASE 0
+			PRINTFORML 「マウントとったつもりか？」
+		CASE 1
+			PRINTFORML 「この程度の力でだったらいつでも抜け出してやるぜ」
+	ENDSELECT
+ENDIF
+
+;押し倒す回避
+;-------------------------------------------------
+@KOJO_0_BATTLE_TENTACLE_OSHITAOSU_FALSE_27
+CALL KOJO_0_BATTLE_TENTACLE_KARAMITUKU_FALSE_27
+
+;ACTION6：敵キャラが邪悪な波動を開始
+;-------------------------------------------------
+@KOJO_0_BATTLE_TENTACLE_HADOU_27
+
+;邪悪な波動がヒット
+;-------------------------------------------------
+@KOJO_0_BATTLE_TENTACLE_HADOU_HIT_27
+SELECTCASE RAND:3
+	CASE 0
+		PRINTFORML 「うっ！？」
+	CASE 1
+		PRINTFORML 「力がっ！？」
+	CASE 2
+		PRINTFORML 「まずいっ！？」
+ENDSELECT
+
+;邪悪な波動を回避
+;-------------------------------------------------
+@KOJO_0_BATTLE_TENTACLE_HADOU_FALSE_27
+CALL KOJO_0_BATTLE_TENTACLE_TAIEKI_FALSE_27
+
+;衣装の損傷が酷くなった
+;地の文：アウターが破れ始めた
+;-------------------------------------------------
+@KOJO_0_BATTLE_CLOTH_OUTERDAMAGE_27
+SELECTCASE RAND:2
+	CASE 0
+		PRINTFORML 「っ！ ……服が破れてっ……！」
+	CASE 1
+		PRINTFORML 「ふ、服ぐらい何\@ TALENT:アクセサリ==3 ? よ # さ \@」
+ENDSELECT
+
+;地の文：アウターが破れた
+;-------------------------------------------------
+@KOJO_0_BATTLE_CLOTH_OUTERBREAK_27
+SELECTCASE RAND:2
+	CASE 0
+		PRINTFORML 「あっ…… 服……」
+	CASE 1
+		PRINTFORML 「こ、この変態がぁ……！」
+ENDSELECT
+
+;地の文：インナーが破れ始めた
+;-------------------------------------------------
+@KOJO_0_BATTLE_CLOTH_INNERDAMAGE_27
+SELECTCASE RAND:2
+	CASE 0
+		PRINTFORML 「あっ！ ……下着までっ……！」
+	CASE 1
+		PRINTFORML 「やめ\@ TALENT:アクセサリ==3 ? なさい # ろ \@、変態！」
+ENDSELECT
+
+;地の文：インナーが破れた
+;-------------------------------------------------
+@KOJO_0_BATTLE_CLOTH_INNERBREAK_27
+SELECTCASE RAND:2
+	CASE 0
+		PRINTFORML 「やっ！ ……下着がっ……！」
+	CASE 1
+		PRINTFORML 「変態！ 変態！ 変態ぃ！」
+ENDSELECT
+
+;ボス触手・ラスボス触手に勝利
+;-------------------------------------------------
+@KOJO_0_BATTLE_END_WIN_27
+IF BASE:体力 < MAXBASE:体力 / 4
+	PRINTFORML 「はあ、はぁ……%SELF_CALL()%の勝ち\@ TALENT:アクセサリ==3 ? よ # だ \@！」
+ELSE
+	PRINTFORML 「……まだ殴り足りない\@ TALENT:アクセサリ==3 ? わ # な \@」
+ENDIF
+RESETCOLOR
+PRINTFORMD  %PRINT_TRANSCALLNAME(TARGET)%は
+CALL TENTACLE_ACCESS, "NAME"
+PRINTFORMDL の残骸を見て独り言ちた。
+CALL KOJO_0_COLOR_27
+PRINTFORML 「帰\@ TALENT:アクセサリ==3 ? りましょう # る \@か……」
+
+;敵キャラに勝利
+;-------------------------------------------------
+@KOJO_0_BATTLE_END_WIN_ENEMY_27
+IF BASE:体力 < MAXBASE:体力 / 4
+	PRINTFORML 「はあ、はぁ……%SELF_CALL()%の勝ち\@ TALENT:アクセサリ==3 ? よ # だ \@！」
+ELSE
+	PRINTFORML 「……まだ殴り足りない\@ TALENT:アクセサリ==3 ? わ # な \@」
+ENDIF
+PRINTFORMDL  %PRINT_TRANSCALLNAME(TARGET)%は倒れている%PRINT_TRANSCALLNAME(FLAG:111)%を見て独り言ちた。
+PRINTFORML 「持って帰\@ TALENT:アクセサリ==3 ? りましょう # る \@か……」
+
+;ラスボス触手出現
+;-------------------------------------------------
+@KOJO_0_BATTLE_END_LASTBOSSAPPEAR_27
+PRINTFORML 「\@ TALENT:アクセサリ==3 ? あら、まだいるのね # お？親玉か \@？」
+
+;完全殲滅
+;-------------------------------------------------
+@KOJO_0_BATTLE_END_PERFECT_27
+PRINTFORML 「終わったの\@ TALENT:アクセサリ==3 ? ね # か \@……」
+
+;触手に捕らわれていたキャラの救出
+;-------------------------------------------------
+@KOJO_0_BATTLE_END_RESCUE_27
+SELECTCASE RAND:2
+	CASE 0
+		PRINTFORML 「生きてる？……生きてるだけマシ\@ TALENT:アクセサリ==3 ? ね # だな \@」
+	CASE 1
+		PRINTFORML 「うっ……酷い姿\@ TALENT:アクセサリ==3 ? ね # だな \@」
+ENDSELECT
+
+;悪堕ちキャラに捕らわれたキャラの救出
+;-------------------------------------------------
+@KOJO_0_BATTLE_END_RESCUE_AKUOTI_27
+CALL KOJO_0_BATTLE_END_RESCUE_27
+
+;洗脳中キャラの救出
+;-------------------------------------------------
+@KOJO_0_BATTLE_END_RESCUE_SENNOU_27
+SELECTCASE RAND:2
+	CASE 0
+		PRINTFORML （ああ、人型サンドバックが……）
+		PRINTFORML 「ん？なんでもない\@ TALENT:アクセサリ==3 ? わ # ぞ \@」
+	CASE 1
+		PRINTFORML 「ちょっと殴らせて？ほら洗脳が解けてないかもしれないじゃ\@ TALENT:アクセサリ==3 ? ない # ん \@」
+		PRINTFORML 「叩けば治るってよく言うし？」
+ENDSELECT
+
+;敵キャラの救出
+;-------------------------------------------------
+@KOJO_0_BATTLE_END_RESCUE_ENEMY_27
+SELECTCASE RAND:2
+	CASE 0
+		PRINTFORML 「はぁ、手間のかかる……」
+	CASE 1
+		PRINTFORML 「ほら、立\@ TALENT:アクセサリ==3 ? ちなさい、引きづって行くわよ # て、引きづってくぞ \@」
+ENDSELECT
+
+;敗北
+;-------------------------------------------------
+@KOJO_0_BATTLE_END_LOSS_27
+IF TALENT:触手の虜 > 0
+	PRINTFORML 「ぐぅっ……」
+ELSE
+	SELECTCASE RAND:2
+		CASE 0
+			PRINTFORML 「ぐぅっ……この%SELF_CALL()%がっ……」
+		CASE 1
+			IF ENEMY_TYPE_CHECK_F("AKUOTI")==0
+				PRINTFORML 「こっ、殺す…… 絶対にっ……」
+			ELSE
+				PRINTFORML 「次はっ…… 絶対にっ……」
+			ENDIF
+	ENDSELECT
+ENDIF
+
+;時間切れ
+;-------------------------------------------------
+@KOJO_0_BATTLE_END_TIMEUP_27
+IF BASE:体力 < MAXBASE:体力 / 4
+	PRINTFORML 「……はぁ、はぁ……勝てなかった\@ TALENT:アクセサリ==3 ? わね # な \@……」
+ELSE
+	PRINTFORML 「あっ！ \@ TALENT:アクセサリ==3 ? 待ちなさい # 逃げるな \@っ！」
+ENDIF
+
+;心境変化関連
+;倒錯
+;-------------------------------------------------
+@KOJO_0_BATTLE_SHINKYOU_CHANGE_TOUSAKU_27
+;犯された場合
+PRINTFORML （あ、気持ち……別に気持ちよくない！）
+
+;怒り
+;-------------------------------------------------
+@KOJO_0_BATTLE_SHINKYOU_CHANGE_IKARI_27
+;罵倒した場合
+IF SELECTCOM == 45
+	PRINTFORML 「\@ TALENT:アクセサリ==3 ? 去勢するわよ、女の敵が # ぶっ殺すぞオラァ \@！」
+;攻撃を受けた場合
+ELSE
+	PRINTFORML （……必ず死なす！）
+ENDIF
+
+;諦観
+;-------------------------------------------------
+@KOJO_0_BATTLE_SHINKYOU_CHANGE_TEIKAN_27
+;反抗した場合
+IF SELECTCOM == 46
+	PRINTFORML （だ、駄目か\@ TALENT:アクセサリ==3 ? しら # な \@……）
+;攻撃を受けた場合
+ELSE
+	PRINTFORML （ま、まずいかも……）
+ENDIF
+
+;冷静
+;-------------------------------------------------
+@KOJO_0_BATTLE_SHINKYOU_CHANGE_REISEI_27
+;反抗した場合
+IF SELECTCOM == 46
+	PRINTFORML （大丈夫、%SELF_CALL()%が負けるはずがない！）
+;絡みつかれた場合
+ELSE
+	PRINTFORML （冷静にならないと……！）
+ENDIF
+
+;動揺
+;-------------------------------------------------
+@KOJO_0_BATTLE_SHINKYOU_CHANGE_DOUYOU_27
+;罵倒した場合
+IF SELECTCOM == 45
+	PRINTFORML 「こ、この程度でどうにかなる%SELF_CALL()%じゃない\@ TALENT:アクセサリ==3 ? わ #  \@っ！」
+;絡みつかれた場合
+ELSE
+	PRINTFORML （\@ TALENT:アクセサリ==3 ? い、一体 # や、やばい。 \@どうすれば……）
+ENDIF
+
+;高揚
+;-------------------------------------------------
+@KOJO_0_BATTLE_SHINKYOU_CHANGE_KOUYOU_27
+;背後に回り込んだ場合
+IF SELECTCOM == 6
+	PRINTFORML （\@ TALENT:アクセサリ==3 ? このまま、いけるっ！！ # 来た来た来たぁーーーー！ \@）
+;攻撃を回避された場合
+ELSE
+	PRINTFORML （っ！！、気合を入れないと！）
+ENDIF
+
+;消沈
+;-------------------------------------------------
+@KOJO_0_BATTLE_SHINKYOU_CHANGE_SYOUTIN_27
+;攻撃を回避された場合
+PRINTFORML （え……うそ\@ TALENT:アクセサリ==3 ? でしょ # だろ \@……）
+
+;体が竦んだ関連
+;触手の虜で体が竦む
+;-------------------------------------------------
+@KOJO_0_BATTLE_DISACTION_TORIKO_27
+PRINTFORML （触手様ぁ……はっ！ 今、何を考えて……）
+
+;快楽で体が竦む
+;-------------------------------------------------
+@KOJO_0_BATTLE_DISACTION_KAIRAKU_27
+PRINTFORML （駄目\@ TALENT:アクセサリ==3 ? よ # だ \@、思い出したら……）
+
+;苦痛で体が竦む
+;-------------------------------------------------
+@KOJO_0_BATTLE_DISACTION_KUTUU_27
+PRINTFORML 「っ！ い、痛みが何\@ TALENT:アクセサリ==3 ? よ # だ \@！」
+
+;屈辱で体が竦む
+;-------------------------------------------------
+@KOJO_0_BATTLE_DISACTION_KUTUZYOKU_27
+PRINTFORML （立ち向かったら……でも、立ち向かわないと……）
+
+;恐怖で体が竦む
+;-------------------------------------------------
+@KOJO_0_BATTLE_DISACTION_KYOUHU_27
+PRINTFORML 「ぐ、う……\@ TALENT:アクセサリ==3 ? 動かないと # 動け、動け \@……！」
+
+;恥辱で体が竦む
+;-------------------------------------------------
+@KOJO_0_BATTLE_DISACTION_TIZYOKU_27
+PRINTFORML （ま、また捕まえられたら……）
+
+;寄生の影響で体が竦む
+;-------------------------------------------------
+@KOJO_0_BATTLE_DISACTION_PARASITE_27
+PRINTFORML 「ふぐっ……いきなり動\@ TALENT:アクセサリ==3 ? かないで # くな \@っ……！」
+
+
+;＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝
+;MESSAGE_MOUSOU.ERB
+;＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝
+;未設定
+;-------------------------------------------------
+;@KOJO_0_TRAINING_MOUSOU
+
+;未設定
+;-------------------------------------------------
+;@KOJO_0_TRAINING_TENTACLECLOTH_BOOST
+
+;未設定
+;-------------------------------------------------
+;@KOJO_0_SELF_MOUSOU
+
+;未設定
+;-------------------------------------------------
+;@KOJO_0_SELF_MOUSOU_TWICE
+
+
+;＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝
+;MESSAGE_PRISON.ERB
+;＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝
+;初めての幽閉
+;-------------------------------------------------
+@KOJO_0_PRISON_PRISENTENCE_FIRST_27
+;お嬢様
+IF TALENT:アクセサリ==3
+	PRINTFORML 「負けませんわ…ここから抜け出してお礼をしてあげますわ……」
+ELSE
+	PRINTFORML 「捕まえたつもりだろうが」
+	PRINTFORML 「ひと暴れして逃げ出してやるぜ……」
+ENDIF
+
+
+;二度目以降の幽閉後の初被姦
+;-------------------------------------------------
+@KOJO_0_PRISON_PRISENTENCE_START_27
+;お嬢様
+IF TALENT:アクセサリ==3
+ELSE
+ENDIF
+
+;幽閉後の被姦開始文
+;-------------------------------------------------
+@KOJO_0_PRISON_PRISENTENCE_27
+;お嬢様
+IF TALENT:アクセサリ==3
+ELSE
+ENDIF
+
+;洗脳になった
+;-------------------------------------------------
+@KOJO_0_PRISON_SENNOU_27
+PRINTFORML 「ごほっ！……がふっ！……うぁ……がは……ぐぅ……」
+PRINTFORMDL  %PRINT_TRANSCALLNAME(TARGET)%の口から鼻から、体内を満たす触手の体液がごぼごぼと逆流し、喉を伝って胸を汚していく。
+PRINTFORMDL  注がれ過ぎた精液が鈍い水音を立て、緩んだ牝穴と尻穴から地面に吐き出されておぞましい水たまりを広げていく。
+PRINTFORML 「がぁ……ううぅ……ぐぅ……ごぼぉっ……！」
+PRINTFORMDL  いつまでかは渇望していた外気に触れても、%PRINT_TRANSCALLNAME(TARGET)%の目に理性が戻ることはなかった……
+
+;悪堕ちになった
+;-------------------------------------------------
+@KOJO_0_PRISON_AKUOTI_27
+PRINTFORML 「ふっ、%SELF_CALL()%に任せてお\@ TALENT:アクセサリ==3 ? きなさい # け \@」
+PRINTFORMDL  %PRINT_TRANSCALLNAME(TARGET)%は目を細め、唇をぬめる舌で濡らして微笑んだ。
+PRINTFORMDL  たおやかな指先に絡まる触手を愛おしげに撫で、口付ける。
+PRINTFORML 「自由にできる肉人形は多い方がいい\@ TALENT:アクセサリ==3 ? もの # からな \@」
+
+;自ら悪堕ち
+@KOJO_0_SHOP_AKUOTI_27
+;-------------------------------------------------
+PRINTFORML 「やっぱり人間の方がいい\@ TALENT:アクセサリ==3 ? わ # な \@」
+PRINTFORMDL  %PRINT_TRANSCALLNAME(TARGET)%は通りすがりの女性を\@ TALENT:TARGET:寄生>0 ? 触手で # 腕で \@締め上げながら呟く。
+PRINTFORML 「触手様、%SELF_CALL()%と一緒に人間と敵対し\@ TALENT:アクセサリ==3 ? ましょう # ようぜ \@」
+PRINTFORMDL  %PRINT_TRANSCALLNAME(TARGET)%は声一つ上げられずに締め落とされた女性をそのままに、人知れず町の外へ消えていった……
+
+;自ら幽閉
+@KOJO_0_SHOP_PRISON_27
+;-------------------------------------------------
+
+;取り込まれ
+;-------------------------------------------------
+@KOJO_0_PRISON_DEAD_27
+
+;ふたなり化
+;-------------------------------------------------
+@KOJO_0_PRISON_HUTANARI_27
+;お嬢様
+IF TALENT:アクセサリ==3
+	IF (MESSAGE_BRANCH_F(TARGET) & 堕落) || (MESSAGE_BRANCH_F(TARGET) & 快楽蕩け)
+		PRINTFORML 「このようなモノを生やされたら」
+		PRINTFORML 「どなたかを襲いたくなってしまいますわ❤」
+	ELSE
+		PRINTFORML 「そんな……%SELF_CALL()%の身体に……」
+	ENDIF
+ELSE
+	IF (MESSAGE_BRANCH_F(TARGET) & 堕落) || (MESSAGE_BRANCH_F(TARGET) & 快楽蕩け)
+		PRINTFORML 「チンチンはえちまったけどよ」
+		PRINTFORML 「これで、射精できるんだよな……」
+	ELSE
+		PRINTFORML 「こんなモノつけやがって……」
+	ENDIF
+ENDIF
+
+;母乳体質化
+;-------------------------------------------------
+@KOJO_0_PRISON_BONYU_27
+
+;苗床化
+;-------------------------------------------------
+@KOJO_0_PRISON_NAEDOKO_27
+
+;C中心攻め
+;-------------------------------------------------
+@KOJO_0_PRISON_COM_0_27
+
+;V中心攻め
+;-------------------------------------------------
+@KOJO_0_PRISON_COM_1_27
+
+;A中心攻め
+;-------------------------------------------------
+@KOJO_0_PRISON_COM_2_27
+
+;B中心攻め
+;-------------------------------------------------
+@KOJO_0_PRISON_COM_3_27
+
+;Sな攻め
+;-------------------------------------------------
+@KOJO_0_PRISON_COM_4_27
+
+;強制奉仕
+;-------------------------------------------------
+@KOJO_0_PRISON_COM_5_27
+;地の文が変わる条件
+IF (MESSAGE_BRANCH_F(TARGET) & 堕落) || (MESSAGE_BRANCH_F(TARGET) & 快楽蕩け)
+	;お嬢様
+	IF TALENT:アクセサリ==3
+		IF RAND:2 == 0
+			PRINTFORML （あぁ…喉の中で膨れてきてる…❤❤❤）
+		ELSE
+			PRINTFORML （身体の中まで犯されて）
+			PRINTFORML （もう奇麗な所なんて残ってない……❤❤❤）
+		ENDIF
+	ELSE
+		IF RAND:2 == 0
+			PRINTFORML （このままだと堕ちちまう……）
+		ELSE
+			PRINTFORML （ダメだ……抵抗する気力が湧いてこねぇ……）
+		ENDIF
+	ENDIF
+ELSE
+	;お嬢様
+	IF TALENT:アクセサリ==3
+		IF RAND:2 == 0
+			PRINTFORML （噛み切れませんわ…）
+		ELSE
+			PRINTFORML （口の中どころか胃まで犯されてる……）
+		ENDIF
+	ELSE
+		IF RAND:2 == 0
+			PRINTFORML （か、噛み切れねぇ……）
+		ELSE
+			PRINTFORML （こいつ、胃までは入ってきやがって……）
+		ENDIF
+	ENDIF
+ENDIF
+
+
+;羞恥な攻め
+;-------------------------------------------------
+@KOJO_0_PRISON_COM_6_27
+;お嬢様
+IF TALENT:アクセサリ==3
+	IF (MESSAGE_BRANCH_F(TARGET) & 堕落) || (MESSAGE_BRANCH_F(TARGET) & 快楽蕩け)
+		PRINTFORML 「こんなの見せられたら…我慢なんてできる訳……」
+	ELSE
+		PRINTFORML 「こんなの見せるなんて……」
+	ENDIF
+ELSE
+	IF (MESSAGE_BRANCH_F(TARGET) & 堕落) || (MESSAGE_BRANCH_F(TARGET) & 快楽蕩け)
+		PRINTFORML 「%SELF_CALL()%も…同じ様に……」
+	ELSE
+		PRINTFORML 「くっそ…こんなの見せやがって……」
+	ENDIF
+ENDIF
+
+
+;子触手に犯される
+;-----------------------------------------------
+@KOJO_0_PRISON_COM_7_27
+;お嬢様
+IF TALENT:アクセサリ==3
+	IF EXP:近親交配経験 == 0
+		PRINTFORML 「待ちなさいっ！　いくら化け物でもそれはタブー……」
+	ELSEIF (MESSAGE_BRANCH_F(TARGET) & 堕落)
+		PRINTFORML 「しょうがない子ですね……本来ならミンチですよ」
+	ELSE
+		PRINTFORML 「こんな事してに……あとで折檻ですね……」
+	ENDIF
+ELSE
+
+ENDIF
+
+;ふたなり攻め
+;-------------------------------------------------
+@KOJO_0_PRISON_COM_100_27
+;お嬢様
+IF TALENT:アクセサリ == 3
+	IF RAND:2 == 0
+		PRINTFORML 「こ、こんなので%SELF_CALL()%がイったりしませんわ…！」
+	ELSE
+		PRINTFORML 「や、やめな…さい……」
+	ENDIF
+ELSE
+	IF RAND:2 == 0
+		PRINTFORML 「こ、こんなので…%SELF_CALL()%がイ……イくわけねぇだろ！」
+	ELSE
+		PRINTFORML 「や、やめろテメェ……」
+	ENDIF
+ENDIF
+
+
+;V拡張
+;-------------------------------------------------
+@KOJO_0_PRISON_COM_101_27
+
+;A拡張
+;-------------------------------------------------
+@KOJO_0_PRISON_COM_102_27
+
+;搾乳攻め
+;-------------------------------------------------
+@KOJO_0_PRISON_COM_103_27
+
+;-----------------------------------------------
+;種付け
+@KOJO_0_PRISON_COM_104_27
+
+;Vに産卵
+;-------------------------------------------------
+@KOJO_0_PRISON_COM_200_27
+
+;Aに産卵
+;-------------------------------------------------
+@KOJO_0_PRISON_COM_201_27
+
+;注射
+;-------------------------------------------------
+@KOJO_0_PRISON_COM_300_27
+
+;触手の寄生
+;-------------------------------------------------
+@KOJO_0_PRISON_COM_301_27
+
+
+;＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝
+;MESSAGE_SEX.ERB
+;＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝
+;絶頂関連
+;キャラが射精
+;-------------------------------------------------
+@KOJO_0_SEX_CHARA_SYASEI_27
+;初めての射精
+IF EXP:53 == 0
+	;初めて
+	SETCOLOR 0xAEB4DE
+	;お嬢様
+	IF TALENT:アクセサリ==3
+		PRINTFORMW 「なんでしょう、この身体の中から溢れそうな……」
+	ELSE
+		PRINTFORMW 「なんだ、このこみ上げてくる感覚は……」
+	ENDIF
+	PRINTFORML 　
+	PRINTFORML 「ぉ、おほぉぉぉ゛おぉぉっ！！」
+	RESETCOLOR
+	PRINTFORMDL  %CALLNAME%はペニスから生臭い汚濁を吐き出しながら、腰をかくかくと突き出している……
+	PRINTFORMDL  精通という牡の快楽に理性を砕かれ、%CALLNAME%は白目を剥いて悶絶した……
+	CFLAG:263 = 1
+;射精中毒3LV以上
+ELSEIF ABL:24 > 2
+	IF TALENT:ふたなり
+		;お嬢様
+		IF TALENT:アクセサリ==3
+			SELECTCASE RAND:2
+				CASE 0
+					PRINTFORML 「ダメッ、本当は女の子が射精なんてしちゃ駄目なのに…」
+					PRINTFORML 「ウッ❤　ウッ❤　精液でちゃってる❤❤」
+				CASE 1
+					PRINTFORML 「はぁ……」
+					PRINTFORML 「女の子なのに射精の気持ちよさ覚えちゃった❤❤」
+			ENDSELECT
+		ELSE
+			SELECTCASE RAND:2
+				CASE 0
+					PRINTFORML 「クソッ、女が射精するなんておかしいだろ…」
+					PRINTFORML 「ウッ❤　ウッ❤　ザーメンでてりゅ❤❤」
+				CASE 1
+					PRINTFORML 「はぁ……」
+					PRINTFORML 「女なのに射精の気持ちよさ覚えちまった❤❤」
+			ENDSELECT
+		ENDIF
+	ELSE
+		SELECTCASE RAND:2
+			CASE 0
+				PRINTFORML 「でるっ！　ザーメンでるっ❤」
+			CASE 1
+				PRINTFORML 「ウッ❤」
+		ENDSELECT
+	ENDIF
+ELSE
+	IF TALENT:ふたなり
+		;お嬢様
+		IF TALENT:アクセサリ==3
+			SELECTCASE RAND:2
+				CASE 0
+					PRINTFORML 「ダメッ、女の子なのに射精なんて…」
+				CASE 1
+					PRINTFORML 「イヤ…精液止まらない……」
+			ENDSELECT
+		ELSE
+			SELECTCASE RAND:2
+				CASE 0
+					PRINTFORML 「クソッ、女なのにザーメンだしちまうなんて…」
+				CASE 1
+					PRINTFORML 「クソッ…精液止まらない……」
+			ENDSELECT
+		ENDIF
+	ELSE
+		SELECTCASE RAND:2
+			CASE 0
+				PRINTFORML 「でるっ！」
+			CASE 1
+				PRINTFORML 「うっ、うっ……」
+		ENDSELECT
+	ENDIF
+ENDIF
+
+;キャラが大量射精
+;-------------------------------------------------
+@KOJO_0_SEX_CHARA_SYASEI_HI_27
+;射精中毒6LV以上
+IF ABL:24 > 5
+	IF TALENT:ふたなり
+		;お嬢様
+		IF TALENT:アクセサリ==3
+			SELECTCASE RAND:4
+				CASE 0
+					PRINTFORML 「ぉおぉぉっ？！ 出るっ、でるでるでりゅぅぅぅっ！！」
+					PRINTFORML 「ザーメンとまらないっ❤　 んおぉっ、ぉおほぉ゛ぉ゛ぉぉっ！！」
+				CASE 1
+					PRINTFORML 「ぐひぃぃぃっ、イ゛ぐっ！！」
+					PRINTFORML 「%SELF_CALL_SINGLE()%、%SELF_CALL()%のおちんちん、また弾けるぅっ！！」
+				CASE 2
+					PRINTFORML 「ぉお゛ぉ゛っ、イ゛ぐっ、ふたなり牝魔羅イ゛グぅっ！！ ひぐっ、ぉへぇぇぇぇっ！！」
+				CASE 3
+					PRINTFORML 「でりゅ❤　たくさんでりゅ❤」
+					PRINTFORML 「ザーメンといっしょに賢さや品性もいっしょにブリブリでりゅ❤❤」
+			ENDSELECT
+		ELSE
+			SELECTCASE RAND:4
+				CASE 0
+					PRINTFORML 「ぉおぉぉっ？！ 出るっ、でるでるでりゅぅぅぅっ！！」
+					PRINTFORML 「ザーメンとまんねぇっ❤　 んおぉっ、ぉおほぉ゛ぉ゛ぉぉっ！！」
+				CASE 1
+					PRINTFORML 「ぐひぃぃぃっ、イ゛ぐっ！！」
+					PRINTFORML 「%SELF_CALL_SINGLE()%、%SELF_CALL()%のチンコ、また弾けるぅっ！！」
+				CASE 2
+					PRINTFORML 「ぉお゛ぉ゛っ、イ゛ぐっ、クリトリスチンコ❤　イ゛グぅっ！！ ひぐっ、ぉへぇぇぇぇっ！！」
+				CASE 3
+					PRINTFORML 「でりゅ❤　たくさんでりゅ❤」
+					PRINTFORML 「%SELF_CALL()%の力がザーメンといっしょにブリブリでりゅ❤❤」
+			ENDSELECT
+		ENDIF
+	ELSE
+		;お嬢様
+		IF TALENT:アクセサリ==3
+			SELECTCASE RAND:2
+				CASE 0
+					PRINTFORML 「ぉおぉぉっ？！ 出るっ、でるでるでりゅぅぅぅっ！！」
+					PRINTFORML 「キンタマからっぽになるくらいザー汁でりゅっ！」
+				CASE 1
+					PRINTFORML 「ぐひぃぃぃっ、イ゛ぐっ！！」
+					PRINTFORML 「%SELF_CALL_SINGLE()%、%SELF_CALL()%のおちんちん、とまりゃないのぉ❤」
+			ENDSELECT
+		ELSE
+			SELECTCASE RAND:2
+				CASE 0
+					PRINTFORML 「ぉおぉぉっ？！ 出るっ、でるでるでりゅぅぅぅっ！！」
+					PRINTFORML 「キンタマからっぽになるくらいザーメンでりゅっ！」
+				CASE 1
+					PRINTFORML 「ぐひぃぃぃっ、イ゛ぐっ！！」
+					PRINTFORML 「%SELF_CALL_SINGLE()%、%SELF_CALL()%のチンコォ、また弾けるぅっ❤」
+			ENDSELECT
+		ENDIF
+	ENDIF
+
+;元々の地の文
+;	IF TALENT:触手の虜
+		PRINTFORMDL  %CALLNAME%は浅ましく腰を振りたて、間欠泉のように精液を撒き散らしている……
+;	ELSE
+;		PRINTFORMDL  %CALLNAME%は無様に腰を突き出し、屈服の証をペニスの先端から吐き出した……
+;	ENDIF
+
+;射精中毒3LV以上
+ELSEIF ABL:24 > 2
+	IF TALENT:ふたなり
+		;お嬢様
+		IF TALENT:アクセサリ==3
+			SELECTCASE RAND:2
+				CASE 0
+					PRINTFORML 「ぉおぉぉっ？！ 出てるっ、でてるでてるぅぅぅっ！！」
+					PRINTFORML 「とまって、ザーメンとまって！！」
+				CASE 1
+					PRINTFORML 「ぐひぃぃぃっ、イ゛ぐっ！！」
+					PRINTFORML 「%SELF_CALL_SINGLE()%、おちんちん、まだ弾けてるぅっ！！」
+			ENDSELECT
+		ELSE
+			SELECTCASE RAND:2
+				CASE 0
+					PRINTFORML 「ぉおぉぉっ？！ 出るっっ！！」
+					PRINTFORML 「ザーメンとまんねぇっ、とまんねぇっ！！」
+				CASE 1
+					PRINTFORML 「ぐひぃぃぃっ、イ゛ぐっ！！」
+					PRINTFORML 「%SELF_CALL_SINGLE()%、のチンコ、弾けっぱなしだ！！」
+			ENDSELECT
+		ENDIF
+	ELSE
+		;お嬢様
+		IF TALENT:アクセサリ==3
+			SELECTCASE RAND:3
+				CASE 0
+					PRINTFORML 「ぉおぉぉっ？！ こんなに出てるぅっ！！」
+					PRINTFORML 「キンタマからっぽになるくらいザー汁でてるぅっ❤」
+				CASE 1
+					PRINTFORML 「ぐひぃぃぃっ、イ゛ぐっ！！」
+					PRINTFORML 「%SELF_CALL_SINGLE()%、%SELF_CALL()%のおちんちん❤　まだ弾けるぅっ❤❤」
+				CASE 2
+					PRINTFORML 「んほぉぉぉぉ❤」
+					PRINTFORML 「負けちゃう❤　%SELF_CALL()%の精嚢がザーメン作るの間に合わなくて負けちゃう❤❤❤」
+			ENDSELECT
+		ELSE
+			SELECTCASE RAND:3
+				CASE 0
+					PRINTFORML 「ぉおぉぉっ？！ 出るっ、まだ出てるっ！！」
+					PRINTFORML 「キンタマからっぽになるくらいザーメン出てるっ❤」
+				CASE 1
+					PRINTFORML 「ぐひぃぃぃっ、イ゛ぐっ！！」
+					PRINTFORML 「%SELF_CALL_SINGLE()%、%SELF_CALL()%のチンコ、まだ弾けるぅっ❤❤」
+				CASE 2
+					PRINTFORML 「んほぉぉぉぉ❤」
+					PRINTFORML 「負けちまう❤　%SELF_CALL()%の精嚢がザーメン作るの間に合わなくて負けちまう❤❤❤」
+			ENDSELECT
+		ENDIF
+	ENDIF
+ELSE
+	IF TALENT:ふたなり
+		;お嬢様
+		IF TALENT:アクセサリ==3
+			SELECTCASE RAND:2
+				CASE 0
+					PRINTFORML 「ダメッ、女の子なのにこんなに沢山射精なんて…」
+				CASE 1
+					PRINTFORML 「イヤ…」
+					PRINTFORML 「精液出しても出しても止まらない……」
+			ENDSELECT
+		ELSE
+			SELECTCASE RAND:2
+				CASE 0
+					PRINTFORML 「クソッ、女なのにこんな量のザーメンだしちまうなんて…」
+				CASE 1
+					PRINTFORML 「クソッ…」
+					PRINTFORML 「いくら精液出しても止まらねぇ…」
+			ENDSELECT
+		ENDIF
+	ELSE
+		SELECTCASE RAND:2
+			CASE 0
+				PRINTFORML 「でるっ！」
+				PRINTFORML 「いつもより沢山でるっ！」
+			CASE 1
+				PRINTFORML 「うっ、うっ、うっ……」
+				PRINTFORML （射精しすぎて気絶しそう……）
+		ENDSELECT
+	ENDIF
+ENDIF
+
+;キャラが噴乳
+;-------------------------------------------------
+@KOJO_0_SEX_CHARA_HUNNYU_27
+;お嬢様
+IF TALENT:アクセサリ==3
+	SELECTCASE RAND:2
+		CASE 0
+			PRINTFORML 「で、でちゃう！」
+			PRINTFORML 「オッパイでちゃう！」
+		CASE 1
+			PRINTFORML 「胸ばっかり攻撃してくるから…」
+	ENDSELECT
+ELSE
+	SELECTCASE RAND:2
+		CASE 0
+			PRINTFORML 「で、でちまう！」
+			PRINTFORML 「オッパイでちまう！」
+		CASE 1
+			PRINTFORML 「胸ばっかり攻撃してきやがる…」
+	ENDSELECT
+ENDIF
+
+;キャラが大量噴乳
+;-------------------------------------------------
+@KOJO_0_SEX_CHARA_HUNNYU_HI_27
+;お嬢様
+IF TALENT:アクセサリ==3
+	SELECTCASE RAND:2
+		CASE 0
+			PRINTFORML 「でてりゅ❤」
+			PRINTFORML 「ミルク、すごい勢いで出ちゃう❤❤」
+		CASE 1
+			PRINTFORML 「こんなにミルクだして」
+			PRINTFORML 「%SELF_CALL()%、エロ牛になっちゃいました❤」
+	ENDSELECT
+ELSE
+	SELECTCASE RAND:2
+		CASE 0
+			PRINTFORML 「でてりゅ❤」
+			PRINTFORML 「ミルク、すごい勢いで出ちゃう❤❤」
+		CASE 1
+			PRINTFORML 「こんなにミルクだして」
+			PRINTFORML 「%SELF_CALL()%、エロ牛になっちまった❤」
+	ENDSELECT
+ENDIF
+
+;C絶頂
+;-------------------------------------------------
+@KOJO_0_SEX_ECSTASY_C_27
+;チンチンある場合
+IF ISPENIS()
+	;お嬢様
+	IF TALENT:アクセサリ==3
+		SELECTCASE RAND:2
+			CASE 0
+				PRINTFORML 「チンコイクっ、チンコ、チンコォーー❤❤❤」
+			CASE 1
+				PRINTFORML 「チンコ限界で…激しくイキます❤❤❤」
+		ENDSELECT
+	ELSE
+		SELECTCASE RAND:2
+			CASE 0
+				PRINTFORML 「クリトリス…イクっ❤」
+			CASE 1
+				PRINTFORML 「クリトリス…%SELF_CALL()%のクリトリス…❤」
+		ENDSELECT
+	ENDIF
+	PRINTFORMDL %PRINT_TRANSCALLNAME(TARGET)%はペニスの本能の赴くままに
+	PRINTFORMDL ビクビクと痙攣しながら女性の膣を求めて腰を突き上げている
+ELSE
+	;お嬢様
+	IF TALENT:アクセサリ==3
+		SELECTCASE RAND:2
+			CASE 0
+				PRINTFORML 「クリ…クリ…クリトリスいきっ❤」
+			CASE 1
+				PRINTFORML 「陰核…」
+				PRINTFORML 「充血していやらしい陰核がイキたくて限界です❤」
+		ENDSELECT
+	ELSE
+		SELECTCASE RAND:2
+			CASE 0
+				PRINTFORML 「クリトリス…イクっ❤」
+			CASE 1
+				PRINTFORML 「クリトリス…%SELF_CALL()%のクリトリス…❤」
+		ENDSELECT
+	ENDIF
+	PRINTFORMDL %PRINT_TRANSCALLNAME(TARGET)%は潮を吹きながらビクビクと腰を痙攣させている
+ENDIF
+
+;C強絶頂
+;-------------------------------------------------
+@KOJO_0_SEX_ECSTASY_C_HI_27
+;お嬢様
+IF TALENT:アクセサリ==3
+	IF ISMALE() || TALENT:ふたなり
+		SELECTCASE RAND:2
+			CASE 0
+				PRINTFORML 「オチンチン…イクっ❤」
+			CASE 1
+				PRINTFORML 「陰茎が…限界です❤」
+		ENDSELECT
+	ELSE
+		SELECTCASE RAND:2
+			CASE 0
+				PRINTFORML 「クリトリス…イクっ❤」
+			CASE 1
+				PRINTFORML 「陰核が…限界です❤」
+		ENDSELECT
+	ENDIF
+	PRINTFORMDL %PRINT_TRANSCALLNAME(TARGET)%はビクビクと痙攣しながら腰を振っている
+ELSE
+	IF ISMALE() || TALENT:ふたなり
+		SELECTCASE RAND:2
+			CASE 0
+				PRINTFORML 「チンチン…イクっ❤」
+			CASE 1
+				PRINTFORML 「%SELF_CALL()%のチンコ…もう…限界❤」
+		ENDSELECT
+	ELSE
+		SELECTCASE RAND:2
+			CASE 0
+				PRINTFORML 「クリトリス…イクっ❤」
+			CASE 1
+				PRINTFORML 「クリトリス…%SELF_CALL()%のクリトリス…❤」
+		ENDSELECT
+	ENDIF
+	PRINTFORMDL %PRINT_TRANSCALLNAME(TARGET)%はビクビクと痙攣しながら絶頂している
+ENDIF
+
+;V絶頂
+;-------------------------------------------------
+@KOJO_0_SEX_ECSTASY_V_27
+;お嬢様
+IF TALENT:アクセサリ==3
+	SELECTCASE RAND:2
+		CASE 0
+			PRINTFORML 「…イクッ」
+		CASE 1
+			PRINTFORML 「あっ…ダメッ…」
+	ENDSELECT
+ELSE
+	SELECTCASE RAND:2
+		CASE 0
+			PRINTFORML 「…イクッ」
+		CASE 1
+			PRINTFORML 「あっ…ダメッ…」
+	ENDSELECT
+ENDIF
+
+;V強絶頂
+;-------------------------------------------------
+@KOJO_0_SEX_ECSTASY_V_HI_27
+;お嬢様
+IF TALENT:アクセサリ==3
+	SELECTCASE RAND:3
+		CASE 0
+			PRINTFORML 「ダメだわ…」
+			PRINTFORML 　
+			PRINTFORML 「イクッ、ガマンできない❤」
+			PRINTFORML 「マンコいくっ❤　メスマンコいくっ❤❤　メスザコマンコでイきますっ❤❤❤」
+		CASE 1
+			PRINTFORML 「ああああああっ！！！」
+			PRINTFORML 「イってるのに止まらない❤」
+			PRINTFORML 「イきながらまたイくっ❤❤」
+			PRINTFORML 　
+			PRINTFORML 「またイく、またイくっ❤❤❤」
+			PRINTFORML 「イくのとまらないっ❤❤❤❤」
+		CASE 2
+			PRINTFORML 「あ゛あ゛あ゛あ゛あ゛あ゛あ゛っ❤」
+			PRINTFORML 「あ゛っ❤　あ゛っ❤　んあ゛っ❤」
+			PRINTFORML 「お゛っ❤　お゛っ❤　お゛おっ❤」
+			PRINTFORML 「んお゛っ❤　んお゛っ❤　ぁぁぁあ゛っ❤」
+	ENDSELECT
+ELSE
+	SELECTCASE RAND:2
+		CASE 0
+			PRINTFORML 「ダメだこれ…」
+			PRINTFORML 　
+			PRINTFORML 「イクッ、ガマンできねぇ❤」
+			PRINTFORML 「マンコいくっ❤　メスマンコいくっ❤❤　メスザコマンコでいくっ❤❤❤」
+		CASE 1
+			PRINTFORML 「ああああああっ！！！」
+			PRINTFORML 「イってるのに止まんねぇ❤」
+			PRINTFORML 「イきながらまたイくっ❤❤」
+			PRINTFORML 　
+			PRINTFORML 「またイく、またイくっ❤❤❤」
+			PRINTFORML 「イくのとまんねぇっ❤❤❤❤」
+		CASE 2
+			PRINTFORML 「あ゛あ゛あ゛あ゛あ゛あ゛あ゛っ❤」
+			PRINTFORML 「あ゛っ❤　あ゛っ❤　んあ゛っ❤」
+			PRINTFORML 「お゛っ❤　お゛っ❤　お゛おっ❤」
+			PRINTFORML 「んお゛っ❤　んお゛っ❤　ぁぁぁあ゛っ❤」
+	ENDSELECT
+ENDIF
+
+;A絶頂
+;-------------------------------------------------
+@KOJO_0_SEX_ECSTASY_A_27
+;お嬢様
+IF TALENT:アクセサリ==3
+	SELECTCASE RAND:2
+		CASE 0
+			PRINTFORML 「お尻がムズムズして…」
+			PRINTFORML 「イクッ❤」
+		CASE 1
+			PRINTFORML 「あっ…お尻なのに…ダメッ…」
+	ENDSELECT
+ELSE
+	SELECTCASE RAND:2
+		CASE 0
+			PRINTFORML 「ケツがムズムズして…」
+			PRINTFORML 「イクッ❤」
+		CASE 1
+			PRINTFORML 「あっ…ケツなのに…ダメだ…❤」
+	ENDSELECT
+ENDIF
+
+;A強絶頂
+;-------------------------------------------------
+@KOJO_0_SEX_ECSTASY_A_HI_27
+;お嬢様
+IF TALENT:アクセサリ==3
+	SELECTCASE RAND:2
+		CASE 0
+			PRINTFORML 「ダメだわ…」
+			PRINTFORML 　
+			PRINTFORML 「イクッ、ガマンできない❤」
+			PRINTFORML 「ケツマンコいくっ❤　ケツマンコいくっ❤❤　ザコケツマンコでイきますっ❤❤❤」
+		CASE 1
+			PRINTFORML 「ああああああっ！！！」
+			PRINTFORML 「お尻なのにイってる❤」
+			PRINTFORML 「イってるのにまたイくっ❤❤」
+			PRINTFORML 　
+			PRINTFORML 「またイく、またイくっ❤❤❤」
+			PRINTFORML 「ケツ穴でイくのとまらないっ❤❤❤❤」
+	ENDSELECT
+ELSE
+	SELECTCASE RAND:2
+		CASE 0
+			PRINTFORML 「ケツなのに…」
+			PRINTFORML 　
+			PRINTFORML 「イクッ、ガマンできねぇ❤」
+			PRINTFORML 「ケツマンコいくっ❤　ケツマンコいくっ❤❤　ザコマンコでいくっ❤❤❤」
+		CASE 1
+			PRINTFORML 「ああああああっ！！！」
+			PRINTFORML 「ケツイキが止まんねぇ❤」
+			PRINTFORML 「イきながらまたイくっ❤❤」
+			PRINTFORML 　
+			PRINTFORML 「またイく、またイくっ❤❤❤」
+			PRINTFORML 「ケツイきとまんねぇっ❤❤❤❤」
+	ENDSELECT
+ENDIF
+
+;B絶頂
+;-------------------------------------------------
+@KOJO_0_SEX_ECSTASY_B_27
+;お嬢様
+IF TALENT:アクセサリ==3
+	SELECTCASE RAND:2
+		CASE 0
+			PRINTFORML 「オッパイ…チクビでイくっ❤」
+		CASE 1
+			PRINTFORML 「あん…」
+			PRINTFORML 「胸が気持ちよくて…イくっ、イくっ❤」
+	ENDSELECT
+ELSE
+	SELECTCASE RAND:2
+		CASE 0
+			PRINTFORML 「オッパイ…チクビでイくっ❤」
+		CASE 1
+			PRINTFORML 「あん…」
+			PRINTFORML 「胸が気持ちよくて…イくっ、イくっ❤」
+	ENDSELECT
+ENDIF
+
+;B強絶頂
+;-------------------------------------------------
+@KOJO_0_SEX_ECSTASY_B_HI_27
+;お嬢様
+IF TALENT:アクセサリ==3
+	SELECTCASE RAND:2
+		CASE 0
+			PRINTFORML 「チクビッ❤」
+			PRINTFORML 「ガチガチに勃起したチクビ、きもちイイのぉ❤❤」
+		CASE 1
+			PRINTFORML 「あんっ❤」
+			PRINTFORML 「イきたくてパンパンに張ったオッパイ❤　オッパイが気持ちよくて…イくっ、イくっ❤❤❤」
+	ENDSELECT
+ELSE
+	SELECTCASE RAND:2
+		CASE 0
+			PRINTFORML 「チクビッ❤」
+			PRINTFORML 「ガチガチに勃起したチクビ、キモチよすぎだろぉ❤❤」
+		CASE 1
+			PRINTFORML 「クソッ❤」
+			PRINTFORML 「イきたくてパンパンに張ったオッパイ❤　オッパイが気持ちよくて…イくっ、イくっ❤❤❤」
+	ENDSELECT
+ENDIF
+
+
+;多重絶頂に関する口上
+;CVAB四重絶頂
+;-------------------------------------------------
+@KOJO_0_SEX_MULTIECSTASY_CVAB_27
+;お嬢様
+IF TALENT:アクセサリ==3
+	SELECTCASE RAND:3
+		CASE 0
+			PRINTFORML 「んぼぉぉぉぉっ❤❤❤❤❤」
+			IF ISMALE() || TALENT:ふたなり
+				PRINTFORML （乳首イった❤　オチンチンイった❤　マンコイった❤　アナルイった❤）
+				PRINTFORML （全身でイった❤❤❤　こんなの脳が焼き切れる❤❤❤❤❤）
+			ELSE
+				PRINTFORML （乳首イった❤　クリトリスイった❤　マンコイった❤　アナルイった❤）
+				PRINTFORML （女の子がイくところ❤　全部でイった❤❤❤　こんなの脳が焼き切れる❤❤❤❤❤）
+			ENDIF
+		CASE 1
+			PRINTFORML 「オオオオッパイ❤❤❤」
+			IF ISMALE() || TALENT:ふたなり
+				PRINTFORML 「ペニス❤❤❤　マンコ❤❤❤　アヌス❤❤❤）
+			ELSE
+				PRINTFORML 「クリトリス❤❤❤　マンコ❤❤❤　アヌス❤❤❤）
+			ENDIF
+			PRINTFORML 「ぜんぶイぐっ❤❤❤　ぜんしん、性感帯にされてイぐっ❤❤❤」
+		CASE 2
+			PRINTFORML 「全身イってるから❤」
+			PRINTFORML 「力はいらなくて❤　全部もれる゛っ❤　もらしながらイくぅぅぅ❤❤❤」
+			PRINTFORMDL %PRINT_TRANSCALLNAME(TARGET)%は汗や鼻水、涎だけでなく
+			PRINTFORMDL 愛液や腸液まで垂れ流しながら全身を痙攣させている
+	ENDSELECT
+ELSE
+	SELECTCASE RAND:3
+		CASE 0
+			PRINTFORML 「んぼぉぉぉぉっ❤❤❤❤❤」
+			IF ISMALE() || TALENT:ふたなり
+				PRINTFORML （乳首イった❤　チンコイった❤　マンコイった❤　アナルイった❤）
+				PRINTFORML （全身でイった❤❤❤　こんなのバカになる❤❤❤❤❤）
+			ELSE
+				PRINTFORML （乳首イった❤　クリトリスイった❤　マンコイった❤　アナルイった❤）
+				PRINTFORML （女がイくところ❤　全部でイった❤❤❤　こんなのバカになる❤❤❤❤❤）
+			ENDIF
+		CASE 1
+			PRINTFORML 「オオオオッパイ❤❤❤」
+			IF ISMALE() || TALENT:ふたなり
+				PRINTFORML 「チンコォ❤❤❤　マンコ❤❤❤　アヌス❤❤❤）
+			ELSE
+				PRINTFORML 「クリトリス❤❤❤　マンコ❤❤❤　アヌス❤❤❤）
+			ENDIF
+			PRINTFORML 「ぜんぶイぐっ❤❤❤　ぜんしん、性感帯にされてイぐっ❤❤❤」
+		CASE 2
+			PRINTFORML 「全身イってるから❤」
+			PRINTFORML 「力はいらなくて❤　全部もれる゛っ❤　もらしながらイくぅぅぅ❤❤❤」
+			PRINTFORMDL %PRINT_TRANSCALLNAME(TARGET)%は汗や鼻水、涎だけでなく
+			PRINTFORMDL 愛液や腸液まで垂れ流しながら全身を痙攣させている
+	ENDSELECT
+ENDIF
+
+
+;CVA三重絶頂
+;-------------------------------------------------
+@KOJO_0_SEX_MULTIECSTASY_CVA_27
+;お嬢様
+IF TALENT:アクセサリ==3
+	SELECTCASE RAND:2
+		CASE 0
+			PRINTFORML 「マンコォ❤」
+			PRINTFORML 「マンコもイかせてぇ❤　仲間外れにしないであげてぇ❤❤」
+		CASE 1
+			PRINTFORML 「しゅごいっ❤」
+			PRINTFORML 「さんかしょどぉじイキ、しゅごいっ❤❤」
+	ENDSELECT
+ELSE
+	SELECTCASE RAND:2
+		CASE 0
+			PRINTFORML 「マンコォ❤」
+			PRINTFORML 「マンコもイかせてくれぇ❤　ハブらないでくれぇ❤❤」
+		CASE 1
+			PRINTFORML 「しゅごいっ❤」
+			PRINTFORML 「さんかしょどぉじイキ、しゅごいっ❤❤」
+	ENDSELECT
+ENDIF
+
+;CVB三重絶頂
+;-------------------------------------------------
+@KOJO_0_SEX_MULTIECSTASY_CVB_27
+;お嬢様
+IF TALENT:アクセサリ==3
+	PRINTFORML 「しゅごいっ❤」
+		PRINTFORML 「さんかしょどぉじイキ、しゅごいっ❤❤」
+ELSE
+	PRINTFORML 「しゅごいっ❤」
+	PRINTFORML 「さんかしょどぉじイキ、しゅごいっ❤❤」
+ENDIF
+
+;CAB三重絶頂
+;-------------------------------------------------
+@KOJO_0_SEX_MULTIECSTASY_CAB_27
+;お嬢様
+IF TALENT:アクセサリ==3
+	PRINTFORML 「しゅごいっ❤」
+		PRINTFORML 「さんかしょどぉじイキ、しゅごいっ❤❤」
+ELSE
+	PRINTFORML 「しゅごいっ❤」
+	PRINTFORML 「さんかしょどぉじイキ、しゅごいっ❤❤」
+ENDIF
+
+;VAB三重絶頂
+;-------------------------------------------------
+@KOJO_0_SEX_MULTIECSTASY_VAB_27
+;お嬢様
+IF TALENT:アクセサリ==3
+	PRINTFORML 「しゅごいっ❤」
+		PRINTFORML 「さんかしょどぉじイキ、しゅごいっ❤❤」
+ELSE
+	PRINTFORML 「しゅごいっ❤」
+	PRINTFORML 「さんかしょどぉじイキ、しゅごいっ❤❤」
+ENDIF
+
+;CV二重絶頂
+;-------------------------------------------------
+@KOJO_0_SEX_MULTIECSTASY_CV_27
+
+;CA二重絶頂
+;-------------------------------------------------
+@KOJO_0_SEX_MULTIECSTASY_CA_27
+
+;CB二重絶頂
+;-------------------------------------------------
+@KOJO_0_SEX_MULTIECSTASY_CB_27
+
+;VA二重絶頂
+;-------------------------------------------------
+@KOJO_0_SEX_MULTIECSTASY_VA_27
+;お嬢様
+IF TALENT:アクセサリ==3
+	SELECTCASE RAND:2
+		CASE 0
+			PRINTFORML 「きたっ❤❤❤❤」
+			PRINTFORML 「マンコとアナル❤　両穴でイグッ❤❤❤」
+		CASE 1
+			PRINTFORML 「ずるいっ❤　前後同時とか、女の子は耐えられないのに❤」
+	ENDSELECT
+ELSE
+	SELECTCASE RAND:2
+		CASE 0
+			PRINTFORML 「きたっ❤❤❤❤」
+			PRINTFORML 「マンコとアナル❤　両穴でイグッ❤❤❤」
+		CASE 1
+			PRINTFORML 「クソッ❤　前後同時とか、女なら耐えられねぇに❤」
+	ENDSELECT
+ENDIF
+
+;VB二重絶頂
+;-------------------------------------------------
+@KOJO_0_SEX_MULTIECSTASY_VB_27
+
+;AB二重絶頂
+;-------------------------------------------------
+@KOJO_0_SEX_MULTIECSTASY_AB_27
+
+;絶頂抑制
+;-------------------------------------------------
+@KOJO_0_SEX_ECSTASY_INHIBITION_27
+;お嬢様
+IF TALENT:アクセサリ==3
+	SELECTCASE RAND:3
+		CASE 0
+			PRINTFORML 「イっちゃ駄目、駄目よ…」
+		CASE 1
+			PRINTFORML 「駄目、こんな事で隙をさらしちゃ」
+		CASE 2
+			PRINTFORML 「後で部屋でイけばいいから。今は我慢…」
+	ENDSELECT
+ELSE
+	SELECTCASE RAND:3
+		CASE 0
+			PRINTFORML 「イっちゃダメだ、落ち着け…」
+		CASE 1
+			PRINTFORML 「駄目だ、こんな事で隙をさらしちゃ」
+		CASE 2
+			PRINTFORML 「後で部屋でイけばいいから。今は我慢だ…」
+	ENDSELECT
+ENDIF
+
+
+;絶頂禁止
+;-------------------------------------------------
+@KOJO_0_SEX_ECSTASY_PROHIBITION_27
+;お嬢様
+IF TALENT:アクセサリ==3
+	SELECTCASE RAND:2
+		CASE 0
+			PRINTFORML 「何で？　何でイけないの？」
+		CASE 1
+			PRINTFORML 「え？　あ？　あ？」
+			PRINTFORMDL 絶頂が急に引いた事に%PRINT_TRANSCALLNAME(TARGET)%は戸惑っている
+	ENDSELECT
+ELSE
+	SELECTCASE RAND:2
+		CASE 0
+			PRINTFORML 「何で？　何でイけねぇんだ？」
+		CASE 1
+			PRINTFORML 「え？　あ？　あ？」
+			PRINTFORMDL 絶頂が急に引いた事に%PRINT_TRANSCALLNAME(TARGET)%は戸惑っている
+	ENDSELECT
+ENDIF
+
+
+;絶頂懇願
+;-------------------------------------------------
+@KOJO_0_SEX_ECSTASY_ENTREATY_27
+;お嬢様
+IF TALENT:アクセサリ==3
+	SELECTCASE RAND:2
+		CASE 0
+			PRINTFORML 「イ゛がぜでぐだざぁい！」
+			PRINTFORML 「おねがいします、おねがいします！！」
+		CASE 1
+			PRINTFORML 「やぁぁぁぁぁぁぁ！」
+			PRINTFORML 「焦らさないで早くイかせて！」
+			PRINTFORML 「我慢できなくてバカになるっ！」
+	ENDSELECT
+ELSE
+	SELECTCASE RAND:2
+		CASE 0
+			PRINTFORML 「イ゛がぜでぐれぇぇぇ！」
+			PRINTFORML 「おねがいします、おねがいします！！」
+		CASE 1
+			PRINTFORML 「やぁぁぁぁぁぁぁ！」
+			PRINTFORML 「焦らさないで早くイかせてくれよ！」
+			PRINTFORML 「我慢できなくてバカになるっ！」
+	ENDSELECT
+ENDIF
+
+;刻印関連
+;快楽刻印１取得
+;-------------------------------------------------
+@KOJO_0_SEX_MARK_KAIRAKU_1_27
+;お嬢様
+IF TALENT:アクセサリ==3
+	PRINTFORML 「あら、何かしました？」
+ELSE
+	PRINTFORML 「あ？　何しやがった」
+ENDIF
+
+;快楽刻印２取得
+;-------------------------------------------------
+@KOJO_0_SEX_MARK_KAIRAKU_2_27
+
+;快楽刻印３取得
+;-------------------------------------------------
+@KOJO_0_SEX_MARK_KAIRAKU_3_27
+;お嬢様
+IF TALENT:アクセサリ==3
+	PRINTFORML 「これは…」
+ELSE
+	PRINTFORML 「てめぇ…」
+ENDIF
+PRINTFORML %CALLNAME%は押し寄せる快楽を怒りで押さえつけている
+
+;快楽刻印４取得
+;-------------------------------------------------
+@KOJO_0_SEX_MARK_KAIRAKU_4_27
+;お嬢様
+IF TALENT:アクセサリ==3
+	PRINTFORML 「こ、こんな下賤な輩に！」
+ELSE
+	PRINTFORML 「ちっくしょお！　こ、こんな奴らなんかっ」
+ENDIF
+PRINTFORML 口では強気なことを言っている%CALLNAME%だが、押し寄せる快楽に膝はがくがくと震えている
+
+;快楽刻印５取得
+;-------------------------------------------------
+@KOJO_0_SEX_MARK_KAIRAKU_5_27
+;お嬢様
+IF TALENT:アクセサリ==3
+	PRINTFORML 「こんな下賤な輩にーーー！」
+ELSE
+	PRINTFORML 「ちっくしょおーーー！」
+ENDIF
+PRINTFORML 絶叫しながら%CALLNAME%は潮を吹いている…
+
+
+;苦痛刻印１取得
+;-------------------------------------------------
+@KOJO_0_SEX_MARK_KUTUU_1_27
+
+;苦痛刻印２取得
+;-------------------------------------------------
+@KOJO_0_SEX_MARK_KUTUU_2_27
+
+;苦痛刻印３取得
+;-------------------------------------------------
+@KOJO_0_SEX_MARK_KUTUU_3_27
+;お嬢様
+IF TALENT:アクセサリ==3
+	PRINTFORML 「この程度の痛み……」
+	PRINTFORML （え？　痛いのが気持ちいい？）
+ELSE
+	PRINTFORML 「この位の痛み……」
+	PRINTFORML （あれ？　痛いのが気持ちいい？）
+ENDIF
+
+
+;苦痛刻印４取得
+;-------------------------------------------------
+@KOJO_0_SEX_MARK_KUTUU_4_27
+;お嬢様
+IF TALENT:アクセサリ==3
+	IF RAND:2 == 0
+		PRINTFORML 「やめて…やめてください……」
+	ELSE
+		PRINTFORML 「ザコなのにちょうしにのってもうしわけございませんでした……」
+	ENDIF
+	PRINTFORMDL %PRINT_TRANSCALLNAME(TARGET)%はボロボロ泣きながら許しを乞うている
+ELSE
+	IF RAND:2 == 0
+		PRINTFORML 「やめろ…やめてくれよ……」
+	ELSE
+		PRINTFORML 「イキがってあばれてすびばぜんでじだ……」
+	ENDIF
+	PRINTFORMDL %PRINT_TRANSCALLNAME(TARGET)%はボロボロ泣きながら許しを乞うている
+ENDIF
+
+;苦痛刻印５取得
+;-------------------------------------------------
+@KOJO_0_SEX_MARK_KUTUU_5_27
+;お嬢様
+IF TALENT:アクセサリ==3
+	PRINTFORML 「もっと痛くしてください…」
+	PRINTFORML 「苦痛が……感じてしまうのです！」
+ELSE
+	PRINTFORML 「この痛み……」
+	PRINTFORML 「これが%SELF_CALL()%の求めてた快楽……❤」
+ENDIF
+
+
+;屈服刻印１取得
+;-------------------------------------------------
+@KOJO_0_SEX_MARK_KUPPUKU_1_27
+
+;屈服刻印２取得
+;-------------------------------------------------
+@KOJO_0_SEX_MARK_KUPPUKU_2_27
+
+;屈服刻印３取得
+;-------------------------------------------------
+@KOJO_0_SEX_MARK_KUPPUKU_3_27
+
+;屈服刻印４取得
+;-------------------------------------------------
+@KOJO_0_SEX_MARK_KUPPUKU_4_27
+
+;屈服刻印５取得
+;-------------------------------------------------
+@KOJO_0_SEX_MARK_KUPPUKU_5_27
+
+
+;恐怖刻印１取得
+;-------------------------------------------------
+@KOJO_0_SEX_MARK_KYOUHU_1_27
+
+;恐怖刻印２取得
+;-------------------------------------------------
+@KOJO_0_SEX_MARK_KYOUHU_2_27
+
+;恐怖刻印３取得
+;-------------------------------------------------
+@KOJO_0_SEX_MARK_KYOUHU_3_27
+
+;恐怖刻印４取得
+;-------------------------------------------------
+@KOJO_0_SEX_MARK_KYOUHU_4_27
+
+;恐怖刻印５取得
+;-------------------------------------------------
+@KOJO_0_SEX_MARK_KYOUHU_5_27
+
+
+;恥辱刻印１取得
+;-------------------------------------------------
+@KOJO_0_SEX_MARK_TIJYOKU_1_27
+
+;恥辱刻印２取得
+;-------------------------------------------------
+@KOJO_0_SEX_MARK_TIJYOKU_2_27
+
+;恥辱刻印３取得
+;-------------------------------------------------
+@KOJO_0_SEX_MARK_TIJYOKU_3_27
+
+;恥辱刻印４取得
+;-------------------------------------------------
+@KOJO_0_SEX_MARK_TIJYOKU_4_27
+
+;恥辱刻印５取得
+;-------------------------------------------------
+@KOJO_0_SEX_MARK_TIJYOKU_5_27
+
+
+;触手射精
+;触手射精暴発
+;-------------------------------------------------
+@KOJO_0_SEX_TENTACLE_SYASEI_EXPLODE
+;お嬢様
+IF TALENT:アクセサリ==3
+	SELECTCASE RAND:2
+		CASE 0
+			PRINTFORML 「堪えきれずに暴発射精なんて…」
+			PRINTFORML 「みっともない下等生物ですね」
+		CASE 1
+			PRINTFORML 「これは…」
+			PRINTFORML 「我慢すらできませんの、このクズは！」
+	ENDSELECT
+ELSE
+	SELECTCASE RAND:2
+		CASE 0
+			PRINTFORML 「堪えきれずにザーメン暴発なんて…」
+			PRINTFORML 「みっともねぇったらないな」
+		CASE 1
+			PRINTFORML 「これは…」
+			PRINTFORML 「我慢すらできねぇのかよ、このクズは！」
+	ENDSELECT
+ENDIF
+
+;膣に通常射精
+;-------------------------------------------------
+@KOJO_0_SEX_TENTACLE_SYASEI_VAGINA_27
+;変身中かつソフトボディスーツの場合
+IF CFLAG:41 == 299 && CFLAG:1 > 0
+	;お嬢様
+	IF TALENT:アクセサリ==3
+		SELECTCASE RAND:2
+			CASE 0
+				PRINTFORML 「このコスチューム、恥ずかしいだけではなかったのですね」
+			CASE 1
+				PRINTFORML 「危なかった」
+				PRINTFORML 「コスチュームを着てなかったらと思うと…」
+		ENDSELECT
+	ELSE
+		SELECTCASE RAND:2
+			CASE 0
+				PRINTFORML 「このコスチューム、恥ずかしいだけじゃなかったんだ」
+			CASE 1
+				PRINTFORML 「危ねぇ」
+				PRINTFORML 「コスチュームを着てなかったらどうなってたか…」
+		ENDSELECT
+	ENDIF
+;Ｖ絶頂時
+ELSEIF EX:Ｖ絶頂 > 0
+	;お嬢様
+	IF TALENT:アクセサリ==3
+		SELECTCASE RAND:3
+			CASE 0
+				PRINTFORML 「ダメっ…」
+				PRINTFORML 「イってるところにザーメン出されたら、身体が喜んじゃう❤」
+			CASE 1
+				PRINTFORML 「イきながらザーメン出されてる」
+				PRINTFORML 「こんなのクセになっちゃう❤」
+			CASE 2
+				PRINTFORML 「イぐっ」
+				PRINTFORML 「マンコにザーメン叩きつけられてイくっ❤」
+		ENDSELECT
+	ELSE
+		SELECTCASE RAND:3
+			CASE 0
+				PRINTFORML 「ダメだっ…」
+				PRINTFORML 「イってるところにザーメン出されたら、身体が喜んじまう❤」
+			CASE 1
+				PRINTFORML 「イきながらザーメン出されてる」
+				PRINTFORML 「こんなのクセになっちまう❤」」
+			CASE 2
+				PRINTFORML 「イぐっ」
+				PRINTFORML 「%SELF_CALL()%のマンコ、ザーメン叩きつけられてイくっ❤」
+		ENDSELECT
+	ENDIF
+ELSE
+	;お嬢様
+	IF TALENT:アクセサリ==3
+		SELECTCASE RAND:3
+			CASE 0
+				PRINTFORML 「うそ…」
+				PRINTFORML 「汚い精液が%SELF_CALL()%の膣に……」
+			CASE 1
+				PRINTFORML 「後で掻き出さないと……」
+			CASE 2
+				PRINTFORML 「やだ…出されてる……」
+				IF TALENT:159 > 0
+					PRINTFORML 「お腹の子に精液がかかっちゃう…」
+				ELSE
+					PRINTFORML 「このままじゃ妊娠しちゃう…」
+				ENDIF
+		ENDSELECT
+	ELSE
+		SELECTCASE RAND:3
+			CASE 0
+				PRINTFORML 「ウソだろ…」
+				PRINTFORML 「汚い精液が%SELF_CALL()%の膣に……」
+			CASE 1
+				PRINTFORML 「これ、後で掻き出さねぇと……」
+			CASE 2
+				PRINTFORML 「クソ…出されてる……」
+				IF TALENT:159 > 0
+					PRINTFORML 「腹の中のガキに精液がかかっちまう…」
+				ELSE
+					PRINTFORML 「このままじゃ妊娠しちまう…」
+				ENDIF
+		ENDSELECT
+	ENDIF
+ENDIF
+
+;膣に大量射精
+;-------------------------------------------------
+@KOJO_0_SEX_TENTACLE_SYASEI_VAGINA_HI_27
+;変身中かつソフトボディスーツの場合
+IF CFLAG:41 == 299 && CFLAG:1 > 0
+	;お嬢様
+	IF TALENT:アクセサリ==3
+		SELECTCASE RAND:2
+			CASE 0
+				PRINTFORML 「コスチュームに助けられました」
+				PRINTFORML 「後でスタッフの方に感謝しないと」
+			CASE 1
+				PRINTFORML 「危なかった」
+				PRINTFORML 「この量の精液、コスチュームを着てなかったらと思うと…」
+		ENDSELECT
+	ELSE
+		SELECTCASE RAND:2
+			CASE 0
+				PRINTFORML 「このコスチュームで助かったぜ」
+				PRINTFORML 「後でスタッフの方に礼言わねぇとな」
+			CASE 1
+				PRINTFORML 「危なかったぜ」
+				PRINTFORML 「この量の精液、コスチュームを着てなかったら…」
+		ENDSELECT
+	ENDIF
+ELSE
+	;お嬢様
+	IF TALENT:アクセサリ==3
+		;理性低下
+		IF (MESSAGE_BRANCH_F(TARGET) & 堕落) || ABL:Ｖ感覚 > 3
+			SELECTCASE RAND:3
+				CASE 0
+					PRINTFORML 「出ちゃった❤」
+					PRINTFORML 「%SELF_CALL()%のマンコに出された汚いザーメン」
+					PRINTFORML 「入りきらずに出ちゃった❤　ゴメンね❤❤❤」
+				CASE 1
+					PRINTFORML 「オマンコいっぱいのザーメン」
+					PRINTFORML 「持ち帰って後で飲みましょう❤❤❤」
+				CASE 2
+					PRINTFORML 「出されたけど」
+					;妊娠中
+					IF TALENT:159 > 0
+						PRINTFORML 「お腹の子がいるからあまり入らなかったのね」
+					ELSE
+						PRINTFORML 「子宮でも入りきらない量でしたわ❤❤」
+					ENDIF
+			ENDSELECT
+		ELSE
+			SELECTCASE RAND:3
+				CASE 0
+					PRINTFORML 「うそ…」
+					PRINTFORML 「溢れるほどの量の汚い精液が%SELF_CALL()%の膣に……」
+				CASE 1
+					PRINTFORML 「精液、全部掻き出さないといけないのに」
+					PRINTFORML 「こんな量なんて……」
+				CASE 2
+					PRINTFORML 「やだ…出されてる……」
+					IF TALENT:159 > 0
+						PRINTFORML 「お腹の子が精液で溺れちゃy…」
+					ELSE
+						PRINTFORML 「この量を出されて妊娠しないなんて出来るの？」
+					ENDIF
+			ENDSELECT
+		ENDIF
+	ELSE
+		SELECTCASE RAND:3
+			CASE 0
+				PRINTFORML 「ウソだろ…」
+				PRINTFORML 「溢れるくらいの量の汚い精液が%SELF_CALL()%の膣に……」
+			CASE 1
+				PRINTFORML 「精液、全部掻き出さないといけねぇのに」
+				PRINTFORML 「こんな量なんて……」
+			CASE 2
+				PRINTFORML 「クソ…出されてる……」
+				IF TALENT:159 > 0
+					PRINTFORML 「腹の中のガキが精液で溺れちまう…」
+				ELSE
+					PRINTFORML 「この量を出されて妊娠しないなんて出来んのか？」
+				ENDIF
+		ENDSELECT
+	ENDIF
+ENDIF
+
+;アナルに通常射精
+;-------------------------------------------------
+@KOJO_0_SEX_TENTACLE_SYASEI_ANAL_27
+;お嬢様
+IF TALENT:アクセサリ==3
+	SELECTCASE RAND:2
+		CASE 0
+			PRINTFORML 「%SELF_CALL()%のお尻に、何てものを…」
+		CASE 1
+			PRINTFORML （後でトイレで『白い物』を見る事になるかと思うと、嫌な気分ですわ…）
+			PRINTFORML 「なので責任取ってもらいます！」
+	ENDSELECT
+ELSE
+	SELECTCASE RAND:2
+		CASE 0
+			PRINTFORML 「%SELF_CALL()%のケツに、何てものを…」
+		CASE 1
+			PRINTFORML （後でトイレで『白い物』を見る事になるかと思うと、嫌になるぜ…）
+			PRINTFORML 「だからよ、責任取れよな！」
+	ENDSELECT
+ENDIF
+
+;アナルに大量射精
+;-------------------------------------------------
+@KOJO_0_SEX_TENTACLE_SYASEI_ANAL_HI_27
+;お嬢様
+IF TALENT:アクセサリ==3
+	;理性低下
+	IF (MESSAGE_BRANCH_F(TARGET) & 堕落) || ABL:Ａ感覚 > 3
+		SELECTCASE RAND:2
+			CASE 0
+				PRINTFORML 「こんな量を%SELF_CALL()%のケツマンコに出すなんて…❤」
+			CASE 1
+				PRINTFORML 「%SELF_CALL()%のアナルをザーメンタンクにして…」
+				PRINTFORML 「責任取ってもう一度やってもらいます❤」
+		ENDSELECT
+	ELSE
+		SELECTCASE RAND:2
+			CASE 0
+				PRINTFORML 「こんな量を%SELF_CALL()%のお尻に出すなんて…」
+			CASE 1
+				PRINTFORML 「%SELF_CALL()%のお尻を玩具にして…」
+			PRINTFORML 「死んで責任は取ってもらいます！」
+		ENDSELECT
+	ENDIF
+ELSE
+	;理性低下
+	IF (MESSAGE_BRANCH_F(TARGET) & 堕落) || ABL:Ａ感覚 > 3
+		SELECTCASE RAND:2
+			CASE 0
+				PRINTFORML 「こんな量を%SELF_CALL()%のケツマンコに出すなんて…❤」
+			CASE 1
+				PRINTFORML 「%SELF_CALL()%のケツをザメンタンクなんかにしやって…」
+				PRINTFORML 「責任取ってもう一度ヤりやがれ❤」
+		ENDSELECT
+	ELSE
+		SELECTCASE RAND:2
+			CASE 0
+				PRINTFORML 「こんな量を%SELF_CALL()%お尻に出すなんて…」
+			CASE 1
+				PRINTFORML 「%SELF_CALL()%のお尻を玩具にして…」
+				PRINTFORML 「死んで責任取ってもらうからな！」
+		ENDSELECT
+	ENDIF
+ENDIF
+
+;手に通常射精
+;-------------------------------------------------
+@KOJO_0_SEX_TENTACLE_SYASEI_HAND_27
+;お嬢様
+IF TALENT:アクセサリ==3
+	SELECTCASE RAND:2
+		CASE 0
+			PRINTFORML 「やだ…後で手を洗わないと」
+		CASE 1
+			PRINTFORML 「%SELF_CALL()%の奇麗な手に汚い精液でパックなんてして…」
+			PRINTFORML 「これはお礼が必要ですね」
+	ENDSELECT
+ELSE
+	SELECTCASE RAND:2
+		CASE 0
+			PRINTFORML 「クソ…後で手を洗わねぇと」
+		CASE 1
+			PRINTFORML 「%SELF_CALL()%の手に汚い精液なんてぶっかけやがって…」
+			PRINTFORML 「これはお礼が必要だな」
+	ENDSELECT
+ENDIF
+
+;手に大量射精
+;-------------------------------------------------
+@KOJO_0_SEX_TENTACLE_SYASEI_HAND_HI_27
+
+;口内に通常射精
+;-------------------------------------------------
+@KOJO_0_SEX_TENTACLE_SYASEI_MOUTH_27
+
+;口内に大量射精
+;-------------------------------------------------
+@KOJO_0_SEX_TENTACLE_SYASEI_MOUTH_HI_27
+
+;胸に通常射精
+;-------------------------------------------------
+@KOJO_0_SEX_TENTACLE_SYASEI_BUST_27
+
+;胸に大量射精
+;-------------------------------------------------
+@KOJO_0_SEX_TENTACLE_SYASEI_BUST_HI_27
+
+;ワレメに通常射精（現在消失中）
+;-------------------------------------------------
+@KOJO_0_SEX_TENTACLE_SYASEI_WAREME_27
+
+;ワレメに大量射精（現在消失中）
+;-------------------------------------------------
+@KOJO_0_SEX_TENTACLE_SYASEI_WAREME_HI_27
+
+;自慰関連
+;夜間自慰
+;-------------------------------------------------
+@KOJO_0_SELF_NIGHT_27
+;お嬢様
+IF TALENT:アクセサリ==3
+	IF TALENT:触手の虜 > 0
+		SELECTCASE RAND:3
+			CASE 0
+				PRINTFORML 「やめて……やめて……」
+				PRINTFORML 「ダメ……そこは大事な…」
+				PRINTFORML 「あっ……這入ってくる…❤」
+				PRINTFORML 自分の大切な穴に少しずつ焦らす様に指を入れながら
+				PRINTFORML 衆人の前で触手に嬲りものにされている姿を想像しながら%PRINT_TRANSCALLNAME(TARGET)%は自慰にふけっている…
+			CASE 1
+				PRINTFORML 「あぁ……こんな恥ずかしい姿、させないで…❤」
+				PRINTFORMW 鏡の前で大きく足を開く%PRINT_TRANSCALLNAME(TARGET)%
+
+				PRINTFORML 「はやく……降参しますから……犯してください…❤」
+				PRINTFORML 敏感な部分は触れずに卑猥な懇願をしながら自慰にふけっている…
+			CASE 2
+				PRINTFORML 「こんな…凄い……❤」
+				PRINTFORML 裏サイトにアップロードされた触手に犯される少女の動画を見ながら
+				PRINTFORML %PRINT_TRANSCALLNAME(TARGET)%はいつか自分もこうなれるかと期待しながら自慰をしている…
+		ENDSELECT
+	ELSE
+		SELECTCASE RAND:3
+			CASE 0
+				PRINTFORML （口も胸もクリトリスも触手に嬲られて）
+				PRINTFORMW （お尻の穴も触手に貫かれる）
+				IF TALENT:処女 == 1 || TALENT:処女 == 2
+					PRINTFORML （今まで守ってきた処女もあっさり奪われて…）
+				ENDIF
+				PRINTFORML （それで%SELF_CALL()%は触手の汚い液にまみれるの……）
+			CASE 1
+				PRINTFORML （みなさんすいません）
+				PRINTFORML （%SELF_CALL()%が触手に負けたから……）
+				PRINTFORML %PRINT_TRANSCALLNAME(TARGET)%は拠点のスタッフと並んで触手に犯される光景を想像している…
+			CASE 2
+				PRINTFORML 「こんな酷い目にあわされるなんて……」
+				PRINTFORML 裏サイトにアップロードされた触手に犯される少女の動画を見ながら
+				PRINTFORML %PRINT_TRANSCALLNAME(TARGET)%は自慰をしている
+		ENDSELECT
+	ENDIF
+ELSE
+	IF TALENT:触手の虜 > 0
+		SELECTCASE RAND:3
+			CASE 0
+				PRINTFORML 「やめろ……やめろよ……」
+				PRINTFORML 　
+				PRINTFORML 「そこは大事な…」
+				PRINTFORML 「あっ……這入ってきた…❤」
+				PRINTFORML 自分の大切な穴に少しずつ焦らす様に指を入れながら
+				PRINTFORML 衆人の前で触手に嬲りものにされている姿を想像しながら%PRINT_TRANSCALLNAME(TARGET)%は自慰にふけっている…
+			CASE 1
+				PRINTFORML 「こんな恥ずかしい姿、させやがって…❤」
+				PRINTFORML 鏡の前で大きく足を開く%PRINT_TRANSCALLNAME(TARGET)%
+				PRINTFORML 　
+				PRINTFORML 「くそっ……もう降参するから……」
+				PRINTFORML 「犯して…ください…❤」
+				PRINTFORML 敏感な部分は触れずに卑猥な懇願をしながら自慰にふけっている…
+			CASE 2
+				PRINTFORML 「こりゃ…凄ぇ……❤」
+				PRINTFORML 裏サイトにアップロードされた触手に犯される少女の動画を見ながら
+				PRINTFORML %PRINT_TRANSCALLNAME(TARGET)%はいつか自分もこうなれるかと期待しながら自慰をしている…
+		ENDSELECT
+	ELSE
+		SELECTCASE RAND:3
+			CASE 0
+				PRINTFORML （口も胸もクリトリスも触手に嬲られて）
+				PRINTFORMW （お尻の穴も触手に貫かれる）
+				IF TALENT:処女 == 1 || TALENT:処女 == 2
+					PRINTFORML （今まで守ってきた処女もあっさり奪われて…）
+				ENDIF
+				PRINTFORML （それで触手の汚い液まみれにされて……）
+			CASE 1
+				PRINTFORML （みんな、すまねぇ…）
+				PRINTFORML （%SELF_CALL()%が触手に負けたから……）
+				PRINTFORML %PRINT_TRANSCALLNAME(TARGET)%は拠点のスタッフと並んで触手に犯される光景を想像している…
+			CASE 2
+				PRINTFORML 「こんな酷い目にあわせるなんて……」
+				PRINTFORML 裏サイトにアップロードされた触手に犯される少女の動画を見ながら
+				PRINTFORML %PRINT_TRANSCALLNAME(TARGET)%は自慰をしている
+		ENDSELECT
+	ENDIF
+ENDIF
+
+;戦闘後自慰
+;-------------------------------------------------
+@KOJO_0_SELF_BATTLEEND_27
+;お嬢様
+IF TALENT:アクセサリ==3
+	;清純派
+	IF TALENT:301 == 1
+		SELECTCASE RAND:3
+			CASE 0
+				PRINTFORML 「外なのに、誰かに見つかったら大変なのに」
+				PRINTFORML 「こうでもしないと鎮まりませんわ…」
+			CASE 1
+				PRINTFORML 「いけない事だけど…」
+				PRINTFORML 「戦闘の興奮が収まりませんわ…」
+			CASE 2
+				PRINTFORML 「戦闘が終わったばかりなのに」
+				PRINTFORML 「こんなはしたない事…」
+		ENDSELECT
+	ELSE
+		SELECTCASE RAND:4
+			CASE 0
+				PRINTFORML 「こうでもしないと鎮まりませんわ…」
+			CASE 1
+				PRINTFORML 「戦闘の興奮が収まりませんわ…」
+			CASE 2
+				PRINTFORML 「こんな所を誰かに見られたら…」
+			CASE 3
+				PRINTFORML 「あそこで負けていたら%SELF_CALL()%、こんなものでは済まないような酷い目に…」
+		ENDSELECT
+	ENDIF
+ELSE
+	;清純派
+	IF TALENT:301 == 1
+		SELECTCASE RAND:3
+			CASE 0
+				PRINTFORML 「誰かに見つかったら大変だけど」
+				PRINTFORML 「こうでもしねぇと落ち着かねぇ…」
+			CASE 1
+				PRINTFORML 「誰かに見られたら大変だけど…」
+				PRINTFORML 「興奮が収まらねぇ」
+			CASE 2
+				PRINTFORML 「戦った後にオナニーなんて、変態のする事じゃねぇか……」
+		ENDSELECT
+	ELSE
+		SELECTCASE RAND:4
+			CASE 0
+				PRINTFORML 「こうでもしないと落ち着かねぇぜ…」
+			CASE 1
+				PRINTFORML 「戦った後はいつもこうだ…」
+			CASE 2
+				PRINTFORML 「こんな所、誰かに見られたら…」
+			CASE 3
+				PRINTFORML 「あそこで負けていたら…触手の嬲り者に…」
+		ENDSELECT
+	ENDIF
+ENDIF
+
+;普通の自慰
+;-------------------------------------------------
+@KOJO_0_SELF_N_27
+;お嬢様
+IF TALENT:アクセサリ==3
+	;はじめてのオナノー
+	IF EXP:40 == 0
+		PRINTFORML 「本だとこうやってする、と書いてあったけど……」
+		PRINTFORML 「ん…何だか変な気分……」
+	;清純派
+	ELSEIF TALENT:301 == 1
+		SELECTCASE RAND:2
+			CASE 0
+				PRINTFORML 「自分でエッチな事をして気持ちよくなろうなんて、はしたない%SELF_CALL()%…」
+			CASE 1
+				PRINTFORML 「あっ…乳首がこんなに硬くなってる❤」
+				PRINTFORML 「いけない事なのに…❤」
+		ENDSELECT
+	ELSE
+		SELECTCASE RAND:3
+			CASE 0
+				PRINTFORML 「%SELF_CALL()%の気持ちいい所、%SELF_CALL()%が全部知ってるから…」
+			CASE 1
+				PRINTFORML 「一回だけ、一回イッたら終わりだから…」
+			CASE 2
+				PRINTFORML 「もうエッチな汁が出てきてる」
+				PRINTFORML 「タオルか何か敷かないと❤」
+		ENDSELECT
+	ENDIF
+ELSE
+	;はじめてのオナノー
+	IF EXP:40 == 0
+		PRINTFORML 「本だとこうするっ書いてあったけど……」
+		PRINTFORML 「ん…何か変な気分になってきた……」
+	;清純派
+	ELSEIF TALENT:301 == 1
+		SELECTCASE RAND:2
+			CASE 0
+				PRINTFORML 「自分でエッチな事をして気持ちよくなろうなんて」
+				PRINTFORML 「変態だな、%SELF_CALL()%……」
+			CASE 1
+				PRINTFORML 「自分でスるなんて変態な事だけど」
+				IF ISMALE()
+					PRINTFORML 「チンコに負けねぇくらい乳首も硬くなってきた❤」
+				ELSE
+					PRINTFORML 「乳首もクリトリスも硬くなってきてる❤」
+				ENDIF
+		ENDSELECT
+	ELSE
+		SELECTCASE RAND:3
+			CASE 0
+				PRINTFORML 「%SELF_CALL()%の気持ちいい所、%SELF_CALL()%が全部知ってるから…」
+			CASE 1
+				PRINTFORML 「一回だけ、一回イッたら終わりだから…」
+			CASE 2
+				PRINTFORML 「もうエッチな汁が出てきてる」
+				PRINTFORML 「タオルか何か敷かねぇと❤」
+		ENDSELECT
+	ENDIF
+ENDIF
+
+
+;胸自慰
+;-------------------------------------------------
+@KOJO_0_SELF_B_27
+;お嬢様
+IF TALENT:アクセサリ==3
+	;自慰中毒4以上
+	IF ABL:自慰中毒 > 3
+		SELECTCASE RAND:3
+			CASE 0
+				PRINTFORML 「チクニーで感じてる%SELF_CALL()%…❤」
+			CASE 1
+				PRINTFORML 「胸だけなのに気持ちいい…❤」
+			CASE 2
+				PRINTFORML 「こんな風に乱暴に胸を弄られながら」
+				PRINTFORML 「乳首を摘ままれるの…❤」
+				PRINTFORMDL %PRINT_TRANSCALLNAME(TARGET)%は嬲り者にされている姿を想像しながら自慰をしている
+		ENDSELECT
+	ELSE
+		SELECTCASE RAND:2
+			CASE 0
+				PRINTFORML 「胸だけいじってるのに気持ちいい…」
+			CASE 1
+				PRINTFORML 「こんな変態オナニーしてるの、%SELF_CALL()%だけかな…」
+		ENDSELECT
+	ENDIF
+ELSE
+	;自慰中毒4以上
+	IF ABL:自慰中毒 > 3
+		SELECTCASE RAND:3
+			CASE 0
+				PRINTFORML 「チクニーで感じてる%SELF_CALL()%…❤」
+			CASE 1
+				PRINTFORML 「胸だけなのに気持ちいい…❤」
+			CASE 2
+				PRINTFORML 「こんな風に乱暴に胸を弄られながら」
+				PRINTFORML 「乳首を摘ままれて…❤」
+				PRINTFORMDL %PRINT_TRANSCALLNAME(TARGET)%は嬲り者にされている姿を想像しながら自慰をしている
+		ENDSELECT
+	ELSE
+		SELECTCASE RAND:2
+			CASE 0
+				PRINTFORML 「胸だけいじってるのに気持ちいい…」
+			CASE 1
+				PRINTFORML 「こんな変態オナニーしてるの、%SELF_CALL()%だけかもな…」
+		ENDSELECT
+	ENDIF
+ENDIF
+
+;アナニー
+;-------------------------------------------------
+@KOJO_0_SELF_A_27
+;お嬢様
+IF TALENT:アクセサリ==3
+	;自慰中毒4以上
+	IF ABL:自慰中毒 > 3
+		SELECTCASE RAND:3
+			CASE 0
+				PRINTFORML 「アヌスで感じてる%SELF_CALL()%…」
+				PRINTFORML 「ぁぁぁぁんん❤」
+			CASE 1
+				PRINTFORML 「ここは排出する穴のはずなのに」
+				PRINTFORML 「ソコで感じるの、背徳的で気持ちいい…❤」
+			CASE 2
+				PRINTFORML 「今日は%SELF_CALL()%の指でだけど……」
+				PRINTFORML 「お゛おぉん！」
+				PRINTFORML 「アナニー気持ちいいっ❤　もう普通のオナニーに戻れない❤」
+		ENDSELECT
+	ELSE
+		SELECTCASE RAND:2
+			CASE 0
+				PRINTFORML 「お尻はエッチする場所じゃないのに気持ちいい…」
+			CASE 1
+				PRINTFORML 「こんな変態オナニーしてるの、%SELF_CALL()%だけかな…」
+		ENDSELECT
+	ENDIF
+ELSE
+	;自慰中毒4以上
+	IF ABL:自慰中毒 > 3
+		SELECTCASE RAND:3
+			CASE 0
+				PRINTFORML 「ケツ穴で感じてる%SELF_CALL()%…」
+				PRINTFORML 「ぁぁぁぁんん❤」
+			CASE 1
+				PRINTFORML 「ここはクソする穴なのに」
+				PRINTFORML 「自分で指入れて感じるの、背徳的で気持ちいいぜ…❤」
+			CASE 2
+				PRINTFORML 「今日は%SELF_CALL()%の指でだけど……」
+				PRINTFORML 「お゛おぉん！」
+				PRINTFORML 「アナニー気持ちいいっ❤　もう普通のオナニーに戻れねぇ❤」
+		ENDSELECT
+	ELSE
+		SELECTCASE RAND:2
+			CASE 0
+				PRINTFORML 「ケツはエッチする場所じゃねぇのに気持ちいい…」
+			CASE 1
+				PRINTFORML 「こんな変態オナニーしてるの、%SELF_CALL()%だけかもな…」
+		ENDSELECT
+	ENDIF
+ENDIF
+
+;膣オナ(淫尻持ちは二穴オナニーに)
+;-------------------------------------------------
+@KOJO_0_SELF_V_27
+;お嬢様
+IF TALENT:アクセサリ==3
+	IF TALENT:淫尻 > 0
+		;自慰中毒4以上
+		IF ABL:自慰中毒 > 3
+			SELECTCASE RAND:3
+				CASE 0
+					PRINTFORML 「両穴オナニーで感じてる変態な%SELF_CALL()%…」
+					PRINTFORML 「おぉぉぉぉん❤」
+					PRINTFORML 「おぉぉぉんっ❤」
+				CASE 1
+					PRINTFORML 「二か所同時でオナニーするの」
+					PRINTFORML 「二倍じゃなくて、二乗で気持ちイイッ❤」
+				CASE 2
+					PRINTFORML 「おっ、おっ、　お゛おぉん！」
+					PRINTFORML 「マンコもアヌスも同時に気持ちいいっ！」
+					PRINTFORML 「もう普通のオナニーに戻れない❤」
+			ENDSELECT
+		ELSE
+			SELECTCASE RAND:2
+				CASE 0
+					PRINTFORML 「お尻の穴はエッチする場所じゃないけど」
+					PRINTFORML 「こうやって同時にスるの、気持ち良いから…」
+				CASE 1
+					PRINTFORML 「こんな変態オナニーしてるの、%SELF_CALL()%だけかな…」
+			ENDSELECT
+		ENDIF
+	ELSE
+		;自慰中毒4以上
+		IF ABL:自慰中毒 > 3
+			SELECTCASE RAND:3
+				CASE 0
+					PRINTFORML 「おぉぉぉぉん❤」
+					PRINTFORML 「%SELF_CALL()%でマンコに指れて感じてる変態な%SELF_CALL()%❤」
+				CASE 1
+					PRINTFORML 「ココも、ココも気持ちイイっ❤」
+					PRINTFORML 「メスマンコでオナニー、サイコー❤」
+				CASE 2
+					PRINTFORML 「おっ、おっ、　お゛おぉん！」
+					PRINTFORML 「マンコイクッ❤　マンコイクッ❤❤」
+			ENDSELECT
+		ELSE
+			SELECTCASE RAND:2
+				CASE 0
+					PRINTFORML 「男の人のオチンチン入れるところなのに」
+					PRINTFORML 「自分の指を入れて感じるなんて…」
+				CASE 1
+					PRINTFORML 「こんな変態オナニーしてるの、%SELF_CALL()%だけかな…」
+			ENDSELECT
+		ENDIF
+	ENDIF
+ELSE
+	IF TALENT:淫尻 > 0
+		;自慰中毒4以上
+		IF ABL:自慰中毒 > 3
+			SELECTCASE RAND:3
+				CASE 0
+					PRINTFORML 「両穴オナニーで感じてる変態な%SELF_CALL()%…」
+					PRINTFORML 「おぉぉぉぉん❤」
+					PRINTFORML 「おぉぉぉんっ❤」
+				CASE 1
+					PRINTFORML 「二か所同時でオナニーするの」
+					PRINTFORML 「すんげぇ気持ちイイぜっ❤」
+				CASE 2
+					PRINTFORML 「おっ、おっ、　お゛おぉん！」
+					PRINTFORML 「マンコもアヌスも同時に気持ちいいっ！」
+					PRINTFORML 「もう普通のオナニーに戻れねぇ❤」
+			ENDSELECT
+		ELSE
+			SELECTCASE RAND:2
+				CASE 0
+					PRINTFORML 「お尻の穴はエッチする場所じゃねぇけど」
+					PRINTFORML 「こうやって同時にスるの、気持ち良いからよぉ…」
+				CASE 1
+					PRINTFORML 「こんな変態オナニーしてるの、%SELF_CALL()%だけかもな…」
+			ENDSELECT
+		ENDIF
+	ELSE
+		;自慰中毒4以上
+		IF ABL:自慰中毒 > 3
+			SELECTCASE RAND:3
+				CASE 0
+					PRINTFORML 「おぉぉぉぉん❤」
+					PRINTFORML 「%SELF_CALL()%でマンコに指れて感じてる変態な%SELF_CALL()%❤」
+				CASE 1
+					PRINTFORML 「ココも、ココも気持ちイイっ❤」
+					PRINTFORML 「マンコでするオナニー、サイコー❤」
+				CASE 2
+					PRINTFORML 「おっ、おっ、　お゛おぉん！」
+					PRINTFORML 「マンコイクッ❤　マンコイクッ❤❤」
+			ENDSELECT
+		ELSE
+			SELECTCASE RAND:2
+				CASE 0
+					PRINTFORML 「チンコ入れられる穴なのに」
+					PRINTFORML 「自分の指を入れて感じるなんて…」
+				CASE 1
+					PRINTFORML 「こんな変態オナニーしてるの、%SELF_CALL()%だけかもな…」
+			ENDSELECT
+		ENDIF
+	ENDIF
+ENDIF
+
+
+;素質関連
+;処女喪失
+;-------------------------------------------------
+@KOJO_0_SEX_LOSTVIRGIN_27
+;子触手襲撃・通常戦闘中（敵）・幽閉中（敵）・触手拘束具/寄生触手
+IF CFLAG:TARGET:206 >= 1 && CFLAG:TARGET:206 <= 4
+	IF TALENT:触手の虜 > 0
+		PRINTFORML 「……%SELF_CALL()%の初めて、触手様にぃ……」
+	ELSE
+		PRINTFORML 「%SELF_CALL()%の初めてが……\@ TALENT:アクセサリ==3 ? 万死に値するわ # ぶっ殺す \@」
+	ENDIF
+;恋人との夜の営み・仲間夜這い
+ELSEIF CFLAG:TARGET:206 == 5 || CFLAG:TARGET:206 == 6
+	PRINTFORML 「……いい\@ TALENT:アクセサリ==3 ? わ #  \@よ、別に%SELF_CALL()%の初めて程度……」
+;枕営業・援助交際・公衆便所（浮浪者）・公衆便所（犬）・情報屋
+ELSEIF CFLAG:TARGET:206 >= 7 && CFLAG:TARGET:206 <= 10 || CFLAG:TARGET:206 == 12
+	PRINTFORML 「なんで%SELF_CALL()%の初めてをこんな奴に……」
+;クズ市民
+ELSEIF CFLAG:TARGET:206 == 11
+	PRINTFORML 「……殺す……」
+ELSE
+	PRINTFORML 「%SELF_CALL()%の初めてが……」
+ENDIF
+
+;触手の虜取得
+;-------------------------------------------------
+@KOJO_0_GETTALENT_TORIKO_27
+;お嬢様
+IF TALENT:アクセサリ==3
+	SELECTCASE RAND:3
+		CASE 0
+			PRINTFORML 「なんでこいつらと戦う必要があるの…？」
+			PRINTFORML 「男の人では味わえないような快楽を与えてくれるのに」
+		CASE 1
+			PRINTFORML 「男の人のオチンチンより、太くて、硬くて、大きくて…」
+			PRINTFORML 「あなたが好きです。大好きです❤」
+			PRINTFORML %PRINT_TRANSCALLNAME(TARGET)%は手近な触手に誓いのキスをした
+		CASE 2
+			PRINTFORML 「%SELF_CALL()%、誓います」
+			PRINTFORML 「これからは平和の為とかでなく、みなさんにレイプされる為に戦います❤」
+	ENDSELECT
+ELSE
+	SELECTCASE RAND:3
+		CASE 0
+			PRINTFORML 「なんでこいつらと戦う必要があるんだ？」
+			PRINTFORML 「男じゃ味わえないような快楽を与えてくれるのによぉ…」
+		CASE 1
+			PRINTFORML 「男のオチンチンより、太くて、硬くて、デカくて…」
+			PRINTFORML 「オメェが好きが。大好きだぜ❤」
+			PRINTFORML %PRINT_TRANSCALLNAME(TARGET)%は手近な触手に誓いのキスをした
+		CASE 2
+			PRINTFORML 「%SELF_CALL()%は決めたぜ」
+			PRINTFORML 「これからは平和の為とかでなく、オメエラにレイプされる為に戦う❤」
+	ENDSELECT
+ENDIF
+
+;嬲られ体質取得
+;--------------------------------------------------
+@KOJO_0_GETTALENT_NABURARE_27
+
+;淫乱取得
+;-------------------------------------------------
+@KOJO_0_GETTALENT_INRAN_27
+;お嬢様
+IF TALENT:アクセサリ==3
+	SELECTCASE RAND:2
+		CASE 0
+			PRINTFORML （こんなに気持ち良いのが沢山来たら抗えない……）
+			PRINTFORML 　
+			PRINTFORML 「そうですね。抗わなければいいのですね❤」
+			PRINTFORML %PRINT_TRANSCALLNAME(TARGET)%は誓いの言葉を立てた
+		CASE 1
+			PRINTFORML 「身分も地位も、何もかも捨てて……」
+			PRINTFORML 「これからは身体に正直に生きます❤❤」
+	ENDSELECT
+ELSE
+	SELECTCASE RAND:2
+		CASE 0
+			PRINTFORML （こんなに気持ちイイのばかりなんて勝てる訳ねぇ）
+			PRINTFORML （もう諦めるか……）
+			PRINTFORML 　
+			PRINTFORML 「%SELF_CALL()%は、これからは気持ちイイのに抗わねぇ」
+			PRINTFORML %PRINT_TRANSCALLNAME(TARGET)%は誓いの言葉を立てた
+		CASE 1
+			PRINTFORML 「身分も地位も、全部いらねぇ」
+			PRINTFORML 「これからは身体に正直に生きるぜ❤❤」
+	ENDSELECT
+ENDIF
+
+
+;淫核取得
+;-------------------------------------------------
+@KOJO_0_GETTALENT_INKAKU_27
+;お嬢様
+IF TALENT:アクセサリ==3
+	;チンチンある場合
+	IF ISPENIS()
+		PRINTFORML 「もうダメ…」
+		PRINTFORML 「オチンチン、どこも敏感にされちゃったぁ❤」
+	ELSE
+		PRINTFORML 「%SELF_CALL()%のクリトリス」
+		PRINTFORML 「感度良好の常にフル勃起になってる❤」
+	ENDIF
+ELSE
+	;チンチンある場合
+	IF ISPENIS()
+		PRINTFORML 「もうダメだ…」
+		PRINTFORML 「%SELF_CALL()%のチンチン、どこでもイけるようにされちまった❤」
+	ELSE
+		PRINTFORML 「%SELF_CALL()%のクリトリス」
+		PRINTFORML 「感度良好の常にフル勃起になってる❤」
+	ENDIF
+ENDIF
+
+
+;淫壷取得
+;-------------------------------------------------
+@KOJO_0_GETTALENT_INTUBO_27
+
+;淫尻取得
+;-------------------------------------------------
+@KOJO_0_GETTALENT_INJIRI_27
+
+;淫乳取得
+;-------------------------------------------------
+@KOJO_0_GETTALENT_INNYUU_27
+
+;清純派を失う
+;-------------------------------------------------
+@KOJO_0_LOSETALENT_SEIJUNHA_27
+
+
+;触手の虜による女体受容
+;-------------------------------------------------
+@KOJO_0_GETTALENT_TSJYUYOU_TORIKO_27
+
+;淫乱化による女体受容
+;-------------------------------------------------
+@KOJO_0_GETTALENT_TSJYUYOU_INRAN_27
+
+;女の喜びによる女体受容
+;-------------------------------------------------
+@KOJO_0_GETTALENT_TSJYUYOU_FEMININE_27
+
+;女の魅力による女体受容
+;-------------------------------------------------
+@KOJO_0_GETTALENT_TSJYUYOU_CHARM_27
+
+;両刀淫乱化による女体受容
+;-------------------------------------------------
+@KOJO_0_GETTALENT_TSJYUYOU_RYOUTOU_27
+
+;理性強度低下による口上分岐
+;書いたけど地の文に「TRYCALLFORM」が無いから喋らない
+;--------------------------------------------------
+@MKOJO_0_BRANCH_MESSAGE_FAITH_DOWN_27
+;お嬢様
+IF TALENT:アクセサリ==3
+	IF (MESSAGE_BRANCH_F(TARGET) & 堕落)
+		SELECTCASE RAND:2
+			CASE 0
+				PRINTFORML 「そうですわ、最後に倒してればいいのですから」
+				PRINTFORML 「それまではナニしても問題ないですよね❤」
+			CASE 1
+				PRINTFORML 「あはっ❤　世界中がピンクだ❤」
+		ENDSELECT
+	ELSEIF (MESSAGE_BRANCH_F(TARGET) & 快楽蕩け)
+		SELECTCASE RAND:2
+			CASE 0
+				PRINTFORML 「敵を倒して気持ち良くなれる……最高ですわ❤」
+				PRINTFORML 「穴はいくらでもありますわ、ジャンジャンかかって来なさい❤❤❤」
+			CASE 1
+				PRINTFORML 「さぁ…かかって来なさい」
+				PRINTFORML 「貴方が逝くか、%SELF_CALL()%がイくか……勝負よ❤❤❤」
+				IF TALENT:妊娠 == 0
+					PRINTFORML 「貴方が勝ったら%SELF_CALL()%の卵子、プレゼントしてあげる❤❤❤」
+				ENDIF
+		ENDSELECT
+	ELSE
+		SELECTCASE RAND:2
+			CASE 0
+				PRINTFORML 「頭の中で声が聞こえるけど……」
+				PRINTFORML 「こんなの幻聴よ！　%SELF_CALL()%はそんなに淫乱じゃない！」
+			CASE 1
+				PRINTFORML 「駄目…」
+				PRINTFORML 「欲望なんかに負けちゃぁ…」
+		ENDSELECT
+	ENDIF
+ELSE
+	IF (MESSAGE_BRANCH_F(TARGET) & 堕落)
+		SELECTCASE RAND:2
+			CASE 0
+				PRINTFORML 「最後にコイツが倒れてればいいんだよな」
+				PRINTFORML 「なら、それまではナニしても問題ねぇよな❤」
+			CASE 1
+				PRINTFORML 「あはっ❤　世界中がピンクだ❤」
+		ENDSELECT
+	ELSEIF (MESSAGE_BRANCH_F(TARGET) & 快楽蕩け)
+		SELECTCASE RAND:2
+			CASE 0
+				PRINTFORML 「敵を倒して気持ち良くなれる……最高じゃねぇか❤」
+				PRINTFORML 「穴はいくらでもあるんだ、ジャンジャンかかって来な❤❤❤」
+			CASE 1
+				PRINTFORML 「さぁ…かかって来な」
+				PRINTFORML 「オメェが逝くか、%SELF_CALL()%がイくか……勝負だ❤❤❤」
+				IF TALENT:妊娠 == 0
+					PRINTFORML 「オメェが勝ったら%SELF_CALL()%のザーメンで孕んでやるよ❤❤❤」
+				ENDIF
+		ENDSELECT
+	ELSE
+		SELECTCASE RAND:2
+			CASE 0
+				PRINTFORML 「頭の中で声が聞こえるけど……」
+				PRINTFORML 「こんなの幻ウソだ！　%SELF_CALL()%はそんなに淫乱じゃねぇ！」
+			CASE 1
+				PRINTFORML 「駄目だ…」
+				PRINTFORML 「欲望なんかに負けたら…」
+		ENDSELECT
+	ENDIF
+ENDIF
+
+
+
+;避妊結界が破られた
+;-------------------------------------------------
+@KOJO_0_PREGNANCY_SHIELD_COLLAPSED_27
+
+;プレイヤーキャラによる性攻撃
+;COMF100：手淫攻撃
+;-------------------------------------------------
+@KOJO_0_BATTLE_CHARA_SEX_ATTACK100_27
+IF TALENT:触手の虜 > 0
+	;お嬢様
+	IF TALENT:アクセサリ==3
+		SELECTCASE RAND:2
+			CASE 0
+				PRINTFORML 「手でもいいのですか？」
+			CASE 1
+				PRINTFORML （駄目…ハメたいけど我慢…）
+				PRINTFORML 「今は手に付いた精液の匂いで我慢❤」
+		ENDSELECT
+	ELSE
+		SELECTCASE RAND:2
+			CASE 0
+				PRINTFORML 「手でもいいか？」
+			CASE 1
+				PRINTFORML （駄目…ハメたいけど我慢…）
+				PRINTFORML 「今は手に付いたザーメンの匂いで我慢❤」
+		ENDSELECT
+	ENDIF
+ELSE
+	;お嬢様
+	IF TALENT:アクセサリ==3
+		IF ABL:技巧 > 4
+			SELECTCASE RAND:2
+				CASE 0
+					PRINTFORML 「手だけなのにこんなにギンギンにしちゃって…」
+					PRINTFORML 「雑魚が」
+				CASE 1
+					PRINTFORML 「このまま射精に導いてあげます」
+					PRINTFORML 「無様に射精しなさい」
+			ENDSELECT
+		ELSE
+			SELECTCASE RAND:3
+				CASE 0
+					PRINTFORML 「こんな汚らわしい物を触るなんて…」
+				CASE 1
+					PRINTFORML 「%SELF_CALL()%が射精の手伝いをするだなんて…」
+				CASE 2
+					PRINTFORML 「うぅ……手が臭くなる……）
+			ENDSELECT
+		ENDIF
+	ELSE
+		IF ABL:技巧 > 4
+			SELECTCASE RAND:2
+				CASE 0
+					PRINTFORML 「手だけなのにこんなにギンギンにしやがって…」
+					PRINTFORML 「雑魚が」
+				CASE 1
+					PRINTFORML 「このまま射精させてやるから」
+					PRINTFORML 「無様に射精してな」
+			ENDSELECT
+		ELSE
+			SELECTCASE RAND:3
+				CASE 0
+					PRINTFORML 「こんな汚ねぇ物を触るなんて…」
+				CASE 1
+					PRINTFORML 「%SELF_CALL()%が射精の手伝いをするなんて…」
+				CASE 2
+					PRINTFORML 「クソッ……手が汚れる……）
+			ENDSELECT
+		ENDIF
+	ENDIF
+ENDIF
+
+;COMF101：フェラ攻撃
+;-------------------------------------------------
+@KOJO_0_BATTLE_CHARA_SEX_ATTACK101_27
+IF RAND:2 == 0
+	PRINTFORML 「ふぁ、じゅるるっ、じゅぶ、うぶっ……」
+ELSE
+	PRINTFORML 「ぶぽっ、ぶぽっ、ぶぽぽっ……」
+ENDIF
+
+IF TALENT:触手の虜 > 0 || TALENT:淫乱 > 0 || (MESSAGE_BRANCH_F(TARGET) & 快楽蕩け)
+	;お嬢様
+	IF TALENT:アクセサリ==3
+		SELECTCASE RAND:3
+			CASE 0
+				PRINTFORML （……%触手市民("触手","おちんぽ")%様の暴れん棒にご奉仕……）
+			CASE 1
+				PRINTFORML （臭くて…苦くて…身体の中から疼いちゃう❤）
+			CASE 2
+				PRINTFORML （このまま口の中に射精してもらおうか）
+				PRINTFORML （それても…❤）
+		ENDSELECT
+	ELSE
+		SELECTCASE RAND:3
+			CASE 0
+				PRINTFORML （……%触手市民("触手","おちんぽ")%様のぶっとい竿にご奉仕……）
+			CASE 1
+				PRINTFORML （臭くて…苦くて…身体の中から疼いちまう❤）
+			CASE 2
+				PRINTFORML （このまま口の中に射精してもらうか）
+				PRINTFORML （それても…❤）
+		ENDSELECT
+	ENDIF
+ELSE
+	IF EXP:フェラ経験 > 19
+		;お嬢様
+		IF TALENT:アクセサリ==3
+			SELECTCASE RAND:2
+				CASE 0
+					PRINTFORML （どう？　%SELF_CALL()%のテクニックは）
+					PRINTFORML （このまま射精してしまいなさい）
+				CASE 1
+					PRINTFORML （この程度のオチンチン、すぐ射精して終わりにしてあげます）
+			ENDSELECT
+		ELSE
+			SELECTCASE RAND:2
+				CASE 0
+					PRINTFORML （どうだ？　%SELF_CALL()%のテクニックは）
+					PRINTFORML （このまま射精しちまいな）
+				CASE 1
+					PRINTFORML （この程度のチンコ、すぐ射精して終わりにしてやるぜ）
+			ENDSELECT
+		ENDIF
+
+	ELSE
+		;お嬢様
+		IF TALENT:アクセサリ==3
+			SELECTCASE RAND:2
+				CASE 0
+					PRINTFORML （ああああぁ……汚い汚い汚い……）
+				CASE 1
+					PRINTFORML （ああああぁ……臭い臭い臭い……）
+			ENDSELECT
+		ELSE
+			SELECTCASE RAND:2
+				CASE 0
+					PRINTFORML （ああああぁ……汚ねぇ汚ねぇ汚ねぇ…）
+				CASE 1
+					PRINTFORML （ああああぁ……臭ぇ臭ぇ臭ぇ……）
+			ENDSELECT
+		ENDIF
+	ENDIF
+ENDIF
+
+;COMF102：足コキ攻撃
+;-------------------------------------------------
+@KOJO_0_BATTLE_CHARA_SEX_ATTACK102_27
+IF TALENT:触手の虜 > 0
+	PRINTFORML 「えい、えい、気持ちいい\@ TALENT:アクセサリ==3 ? です #  \@か？」
+ELSE
+	PRINTFORML （足でなんて……変態だ\@ TALENT:アクセサリ==3 ? わ #  \@……）
+ENDIF
+
+;COMF103：素股焦らし
+;-------------------------------------------------
+@KOJO_0_BATTLE_CHARA_SEX_ATTACK103_27
+IF TALENT:触手の虜 > 0
+	IF TALENT:アクセサリ==3
+		SELECTCASE RAND:2
+			CASE 0
+				PRINTFORML 「ふふ、入れたいですか？」
+			CASE 1
+				PRINTFORML 「今はお預けです」
+				PRINTFORML 「後でたっぷりと射精してください❤」
+		ENDSELECT
+	ELSE
+		SELECTCASE RAND:2
+			CASE 0
+				PRINTFORML 「ほら、入れてぇか？」
+			CASE 1
+				PRINTFORML 「今はコレで我慢しな」
+				PRINTFORML 「後でたっぷりと射精させてやるから❤」
+		ENDSELECT
+	ENDIF
+ELSE
+	IF TALENT:アクセサリ==3
+		SELECTCASE RAND:2
+			CASE 0
+				PRINTFORML （まずいわ、少しでもズレたら入ってしまいそう……）
+			CASE 1
+				PRINTFORML 「ほら、入れる事も出来ずに無様に射精しなさい」
+		ENDSELECT
+	ELSE
+		SELECTCASE RAND:2
+			CASE 0
+				PRINTFORML （ヤバい、少しズレたら入るだろ、これ……）
+			CASE 1
+				PRINTFORML 「オラ、入れる事も出来ずに無様に射精しやがれ」
+		ENDSELECT
+	ENDIF
+ENDIF
+
+;COMF104：搾り取る
+;-------------------------------------------------
+@KOJO_0_BATTLE_CHARA_SEX_ATTACK104_27
+IF TALENT:触手の虜 > 0
+	PRINTFORML 「ふっ、ぅん、気持ちいい、\@ TALENT:アクセサリ==3 ? ですか # か \@？」
+	PRINTFORML （ああ……気持ちいい\@ TALENT:アクセサリ==3 ? わ #  \@……）
+ELSE
+	PRINTFORML 「うっ、ふっ、こんな……」
+	PRINTFORML （……早く果ててしま\@ TALENT:アクセサリ==3 ? いなさい # え \@っ！）
+ENDIF
+
+
+;＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝
+;MESSAGE_SEX_COM.ERB
+;＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝
+;触手から受ける性コマンド関連
+;COM0：C攻め弱　クリトリスを撫でる
+;-------------------------------------------------
+@KOJO_0_SEX_COM0_27
+;お嬢様
+IF TALENT:アクセサリ==3
+	;Ｃ鈍感
+	IF TALENT:101 > 0
+		SELECTCASE RAND:2
+			CASE 0
+				PRINTFORML 「%SELF_CALL()%、そこは感じませんので」
+			CASE 1
+				PRINTFORML 「そんな事されても無駄ですわ」
+		ENDSELECT
+	ELSE
+		SELECTCASE RAND:2
+			CASE 0
+				PRINTFORML 「くっ、こんな責め苦…」
+			CASE 1
+				PRINTFORML 「そんなもの」
+				PRINTFORML 「た…耐えて見せますわ……」
+		ENDSELECT
+	ENDIF
+ELSE
+	;Ｃ鈍感
+	IF TALENT:101 > 0
+		SELECTCASE RAND:2
+			CASE 0
+				PRINTFORML 「悪ぃな」
+				PRINTFORML 「%SELF_CALL()%、ソコは感じねぇんだ」
+			CASE 1
+				PRINTFORML 「そんな事しても時間の無駄だぜ」
+		ENDSELECT
+	ELSE
+		SELECTCASE RAND:2
+			CASE 0
+				PRINTFORML 「くっ、こんな責め苦…」
+			CASE 1
+				PRINTFORML 「そんなもの」
+				PRINTFORML 「た…耐えてやるぜ……」
+		ENDSELECT
+	ENDIF
+ENDIF
+
+;COM1：C攻め強　クリトリスに吸い付く
+;-------------------------------------------------
+@KOJO_0_SEX_COM1_27
+;お嬢様
+IF TALENT:アクセサリ==3
+	IF ISPENIS()
+		SELECTCASE RAND:2
+			CASE 0
+				PRINTFORML 「おおお゛ぉんっ！」
+				PRINTFORML 「%SELF_CALL()%のオチンチン、食べないでっ！」
+			CASE 1
+				PRINTFORML 「だめ、%SELF_CALL()%のオチンチン、オモチャにされてるっ」
+				PRINTFORML 「ダメッ、そんな事しないでっ！」
+		ENDSELECT
+	ELSE
+		SELECTCASE RAND:2
+			CASE 0
+				PRINTFORML 「そ、そこは毎日、%SELF_CALL()%で洗ってます！」
+				PRINTFORML 「ですから…そのような……」
+			CASE 1
+				PRINTFORML 「おおお゛ぉんっ！」
+				PRINTFORML 「女の子の大事なクリトリス、いじめないでっ！」
+		ENDSELECT
+	ENDIF
+ELSE
+	IF ISPENIS()
+		SELECTCASE RAND:2
+			CASE 0
+				PRINTFORML 「おおお゛ぉんっ！」
+				PRINTFORML 「%SELF_CALL()%のチンコ、食うな、食うなよ！」
+			CASE 1
+				PRINTFORML 「クソッ、%SELF_CALL()%のチンコ、オモチャにしやがって」
+				PRINTFORML 「止めろ、、離しやがれ！」
+		ENDSELECT
+	ELSE
+		SELECTCASE RAND:2
+			CASE 0
+				PRINTFORML 「やめろ、ソコは…マッサージなんて……おおお゛ぉん！」
+			CASE 1
+				PRINTFORML 「おおお゛ぉんっ！」
+				PRINTFORML 「女の大事なクリトリス、触るんじゃねぇよ！」
+		ENDSELECT
+	ENDIF
+ENDIF
+
+;COM2：V攻め弱　膣口を愛撫（処女は奪いません）
+;-------------------------------------------------
+@KOJO_0_SEX_COM2_27
+IF TALENT:処女 == 1 || TALENT:処女 == 2
+	;お嬢様
+	IF TALENT:アクセサリ==3
+		SELECTCASE RAND:2
+			CASE 0
+				PRINTFORML （助かった…%SELF_CALL()%の処女はまだ無事ね）
+				PRINTFORML 「けど、この格好は…」
+			CASE 1
+				PRINTFORML 「お生憎様」
+				PRINTFORML 「%SELF_CALL()%はまだ処女のままよ」
+		ENDSELECT
+	ELSE
+		SELECTCASE RAND:2
+			CASE 0
+				PRINTFORML （助かったぜ…%SELF_CALL()%の処女はまだ無事だ）
+				PRINTFORML 「けどよぉ、この格好は…」
+			CASE 1
+				PRINTFORML 「悪ぃな」
+				PRINTFORML 「%SELF_CALL()%はまだ処女のままだぜ」
+		ENDSELECT
+	ENDIF
+ELSE
+	;お嬢様
+	IF TALENT:アクセサリ==3
+		SELECTCASE RAND:2
+			CASE 0
+				PRINTFORML 「こんな焦らしプレイなんかに%SELF_CALL()%の膣穴は負けませんわ」
+				PRINTFORML 「残念ね」
+			CASE 1
+				PRINTFORML 「あら？　入れてるつもり？」
+		ENDSELECT
+	ELSE
+		SELECTCASE RAND:2
+			CASE 0
+				PRINTFORML 「こんな焦らしプレイなんかに%SELF_CALL()%の穴は負けねぇぜ」
+			CASE 1
+				PRINTFORML 「は？　これで入れてるつもり？」
+		ENDSELECT
+	ENDIF
+ENDIF
+
+
+;COM3：V攻め強　挿入
+;-------------------------------------------------
+@KOJO_0_SEX_COM3_27
+IF TALENT:処女 == 1 || TALENT:処女 == 2
+	;お嬢様
+	IF TALENT:アクセサリ==3
+		SELECTCASE RAND:3
+			CASE 0
+				PRINTFORML 「ぐっ、あっ、あっ」
+				PRINTFORML 「初めてなのに手加減はなしですのね」
+				PRINTFORML 「なら…%SELF_CALL()%も手加減なしでお礼いたしますわ」
+			CASE 1
+				PRINTFORML 「ぐっ、あっ、あっ！」
+				PRINTFORML 「初めての相手にこれは激しくありません？」
+			CASE 2
+				PRINTFORML 「いつかはこうなるかと思ってましたが……」
+				PRINTFORML 「許しませんわ！」
+		ENDSELECT
+	ELSE
+		SELECTCASE RAND:3
+			CASE 0
+				PRINTFORML 「ぐっ、あっ、あっ」
+				PRINTFORML 「こっちは初めてなのに手加減なしかよ…」
+				PRINTFORML 「なら…%SELF_CALL()%のお礼も手加減なしだな」
+			CASE 1
+				PRINTFORML 「ぐっ、あっ、あっ！」
+				PRINTFORML 「初めての相手に激しすぎだろ」
+			CASE 2
+				PRINTFORML 「いつかはこうなる思ってたけど……」
+				PRINTFORML 「許さねぇ！」
+		ENDSELECT
+	ENDIF
+ELSE
+	;お嬢様
+	IF TALENT:アクセサリ==3
+		;淫乱
+		IF TALENT:151
+			SELECTCASE RAND:4
+				CASE 0
+					PRINTFORML 「あっ❤ あっ❤ あぁっ❤❤❤」
+					PRINTFORML 「オマンコに太いのが出たり入ったり❤」
+				CASE 1
+					PRINTFORML 「こんなっ❤　激しいセックスッ❤　耐えられにゃい❤」
+					PRINTFORML 「もっと❤　もっと❤　もっとオマンコズコズコしてっ❤❤」
+				CASE 2
+					PRINTFORML 「んんっ、そこはっ、そこは弱いのっ❤」
+					PRINTFORML 「だからもっと虐めて❤　あんっ❤❤❤」
+				CASE 3
+					PRINTFORML 「%SELF_CALL()%の大事な場所、、もっとメチャメチャのグチョグチョにしてっ❤」
+			ENDSELECT
+		ELSE
+			SELECTCASE RAND:4
+				CASE 0
+					PRINTFORML 「あっ、あっ、あぁっ！」
+				CASE 1
+					PRINTFORML 「こんなっ、激しいセックスにっ、耐えるなんてっ」
+					PRINTFORML 「拷問ですわっ、あっ！」
+				CASE 2
+					PRINTFORML 「んんっ、そこはっ、そこは弱いのっ❤」
+				CASE 3
+					PRINTFORML 「こんな奴に%SELF_CALL()%の大切な場所を…」
+			ENDSELECT
+		ENDIF
+	ELSE
+		;淫乱
+		IF TALENT:151
+			SELECTCASE RAND:4
+				CASE 0
+					PRINTFORML 「おっ❤　おっ❤　お゛ぉっ❤❤❤」
+					PRINTFORML 「%SELF_CALL()%のマンコ、太いのが出たり入ったり❤」
+				CASE 1
+					PRINTFORML 「こんなっ❤　激しいセックスッ❤　耐えれねぇ❤」
+					PRINTFORML 「まけた❤　オマンコまけたからっ❤　もっとズコズコしてくれっ❤❤」
+				CASE 2
+					PRINTFORML 「んんっ、そこはっ、そこは弱いからっ❤」
+					PRINTFORML 「だから…もっと虐めてくれっ❤　あんっ❤❤❤」
+				CASE 3
+					PRINTFORML 「%SELF_CALL()%の大事な場所、、もっとメチャメチャのグチョグチョにてくれっ❤」
+			ENDSELECT
+		ELSE
+			SELECTCASE RAND:4
+				CASE 0
+					PRINTFORML 「おっ、おっ、お゛ぉっ！」
+				CASE 1
+					PRINTFORML 「こんなっ、激しいセックスにっ、耐えるなんてっ」
+					PRINTFORML 「拷問かよっ、あっ！」
+				CASE 2
+					PRINTFORML 「んんっ、そこはっ、そこは弱いっ❤」
+				CASE 3
+					PRINTFORML 「こんな奴に%SELF_CALL()%の大切な場所を…」
+			ENDSELECT
+		ENDIF
+	ENDIF
+
+ENDIF
+
+;COM4：A攻め弱　アナルを撫で回す
+;-------------------------------------------------
+@KOJO_0_SEX_COM4_27
+;お嬢様
+IF TALENT:アクセサリ==3
+	SELECTCASE RAND:2
+		CASE 0
+			PRINTFORML 「そこは汚い…くっ……」
+		CASE 1
+			PRINTFORML 「そんな所をマッサージして何をするつもり？」
+		ENDSELECT
+ELSE
+	SELECTCASE RAND:2
+		CASE 0
+			PRINTFORML 「そこは汚い…くっ……」
+		CASE 1
+			PRINTFORML 「そんな所をマッサージして何をするつもだ？」
+		ENDSELECT
+ENDIF
+
+;COM5：A攻め強　アナルに挿入
+;-------------------------------------------------
+@KOJO_0_SEX_COM5_27
+;お嬢様
+IF TALENT:アクセサリ==3
+	;Ａ敏感かＡ感覚3以上
+	IF TALENT:104 > 0 || ABL:2 > 2
+		SELECTCASE RAND:3
+			CASE 0
+				PRINTFORML 「きたっ、来ましたわっ❤」
+				PRINTFORML 「%SELF_CALL()%のよわよわアヌス、ぶっといのきましたわっ❤」
+			CASE 1
+				PRINTFORML 「えぐって、もっとえぐって❤」
+				PRINTFORML 「擦り切れてツルツルになるくらい腸壁えぐって❤」
+			CASE 2
+				PRINTFORML 「ケツマンコ、ケツマンコッ❤」
+				PRINTFORML 「正義の味方にケツマンコでわからせて❤」
+		ENDSELECT
+	ELSE
+		SELECTCASE RAND:2
+			CASE 0
+				PRINTFORML 「くっ、お尻なんて…」
+			CASE 1
+				PRINTFORML 「こんなの…」
+				PRINTFORML 「た…耐えて見せますわ……」
+		ENDSELECT
+	ENDIF
+ELSE
+	;Ａ敏感かＡ感覚3以上
+	IF TALENT:104 > 0 || ABL:2 > 2
+		SELECTCASE RAND:3
+			CASE 0
+				PRINTFORML 「きたっ❤」
+				PRINTFORML 「%SELF_CALL()%のよわよわアナル、ぶっといの入って来たっ❤」
+			CASE 1
+				PRINTFORML 「えぐって、もっとえぐってくれっ❤」
+				PRINTFORML 「擦り切れてツルツルになるくらい腸壁えぐって❤」
+			CASE 2
+				PRINTFORML 「ケツマンコ、ケツマンコッ❤」
+				PRINTFORML 「ケツマンコ使って%SELF_CALL()%がメスなのわからせてくれっ❤」
+		ENDSELECT
+	ELSE
+		SELECTCASE RAND:2
+			CASE 0
+				PRINTFORML 「クソッ、尻なんて…」
+			CASE 1
+				PRINTFORML 「こんなの…」
+				PRINTFORML 「た…耐えてやるぜ……」
+		ENDSELECT
+	ENDIF
+ENDIF
+
+
+;COM6：B攻め弱　胸を揉みしだく
+;-------------------------------------------------
+@KOJO_0_SEX_COM6_27
+
+;COM7：B攻め強　乳首に吸い付く
+;-------------------------------------------------
+@KOJO_0_SEX_COM7_27
+
+;COM8：スパンキング
+;-------------------------------------------------
+@KOJO_0_SEX_COM8_27
+;お嬢様
+IF TALENT:アクセサリ==3
+	IF ABL:マゾっ気 >= 2
+		SELECTCASE RAND:2
+			CASE 0
+				PRINTFORML 「いたいっ、いたいですわっ！」
+				PRINTFORML 「%SELF_CALL()%の柔肌に…跡がついてしまいますっ❤」
+			CASE 1
+				PRINTFORML 「もっとぉ、もっとぉ！」
+				PRINTFORML 「正義の味方を叩いて屈服させてくださいっ❤」
+		ENDSELECT
+	ELSE
+		SELECTCASE RAND:2
+			CASE 0
+				PRINTFORML 「いたいっ、いたいですわっ！」
+				PRINTFORML 「%SELF_CALL()%のお尻に跡がついてしまいますっ！」
+			CASE 1
+				PRINTFORML 「こんな事くらいで…」
+				PRINTFORML 「正義の味方は屈服しませんわっ」
+		ENDSELECT
+	ENDIF
+ELSE
+	IF ABL:マゾっ気 >= 2
+		SELECTCASE RAND:2
+			CASE 0
+				PRINTFORML 「いてぇ、いてぇ！」
+				PRINTFORML 「%SELF_CALL()%のケツ…ミミズ腫れだらけになっちまう❤」
+			CASE 1
+				PRINTFORML 「もっとぉ、もっとだぁ！」
+				PRINTFORML 「その位じゃ%SELF_CALL()%は屈服しねぇぞ❤」
+		ENDSELECT
+	ELSE
+		SELECTCASE RAND:2
+			CASE 0
+				PRINTFORML 「いてっ、いてぇ！」
+				PRINTFORML 「%SELF_CALL()%の尻はドラムじゃねぇんだぞっ！」
+			CASE 1
+				PRINTFORML 「学校でさんざん叩かれてるんだ、この程度で音を上げるかよ…」
+		ENDSELECT
+	ENDIF
+ENDIF
+
+;COM9：針
+;-------------------------------------------------
+@KOJO_0_SEX_COM9_27
+;お嬢様
+IF TALENT:アクセサリ==3
+	IF ABL:マゾっ気 >= 3
+		SELECTCASE RAND:2
+			CASE 0
+				PRINTFORML 「とめて、どめでくだざいっ！」
+				PRINTFORML 「なんでもします、なんでもじますがらっ❤」
+			CASE 1
+				PRINTFORML 「だずけでっ、みんなっ！」
+				PRINTFORML 「ビンカンなところ、さされるの、いだいのにキモチいいのっ！」
+				PRINTFORML 「だれか」
+				PRINTFORML 「だれでもいいからだずけでっ❤」
+		ENDSELECT
+	ELSE
+		SELECTCASE RAND:2
+			CASE 0
+				PRINTFORML 「いだいっ！　いだいのっ！」
+			CASE 1
+				PRINTFORML 「はなしてっ、はなしてよっ！」
+		ENDSELECT
+	ENDIF
+ELSE
+	IF ABL:マゾっ気 >= 3
+		SELECTCASE RAND:2
+			CASE 0
+				PRINTFORML 「とめて、どめでくだざいっ！」
+				PRINTFORML 「なんでもします、なんでもじますがらっ❤」
+			CASE 1
+				PRINTFORML 「だずけでっ、だれかっ！」
+				PRINTFORML 「ビンカンなところ、さされるの、いだいのにキモチいいっ！」
+				PRINTFORML 「だれか」
+				PRINTFORML 「だれでもいいからだずけでっ❤」
+		ENDSELECT
+	ELSE
+		SELECTCASE RAND:2
+			CASE 0
+				PRINTFORML 「いだいっ！　いだいのっ！」
+			CASE 1
+				PRINTFORML 「はなせっ、はなせよっ！」
+		ENDSELECT
+	ENDIF
+ENDIF
+
+
+;COM10：手淫
+;-------------------------------------------------
+@KOJO_0_SEX_COM10_27
+;お嬢様
+IF TALENT:アクセサリ==3
+	SELECTCASE RAND:2
+		CASE 0
+			PRINTFORML 「こんな汚らしい物に手で奉仕するなんて…」
+		CASE 1
+			PRINTFORML 「やだ…熱くて…脈打ってる…」
+	ENDSELECT
+ELSE
+	SELECTCASE RAND:2
+		CASE 0
+			PRINTFORML 「こんな汚ねぇ物を手でしごくなんて…」
+		CASE 1
+			PRINTFORML 「熱くて…脈打ってやがる…」
+	ENDSELECT
+ENDIF
+
+;COM11：フェラ
+;-------------------------------------------------
+@KOJO_0_SEX_COM11_27
+;お嬢様
+IF TALENT:アクセサリ==3
+	SELECTCASE RAND:3
+		CASE 0
+			PRINTFORML （汚いモノを咥えされられてるのに）
+			PRINTFORML （抵抗できずに奉仕するしかないなんて…）
+	CASE 1
+			PRINTFORML （これはアイス、これはアイス）
+			PRINTFORML （決してオチンチンなんかじゃない…）
+		CASE 2
+			PRINTFORML （口の中に臭いのと苦いのが広がっていく）
+			PRINTFORML （吐き出したいのに…）
+	ENDSELECT
+ELSE
+	SELECTCASE RAND:3
+		CASE 0
+			PRINTFORML （汚いモノを咥えされられてるのに）
+			PRINTFORML （抵抗できずに奉仕するしかねぇなんて…）
+	CASE 1
+			PRINTFORML （これはアイス、これはアイス）
+			PRINTFORML （決してチンコなんかじゃねぇ…）
+		CASE 2
+			PRINTFORML （口の中に臭いのと苦いのが広がっていく）
+			PRINTFORML （吐き出してぇのに…）
+	ENDSELECT
+ENDIF
+
+;-------------------------------------------------
+;COM12：イラマチオ
+@KOJO_0_SEX_COM12_27
+;お嬢様
+IF TALENT:アクセサリ==3
+	SELECTCASE RAND:2
+		CASE 0
+			PRINTFORML （息が…できな……）
+		CASE 1
+			PRINTFORML （こんなに太いのに…喉まで……）
+	ENDSELECT
+ELSE
+	SELECTCASE RAND:2
+		CASE 0
+			PRINTFORML （息が…できな……）
+		CASE 1
+			PRINTFORML （こんなに太ぇのに…喉まで……）
+	ENDSELECT
+ENDIF
+
+;COM13：絶頂禁止
+;--------------------------------------------------
+@KOJO_0_SEX_COM13_27
+;お嬢様
+IF TALENT:アクセサリ==3
+	SELECTCASE RAND:2
+		CASE 0
+			PRINTFORML 「何？　この注射？」
+			PRINTFORML 「身体が何か変…」
+		CASE 1
+			PRINTFORML 「まさぐられてるのに何も感じない…？」
+	ENDSELECT
+ELSE
+	SELECTCASE RAND:2
+		CASE 0
+			PRINTFORML 「何だ？　この注射？」
+			PRINTFORML 「身体が何か変なような…」
+		CASE 1
+			PRINTFORML 「触られてるのに何も感じねぇ…？」
+	ENDSELECT
+ENDIF
+
+;COM14：衣装を破く
+;-------------------------------------------------
+@KOJO_0_SEX_COM14_27
+;お嬢様
+IF TALENT:アクセサリ==3
+	SELECTCASE RAND:2
+		CASE 0
+			PRINTFORML 「%SELF_CALL()%のコスチュームが！」
+		CASE 1
+			PRINTFORML 「カスに見られても恥ずかしなんてありませんわ」
+	ENDSELECT
+ELSE
+	SELECTCASE RAND:2
+		CASE 0
+			PRINTFORML 「%SELF_CALL()%のコスチュームが！」
+		CASE 1
+			PRINTFORML 「カスに見られても恥ずかしくも何ともねぇな」
+	ENDSELECT
+ENDIF
+
+;COM15：種付けピストン（Ｖ系統）
+;-------------------------------------------------
+@KOJO_0_SEX_COM15_27
+
+;お嬢様
+IF TALENT:アクセサリ==3
+	SELECTCASE RAND:2
+		CASE 0
+			PRINTFORML 「%SELF_CALL()%の膣に何て事を…」
+		CASE 1
+			PRINTFORML 「あら、早漏ではないようですね」
+	ENDSELECT
+ELSE
+	SELECTCASE RAND:2
+		CASE 0
+			PRINTFORML 「%SELF_CALL()%のマンコに何て事しやがる…」
+		CASE 1
+			PRINTFORML 「早漏じゃねぇみたいだな」
+	ENDSELECT
+ENDIF
+
+;COM16：種付けフィニッシュ（Ｖ系統）
+;-------------------------------------------------
+@KOJO_0_SEX_COM16_27
+;お嬢様
+IF TALENT:アクセサリ==3
+	IF TALENT:妊娠 > 0
+		SELECTCASE RAND:2
+			CASE 0
+				PRINTFORML 「この量…」
+				PRINTFORML （耐えてっ、%SELF_CALL()%の子宮…！）
+			CASE 1
+				PRINTFORML 「大丈夫、全部膣から出て行った…大丈夫」
+				PRINTFORML 「妊娠なんかしない……」
+		ENDSELECT
+	ELSE
+		SELECTCASE RAND:2
+			CASE 0
+				PRINTFORML 「この量…」
+				PRINTFORML （こんなの、さらに妊娠しちゃうっ！）
+			CASE 1
+				PRINTFORML 「妊婦でもお構いなしの量の射精…」
+		ENDSELECT
+	ENDIF
+ELSE
+	IF TALENT:妊娠 > 0
+		SELECTCASE RAND:2
+			CASE 0
+				PRINTFORML 「この量…」
+				PRINTFORML （耐えろっ、%SELF_CALL()%の子宮…！）
+			CASE 1
+				PRINTFORML 「大丈夫、全部膣から出て行った…大丈夫」
+				PRINTFORML 「妊娠なんかしねぇ……」
+		ENDSELECT
+	ELSE
+		SELECTCASE RAND:2
+			CASE 0
+				PRINTFORML 「この量…」
+				PRINTFORML （こんなの、さらに妊娠しちまうっ！）
+			CASE 1
+				PRINTFORML 「妊婦でもお構いなしの量の射精かよ…」
+		ENDSELECT
+	ENDIF
+ENDIF
+
+
+;COM17：アナルピストン（Ａ系統）
+;-------------------------------------------------
+@KOJO_0_SEX_COM17_27
+
+;COM18：アナルフィニッシュ（Ａ系統）
+;-------------------------------------------------
+@KOJO_0_SEX_COM18_27
+
+;COM19：両穴ピストン（ＶＡ系統）
+;-------------------------------------------------
+@KOJO_0_SEX_COM19_27
+
+;COM20：両穴フィニッシュ（ＶＡ系統）
+;-------------------------------------------------
+@KOJO_0_SEX_COM20_27
+
+
+
+;＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝
+;MESSAGE_SEX_COMSP.ERB
+;＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝
+;SPCOM0：C攻めSP　クリトリスに噛み付く
+;-------------------------------------------------
+@KOJO_0_SEX_SPCOM0_27
+;お嬢様
+IF TALENT:アクセサリ==3
+	IF ISPENIS()
+		;Ｃ結界がある
+		IF TALENT:190 == 1
+			PRINTFORML 「結界が護ってくれてる…」
+		ELSE
+			SELECTCASE RAND:2
+				CASE 0
+					PRINTFORML 「きたぁぁぁぁ」
+					PRINTFORML 「触手オナホきたっ、早く抜け出さないと」
+					PRINTFORML 「噴水みたいにザーメンまき散らす事になっちゃう❤」
+				CASE 1
+					PRINTFORML 「そんな事されても」
+					PRINTFORML 「%SELF_CALL()%のオチンチンは負けたりしませんわ」
+			ENDSELECT
+
+		ENDIF
+	ELSE
+		;Ｃ結界がある
+		IF TALENT:190 == 1
+			PRINTFORML 「結界が護ってくれてる…」
+		ELSE
+			SELECTCASE RAND:2
+				CASE 0
+					PRINTFORML 「な、なんですの今の注射は」
+				CASE 1
+					PRINTFORML 「いたっ」
+					PRINTFORML 「女の子の大事な所に噛みつくなんて…」
+			ENDSELECT
+		ENDIF
+	ENDIF
+ELSE
+	IF ISPENIS()
+		;Ｃ結界がある
+		IF TALENT:190 == 1
+			PRINTFORML 「結界が護ってくれた…」
+		ELSE
+			SELECTCASE RAND:2
+				CASE 0
+					PRINTFORML 「きやがった！」
+					PRINTFORML 「触手オナホきやがった、早く抜け出さねぇと」
+					PRINTFORML 「噴水みたいにザーメンまき散らす事になっちまう❤」
+				CASE 1
+					PRINTFORML 「そんな事されても」
+					PRINTFORML 「%SELF_CALL()%のオチンチンは負けたりしねぇぜ」
+			ENDSELECT
+		ENDIF
+	ELSE
+		;Ｃ結界がある
+		IF TALENT:190 == 1
+			PRINTFORML 「結界が護ってくれた…」
+		ELSE
+			SELECTCASE RAND:2
+				CASE 0
+					PRINTFORML 「な、なんだ今の注射は」
+				CASE 1
+					PRINTFORML 「いてっ」
+					PRINTFORML 「女の大事な所に噛みつきやがって…」
+			ENDSELECT
+		ENDIF
+	ENDIF
+ENDIF
+
+;SPCOM1：V攻めSP　奥を突く
+;-------------------------------------------------
+@KOJO_0_SEX_SPCOM1_27
+;お嬢様
+IF TALENT:アクセサリ==3
+	SELECTCASE RAND:4
+		CASE 0
+			PRINTFORML 「んひぃぃぃぃぃ❤」
+			PRINTFORML 「そんなに奥まで届くピストンされたら❤　%SELF_CALL()%、死んじゃう❤　しんらうのっ❤❤」
+			PRINTFORML 「ゆるひてっ❤❤　いのちだけはたすけてっ❤❤❤❤」
+		CASE 1
+			PRINTFORML 「エッチな事は結婚相手としかしちゃいけないのに❤」
+			PRINTFORML 「だからこれはエッチじゃないの❤　マッサージ❤❤」
+			PRINTFORML 「そう、マッサージだからいいのっ❤❤❤」
+			PRINTFORML 「愛液ローションたくさんでてるから❤❤❤　ローションでぜんしんベチョベチョになるまでマッサージしてっ❤❤❤❤」
+		CASE 2
+			PRINTFORML 「すごいっ❤　チンコすごいっ❤」
+			PRINTFORML 「もっと突いて❤　激しく❤　奥まで❤」
+			PRINTFORML 「気持ち良すぎて❤❤女の子がしちゃいけない顔になってるのが❤❤自分でもわかる❤❤❤」
+		CASE 3
+			PRINTFORML 「みんなを護らないといけないのに」
+			PRINTFORML 「もう何も考えられない」
+			PRINTFORML 「ゴメンね、みんな…今だけは、今だけは忘れさせて…」
+			PRINTFORML 　
+			PRINTFORML 「んおおぉぉぉぉ❤」
+			PRINTFORML 「そこ、ソコもっとえぐって❤❤」
+			PRINTFORML 「はい、%SELF_CALL()%も腰ふりますから❤❤」
+			PRINTFORML 「イグッ、いぐぅぅぅぅ、マンコ触手のオモチャにされてイグゥッ❤❤❤」
+			PRINTFORML 「任務放り出してレイプされるの❤　さいこぉぉぉぉ❤❤❤❤」
+	ENDSELECT
+ELSE
+	SELECTCASE RAND:4
+		CASE 0
+			PRINTFORML 「んひぃぃぃぃぃ❤」
+			PRINTFORML 「そんなに奥まで届くピストンされたら❤　%SELF_CALL()%、死んじまう❤　しんらうのっ❤❤」
+			PRINTFORML 「ゆるひてっ❤❤　いのちだけはたすけてっ❤❤❤❤」
+		CASE 1
+			PRINTFORML 「結婚相手意外とエッチなんてアウトだけど❤」
+			PRINTFORML 「だからこれはエッチじゃなねぇ❤　マッサージ❤❤」
+			PRINTFORML 「そう、マッサージだからいいんだっ❤❤❤」
+			PRINTFORML 「愛液ローションたくさんでてるから❤❤❤　ローションでぜんしんベチョベチョになるまでマッサージしてっ❤❤❤❤」
+		CASE 2
+			PRINTFORML 「すごいっ❤　チンコすごいっ❤」
+			PRINTFORML 「もっと突いて❤　激しく❤　奥まで❤」
+			PRINTFORML 「気持ち良すぎて❤❤女がしちゃいけない顔になってるのが❤❤自分でもわかる❤❤❤」
+		CASE 3
+			PRINTFORML 「みんなを護らないといけねぇのに」
+			PRINTFORML 「もう何も考えられねぇ」
+			PRINTFORML 「ゴメンね、みんな…今だけは、今だけは忘れさせてくれ…」
+			PRINTFORML 　
+			PRINTFORML 「んおおぉぉぉぉ❤」
+			PRINTFORML 「そこ、ソコもっとえぐって❤❤」
+			PRINTFORML 「はい、%SELF_CALL()%も腰ふりますから❤❤」
+			PRINTFORML 「イグッ、いぐぅぅぅぅ、マンコ触手のオモチャにされてイグゥッ❤❤❤」
+			PRINTFORML 「任務放り出してレイプされるの❤　さいこぉぉぉぉ❤❤❤❤」
+	ENDSELECT
+ENDIF
+
+;SPCOM2：A攻めSP　激しくアナルを犯す
+;-------------------------------------------------
+@KOJO_0_SEX_SPCOM2_27
+IF TALENT:アクセサリ==3
+	SELECTCASE RAND:3
+		CASE 0
+			PRINTFORML 「ダメッ、そんなに暴れたら腸が破れてしま…ぐぼぁ！」
+		CASE 1
+			PRINTFORML 「ああ…」
+			PRINTFORML 「内側から%SELF_CALL()%の身体が壊されていく……」
+		CASE 0
+			PRINTFORML 「お願い…抜いて…」
+			PRINTFORML 「射精してもいいから…解放して……」
+	ENDSELECT
+ELSE
+	SELECTCASE RAND:3
+		CASE 0
+			PRINTFORML 「やめろっ、そんなに暴れたら腸が破れち…ぐぼぁ！」
+		CASE 1
+			PRINTFORML 「ああ…」
+			PRINTFORML 「内側から%SELF_CALL()%の身体が壊されてく……」
+		CASE 0
+			PRINTFORML 「頼むい…抜いて…」
+			PRINTFORML 「ザーメン出してもいいから…たのむ……」
+	ENDSELECT
+ENDIF
+
+;SPCOM3：B攻めSP　乳首に噛み付く
+;-------------------------------------------------
+@KOJO_0_SEX_SPCOM3_27
+IF TALENT:アクセサリ==3
+	SELECTCASE RAND:2
+		CASE 0
+			PRINTFORML 「やめてっ、乳首ばっかり噛まれたら、一生腫れたままになっちゃうから！」
+		CASE 1
+			PRINTFORML 「ああ…」
+			PRINTFORML 「乳首がエッチに開発されていく…❤」
+	ENDSELECT
+ELSE
+	SELECTCASE RAND:2
+		CASE 0
+			PRINTFORML 「やめろっ、乳首ばっかり噛まれたら、一生腫れたままになっちまから！」
+		CASE 1
+			PRINTFORML 「ああ…」
+			PRINTFORML 「乳首がエロく開発されてく…❤」
+	ENDSELECT
+ENDIF
+
+;SPCOM4：電流
+;-------------------------------------------------
+@KOJO_0_SEX_SPCOM4_27
+;お嬢様
+IF TALENT:アクセサリ==3
+	IF (MESSAGE_BRANCH_F(TARGET) & 堕落) || ABL:マゾっ気 >= 4
+		SELECTCASE RAND:3
+			CASE 0
+				PRINTFORML 「ぎゃんっ❤」
+				PRINTFORML 「こんな拷問❤　ズデギッ❤❤」
+			CASE 1
+				PRINTFORML 「セックスしなくても、これだけでイけちゃう❤」
+			CASE 2
+				PRINTFORML 「痛い、痛いっ❤」
+				PRINTFORML 「焼けるっ、肉が焼けるっ❤」
+		ENDSELECT
+	ELSE
+		SELECTCASE RAND:3
+			CASE 0
+				PRINTFORML 「ぎゃんっ！」
+				PRINTFORML 「こんな拷問…な゛な゛な゛な゛んんんっ！」
+			CASE 1
+				PRINTFORML 「こんな責め続けられたら…消耗…してしまう……」
+			CASE 2
+				PRINTFORML 「痛い、痛いっ！」
+				PRINTFORML 「焼けるっ、肉が焼けるっ！」
+		ENDSELECT
+	ENDIF
+ELSE
+	IF (MESSAGE_BRANCH_F(TARGET) & 堕落) || ABL:マゾっ気 >= 4
+		SELECTCASE RAND:3
+			CASE 0
+				PRINTFORML 「ぎゃんっ❤」
+				PRINTFORML 「こんな拷問❤　ザイ゛ゴォッ❤❤」
+			CASE 1
+				PRINTFORML 「セックスしなくても、これだけでイけりゅ❤」
+			CASE 2
+				PRINTFORML 「痛ぇ、痛ぇっ❤」
+				PRINTFORML 「焼けるっ、肉が焼けるっ❤」
+		ENDSELECT
+	ELSE
+		SELECTCASE RAND:3
+			CASE 0
+				PRINTFORML 「ぎゃんっ！」
+				PRINTFORML 「こんな拷問…な゛な゛な゛な゛んんんっ！」
+			CASE 1
+				PRINTFORML 「こんな責め続けられたら…消耗…しちまう……」
+			CASE 2
+				PRINTFORML 「痛ぇ、痛ぇっ！」
+				PRINTFORML 「焼けるっ、%SELF_CALL()%の肉が焼けるっ！」
+		ENDSELECT
+	ENDIF
+ENDIF
+
+;SPCOM5：パイズリ
+;-------------------------------------------------
+@KOJO_0_SEX_SPCOM5_27
+;お嬢様
+IF TALENT:アクセサリ==3
+	SELECTCASE RAND:2
+		CASE 0
+			PRINTFORML 「やめてっ、%SELF_CALL()%の胸を射精の道具にしないでっ」
+		CASE 1
+			PRINTFORML 「ああ…」
+			PRINTFORML 「触手が%SELF_CALL()%の胸を無理やり……」
+	ENDSELECT
+ELSE
+	SELECTCASE RAND:2
+		CASE 0
+			PRINTFORML 「やめろっ、%SELF_CALL()%の胸を射精の道具なんかにするなっ」
+		CASE 1
+			PRINTFORML 「ああ…」
+			PRINTFORML 「触手が%SELF_CALL()%の胸を無理やり……」
+	ENDSELECT
+ENDIF
+
+;SPCOM6：強制自慰
+;-------------------------------------------------
+@KOJO_0_SEX_SPCOM6_27
+;お嬢様
+IF TALENT:アクセサリ==3
+	SELECTCASE RAND:3
+		CASE 0
+			PRINTFORML （敵を目の前にしながら何て事を）
+			PRINTFORML （こんな無防備の所を攻撃されたら、こんなものでは済まない事されちゃう…）
+		CASE 1
+			PRINTFORML 「みてっ❤」
+			PRINTFORML 「%SELF_CALL()%のオナニーショー❤　ムラムラしたら襲ってもいいから❤❤」
+		CASE 2
+			PRINTFORML 「みないでっ」
+			PRINTFORML 「こんな恥ずかしい所、みないでっ❤」
+			PRINTFORMDL %PRINT_TRANSCALLNAME(TARGET)%は股を開き、見せつけながら自慰をしている…
+	ENDSELECT
+ELSE
+	SELECTCASE RAND:3
+		CASE 0
+			PRINTFORML （敵を目の前にしながら何て事を）
+			PRINTFORML （こんな無防備の所を攻撃されたら、こんなもんでは済まない事されちまう…）
+		CASE 1
+			PRINTFORML 「みろっ❤」
+			PRINTFORML 「%SELF_CALL()%のオナニーショー❤　ムラムラしたら襲ってもいいぜ❤❤」
+		CASE 2
+			PRINTFORML 「みるなっっ」
+			PRINTFORML 「こんな恥ずかしい所、みるなっ❤」
+			PRINTFORMDL %PRINT_TRANSCALLNAME(TARGET)%は股を開き、見せつけながら自慰をしている…
+	ENDSELECT
+ENDIF
+
+;SPCOM7：羞恥プレイ
+;-------------------------------------------------
+@KOJO_0_SEX_SPCOM7_27
+;お嬢様
+IF TALENT:アクセサリ==3
+	SELECTCASE RAND:2
+		CASE 0
+			PRINTFORML 「%SELF_CALL()%の性歴、みんなに知られちゃった…」
+			PRINTFORML 「もう街中なんて歩けない❤
+		CASE 1
+			PRINTFORML 「ダメッ、みないで！」
+			PRINTFORML 「こんなエッチなの%SELF_CALL()%じゃないから！」
+	ENDSELECT
+ELSE
+	SELECTCASE RAND:2
+		CASE 0
+			PRINTFORML 「%SELF_CALL()%の性歴、みんなに知られちまった…」
+			PRINTFORML 「もう街中なんて歩けねぇ❤
+		CASE 1
+			PRINTFORML 「ダメッ、みるなっ！」
+			PRINTFORML 「こんなエッチなの%SELF_CALL()%じゃないから！」
+	ENDSELECT
+ENDIF
+
+;SPCOM8：尿道攻め
+;-------------------------------------------------
+@KOJO_0_SEX_SPCOM8_27
+;お嬢様
+IF TALENT:アクセサリ==3
+	SELECTCASE RAND:2
+		CASE 0
+			PRINTFORML 「しゅごぉぉぉい❤」
+			PRINTFORML 「にょおどぉセックス❤　ふつうのセックスとちがうのぉ❤」
+		CASE 1
+			PRINTFORML 「やだっ…%SELF_CALL()%のオシッコ、飲まないでぇ…❤」
+		CASE 2
+			PRINTFORML 「イきました❤　尿道セックスでイキションしながらイきました❤」
+	ENDSELECT
+ELSE
+	SELECTCASE RAND:2
+		CASE 0
+			PRINTFORML 「しゅげぇぇぇぇ❤」
+			PRINTFORML 「にょおどぉセックス❤　ふつうのセックスとちがうのぉ❤」
+		CASE 1
+			PRINTFORML 「やめろっ…%SELF_CALL()%のオシッコ、飲むな…❤」
+		CASE 2
+			PRINTFORML 「イった❤　尿道セックスでイキションしながらイっちまった❤」
+	ENDSELECT
+ENDIF
+
+;SPCOM9：V拡張攻め
+;-------------------------------------------------
+@KOJO_0_SEX_SPCOM9_27
+
+;SPCOM10：A拡張攻め
+;-------------------------------------------------
+@KOJO_0_SEX_SPCOM10_27
+
+;SPCOM11：甘えん坊授乳プレイ
+;-------------------------------------------------
+@KOJO_0_SEX_SPCOM11_27
+
+;SPCOM12：ヘソ快楽攻め
+;-------------------------------------------------
+@KOJO_0_SEX_SPCOM12_27
+
+;SPCOM13：丸飲み精液攻め
+;-------------------------------------------------
+@KOJO_0_SEX_SPCOM13_27
+;お嬢様
+IF TALENT:アクセサリ==3
+	SELECTCASE RAND:2
+		CASE 0
+			PRINTFORML 「待って、食べないでっ！」
+			PRINTFORML 「ザーメンボテ腹にしても、ザーメンゼリーウンコもするから」
+			PRINTFORML 「食べるのだけはやめてっ！」
+		CASE 1
+			PRINTFORML 「離し、離しなさいっ！！」
+	ENDSELECT
+ELSE
+	SELECTCASE RAND:2
+		CASE 0
+			PRINTFORML 「待てて、食べるなっ！」
+			PRINTFORML 「ザーメンボテ腹にでも、ザーメンゼリーウンコでもするから」
+			PRINTFORML 「食べるのだけはやめてくれっ！」
+		CASE 1
+			PRINTFORML 「離せ、離せよっ！！」
+	ENDSELECT
+ENDIF
+
+@KOJO_0_SEX_SPCOM13_27_FINISHER_0
+;お嬢様
+IF TALENT:アクセサリ==3
+	PRINTFORML 「この匂い…」
+	PRINTFORML 「早く抜け出さないと」
+ELSE
+	PRINTFORML 「この匂い…」
+	PRINTFORML 「早く抜け出さねぇと」
+ENDIF
+
+@KOJO_0_SEX_SPCOM13_27_FINISHER_1
+;お嬢様
+IF TALENT:アクセサリ==3
+	PRINTFORML 「精液のプール…」
+	PRINTFORML 「早く抜け出さないと」
+ELSE
+	PRINTFORML 「ザーメンプール…」
+	PRINTFORML 「早く抜け出さねぇと」
+ENDIF
+
+@KOJO_0_SEX_SPCOM13_27_FINISHER_2
+;お嬢様
+IF TALENT:アクセサリ==3
+	PRINTFORML （早く抜け出さないと）
+	PRINTFORML （嬲り者では済まない事に…）
+ELSE
+	PRINTFORML （早く抜け出さねぇと）
+	PRINTFORML （嬲り者じゃ済まねぇ事に…）」
+ENDIF
+
+
+;SPCOM14：催眠姦
+;-------------------------------------------------
+@KOJO_0_SEX_SPCOM14_27
+
+;SPCOM15：サブミッションファック
+;-------------------------------------------------
+@KOJO_0_SEX_SPCOM15_27
+
+
+;＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝
+;MESSAGE_SEX_MARK_REGAIN.ERB
+;刻印の再取得時
+;＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝
+;快楽刻印3再取得
+;------------------------------
+@KOJOE_SEX_MARK_KAIRAKU_3_DASH_27
+;お嬢様
+IF TALENT:アクセサリ==3
+	PRINTFORML 「この感覚…忘れてたのに」
+	PRINTFORML 「また恥ずかしい事、始めちゃう…❤」
+ELSE
+	PRINTFORML 「畜生…忘れてたのに」
+	PRINTFORML 「また恥ずかしい事、始めちまう…❤」
+ENDIF
+
+;苦痛刻印3再取得
+;------------------------------
+@KOJO_SEX_MARK_KUTUU_3_DASH_27
+;お嬢様
+IF TALENT:アクセサリ==3
+	PRINTFORML 「やっぱり痛いのは嫌！」
+	PRINTFORML 「もう止めて、お願い！」
+ELSE
+	PRINTFORML 「痛ぇのはもうヤダ！」
+	PRINTFORML 「もう止めろ、止めてくれ！」
+ENDIF
+
+;屈辱刻印3再取得時メッセージ
+;------------------------------
+@KOJO_SEX_MARK_KUPPUKU_3_DASH_27
+;お嬢様
+IF TALENT:アクセサリ==3
+	PRINTFORML 「やっぱり触手には勝てないのね…」
+ELSE
+	PRINTFORML 「やっぱ触手には勝てねぇのか…」
+ENDIF
+
+;恐怖刻印3再取得
+;------------------------------
+@KOJO_SEX_MARK_KYOUHU_3_DASH_27
+;地の文見ながらセリフ書く
+;PRINTFORM %PRINT_TRANSCALLNAME(TARGET)%は%STR:2500%の容赦ない行動に
+;PRINTL かつての記憶が蘇り発狂しそうになっている・・・
+;お嬢様
+IF TALENT:アクセサリ==3
+	PRINTFORML 「やだっ、あんなのもうヤダッ！」
+	PRINTFORML 「もうコリゴリ、逃げよう、何もかも投げ捨てて…」
+ELSE
+	PRINTFORML 「やだっ、あんなのもうヤダッ！」
+	PRINTFORML 「もうあんなのコリゴリだ、逃げよう…」
+ENDIF
+
+;恥辱刻印3再取得
+;------------------------------
+@KOJO_SEX_MARK_TIJYOKU_3_DASH_27
+;お嬢様
+IF TALENT:アクセサリ==3
+	PRINTFORML 「また身バレして」
+	PRINTFORML 「変なストーカーとかスカウトが来るのは嫌…」
+ELSE
+	PRINTFORML 「また身バレして」
+	PRINTFORML 「変なストーカーとかスカウトが来るのはヤダ…」
+ENDIF
+
+
+;＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝
+;MESSAGE_SUBEVENT.ERB
+;＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝
+;戦闘のサブイベント
+;悪堕ちキャラに敗北して犯される
+;-------------------------------------------------
+@KOJO_0_SUBEVENT_BATTLE_RAPED_ENEMY_27
+
+;触手拘束具を着せられた
+;-------------------------------------------------
+@KOJO_0_SUBEVENT_BATTLE_SETTENTACLECLOTH_27
+;お嬢様
+IF TALENT:アクセサリ==3
+	SELECTCASE RAND:2
+		CASE 0
+			PRINTFORML 「ふぁんっ！？ や、やめなさいっ！」
+		CASE 1
+			PRINTFORML 「こんなドレス……」
+	ENDSELECT
+ELSE
+	SELECTCASE RAND:2
+		CASE 0
+			PRINTFORML 「ふぁんっ！？ や、やめろっ！」
+		CASE 1
+			PRINTFORML 「あっ……て、てめぇ……」
+	ENDSELECT
+ENDIF
+
+;触手拘束具による被姦
+;-------------------------------------------------
+@KOJO_0_SUBEVENT_BATTLE_ACTTENTACLECLOTH_27
+;お嬢様
+IF TALENT:アクセサリ==3
+	SELECTCASE RAND:3
+		CASE 0
+			PRINTFORML 「ふぁんっ！？ や、やめなさいっ！」
+		CASE 1
+			PRINTFORML 「あんっ……くっ！ この、いきなりっ……」
+		CASE 2
+			PRINTFORML 「あんっ❤」
+			PRINTFORML 「…このタイミングでっ」
+	ENDSELECT
+ELSE
+	SELECTCASE RAND:3
+		CASE 0
+			PRINTFORML 「ふぁんっ！？ や、やめっ！」
+		CASE 1
+			PRINTFORML 「あんっ……くっ！ この、いきなりっ……」
+		CASE 2
+			PRINTFORML 「あっ❤」
+			PRINTFORML 「…このタイミングでっ」
+	ENDSELECT
+ENDIF
+
+;触手服による被姦
+;-------------------------------------------------
+@KOJO_0_SUBEVENT_BATTLE_ACTTENTACLESUIT_27
+;お嬢様
+IF TALENT:アクセサリ==3
+	SELECTCASE RAND:3
+		CASE 0
+			PRINTFORML 「ふぁんっ！？ や、やめなさいっ！」
+		CASE 1
+			PRINTFORML 「あんっ……くっ！ この、いきなりっ……」
+		CASE 2
+			PRINTFORML 「ちがうのっ！」
+			PRINTFORML 「これ服が勝手に！」
+	ENDSELECT
+ELSE
+	SELECTCASE RAND:3
+		CASE 0
+			PRINTFORML 「ふぁんっ！？ や、やめっ！」
+		CASE 1
+			PRINTFORML 「あんっ……くっ！ この、いきなりっ……」
+		CASE 2
+			PRINTFORML 「くそぉ……」
+			PRINTFORML 「脱げねぇからってこんな事しやがって……」
+	ENDSELECT
+ENDIF
+
+
+;＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝
+;COM_ATTACK_COMMON.ERB
+;＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝
+;戦闘スタイルチェンジスキーム
+;-------------------------------------------------
+@KOJO_0_SUBEVENT_BATTLE_CHARA_BATTLE_STYLE_CHANGE_27
+
+
+;＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝
+;.ERB
+;＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝＝
+;服の損傷関連
+;服の損傷LV.2（現在消失中）
+;-------------------------------------------------
+@KOJO_0_BATTLE_SUITS_DAMAGE_2_27
+
+;服の損傷LV.3（現在消失中）
+;-------------------------------------------------
+@KOJO_0_BATTLE_SUITS_DAMAGE_3_27
+
+;服の損傷LV.4（現在消失中）
+;-------------------------------------------------
+@KOJO_0_BATTLE_SUITS_DAMAGE_4_27
+
+;服の損傷LV.5（現在消失中）
+;-------------------------------------------------
+@KOJO_0_BATTLE_SUITS_DAMAGE_5_27
+

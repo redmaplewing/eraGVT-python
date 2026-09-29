@@ -1,0 +1,238 @@
+﻿;==============================================================================
+;特別活動：アイドル活動の地の文と口上呼び出し
+
+;----------------------------------------------------------
+;アイドルとして売り出す
+@MESSAGE_SEISAN_IDOL_BUDDING
+PRINTFORML %PRINT_TRANSCALLNAME(TARGET)%はアイドルとして売り出しました。
+;経過日数によって知名度が異なる
+IF DAY < 14
+	PRINTL 知名度が低いためか、人気はまずまずのようです。
+	;口上
+	TRYCALLFORM KOJO_ROOT(CFLAG:6, "SEISAN_IDOL1")
+ELSE
+	PRINTL 触手との戦いで顔が知られているためか、なかなか好評なスタートです。
+	;口上
+	TRYCALLFORM KOJO_ROOT(CFLAG:6, "SEISAN_IDOL2")
+ENDIF
+
+CALL REDUCIBLE_PRINTW
+
+;----------------------------------------------------------
+;アイドル活動：路上ライブ
+@MESSAGE_SEISAN_IDOL_STREET_LIVE
+PRINTFORML %PRINT_TRANSCALLNAME(TARGET)%は路上ライブを行いました。
+;口上
+TRYCALLFORM KOJO_ROOT(CFLAG:6, "SEISAN_IDOL3")
+
+;----------------------------------------------------------
+;アイドル活動：芸能プロダクションへの売り込み
+@MESSAGE_SEISAN_IDOL_SALES
+PRINTFORML %PRINT_TRANSCALLNAME(TARGET)%は芸能プロダクションに売り込みを行いました。
+;口上
+TRYCALLFORM KOJO_ROOT(CFLAG:6, "SEISAN_IDOL4")
+
+;----------------------------------------------------------
+;アイドル活動：プロデビューが決まる
+; 変数
+;	SITUATION	プロデビュー決定時の行動（SEISAN_IDOL.ERHで定義）
+@MESSAGE_SEISAN_IDOL_DEBUT, SITUATION
+#DIM SITUATION
+
+;アイドルレベル2の魅了経験に満たなければ処理打ち切り
+SIF IDOL_LV(TARGET) < 2
+	RETURN 0
+
+CALL REDUCIBLE_PRINTW
+
+SELECTCASE SITUATION
+	CASE プロデビュー_無名
+		PRINTL 将来性があるということで、
+		PRINTFORML %PRINT_TRANSCALLNAME(TARGET)%は一足飛びにアイドルとしてプロデビューすることが決まりました。
+
+	CASE プロデビュー_有名
+		PRINTL 運良く「面倒を見たい」というプロダクションと巡り合い、
+		PRINTFORML %PRINT_TRANSCALLNAME(TARGET)%は一足飛びにアイドルとしてプロデビューすることが決まりました。
+
+	CASE プロデビュー_路上ライブ
+		PRINTL 歌に聞き入っていたプロデューサーにスカウトされ、
+		PRINTFORML %PRINT_TRANSCALLNAME(TARGET)%はアイドルとしてプロデビューすることが決まりました。
+
+	CASE プロデビュー_売り込み
+		PRINTL 地道な努力が認められたのか、
+		PRINTFORML %PRINT_TRANSCALLNAME(TARGET)%はアイドルとしてプロデビューすることが決まりました。
+ENDSELECT
+
+;----------------------------------------------------------
+;アイドル活動：グラビア撮影
+; 引数
+;	BOOK_TITLE	写真集のタイトルを渡す参照型文字列変数
+@MESSAGE_SEISAN_IDOL_GRAVURE_PHOTOSHOOT, BOOK_TITLE
+#DIMS REF BOOK_TITLE
+
+PRINTFORML %PRINT_TRANSCALLNAME(TARGET)%はグラビア撮影を行いました。
+;口上
+TRYCALLFORM KOJO_ROOT(CFLAG:6, "SEISAN_IDOL_picture")
+
+;写真集のタイトルを決める
+IF RAND:5 == 0
+	BOOK_TITLE = 『ピュエアリーＫＩＳＳ %NAME%』
+ELSEIF RAND:4 == 0
+	BOOK_TITLE = 『マジかるエン★ジェル %NAME%』
+ELSEIF RAND:3 == 0
+	BOOK_TITLE = 『純情ＨＥＡＲＴ %NAME%』
+ELSEIF RAND:2 == 0
+	BOOK_TITLE = 『%NAME% ゆうわくビーチ』
+ELSE
+	BOOK_TITLE = 『ガールズ＆スタイルズ %NAME%』
+ENDIF
+
+CALL REDUCIBLE_PRINTW
+
+;----------------------------------------------------------
+;アイドル活動：グラビア撮影（エロ）
+@MESSAGE_SEISAN_IDOL_PORNO_PHOTOSHOOT
+
+PRINTFORML 淫靡な空気にあてられた撮影スタジオで%PRINT_TRANSCALLNAME(TARGET)%は手で奉仕をしている。
+PRINTFORML カメラマンはファンクラブ用に少々過激な撮影をすると言っていたが、
+IF TALENT:淫乱 > 0
+	PRINTFORML カメラマンの痛々しく膨れ上がった股間を見て%PRINT_TRANSCALLNAME(TARGET)%から申し出たのだ。
+ELSE
+	PRINTFORML 鼻息を荒くしたカメラマンが撮影しながら近寄ってきて%PRINT_TRANSCALLNAME(TARGET)%にしつこく頼み込んだのだ。
+ENDIF
+SIF ABL:奉仕精神 + ABL:技巧 < 4
+	PRINTFORM そういったことへの経験の少ない%PRINT_TRANSCALLNAME(TARGET)%は
+IF RAND:3 == 0
+	PRINT ギュッと握った片手を
+ELSEIF RAND:2 == 0
+	PRINT 柔らかく握った片手を
+ELSE
+	PRINT 人差し指と親指で作った輪っかを
+ENDIF
+IF ABL:奉仕精神 + ABL:技巧 < 4
+	PRINT ぎこちなく
+ELSEIF RAND:3 == 0
+	PRINT 扇情的に
+ELSE
+	PRINT 事務的に
+ENDIF
+PRINTFORML 動かす。
+PRINTW
+IF RAND:3 == 0 && TALENT:処女 < 1
+	PRINTFORML たまらず射精したカメラマンだったが、君もスッキリしたいだろと言いながら%PRINT_TRANSCALLNAME(TARGET)%の全身に手を這わせ始めた。
+	PRINTFORML 
+	PRINTFORML カメラマンの愛撫は%PRINT_TRANSCALLNAME(TARGET)%の妖艶な魅力を引き出し、
+	PRINTFORML %PRINT_TRANSCALLNAME(TARGET)%が乱れるたびにシャッターを切る。
+	PRINTFORML やがてシャッター音が快楽のスイッチになるほど乱れた頃、
+	PRINTFORML 気が付くと%PRINT_TRANSCALLNAME(TARGET)%はカメラマンに馬乗りになり腰を振っていた。
+	PRINTFORML シャッター音で何度も絶頂する%PRINT_TRANSCALLNAME(TARGET)%の\@ISMALE()?腸#膣\@壁がカメラマンの肉棒を絞り上げ射精に導いた…。
+	PRINTW
+	IF TALENT:淫乱 > 0
+		PRINTFORML 淫靡な空気にあてられた男性スタッフ達が、ゾンビのようにふらふらと%PRINT_TRANSCALLNAME(TARGET)%に近づいてくる。
+		PRINTFORML どの股間もパンパンに張り詰めており、%PRINT_TRANSCALLNAME(TARGET)%は無言のまま男たちを迎え入れる体勢を取った…
+	ELSE
+		PRINTFORML 幸い、スタジオには二人きりでこの事は二人だけの秘密と言うことになった。
+	ENDIF
+ELSEIF RAND:2 == 0
+	PRINTFORML たまらず射精したカメラマンだったがすぐさま硬さを取り戻し、
+	PRINTFORML 上気した%PRINT_TRANSCALLNAME(TARGET)%の顔に肉棒を押し付けながらシャッターを切る。
+	PRINTFORML 仕方なく%PRINT_TRANSCALLNAME(TARGET)%は
+	IF RAND:2 == 0
+		PRINTFORML 膝立ちになって上目づかいで肉棒の先端に舌を這わせ、それからゆっくりと口に含んでいく
+		PRINTFORML 緩急を付けながら、時おり口を放して反り立ったペニスにキスをし、再び吸い上げながら竿を咥える
+		PRINTFORML 加速していく動きにたまらなくなったカメラマンが%PRINT_TRANSCALLNAME(TARGET)%の頭を掴み、
+		PRINTFORML %PRINT_TRANSCALLNAME(TARGET)%は口で白い劣情の迸りを受け止めた…
+	ELSE
+		PRINTFORML カメラマンの服をはだけさせ両乳首を指と舌で転がしながら、手コキを再開する。
+		PRINTFORML カメラマンは三点責めに喜びの悲鳴を上げながら、%PRINT_TRANSCALLNAME(TARGET)%の
+		PRINTFORML \@RAND:2?顔に#全身に\@白濁液をぶちまけるとすかさずシャッターを切り始めた。
+	ENDIF
+ELSE
+	PRINTFORML たまらず射精したカメラマンは一休みすると仕事の顔に戻り、
+	PRINTFORML 上気した%PRINT_TRANSCALLNAME(TARGET)%の表情を褒めながらシャッターを切り始めた。
+	PRINTFORML 撮影した写真は裏サイトで売りさばかれ、マニアたちに痴態が広く知れ渡った。
+ENDIF
+
+;口上
+TRYCALLFORM KOJO_ROOT(CFLAG:6, "SEISAN_IDOL_porno_picture")
+
+;----------------------------------------------------------
+;アイドル活動：テレビ出演
+@MESSAGE_SEISAN_IDOL_TVSHOW
+
+IF IDOL_LV(TARGET) >= 4
+	PRINTFORML %PRINT_TRANSCALLNAME(TARGET)%はテレビ番組のレギュラーとして活躍しました。
+ELSE
+	PRINTFORML %PRINT_TRANSCALLNAME(TARGET)%はテレビ番組に出演しました。
+ENDIF
+;口上
+TRYCALLFORM KOJO_ROOT(CFLAG:6, "SEISAN_IDOL_TV")
+
+CALL REDUCIBLE_PRINTW
+
+;----------------------------------------------------------
+;アイドル活動：新曲の収録
+@MESSAGE_SEISAN_IDOL_RECORDING
+PRINTFORML %PRINT_TRANSCALLNAME(TARGET)%は新曲の収録を行いました。
+;口上
+TRYCALLFORM KOJO_ROOT(CFLAG:6, "SEISAN_IDOL_music")
+
+CALL REDUCIBLE_PRINTW
+
+;----------------------------------------------------------
+;アイドル活動：エロレッスン
+@MESSAGE_SEISAN_IDOL_EROTIC_LESSON
+;ボイスレッスン
+IF RAND:2 == 0
+	PRINTL アイドル活動（ボイスレッスン）
+	PRINTL 
+	PRINTFORML %PRINT_TRANSCALLNAME(TARGET)%はボイストレーナーと発声訓練をしていたが
+	PRINTFORML 声を出すレッスンという名目で、なし崩し的に\@ISMALE()?アナル#クリトリス\@をねっとりと愛撫されていた。
+	PRINTFORML 夜のレッスンスタジオには他に誰もいない。
+	IF RAND:2 == 0
+		PRINTFORML トレーナーは本心をさらけ出した時が一番大きな声が出ると言い、
+		PRINTFORML 今の気持ちを正直に言葉にしなさいと指導した。
+		PRINTFORML %PRINT_TRANSCALLNAME(TARGET)%は全身に広がる快楽と\@ISMALE()?尻穴#蜜壷\@で熱く滾る快感を
+		PRINTFORML 淫語で表現しながらイクイクと宣言して潮を吹いた…。
+	ELSE
+		PRINTFORML トレーナーは本能をさらけ出した声が最も人の心に訴えかけると言い、
+		PRINTFORML 好きなだけ喘ぎ声を聞かせなさいと指導した。
+		PRINTFORML %PRINT_TRANSCALLNAME(TARGET)%は腰をガクガク震わせながら、
+		PRINTFORML 言葉にならない喘ぎ声や甘ったるい嬌声をスタジオに響かせ絶頂失神した…。
+	ENDIF
+;ダンスレッスン
+ELSE
+	PRINTL アイドル活動（ダンスレッスン）
+	PRINTL 
+	PRINTFORML %PRINT_TRANSCALLNAME(TARGET)%はダンストレーナーとダンスの練習をしていたが
+	PRINTFORML 身体をもっと柔らかくするという名目で密着しながら柔軟運動をさせられ、
+	PRINTFORML なし崩し的に\@ISMALE()?アナル#クリトリス\@をねっとりと愛撫されていた。
+	PRINTFORML 夜のレッスンスタジオには他に誰もいない。
+	PRINTFORML 
+	PRINTFORML トレーナーはエクスタシーを迎えた後が身体から無駄な力が抜ける状態になると言い、
+	PRINTFORML イッたら正直に教えなさいと甘く囁いた。
+	IF RAND:2 == 0
+		PRINTFORML %PRINT_TRANSCALLNAME(TARGET)%は全身に広がる快楽と\@ISMALE()?尻穴#蜜壷\@で熱く滾る快感を
+		PRINTFORML 淫語で表現しながらイクイクと宣言して潮を吹いた…。
+	ELSE
+		PRINTFORML %PRINT_TRANSCALLNAME(TARGET)%は腰をガクガク震わせながら、
+		PRINTFORML 赤子のような唸り声や甘ったるい嬌声をスタジオに響かせ絶頂失神した…。
+	ENDIF
+ENDIF
+;口上
+TRYCALLFORM KOJO_ROOT(CFLAG:6, "SEISAN_IDOL_erotic_lesson")
+
+IF RAND:3 == 0
+	PRINTFORML ぐったりと倒れ込み息も絶え絶えな%PRINT_TRANSCALLNAME(TARGET)%の様子を見ていた
+	PRINTFORML トレーナーはもどかしそうに勃起した男性器をさらけ出した…
+	PRINTFORML %PRINT_TRANSCALLNAME(TARGET)%の意識が戻らぬうちに好き放題出来る絶好の機会を見逃すつもりはないらしい
+ENDIF
+
+CALL REDUCIBLE_PRINTW
+
+;----------------------------------------------------------
+;アイドル活動：通常営業
+@MESSAGE_SEISAN_IDOL_NORMAL_EVENT
+PRINTFORML %PRINT_TRANSCALLNAME(TARGET)%はイベントやサイン会などに奔走しました。
+;口上
+TRYCALLFORM KOJO_ROOT(CFLAG:6, "SEISAN_IDOL_event")

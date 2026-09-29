@@ -1,0 +1,59 @@
+﻿;魅了経験に対するFEATの効果（アイカツ）
+@CALC_CHARM_FEAT_IDOL(対象, ARG)
+#FUNCTION
+#DIM 対象
+SIF RANDOM(4) == 0
+	RETURNF 0
+LOCAL = 0
+IF ARG > 1
+	SIF TALENT:対象:平凡
+		LOCAL -= RANDOM(ARG) + 1
+	SIF TALENT:対象:人外の美貌
+		LOCAL += RANDOM(ARG) + 1
+ELSE
+	SIF TALENT:対象:平凡
+		LOCAL -= 1
+	SIF TALENT:対象:人外の美貌
+		LOCAL += 1
+ENDIF
+RETURNF LOCAL
+
+;魅了経験に対するFEATの効果（ヒーローショー・情報収集・自由行動）
+@CALC_CHARM_FEAT_OTHER(対象)
+#FUNCTION
+#DIM 対象
+LOCAL = 0
+IF RANDOM(2) == 0 && EXP:対象:魅了経験 >= 30 && EXP:対象:魅了経験 != 99
+	LOCAL += 1
+	SIF TALENT:対象:平凡 > 0 && RANDOM(4) == 0
+		LOCAL -= 1
+	SIF TALENT:対象:人外の美貌 > 0 && RANDOM(4) == 0
+		LOCAL += 1
+ELSEIF RANDOM(3) == 0 && EXP:対象:魅了経験 < 28
+	LOCAL += 2
+	SIF TALENT:平凡 > 0 && RANDOM(4) != 0
+		LOCAL -= 1
+	SIF TALENT:対象:人外の美貌 > 0 && RANDOM(4) != 0
+		LOCAL += 1
+ELSEIF EXP:対象:魅了経験 < 29
+	LOCAL += 1
+	SIF TALENT:対象:平凡 > 0 && RANDOM(4) == 0
+		LOCAL -= 1
+	SIF TALENT:対象:人外の美貌 > 0 && RANDOM(4) != 0
+		LOCAL += 1
+ENDIF
+;下積み（初回）がまだの時は魅了経験が最高29になるように
+IF EXP:対象:魅了経験 < 30 && (EXP:対象:魅了経験 + LOCAL >= 30)
+	LOCAL = 29 - EXP:対象:魅了経験
+	;下積みの時は魅了経験が最低30・最高99になるように
+ELSEIF INRANGE(EXP:対象:魅了経験, 30, 99)
+	IF EXP:対象:魅了経験 + LOCAL < 30
+		LOCAL = 30 - EXP:対象:魅了経験
+	ELSEIF EXP:対象:魅了経験 + LOCAL >= 100
+		LOCAL = 99 - EXP:対象:魅了経験
+	ENDIF
+	;デビュー済みの時は魅了経験が最低100になるように
+ELSEIF EXP:対象:魅了経験 >= 100 && (EXP:対象:魅了経験 + LOCAL < 100)
+	LOCAL = 100 - EXP:対象:魅了経験
+ENDIF
+RETURNF LOCAL

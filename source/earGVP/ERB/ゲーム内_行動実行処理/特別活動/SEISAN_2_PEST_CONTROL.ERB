@@ -1,0 +1,82 @@
+﻿;==============================================================================
+;特別活動：雑魚触手退治
+; 変数
+;	TENTACLE	相手をした触手の数
+;	PAYMENT			支払額
+;	LOST_VIRGIN	この活動中に処女喪失したかどうか
+@SEISAN_PEST_CONTROL
+#DIM DYNAMIC TENTACLE
+#DIM DYNAMIC PAYMENT
+#DIM DYNAMIC LOST_VIRGIN
+
+PRINTL 雑魚触手退治
+PRINTL 
+CALL MESSAGE_SEISAN_PEST_CONTROL_INTRO
+
+;敗北展開（聖処女ではなく、触手の虜または触手拘束具ありの一定確率）
+IF CHECK_HOLYVIRGIN_F() == 0 && (TALENT:触手の虜 > 0 || (CFLAG:42 == 400 && RANDOM(4) == 0))
+	;処女は確実に失う
+	IF TALENT:処女 > 0
+		TALENT:処女 = -1
+		CFLAG:206 = 2
+		LOST_VIRGIN = 1
+	ENDIF
+	;体力・気力・性耐性減少量と触手の数の計算
+	CALL CALC_SEISAN, 特別活動_雑魚触手退治, 特別活動結果_失敗
+	TENTACLE = RESULT:0
+	PAYMENT = RESULT:1
+
+	;触手の虜だとわざと負けて嬲られる
+	IF TALENT:触手の虜 > 0
+		;地の文と口上
+		CALL MESSAGE_SEISAN_PEST_CONTROL_TORIKO, LOST_VIRGIN
+		PRINTFORML 仲間が助けに来るまでの間、%PRINT_TRANSCALLNAME(TARGET)%は{TENTACLE}匹の触手に陵辱されてしまった。
+		;欲情が上がる
+		JUEL:欲情 += 200
+
+	;触手拘束具有りの敗北
+	ELSE
+		;地の文と口上
+		CALL MESSAGE_SEISAN_PEST_CONTROL_DEFEAT, LOST_VIRGIN
+		PRINTFORML 帰りが遅いのを不審に思った仲間が助けに来るまでの間、%PRINT_TRANSCALLNAME(TARGET)%は{TENTACLE}匹の触手に陵辱されてしまった。
+		;苦痛が上がる
+		JUEL:苦痛 += 200
+	ENDIF
+
+	;珠と経験の増加（共通）
+	EXP:戦闘経験 += TENTACLE * (10 + RANDOM(3)) / 100
+	JUEL:習得 += 50
+	IF ISFEMALE() && BASE:Ｖ結界耐久力 == 0
+		EXP:Ｖ経験 += TENTACLE / 2 + 2
+		JUEL:快Ｖ += TENTACLE * ABL:Ｖ感覚 / 2 + 2
+	ELSEIF BASE:Ａ結界耐久力 == 0
+		EXP:Ａ経験 += TENTACLE / 4 + 1
+		JUEL:快Ａ += TENTACLE * ABL:Ａ感覚 / 4 + 1
+	ENDIF
+	IF BASE:Ａ結界耐久力 == 0
+		EXP:Ａ経験 += TENTACLE / 4 + 1
+		JUEL:快Ａ += TENTACLE * ABL:Ａ感覚 / 4 + 1
+	ENDIF
+	EXP:フェラ経験 += TENTACLE / 2 + 2
+	EXP:精液経験 += TENTACLE / 2 + 2
+	IF ISPENIS()
+		EXP:射精経験 += TENTACLE / 2 + 2
+		CFLAG:37 += TENTACLE / 2 + 2
+	ENDIF
+	
+	;アフターピルと妊娠判定
+	IF ISFEMALE() && BASE:Ｖ結界耐久力 == 0
+		CALL AFTER_PILL, TARGET, 5, 200
+		CALL NINSIN_HANTEI,(RESULT:0 / 10 + 2), 50, 200
+	ENDIF
+
+;普通は楽勝
+ELSE
+	;地の文と口上
+	CALL MESSAGE_SEISAN_PEST_CONTROL_NORMAL
+	CALL CALC_SEISAN, 特別活動_雑魚触手退治, 特別活動結果_成功
+	PAYMENT = RESULT:1
+	PRINTFORML %PRINT_TRANSCALLNAME(TARGET)%は{RESULT:0}匹の触手を駆除し、{PAYMENT}＄の報酬を得ました。
+	;経験の増加
+	EXP:戦闘経験 += RESULT:0 * (1 + RANDOM(5) * 1) / 100
+ENDIF

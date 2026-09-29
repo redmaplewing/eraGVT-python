@@ -1,0 +1,86 @@
+﻿;==============================================================================
+;特別活動：ライブ公演の地の文と口上呼び出し
+; 変数
+;	LIVE_RESULT	ライブの結果（SEISAN.ERHの特別活動結果の値）
+@MESSAGE_SEISAN_IDOL_LIVE, LIVE_RESULT
+#DIM LIVE_RESULT
+
+PRINTFORML %PRINT_TRANSCALLNAME(TARGET)%はライブを開くことになりました。
+SELECTCASE IDOL_LV(TARGET)
+	CASE IS >= 7
+		PRINTL 超満員の武道館は、公演が始まる前から熱気に包まれています…
+	CASE IS >= 6
+		PRINTL 大きな会場にも関わらず、観客がすし詰め状態になっています…
+	CASE IS >= 4
+		PRINTL それほど立派な会場ではないが、観客は多い方です…
+	CASEELSE
+		PRINTL 満員とはいきませんが、観客からは期待の目が向けられています…
+ENDSELECT
+
+CALL REDUCIBLE_PRINTW
+
+PRINTFORML 歌と踊りを披露しステージを舞う%PRINT_TRANSCALLNAME(TARGET)%。
+
+SELECTCASE LIVE_RESULT
+	CASE 特別活動結果_大成功
+		;口上
+		TRYCALLFORM KOJO_ROOT(CFLAG:6, "SEISAN_LIVE_normal")
+		
+		CALL REDUCIBLE_PRINTW
+		
+		PRINTFORML %PRINT_TRANSCALLNAME(TARGET)%は絶好調で歌い終え、公演は大盛況に終わりました…
+
+	CASE 特別活動結果_成功
+		;口上
+		TRYCALLFORM KOJO_ROOT(CFLAG:6, "SEISAN_LIVE_normal")
+
+		CALL REDUCIBLE_PRINTW
+		
+		PRINTFORML %PRINT_TRANSCALLNAME(TARGET)%は最後までしっかりと歌い終え、観客たちを満足させました…
+
+	CASE 特別活動結果_失敗
+		IF ISHOLE() == 1
+			PRINTFORML %PRINT_TRANSCALLNAME(TARGET)%は最後の大舞台で足を滑らせ派手にすっ転び、
+			;履いてない
+			IF CFLAG:42 == 0
+				PRINTFORM 下履きを履いていなかったばかりに、
+				;生えてない
+				SIF TALENT:パイパン == 1
+					PRINTFORM 毛も生えていない
+				PRINTFORM アソコを
+			ELSEIF CFLAG:42 == 400
+				PRINTFORM 触手に弄られる\@ISMALE()?お尻の穴#秘所\@を
+			ELSE
+				PRINTFORM 下に履いていた%ITEMNAME:(CFLAG:42)%を
+			ENDIF
+			PRINTFORML 観客の眼に晒す羽目になってしまいました。
+		ELSE
+			PRINTFORML %PRINT_TRANSCALLNAME(TARGET)%は最後の大舞台で足を滑らせ派手にすっ転びました。
+		ENDIF
+		;口上
+		TRYCALLFORM KOJO_ROOT(CFLAG:6, "SEISAN_LIVE_korobi")
+		
+		CALL REDUCIBLE_PRINTW
+		
+		IF IDOL_LV(TARGET) >= 5
+			PRINTFORML アクシデントはあったものの、%PRINT_TRANSCALLNAME(TARGET)%は何とか最後まで歌い続けました…
+		ELSE
+			PRINTFORML 何とかライブを続行したものの、大きなミスに%PRINT_TRANSCALLNAME(TARGET)%は動揺を隠しきれませんでした…
+		ENDIF
+
+	CASE 特別活動結果_絶頂失敗
+		PRINTFORML ライブが佳境に差し掛かったとき不意に服の下で%ITEMNAME:(CFLAG:42)%が激しく動き、
+		PRINTFORML %PRINT_TRANSCALLNAME(TARGET)%は衆人環視の中で絶頂を迎えてしまいました。
+		;口上
+		TRYCALLFORM KOJO_ROOT(CFLAG:6, "SEISAN_LIVE_syokusyu")
+		
+		CALL REDUCIBLE_PRINTW
+		
+		IF IDOL_LV(TARGET) >= 5
+			PRINTFORML アクシデントはあったものの、%PRINT_TRANSCALLNAME(TARGET)%は何とかミスをカバーすることに成功しました…
+		ELSE
+			PRINTFORML 無理矢理誤魔化してライブを続行したものの、触手絶頂を迎える姿を見られてしまいました…
+		ENDIF
+ENDSELECT
+
+CALL REDUCIBLE_PRINTW

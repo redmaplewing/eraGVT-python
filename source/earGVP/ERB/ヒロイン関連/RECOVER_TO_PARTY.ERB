@@ -1,0 +1,23 @@
+﻿@RECOVER_TO_PARTY,ARG
+;ARG番目のキャラをパーティに復帰させる
+CFLAG:ARG:0 = 状態_無事
+;パーティ人数が最大未満なら自動でパーティに加える
+IF CHARANUM_ACTIVE() < パーティ人数最大値 && CFLAG:ARG:999 == 0
+	CFLAG:ARG:999 = 1
+	PRINTL 
+		IF TALENT:ARG:繁殖袋 == 1
+		PRINTFORML %CALLNAME:ARG% は生命監視機能の付いた自室に戻されました
+		PRINTFORML 慣れ親しんだ環境が理性を取り戻す助けになると良いのですが...
+	ELSEIF TALENT:ARG:四肢欠損 == 1
+		PRINTFORML %CALLNAME:ARG%がパーティメンバーに加わりました
+		PRINTFORML ただし、今の%CALLNAME:ARG%に提供できるのは後方支援だけです...
+	ELSE
+		PRINTFORML %CALLNAME:ARG%がパーティメンバーに加わりました
+	ENDIF
+
+	PRINTW 
+ELSE
+	PRINTL 
+	PRINTFORML %CALLNAME:ARG%が控えメンバーに加わりました
+	PRINTW 
+ENDIF

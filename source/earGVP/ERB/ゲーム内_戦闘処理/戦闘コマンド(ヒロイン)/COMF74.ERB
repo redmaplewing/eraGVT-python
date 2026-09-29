@@ -1,0 +1,85 @@
+﻿;SPフルバースト
+@COM74
+
+;距離表示
+CALL PRINT_DISTANCE
+PRINTL 
+
+;疲労が蓄積し過ぎていると使用できない
+IF CFLAG:99 >= 100
+	PRINTFORML %PRINT_CALLNAME(TARGET)%に蓄積した疲労はもう限界に達している…！
+	PRINTFORML ＳＰフルバーストは使えない…！
+	PRINTW 
+	RETURN 0
+ENDIF
+
+TCVARn:0 = 2
+TFLAG:4 = 0
+
+;全ゲージ消費
+TCVARn:6 = -500
+;EX：攻防を解除
+TCVARn:3 = 0
+
+FONTBOLD
+PRINTL SPフルバースト
+FONTREGULAR
+
+;地の文：SPフルバースト
+CALL MESSAGE_BATTLE_CHARA_SP_FBURST
+
+;体力気力最大値、攻撃力、残ゲージ依存の固定ダメージ
+LOCAL = MAX((MAXBASE:体力 + MAXBASE:気力 - 2000) + MAXBASE:攻撃 * 10, 800) * (100 + EX:行動ポイント * 2) * (5000 + TCVARn:5) / 500000
+
+;直前に睨みつける、罵倒する、反抗する、説得するを使っていた場合ダメージ上昇
+;SIF PREVCOM == 44 || PREVCOM == 45 || PREVCOM == 46 || PREVCOM == 47
+;	LOCAL = LOCAL * 115 / 100
+;雑魚にはダメージ強化
+SIF ENEMY_TYPE_CHECK_F("AKUOTI") == 0 && ENEMY_TYPE_CHECK_F("MOB") == 1
+	LOCAL *= 2
+;消耗度が低いとダメージ低下、高いとダメージ上昇
+LOCAL = LOCAL * (300 - PERCENT_CAL_F(BASE:体力 + BASE:気力 + BASE:性耐性 * 10, MAXBASE:体力 + MAXBASE:気力 + MAXBASE:性耐性 * 10)) / 200
+;変身能力のないキャラはリスクが少ないぶんダメージ低下
+;SIF TALENT:変身能力 < 1
+;	LOCAL = LOCAL * 85 / 100
+;ダメージキャップ
+LOCAL = LIMIT(LOCAL, 500, 99999)
+
+FLAG:13 -= LOCAL
+FONTBOLD
+IF (FLAG:110 == 0)
+	CALL TENTACLE_ACCESS, "NAME"
+ELSEIF (FLAG:110 == 1)
+	PRINTFORM %PRINT_TRANSCALLNAME(FLAG:111)%
+ENDIF
+PRINTFORML に{LOCAL}のダメージを与えた！
+
+;トドメならデメリットなし
+IF FLAG:13 <= 0
+	TFLAG:99 = 0
+ELSE
+	;威力に応じて疲労が蓄積
+	TFLAG:99 += MIN((1000 + TCVARn:5) * (100 + EX:行動ポイント * 2) / 10000, 15) + RAND:2
+	;TFLAG:99 += 2 + MAX(TCVARn:4 + TCVARn:5 - 200, 0) * EX:行動ポイント / 400
+
+	;反動として残り体力と気力の1/3分を消費
+	LOCAL = BASE:体力 / 3
+	LOCAL:1 = BASE:気力 / 3
+	BASE:体力 -= LOCAL
+	BASE:気力 -= LOCAL:1
+	PRINTFORML 体力を{LOCAL}、気力を{LOCAL:1}消費した！
+ENDIF
+PRINTW 
+FONTREGULAR
+
+;残りのターンはEX使用不可となる
+CALL ADDBATTLESITUATION("EX不可")
+
+;行動ポイントを半減
+;SIF EX:行動ポイント > 0
+;	EX:行動ポイント = EX:行動ポイント / 2 + 1
+
+;触手の体勢が崩れる
+;TFLAG:1 = 1
+
+RETURN 1

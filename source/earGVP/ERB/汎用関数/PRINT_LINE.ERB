@@ -1,0 +1,56 @@
+﻿;--------------------------------------------------
+;ショートライン
+@SHORTLINE, ARG = 0
+PRINT ――――――――――――――――――――――――――――
+SIF ARG == 0
+	PRINTL 
+RETURN RESULT
+
+;--------------------------------------------------
+;LINEBLACKOUT
+;改行による画面切り替えの演出を行う
+@LB
+#DIM LCOUNT
+FOR LCOUNT, 0, 50
+	PRINTL 
+NEXT
+;受け取ったRESULTをそのまま返す
+RETURN RESULT
+
+;-------------------------------------------------
+;コンフィグ「一部ウェイトの削減」を入れると削減されるPRINTW
+@REDUCIBLE_PRINTW
+IF CONFIG_CHECK_SCREEN_F(3) == 0
+	PRINTW 
+ELSE
+	PRINTL 
+ENDIF
+;受け取ったRESULTをそのまま返す
+RETURN RESULT
+
+;-------------------------------------------------
+;時間経過表現の簡略化
+;ARG が1または省略なら長め、2なら短め コンフィグでクリック数削減
+@DOT_AFTER, ARG = 1
+IF ARG == 1
+	IF CONFIG_CHECK_SCREEN_F(3) == 0
+		PRINTW ・・
+		PRINTW ・・・・
+	ELSE
+		PRINTL ・・
+		PRINTL ・・・・
+	ENDIF
+	PRINTW ・・・・・・
+ELSEIF ARG == 2
+	IF CONFIG_CHECK_SCREEN_F(3) == 0
+		PRINTW ・
+		PRINTW ・・
+	ELSE
+		PRINTL ・
+		PRINTL ・・
+	ENDIF
+	PRINTW ・・・
+ENDIF
+;受け取ったRESULTをそのまま返す
+RETURN RESULT
+

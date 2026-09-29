@@ -1,0 +1,180 @@
+﻿;●性別周りの判定を整理
+;	・生物学的オスorメス			ISMALE(id)  ISFEMALE(id)
+;	・外見上の男性or女性(男の娘用)		ISMANLY(id) ISGIRLY(id)
+;	・ちんまん有無チェック(ふたなり用)	ISPENIS(id) ISVAGINA(id)
+
+;-------------------------------------------------
+;「性器の有無を判定(ふたなり等も考慮)」
+;ペニス判定　ARG番目のキャラがペニスを持っていれば1を返す
+@ISPENIS, ARG = -999
+#FUNCTION
+SIF ARG == -999
+	ARG = TARGET
+SIF ISMALE(ARG) || TALENT:ARG:ふたなり > 0
+	RETURNF 1
+RETURNF 0
+;ヴァギナ判定　ARG番目のキャラがヴァギナを持っていれば1を返す
+@ISVAGINA, ARG = -999
+#FUNCTION
+SIF ARG == -999
+	ARG = TARGET
+SIF ISFEMALE() || TALENT:ARG:ふたなり > 0
+	RETURNF 1
+RETURNF 0
+
+;-------------------------------------------------
+;「女に見える外見」
+;周囲が女の子扱いする判定(地の文用)　女性または男の娘なら１が返る
+@ISGIRLY(ARG=-1)
+#FUNCTION
+	LOCAL=ARG==-1 ? TARGET # ARG
+	IF ISFEMALE(LOCAL) || TALENT:LOCAL:男の娘
+		LOCAL=1
+	ELSE
+		LOCAL=0
+	ENDIF
+RETURNF LOCAL
+;「男らしい外見のオトコ」
+;周囲がオトコ扱いする判定(地の文用、↑の逆)　オトコかつ男の娘でなければ１が返る
+;※なお、現行GVTはガチで男に見える男装＝男の娘の逆パターンに非対応です
+;　(支払う分岐処理の複雑さに対して需要が薄いと考えられるため)
+@ISMANLY(ARG=-1)
+#FUNCTION
+	LOCAL=ARG==-1 ? TARGET # ARG
+	IF ISFEMALE(LOCAL) || TALENT:LOCAL:男の娘
+		LOCAL=0
+	ELSE
+		LOCAL=1
+	ENDIF
+RETURNF LOCAL
+;「凌辱対象(穴)となり得る」
+;通常のISGIRLY() ＋ 男女平等オプションOnなら無条件に１が返る
+@ISHOLE(ARG=-1)
+#FUNCTION
+	LOCAL=ARG==-1 ? TARGET # ARG
+	SIF ARG == 0
+		RETURNF 1
+	;♀、男の娘、男女平等オプションなら1
+	;※※※※※※※※※※※※※※※※※※※※※※※※
+	;ここうっかりISHOLE()でラップしないように注意！！
+	;※※※※※※※※※※※※※※※※※※※※※※※※
+	IF ISGIRLY(LOCAL) || CONFIG_CHECK_MANIAC_F(5) == 1
+		LOCAL = 1
+	ELSE
+		LOCAL = 0
+	ENDIF
+RETURNF LOCAL
+
+
+;-------------------------------------------------
+;現在の変身状態と無関係に、特定の変身状態における外見を確認
+;「変身能力を持ち、変身後の姿がGIRLYであるキャラ」なら１
+;①通常変身する♀
+;②TS変身する♂
+;③男の娘に変身するキャラ
+@ISGIRLY_AfterTrans(ARG=-1)
+#FUNCTION
+	LOCAL=ARG==-1 ? TARGET # ARG
+	;未変身時に呼ばれた場合
+	IF CFLAG:1==0
+		IF TALENT:LOCAL:変身能力 == 1 && ((ISFEMALE(LOCAL) && TALENT:LOCAL:変身時ＴＳ == 0) || (ISMALE(LOCAL) && TALENT:LOCAL:変身時ＴＳ == 1) || (TALENT:LOCAL:変身時男の娘 == 1))
+			LOCAL=1
+		ELSE
+			LOCAL=0
+		ENDIF
+	;変身時に呼ばれた場合は現在の外見判定でよい
+	ELSE
+		IF ISGIRLY()
+			LOCAL=1
+		ELSE
+			LOCAL=0
+		ENDIF
+	ENDIF
+RETURNF LOCAL
+;「変身能力を持ち、変身後の姿がMANLYであるキャラ」なら１
+;①通常変身する♂
+;②TS変身する♀
+@ISMANLY_AfterTrans(ARG=-1)
+#FUNCTION
+	LOCAL=ARG==-1 ? TARGET # ARG
+	;未変身時に呼ばれた場合
+	IF CFLAG:1==0
+		IF TALENT:LOCAL:変身能力 == 1 && ((ISMALE(LOCAL) && TALENT:LOCAL:変身時ＴＳ == 0) || (ISFEMALE(LOCAL) && TALENT:LOCAL:変身時ＴＳ == 1))
+			LOCAL=1
+		ELSE
+			LOCAL=0
+		ENDIF
+	;変身時に呼ばれた場合は現在の外見判定でよい
+	ELSE
+		IF ISMANLY()
+			LOCAL=1
+		ELSE
+			LOCAL=0
+		ENDIF
+	ENDIF
+RETURNF LOCAL
+
+
+;-------------------------------------------------
+;判定時点での物理的な性(SEX)
+;♀メス
+@ISFEMALE(ARG=-1)
+#FUNCTION
+	LOCAL=ARG==-1 ? TARGET # ARG
+	IF TALENT:(LOCAL):オトコ <= 0
+		LOCAL=1
+	ELSE
+		LOCAL=0
+	ENDIF
+RETURNF LOCAL
+;♂オス
+@ISMALE(ARG=-1)
+#FUNCTION
+	LOCAL=ARG==-1 ? TARGET # ARG
+	IF TALENT:(LOCAL):オトコ > 0
+		LOCAL=1
+	ELSE
+		LOCAL=0
+	ENDIF
+RETURNF LOCAL
+
+
+;-------------------------------------------------
+;TS変身系の判定
+;現在TS変身によって♀状態なら１
+@ISTSFEMALE(ARG=-1)
+#FUNCTION
+	LOCAL=ARG==-1 ? TARGET # ARG
+	IF CFLAG:1>=1 &&  ISFEMALE(LOCAL) && TALENT:LOCAL:変身時ＴＳ > 0
+		LOCAL=1
+	ELSE
+		LOCAL=0
+	ENDIF
+RETURNF LOCAL
+;現在TS変身によって♂状態なら１
+@ISTSMALE(ARG=-1)
+#FUNCTION
+	LOCAL=ARG==-1 ? TARGET # ARG
+	IF CFLAG:1>=1 &&  ISMALE(LOCAL) && TALENT:LOCAL:変身時ＴＳ > 0
+		LOCAL=1
+	ELSE
+		LOCAL=0
+	ENDIF
+RETURNF LOCAL
+
+
+
+;寄生されて触手出せる状態なら1
+;	(主に悪堕ち♀が触手責めできるかどうかの分岐で使う)
+@ISTENTACLER(ARG=-1)
+#FUNCTION
+	LOCAL=ARG==-1 ? TARGET # ARG
+	SIF ARG == 0
+		RETURNF 1
+	IF TALENT:LOCAL:寄生 && CONFIG_CHECK_MANIAC_F(13) == 1
+		LOCAL = 1
+	ELSE
+		LOCAL = 0
+	ENDIF
+RETURNF LOCAL
+

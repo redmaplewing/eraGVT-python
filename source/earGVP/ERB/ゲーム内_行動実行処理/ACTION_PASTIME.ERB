@@ -1,0 +1,253 @@
+﻿;--------------------------------------------------
+;息抜き
+@PASTIME
+#DIM REST = 0
+FLAG:11 = 0
+
+;もし小中高大学に通っていない場合、30の倍数日に編入する機会を与える
+IF TALENT:学生 == 0 && DAY % 30 == 0 && DAY > 29
+	CALL PASTIME_SelectSchool
+ENDIF
+
+;変身可能キャラは変身状態になるか選べる
+CALL ACTION_TRANSFORMATION_SELECT, TARGET, "気晴らし"
+
+PRINTFORM [0]街に出る　　　　　　
+PRINTFORM [1]遠出する　　　　　　
+PRINTFORM [2]運動をする　　　　　
+;学校は昼のみ表示する
+PRINTL 
+SIF TIME > 0
+	SETCOLOR 105,105,105
+SIF TALENT:学生 > 0
+	PRINTFORM [3]学校に行く　　　　　
+RESETCOLOR
+PRINTL
+DRAWLINE
+
+;スケジュール機能
+IF CFLAG:113 > 0
+	CALL RES_SCHEDULE(113)
+
+	;通学できるのは昼のみ(スケジュールスキップ)
+	IF RESULT == 0 && TIME:0 == 1
+		;全てダメなら行先ランダムにする
+		RESULT = 1
+		FOR LOCAL,1,NUM_SCHEDULE_F(113)+1
+			CALL RES_SCHEDULE(113)
+			;通学以外のスケジュールを探す
+			IF RESULT != 0
+				BREAK
+			ENDIF
+		NEXT
+	ENDIF
+
+	IF RESULT == 0
+		CALL PASTIME_学校に行く, RESULT
+	ELSEIF RESULT == 1
+		IF TIME:0 == 0
+			SELECTCASE RAND:4
+			CASE 0
+				CALL PASTIME_学校に行く, -1
+			CASE 1
+				CALL PASTIME_街に出る, RAND:4
+			CASE 2
+				CALL PASTIME_遠出する, RAND:8
+			CASE 3
+				CALL PASTIME_運動する, RAND:4
+			ENDSELECT
+		ELSE
+			SELECTCASE 1+RAND:3
+			CASE 1
+				CALL PASTIME_街に出る, RAND:4
+			CASE 2
+				CALL PASTIME_遠出する, RAND:8
+			CASE 3
+				CALL PASTIME_運動する, RAND:4
+			ENDSELECT
+		ENDIF
+	ELSEIF RESULT == 2
+		CALL PASTIME_街に出る, RAND:4
+	ELSEIF RESULT == 3
+		CALL PASTIME_遠出する, RAND:8
+	ELSEIF RESULT == 4
+		CALL PASTIME_運動する, RAND:4
+	ELSEIF INRANGE(RESULT,5,8)
+		CALL PASTIME_街に出る, RESULT-5
+	ELSEIF INRANGE(RESULT,9,16)
+		CALL PASTIME_遠出する, RESULT-9
+	ELSEIF INRANGE(RESULT,17,20)
+		CALL PASTIME_運動する, RESULT-17
+	ENDIF
+
+	;	IF RESULT == 3
+	;		PRINTL 
+	;		PRINT スケジュール：学校に行く
+	;		IF TALENT:学生 > 0 && TIME == 0
+	;			PRINT （実行不能）
+	;			PRINTL 
+	;			PRINTL 手動で行動を選択してください
+	;			GOTO INPUT_LOOP
+	;		ENDIF
+	;	ENDIF
+	;ELSE
+	;	$INPUT_LOOP
+	;	INPUT
+ELSE
+	$INPUT_LOOP
+	INPUT
+	PRINTL 
+	IF INRANGE(RESULT, 0, 3)
+		DRAWLINE
+		SELECTCASE RESULT
+			;街に出る
+			CASE 0
+				CALL PASTIME_街に出る(-1)
+				REST = RESULT
+			;遠出をする
+			CASE 1
+				CALL PASTIME_遠出する(-1)
+				REST = RESULT
+			;運動をする
+			CASE 2
+				CALL PASTIME_運動する(-1)
+				REST = RESULT
+			;学校
+			CASE 3
+				IF TALENT:学生 < 1
+					PRINTL 正しい値を入力してください
+					GOTO INPUT_LOOP
+				ELSEIF TIME > 0
+					PRINTL 学校に行けるのは昼のみです
+					GOTO INPUT_LOOP
+				ELSE
+					CALL PASTIME_学校に行く(-1)
+					REST = RESULT
+				ENDIF
+		ENDSELECT
+	ELSE
+		PRINTL 正しい値を入力してください
+		GOTO INPUT_LOOP
+	ENDIF
+ENDIF
+
+
+IF FLAG:73 > 0
+	SIF CFLAG:1 > 0
+		CALL TRANSFORM, 0
+	RETURN
+ENDIF
+
+CALL PASTIME_REST
+
+;魅了経験の上昇とFEATの効果
+LOCAL = CALC_CHARM_FEAT_OTHER(TARGET)
+IF LOCAL > 0
+	EXP:魅了経験 += LOCAL
+	PRINTFORML 魅了経験が{LOCAL}上がった
+ENDIF
+
+CALL _ABLUP, 1
+SIF CFLAG:1 > 0
+	CALL TRANSFORM, 0
+BEGIN TURNEND
+
+;--------------------------------------------------
+;息抜き回復処理
+@PASTIME_REST
+;体力・気力・性耐性・疲労度の回復
+;体力は基本10%回復する
+;気力は基本30%回復する
+;性耐性は50%回復する
+;疲労度は施設拡張していくと最終的に逆転
+
+LOCAL:1 = 10
+LOCAL:2 = 30
+
+IF TALENT:回復早い > 0
+	LOCAL:1 += 5
+	LOCAL:2 += 5
+ELSEIF TALENT:回復遅い > 0
+	LOCAL:1 -= 5
+	LOCAL:2 += 5
+ENDIF
+;FEAT効果による回復量補正
+IF TALENT:魔力貯蔵 > 0
+	LOCAL:1 -= 5
+	LOCAL:2 -= 5
+ENDIF
+IF TALENT:不老長寿 > 0
+	LOCAL:1 -= 5
+	LOCAL:2 -= 5
+ENDIF
+SIF TALENT:溢れる生命力 > 0
+	LOCAL:1 += 10
+	LOCAL:2 += 10
+LOCAL = MAXBASE:体力 * LOCAL:1 / 100 + 200
+BASE:体力 = LIMIT(LOCAL + BASE:体力, 0, MAXBASE:体力)
+
+LOCAL = MAXBASE:気力 * LOCAL:2 / 100 + 200
+BASE:気力 = LIMIT(LOCAL + BASE:気力, 0, MAXBASE:気力)
+
+BASE:性耐性 = LIMIT(BASE:性耐性 + (MAXBASE:性耐性 / 2), 0, MAXBASE:性耐性)
+
+IF CFLAG:0 != -1 && CFLAG:999 != 0
+	;口上
+	;TRYCALLFORM KOJO_ROOT(CFLAG:6, "REST")
+
+	;疲労の回復
+	IF CFLAG:99 > 0
+		CFLAG:99 -= 10
+		SIF CFLAG:99 < 0
+			CFLAG:99 = 0
+		IF CFLAG:99 == 0
+			PRINTFORML %CALLNAME:TARGET%の身体から疲労が完全に抜けた！
+		ELSE
+			PRINTFORML %CALLNAME:TARGET%の身体から疲労が少し抜けた…
+		ENDIF
+	ENDIF
+	PRINTL 
+
+	SIF BASE:体力 == MAXBASE:体力 && BASE:気力 == MAXBASE:気力 && CFLAG:99 == 0
+		PRINTFORML %CALLNAME:TARGET%は最大まで回復した！
+
+	IF CONFIG_CHECK_SCREEN_F(3) == 0
+		PRINTW 
+	ELSE
+		PRINTL 
+	ENDIF
+ENDIF
+
+;--------------------------------------------------
+;完全女体化時の回数上書き
+@PASTIME_TSFLAG_OVERWRITE
+
+;ナンパ男にレイプされた回数
+CFLAG:320 = CFLAG:321
+
+;痴漢された回数
+CFLAG:325 = CFLAG:326
+CFLAG:327 = CFLAG:328
+
+;運動公園の回数
+CFLAG:330 = CFLAG:331
+CFLAG:332 = CFLAG:333
+
+;フィットネスクラブの回数
+CFLAG:334 = CFLAG:335
+CFLAG:336 = CFLAG:337
+
+;マッサージサロンの回数
+CFLAG:338 = CFLAG:339
+CFLAG:340 = CFLAG:341
+
+;プールの回数
+CFLAG:342 = CFLAG:343
+CFLAG:344 = CFLAG:345
+
+;学校イベント
+CFLAG:350 = CFLAG:351
+CFLAG:352 = CFLAG:353
+CFLAG:354 = CFLAG:355
+
+

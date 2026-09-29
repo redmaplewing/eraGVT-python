@@ -1,0 +1,305 @@
+﻿;================================================================
+;ステータス表示画面の2ページ目（素質・性成長）の表示処理
+; 引数
+;	ARG	対象のキャラ番号
+@SHOW_STATUS_CHARA_SELECT_PAGE2 , ARG
+PRINTL 　　　　　　　　　　　　　　　　　　素質・性成長　　　　　　　　　　　　　　　　PAGE(2/5)
+
+;1番目のブロック：名前・呼び名・一人称・レベル・性別の表示
+DRAWLINE
+CALL SHOW_STATUS_CHARA_NAMES_LV, ARG
+
+;2番目のブロック：素質の表示
+;memo:この関数だけ手入れできてない
+CALL SHORTLINE
+CALL SHOW_STATUS_TALENT, ARG, 0, 1
+
+;3番目のブロック：能力開発状況の表示
+CALL SHORTLINE
+CALL SHOW_STATUS_CHARA_ABL, ARG
+PRINTL 
+
+;4番目のブロック：刻印の表示
+CALL SHORTLINE
+CALL SHOW_STATUS_CHARA_MARK, ARG
+PRINTL 
+
+;5番目のブロック：経験の表示
+CALL SHORTLINE
+CALL SHOW_STATUS_CHARA_EXP, ARG
+;珠の表示はデバッグ用
+IF FLAG:999 == 1
+	PRINTL 
+	CALL SHORTLINE
+	CALL SHOW_STATUS_CHARA_JUEL, ARG
+ENDIF
+PRINTL 
+DRAWLINE
+;共通表示部の直上にボタンを表示
+PRINTPLAIN 　
+PRINTKL [0]キャラクターデータの書き出し　　
+
+;--------------------------------------------------
+;ステータス表示の2ページ目（素質・性成長）の画面固有コマンド処理
+; 引数
+;	ARG				対象のキャラ番号
+;	INPUT_CMD 		入力されたコマンド番号
+; 戻り値
+;	1:関数内でコマンド処理ができた
+;	0:関数内に対応するコマンドがなかった
+@CMD_STATUS_CHARA_SELECT_PAGE2 , ARG, INPUT_CMD
+#DIM INPUT_CMD
+;キャラクターデータの書き出し
+IF INPUT_CMD == 0
+	TARGET = ARG
+	CALL EXPORT_CSV
+	RETURN 1
+ELSE
+	RETURN 0
+ENDIF
+
+;================================================================
+;	以降、画面表示の各部分を担当する関数群
+;================================================================
+;--------------------------------------------------
+;能力表示
+; 引数
+;	ARG	対象のキャラ番号
+; 定数
+;	OUTPUT_ABLS	表示するABLの番号列挙
+; 変数
+;   OUTPUT	現在表示処理中のABL番号
+;	COL_R,COL_G,COL_B	文字色
+@SHOW_STATUS_CHARA_ABL, ARG
+{
+#DIM CONST OUTPUT_ABLS =
+GETNUM(ABL, "Ｃ感覚"),   GETNUM(ABL, "Ｖ感覚"),   GETNUM(ABL, "Ａ感覚"),   GETNUM(ABL, "Ｂ感覚"),
+GETNUM(ABL, "従順"),     GETNUM(ABL, "欲望"),     GETNUM(ABL, "技巧"),     GETNUM(ABL, "奉仕精神"),
+GETNUM(ABL, "露出癖"),   GETNUM(ABL, "マゾっ気"), GETNUM(ABL, "触手中毒"), GETNUM(ABL, "自慰中毒"),
+GETNUM(ABL, "精液中毒"), GETNUM(ABL, "噴乳中毒"), GETNUM(ABL, "射精中毒")
+}
+#DIM OUTPUT
+#DIM COL_R
+#DIM COL_G
+#DIM COL_B
+
+PRINTL ◆開発
+
+;出力する能力の数だけ繰り返す
+REPEAT VARSIZE("OUTPUT_ABLS")
+	;配列定数から今回のABL番号を取得
+	OUTPUT = OUTPUT_ABLS:COUNT
+	
+	;能力の値によって文字色を変える
+	IF ABL:ARG:OUTPUT == 0
+		CALL GET_COLOR_BY_RANK, 0
+	ELSEIF ABL:ARG:OUTPUT <= 3
+		CALL GET_COLOR_BY_RANK, 1
+	ELSEIF ABL:ARG:OUTPUT <= 5
+		CALL GET_COLOR_BY_RANK, 2
+	ELSEIF ABL:ARG:OUTPUT <= 9
+		CALL GET_COLOR_BY_RANK, 3
+	ELSE
+		CALL GET_COLOR_BY_RANK, 4
+	ENDIF
+	COL_R=RESULT:0
+	COL_G=RESULT:1
+	COL_B=RESULT:2
+	
+	;能力名を印字
+	SETCOLOR COL_R,COL_G,COL_B
+	PRINTFORM %ABLNAME:OUTPUT,8,LEFT%：Lv{ABL:ARG:OUTPUT,2,RIGHT}[
+	;ABLが10を超えているなら❤で、10以下なら>でカラーバーを描画する
+	IF ABL:ARG:OUTPUT > 10
+		CALL COLOR_BAR(ABL:ARG:OUTPUT-9,10,5,COL_R,COL_G,COL_B,-16,10,10,6,2,"❤",">>")
+	ELSE
+		CALL COLOR_BAR(ABL:ARG:OUTPUT,10,10,COL_R,COL_G,COL_B,-160,10,10,6,2,">",">")
+	ENDIF
+	;カラーバーで色指定が消えているので改めて指定して閉じ括弧
+	;memo: @COLOR_BARで呼び出し前の色指定を保持するよう改造したほうが良い
+	SETCOLOR COL_R,COL_G,COL_B
+	PRINT ]
+	RESETCOLOR
+	
+	;4の倍数番目の出力ごとに改行
+	SIF (COUNT+1)%4 == 0
+		PRINTL 
+REND
+
+;--------------------------------------------------
+;刻印表示
+; 引数
+;	ARG	対象のキャラ番号
+; 定数
+;	OUTPUT_MARKS	表示するMARKの番号列挙
+; 変数
+;   OUTPUT	現在表示処理中のMARK番号
+;	COL_R,COL_G,COL_B	文字色
+@SHOW_STATUS_CHARA_MARK, ARG
+{
+#DIM CONST OUTPUT_MARKS =
+GETNUM(MARK, "快楽刻印"), GETNUM(MARK, "苦痛刻印"), GETNUM(MARK, "屈服刻印"),
+GETNUM(MARK, "恐怖刻印"), GETNUM(MARK, "恥辱刻印")
+}
+#DIM OUTPUT
+#DIM COL_R
+#DIM COL_G
+#DIM COL_B
+
+PRINTL ◆刻印
+
+;出力する刻印の数だけ繰り返す
+REPEAT VARSIZE("OUTPUT_MARKS")
+	;配列定数から今回のMARK番号を取得
+	OUTPUT = OUTPUT_MARKS:COUNT
+	
+	;刻印の値によって文字色を変える
+	IF MARK:ARG:OUTPUT == 0
+		CALL GET_COLOR_BY_RANK, 0
+	ELSEIF MARK:ARG:OUTPUT <= 2
+		CALL GET_COLOR_BY_RANK, 1
+	ELSEIF MARK:ARG:OUTPUT <= 3
+		CALL GET_COLOR_BY_RANK, 2
+	ELSEIF MARK:ARG:OUTPUT <= 4
+		CALL GET_COLOR_BY_RANK, 3
+	ELSE
+		CALL GET_COLOR_BY_RANK, 4
+	ENDIF
+	COL_R=RESULT:0
+	COL_G=RESULT:1
+	COL_B=RESULT:2
+	
+	;刻印名とカラーバーを描画
+	SETCOLOR COL_R,COL_G,COL_B
+	PRINTFORM %MARKNAME:OUTPUT%：Lv{MARK:ARG:OUTPUT,2,RIGHT}[
+	CALL COLOR_BAR(MARK:ARG:OUTPUT,5,5,COL_R,COL_G,COL_B,-160,10,10,6,2,"❤","❤")
+	SETCOLOR COL_R,COL_G,COL_B
+	PRINT ]
+	RESETCOLOR
+	
+	;3の倍数番目の出力ごとに改行
+	SIF (COUNT+1)%3 == 0
+		PRINTL 
+REND
+
+;--------------------------------------------------
+;経験表示
+; 引数
+;	ARG	対象のキャラ番号
+; 定数
+;	OUTPUT_EXPS	表示するEXPの番号列挙
+;				-1で改行（改行位置が不規則のため）
+; 変数
+;   OUTPUT	現在表示処理中のEXP番号
+@SHOW_STATUS_CHARA_EXP, ARG
+{
+#DIM CONST OUTPUT_EXPS =
+GETNUM(EXP, "戦闘経験"),       GETNUM(EXP, "ボス経験"),       GETNUM(EXP, "ラスボス経験"), -1,
+GETNUM(EXP, "近距離戦闘経験"), GETNUM(EXP, "中距離戦闘経験"), GETNUM(EXP, "遠距離戦闘経験"), GETNUM(EXP, "戦闘基礎経験"), -1,
+GETNUM(EXP, "被姦経験"),       GETNUM(EXP, "幽閉経験"), -1,
+GETNUM(EXP, "Ｖ経験"),         GETNUM(EXP, "Ａ経験"), -1,
+GETNUM(EXP, "絶頂経験"),       GETNUM(EXP, "精液経験"),       GETNUM(EXP, "フェラ経験"), -1,
+GETNUM(EXP, "露出快楽経験"),   GETNUM(EXP, "奉仕快楽経験"),   GETNUM(EXP, "苦痛快楽経験"), -1,
+GETNUM(EXP, "自慰経験"),       GETNUM(EXP, "近親交配経験"), -1,
+GETNUM(EXP, "異常経験"),       GETNUM(EXP, "Ｖ拡張経験"),     GETNUM(EXP, "Ａ拡張経験"), -1,
+GETNUM(EXP, "射精経験"),       GETNUM(EXP, "噴乳経験"),       GETNUM(EXP, "放尿経験"), -1,
+GETNUM(EXP, "寄生経験"),       GETNUM(EXP, "出産経験"),       GETNUM(EXP, "魅了経験")
+}
+#DIM OUTPUT
+
+PRINTL ◆経験
+
+;出力する経験（と改行）の数だけ繰り返す
+REPEAT VARSIZE("OUTPUT_EXPS")
+	;配列定数から今回のEXP番号を取得
+	OUTPUT = OUTPUT_EXPS:COUNT
+	
+	;-1だった場合は改行だけする
+	IF OUTPUT == -1
+		PRINTL 
+		CONTINUE
+	ENDIF
+	
+	;スカトロ描写offなら放尿経験は非表示
+	SIF OUTPUT == GETNUM(EXP, "放尿経験") && CONFIG_CHECK_MANIAC_F(15) == 0
+		CONTINUE
+	;非戦闘員なら近/中/遠距離戦闘経験は表示しない
+	IF TALENT:ARG:変身能力 == 素質変身能力_非戦闘員
+		SIF OUTPUT == GETNUM(EXP, "近距離戦闘経験") || OUTPUT == GETNUM(EXP, "中距離戦闘経験") || OUTPUT == GETNUM(EXP, "遠距離戦闘経験")
+			CONTINUE
+	;戦闘員なら戦闘基礎経験は表示しない
+	ELSE
+		SIF OUTPUT == GETNUM(EXP, "戦闘基礎経験")
+			CONTINUE
+	ENDIF
+	
+	;経験の値によって文字色を変える
+	IF EXP:ARG:OUTPUT == 0
+		CALL GET_COLOR_BY_RANK, 0
+	;ただし非性的な経験（戦闘経験や魅了経験）の場合は色の段階変化はしない
+	ELSEIF MATCH(非性的経験,OUTPUT)
+		CALL GET_COLOR_BY_RANK, 非性的経験ランク
+	ELSEIF EXP:ARG:OUTPUT < 30
+		CALL GET_COLOR_BY_RANK, 1
+	ELSEIF EXP:ARG:OUTPUT < 100
+		CALL GET_COLOR_BY_RANK, 2
+	ELSEIF EXP:ARG:OUTPUT < 200
+		CALL GET_COLOR_BY_RANK, 3
+	ELSE
+		CALL GET_COLOR_BY_RANK, 4
+	ENDIF
+
+	;経験名とカラーバーを描画
+	SETCOLOR RESULT:0,RESULT:1,RESULT:2
+	PRINTFORM %EXPNAME:OUTPUT,14%：{EXP:ARG:OUTPUT,8,LEFT}
+	RESETCOLOR
+REND
+
+;--------------------------------------------------
+;珠表示
+; 引数
+;	ARG	対象のキャラ番号
+;memo:デバッグ用関数なので手を付けてない
+@SHOW_STATUS_CHARA_JUEL, ARG
+PRINT ◆珠　
+LOCAL:0 = 0
+REPEAT 12
+	LOCAL:0 = COUNT
+	SIF COUNT > 3
+		LOCAL:0 += 6
+	SIF COUNT == 4 || COUNT == 8
+		PRINT 　　　
+	PRINTFORM %PALAMNAME:(LOCAL:0),6,RIGHT% : {JUEL:ARG:(LOCAL:0),10, RIGHT}　
+	SIF COUNT == 3 || COUNT == 7
+		PRINTL 
+REND
+
+;--------------------------------------------------
+;能力表示・刻印表示・経験表示の段階毎文字色を返す
+; 引数
+;	RANK	段階
+; 戻り値
+;	RESULT 0,1,2にそれぞれ文字色のR,G,B(0～255)を返す
+@GET_COLOR_BY_RANK, RANK
+#DIM RANK
+
+SELECTCASE RANK
+	;性的でない経験の経験済み色。白(White)と同じ
+	CASE 非性的経験ランク
+		RETURN 255, 255, 255
+	;微経験の色。ピンク(Pink)か明るいピンク(LightPink)が近い
+	CASE 1
+		RETURN 255, 192, 192
+	;無視できない程度の経験の色。淡いサンゴ色(LightCoral)が近い
+	CASE 2
+		RETURN 255, 128, 128
+	;かなり重度の経験の色。近い色名が無いが、濃いピンク色
+	CASE 3
+		RETURN 255, 64, 64
+	;手遅れの経験（能力表示だと❤表記）。紫に近いピンク
+	CASE 4
+		RETURN 255, 94, 255
+	;未経験の色。灰色(Gray)と同じ
+	CASEELSE
+		RETURN 128, 128, 128
+ENDSELECT

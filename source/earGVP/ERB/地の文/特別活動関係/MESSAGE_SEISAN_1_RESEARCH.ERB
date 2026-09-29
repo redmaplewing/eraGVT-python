@@ -1,0 +1,70 @@
+﻿;==============================================================================
+;特別活動：研究助手または被験者の地の文と口上呼び出し
+
+;----------------------------------------------------------
+;子宮検査
+; 引数
+;	SHAVED 剃毛されたかどうか（TALENT:パイパンが0なら1に設定される）
+@MESSAGE_SEISAN_RESEARCH_UTERUS, SHAVED
+#DIM SHAVED
+PRINTFORML %PRINT_TRANSCALLNAME(TARGET)%は研究所に自らを検体として提供することにしました。
+PRINTL 
+PRINTFORML %PRINT_TRANSCALLNAME(TARGET)%は大股開きで分娩台に括りつけられ、クスコで拡げられた局部を白衣の女医達に覗きこまれていた。
+SIF SHAVED
+	PRINTFORML 観察の邪魔になる陰毛は産毛も残さず奇麗に剃り上げられ、艶やかな少女の秘唇が明かりに曝されている。
+
+;触手妊娠中
+IF TALENT:妊娠 == 1 || TALENT:妊娠 == 3
+	PRINTFORML %PRINT_TRANSCALLNAME(TARGET)%が胎内に宿す、おぞましい異種交配の結晶は貴重な研究対象である。
+	PRINTFORMW 内視鏡が膣を通って子宮に潜り込む感触に、%PRINT_TRANSCALLNAME(TARGET)%は唇を噛んで声を殺して耐えていた。
+	PRINTFORML 科学の名のもとに、触手に穢し尽くされた胎内を詳らかに撮影され、資料として記録されるのだった…
+	;口上
+	TRYCALLFORM KOJO_ROOT(CFLAG:6, "SEISAN_KENKYU_ninshin")
+;触手出産後
+ELSE
+	PRINTFORML 触手に孕まされ、おぞましい異種交配の結晶を産み落とした%PRINT_TRANSCALLNAME(TARGET)%の女性器は貴重な研究対象である。
+	PRINTFORMW 内視鏡が膣を通って子宮に潜り込む感触に、%PRINT_TRANSCALLNAME(TARGET)%は唇を噛んで声を殺して耐えていた。
+	PRINTFORML 科学の名のもとに、触手に穢し尽くされた胎内を詳らかに撮影され、資料として記録されるのだった…
+	;口上
+	TRYCALLFORM KOJO_ROOT(CFLAG:6, "SEISAN_KENKYU_after")
+ENDIF
+PRINTL
+PRINTFORML 屈辱の調査が終わった時には、%PRINT_TRANSCALLNAME(TARGET)%は完全に発情してしまっていた……
+
+CALL REDUCIBLE_PRINTW
+
+;----------------------------------------------------------
+;母乳検査
+@MESSAGE_SEISAN_RESEARCH_MILKING
+PRINTFORML %PRINT_TRANSCALLNAME(TARGET)%は研究所に自らを検体として提供することにしました。
+PRINTL 
+PRINTFORML 手足を固定された%PRINT_TRANSCALLNAME(TARGET)%は搾乳機を装着され、白衣の女医達に実験動物を見るような視線に晒されている。
+;ふたなり
+IF TALENT:ふたなり > 0
+	PRINTFORML 機械を装着されているのは乳房ばかりでなく、男性器にも同じように搾乳機が取り付けられている。
+	PRINTFORML 触手に改造された%PRINT_TRANSCALLNAME(TARGET)%から分泌される母乳、精液はともに貴重な研究対象である。
+	PRINTFORMW 無様な姿勢で機械に体液を搾り取られていく羞恥に、%PRINT_TRANSCALLNAME(TARGET)%は唇を噛んで声を殺して耐えていた。
+	PRINTFORML 科学の名のもとに、まるで家畜同然に機械で体液を搾られ、サンプルとして採取され続けた…
+	;口上
+	TRYCALLFORM KOJO_ROOT(CFLAG:6, "SEISAN_KENKYU_hutanar")
+ELSE
+	PRINTFORML 触手に改造された%PRINT_TRANSCALLNAME(TARGET)%の乳房から分泌される母乳は貴重な研究対象である。
+	PRINTFORMW 無様な姿勢で機械に体液を搾り取られていく羞恥に、%PRINT_TRANSCALLNAME(TARGET)%は唇を噛んで声を殺して耐えていた。
+	PRINTFORML 科学の名のもとに、まるで家畜同然に機械で母乳を搾られ、サンプルとして採取され続けた…
+	;口上
+	TRYCALLFORM KOJO_ROOT(CFLAG:6, "SEISAN_KENKYU_sakunyu")
+ENDIF
+PRINTL
+PRINTFORML 屈辱の調査が終わった時には、%PRINT_TRANSCALLNAME(TARGET)%は完全に発情してしまっていた…
+
+CALL REDUCIBLE_PRINTW
+
+;----------------------------------------------------------
+;助手
+@MESSAGE_SEISAN_RESEARCH_ASSISTANT
+PRINTFORML %PRINT_TRANSCALLNAME(TARGET)%は研究所で助手としてアルバイトをこなしました。
+PRINTL 
+;口上
+TRYCALLFORM KOJO_ROOT(CFLAG:6, "SEISAN_KENKYU_normal")
+
+CALL REDUCIBLE_PRINTW

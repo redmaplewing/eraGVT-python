@@ -1,0 +1,124 @@
+﻿
+
+
+;休憩
+;--------------------------------------------------
+@KOJO_0_REST_16
+
+	;●襲撃発生との兼ね合い
+	;「日中は街、夜間は自室」が休憩中ヒロインの基本的な定位置
+	;昼…「息抜きがてらに街に出ていた」	→時間的に無理が無い描写を意識する必要あり
+	;夜…「自室で休んでいた」		→夜中までにシーケンスが終わればＯＫ
+
+;Ｂ開発=シャワーで絶頂とか
+
+	;触手拘束具
+	IF CFLAG:42 == 400
+		IF RAND:2 == 0	
+			PRINTFORML 今日も%CALLNAME%の身を%ITEMNAME:(CFLAG:42)%が苛む。
+			IF RAND:4 == 0
+			PRINTFORML 「く、ふぅ……」
+			PRINTFORML 昼も夜もなく、%CALLNAME%の穴という穴は蹂躙され、堪えることのできない吐息が漏れる。
+			PRINTFORML 「っ……んう、うぅぅんっ」
+			PRINTFORMW せめて声だけはと必死に堪えながら、%CALLNAME%は肩を震わせて絶頂に達した。
+			ELSEIF RAND:3 == 0
+			PRINTFORML 「くひゃぅぁぁあっ！？」
+			PRINTFORML 突如勢いよく性感帯を抉られ、たまらず大きな声が漏れた。
+			PRINTFORML 普段はクールな%CALLNAME%の珍しい声色は周囲の注目を集めてしまい、
+			PRINTFORML 「な、なん、でも……な、いぃ……っ」
+			PRINTFORMW 必死に誤魔化しつつも、周囲に見守られながら達してしまった。
+			ELSEIF RAND:2 == 0
+			PRINTFORML 「ふぅ、ひぐ、ぅぅうっ…」
+			PRINTFORML %ITEMNAME:(CFLAG:42)%の責めは容赦ない。
+			PRINTFORML 一人だろうと人前であろうと、%CALLNAME%が気を抜けば性感を抉り、身も心も休まる時がない。
+			PRINTFORML 「また、きちゃ……うぁ、――っ！」
+			PRINTFORMW 休息を得るはずのベッドの中で、また一度%CALLNAME%は望まぬ絶頂に導かれた。
+			ELSE
+			PRINTFORML (なんで、%SELF_CALL()%、こんな……）
+			PRINTFORML 明るく仲間たちが語り合う傍で、静かに%CALLNAME%は絶頂をこらえていた。
+			PRINTFORML 普段はクールに振る舞っていることも幸いして、%CALLNAME%が黙っていても誰も不審に思わない。
+			PRINTFORML けれど、
+			PRINTFORML （嘘でしょ、また、%SELF_CALL()%、みんなの、まえ、で……っ！）
+			PRINTFORMW 声こそ洩らさなかったが、絶頂を迎えた%CALLNAME%の肩は、そうとはっきり分かるほどに震えていた。
+			ENDIF
+		ELSE
+			PRINTFORML  %ITEMNAME:(CFLAG:42)%を装着させられた%CALLNAME%を待っていたものは
+			SELECTCASE RAND:4
+			CASE 0
+			PRINTFORML  耐え難い陵辱の日々だった。触手は起きていようが眠っていようがお構いなしに
+			PRINTFORML  %CALLNAME%の穴という穴を貪り、堕落の淵へと%CALLNAME%を追い込んでいく……
+			PRINTFORML (んっ、く……、また、中で暴れ……～～ッッ！！)
+			CASE 1
+			PRINTFORML  耐え難い屈辱の日々だった。触手は%CALLNAME%の尿道や尻穴に入り込み、
+			PRINTFORML  もぞもぞと蠕動しながら排泄物を食らい、肥え太っていく……
+			PRINTFORML (な、なんてこと……下等生物の苗床にされるだなんて……)
+			CASE 2
+			PRINTFORML  耐え難い恥辱の日々だった。触手は仲間の見えないところでいやらしく蠢き、
+			PRINTFORML  %CALLNAME%の敏感な部分を弄り回し、快楽で飼い慣らしていく……
+			PRINTFORML (忌々しい下等生物……ん、くっ……また……っ！)
+			CASEELSE
+			PRINTFORML  耐え難い辱めの日々だった。触手は仲間の前では醜く肥大した乳首と陰核に擬態し
+			PRINTFORML  開発され尽くした様にしか見えない身体を心配する仲間の優しさがなお辛かった。
+			PRINTFORML (こんなのに寄生されているなんて……言えるわけがない……)
+			ENDSELECT
+		ENDIF
+
+
+	;昼限定メッセージ
+	ELSEIF TIME == 0 && RAND:2
+		;触手拘束具 %ITEMNAME:400%
+		IF CFLAG:42 == 400
+			LOCAL=12 ;施設専用分岐がそれぞれ1/nで発生
+			IF (FLAG:53 & ビューティサロン) && !RAND:(LOCAL)
+
+			ELSEIF (FLAG:53 & ゲームコーナー) && !RAND:(LOCAL)
+
+			ELSEIF (FLAG:53 & マッサージチェア) && !RAND:(LOCAL)
+
+			;汎用休憩
+			ELSE
+
+			ENDIF
+		;★妊娠タイプ分岐
+		ELSE
+			LOCAL=12 ;施設専用分岐がそれぞれ1/nで発生
+			IF (FLAG:53 & ビューティサロン) && !RAND:(LOCAL)
+				;治安悪いと触手の体液塗りこまれて強制発情とか
+			ELSEIF (FLAG:53 & ゲームコーナー) && !RAND:(LOCAL)
+
+			ELSEIF (FLAG:53 & マッサージチェア) && !RAND:(LOCAL)
+
+			;汎用休憩
+			ELSE
+
+			ENDIF
+		ENDIF
+	;夜限定メッセージ
+	ELSEIF TIME == 1 && RAND:2
+		LOCAL=12 ;専用分岐がそれぞれ1/nで発生
+		IF (FLAG:53 & 上質なベッド) && !RAND:(LOCAL)
+		ELSEIF (FLAG:53 & 最高級ベッド) && !RAND:(LOCAL)
+		ELSEIF (FLAG:53 & 観葉植物) && !RAND:(LOCAL)
+		ELSE
+		ENDIF
+		;触手の虜ならオナニーしちゃうとか
+
+	;昼夜不問のメッセージ
+	ELSE
+		LOCAL=12 ;専用分岐がそれぞれ1/nで発生
+		IF (FLAG:53 & シャワー設備) && !RAND:(LOCAL)
+			;敏感だとシャワーで感じてしまうとか
+		ELSEIF (FLAG:53 & 大浴場) && !RAND:(LOCAL)
+
+		ELSEIF (FLAG:53 & 美容温泉) && !RAND:(LOCAL)
+
+		ELSE
+
+		ENDIF
+	ENDIF
+
+
+	;街を歩いていると触手の臭いを嗅がされる
+	;被害に遭う
+	;アイドル流出を脅迫される
+

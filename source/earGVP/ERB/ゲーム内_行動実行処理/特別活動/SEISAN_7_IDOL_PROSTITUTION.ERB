@@ -1,0 +1,235 @@
+﻿;==============================================================================
+;特別活動：枕営業
+; 変数
+;	NAKADASHI	この活動で中出しされたか
+@SEISAN_IDOL_PROSTITUTION
+#DIM DYNAMIC NAKADASHI
+
+PRINTL 枕営業
+PRINTL 
+;処女またはアナル未開発の男の娘
+IF TALENT:処女 > 0 || (TALENT:男の娘 > 0 && ABL:Ａ感覚 < 2)
+	;プロデューサーに口で奉仕（さすがにプロデューサーは処女を奪わない）
+	IF RANDOM(4) != 0
+		;地の文と口上
+		CALL MESSAGE_SEISAN_IDOL_PROSTITUTION_PRODUCER_BLOWJOB
+		
+		;体力気力減少量計算（資金は稼げない）
+		CALL CALC_SEISAN, 特別活動_枕営業, 枕営業_Ｐにフェラ
+		
+		;珠と経験の増加
+		JUEL:習得 += 100
+		EXP:フェラ経験 += 3 + RANDOM(3)
+		EXP:精液経験 += 1
+		
+		;魅了経験の上昇計算
+		CALL SEISAN_IDOL_CHARMUP, 8, 4, 4
+		
+		;露見度を加算
+		CFLAG:283 += 1
+		
+	;低確率で顧客に無理やり犯される
+	ELSE
+		;さらに一定確率で中出しされる
+		SIF RANDOM(2) == 0
+			NAKADASHI = TRUE
+		
+		;地の文と口上
+		CALL MESSAGE_SEISAN_IDOL_PROSTITUTION_VIRGIN_CLIENT, NAKADASHI
+		
+		;アフターピル
+		SIF NAKADASHI && ISFEMALE()
+			CALL AFTER_PILL, TARGET, 35, 望まない相手
+		
+		;体力気力減少量計算（資金は稼げない）
+		CALL CALC_SEISAN, 特別活動_枕営業, 枕営業_Ｐとセックス
+		
+		;珠と経験の増加（オンナなら処女喪失も）
+		IF ISFEMALE()
+			TALENT:処女 = -1
+			CFLAG:206 = 7
+			JUEL:習得 += 175
+			EXP:Ｖ経験 += 3
+			JUEL:快Ｖ += 15 * ABL:Ｖ感覚
+		ELSE
+			JUEL:習得 += 175
+			EXP:Ａ経験 += 3
+			JUEL:快Ａ += 15 * ABL:Ａ感覚
+		ENDIF
+		EXP:Ａ経験 += 1
+		JUEL:快Ａ += 5 * ABL:Ａ感覚
+		EXP:フェラ経験 += 1
+		EXP:精液経験 += 5
+		
+		;魅了経験の上昇計算
+		CALL SEISAN_IDOL_CHARMUP, 12, 8, 6
+		
+		;露見度を加算
+		CFLAG:283 += 2
+		
+		;妊娠判定
+		SIF NAKADASHI && ISFEMALE()
+			CALL NINSIN_HANTEI, 5, 80, 望まない相手
+	ENDIF
+;↓処女ではない
+ELSE
+	;Pへの枕
+	IF RANDOM(3) == 0
+		;昼は口で奉仕だけ
+		IF TIME == 0
+			;地の文と口上
+			CALL MESSAGE_SEISAN_IDOL_PROSTITUTION_PRODUCER_BLOWJOB
+			
+			;体力気力減少量計算（資金は稼げない）
+			CALL CALC_SEISAN, 特別活動_枕営業, 枕営業_Ｐにフェラ
+			
+			;珠と経験の増加
+			JUEL:習得 += 100
+			EXP:フェラ経験 += 3 + RANDOM(3)
+			EXP:精液経験 += 1
+			
+			;魅了経験の上昇計算
+			CALL SEISAN_IDOL_CHARMUP, 8, 4, 4
+			
+			;露見度を加算
+			CFLAG:283 += 1
+			
+		;夜は抱かれる
+		ELSE
+			;地の文と口上
+			CALL MESSAGE_SEISAN_IDOL_PROSTITUTION_PRODUCER_SEX
+			
+			;体力気力減少量計算（資金は稼げない）
+			CALL CALC_SEISAN, 特別活動_枕営業, 枕営業_Ｐとセックス
+			
+			;珠と経験の増加
+			JUEL:習得 += 150
+			IF ISFEMALE()
+				EXP:Ｖ経験 += 3 + RANDOM(3)
+				JUEL:快Ｖ += 10 * ABL:Ｖ感覚
+			ELSE
+				EXP:Ａ経験 += 2
+				JUEL:快Ａ += 10 * ABL:Ａ感覚
+			ENDIF
+			EXP:Ａ経験 += 2 + RANDOM(3)
+			JUEL:快Ａ += 10 * ABL:Ａ感覚
+			EXP:フェラ経験 += 2 + RANDOM(2)
+			EXP:精液経験 += 6 + RANDOM(3)
+			EXP:絶頂経験 += RANDOM(3)
+
+			;魅了経験の上昇計算
+			CALL SEISAN_IDOL_CHARMUP, 10, 5, 2
+			
+			;露見度を加算
+			CFLAG:283 += 2
+			
+			;アフターピル
+			CALL AFTER_PILL, TARGET, 35, 望まない相手
+			
+			;妊娠判定
+			SIF ISFEMALE()
+				CALL NINSIN_HANTEI, 5, 40, 望まない相手
+		ENDIF
+		
+	;お偉いさんへの枕
+	ELSEIF RANDOM(2) == 0
+		;V好き
+		IF RANDOM(2) == 0 && ISGIRLY()
+			;地の文と口上
+			CALL MESSAGE_SEISAN_IDOL_PROSTITUTION_VIP_V
+			
+			;体力気力減少量計算（資金は稼げない）
+			CALL CALC_SEISAN, 特別活動_枕営業, 枕営業_Ｖマニア
+			
+			;珠と経験の増加
+			JUEL:習得 += 225
+			JUEL:恐怖 += 100
+			IF ISFEMALE()
+				EXP:Ｖ経験 += 26 + RANDOM(5)
+				JUEL:快Ｖ += 20 * ABL:Ｖ感覚
+			ELSE
+				EXP:Ａ経験 += 26 + RANDOM(5)
+				JUEL:快Ａ += 20 * ABL:Ａ感覚
+			ENDIF
+			EXP:フェラ経験 += 2 + RANDOM(2)
+			EXP:精液経験 += 13 + RANDOM(3)
+			EXP:絶頂経験 += 3 + RANDOM(3)
+			
+			;妊娠判定。低確率だがピル貫通
+			SIF ISFEMALE()
+				CALL NINSIN_HANTEI, 10, 5, 望まない相手
+		;A好き
+		ELSE
+			;地の文と口上
+			CALL MESSAGE_SEISAN_IDOL_PROSTITUTION_VIP_A
+			
+			;体力気力減少量計算（資金は稼げない）
+			CALL CALC_SEISAN, 特別活動_枕営業, 枕営業_Ａマニア
+			
+			;珠と経験の増加
+			JUEL:習得 += 225
+			JUEL:恥情 += 100
+			JUEL:快Ａ += 20 * ABL:Ａ感覚
+			EXP:Ａ経験 += 26 + RANDOM(5)
+			EXP:フェラ経験 += 2 + RANDOM(2)
+			EXP:精液経験 += 13 + RANDOM(3)
+			EXP:絶頂経験 += 3 + RANDOM(3)
+		ENDIF
+		
+		;魅了経験の上昇計算
+		CALL SEISAN_IDOL_CHARMUP, 16, 8, 3
+		
+		;露見度を加算
+		CFLAG:283 += 2
+		
+	;ファン枕
+	ELSE
+		;地の文と口上
+		CALL MESSAGE_SEISAN_IDOL_PROSTITUTION_FAN
+			
+		;体力気力減少量計算（資金は稼げない）
+		CALL CALC_SEISAN, 特別活動_枕営業, 枕営業_輪姦
+		
+		;珠と経験の増加
+		JUEL:習得 += 300
+		IF ISFEMALE()
+			EXP:Ｖ経験 += 27 + RANDOM(5)
+			JUEL:快Ｖ += 20 * ABL:Ｖ感覚
+		ELSE
+			EXP:Ａ経験 += 27 + RANDOM(5)
+			JUEL:快Ａ += 20 * ABL:Ａ感覚
+		ENDIF
+		EXP:Ａ経験 += 27 + RANDOM(5)
+		JUEL:快Ａ += 20 * ABL:Ａ感覚
+		EXP:フェラ経験 += 28 + RANDOM(5)
+		EXP:精液経験 += 30 + RANDOM(5)
+		EXP:絶頂経験 += 10 + RANDOM(5)
+		
+		;魅了経験の上昇計算
+		CALL SEISAN_IDOL_CHARMUP, 20, 10, 12
+		
+		;露見度を加算
+		CFLAG:283 += 3
+		
+		;人気度の上昇
+		LOCAL:2 = 0
+		SIF RANDOM(100) < 50
+			LOCAL:2 += 1
+		SIF RANDOM(100) < 25
+			LOCAL:2 += 1
+		IF LOCAL:2 > 0
+			FLAG:853 += LOCAL:2
+			PRINTFORML 人気度が{LOCAL:2}上がった
+		ENDIF
+		;アフターピル
+		CALL AFTER_PILL, TARGET, 10, 誰とも知れない相手
+		
+		;妊娠判定
+		SIF ISFEMALE()
+			CALL NINSIN_HANTEI, 15, 80, 誰とも知れない相手
+	ENDIF
+ENDIF
+
+;一定確率でストーカーフラグを加算
+SIF RANDOM(100) < 50
+	CFLAG:285 += 1

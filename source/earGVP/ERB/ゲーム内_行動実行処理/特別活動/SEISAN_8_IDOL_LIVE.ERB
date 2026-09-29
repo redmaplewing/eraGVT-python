@@ -1,0 +1,100 @@
+﻿;==============================================================================
+;特別活動：ライブ公演
+; 変数
+;	AUDIENCE	観客数
+;	PAYMENT		支払額
+;	CHARM_BASE	魅了経験上昇量基礎値
+;	FEAT_RAND	魅了経験上昇のFEATによる変動の乱数値
+;	CHARM_RAND	魅了経験上昇の乱数変動値
+@SEISAN_IDOL_LIVE
+#DIM DYNAMIC AUDIENCE
+#DIM DYNAMIC PAYMENT
+#DIM CHARM_BASE
+#DIM FEAT_RAND
+#DIM CHARM_RAND
+
+PRINTL ライブ公演
+PRINTL 
+;触手拘束具
+IF CFLAG:42 == 400 && RANDOM(2) == 0
+	;地の文と口上
+	CALL MESSAGE_SEISAN_IDOL_LIVE,特別活動結果_絶頂失敗
+	
+	;資金稼ぎ計算
+	CALL CALC_SEISAN, 特別活動_ライブ公演, 特別活動結果_絶頂失敗
+	AUDIENCE = RESULT:0
+	PAYMENT = RESULT:1
+
+;失敗（FEAT効果により阻止可能）
+ELSEIF TALENT:ラッキーチャーム == 0 && RANDOM(2 + (EXP:魅了経験 / 20)) == 0
+	;地の文と口上
+	CALL MESSAGE_SEISAN_IDOL_LIVE,特別活動結果_失敗
+	
+	;資金稼ぎ計算
+	CALL CALC_SEISAN, 特別活動_ライブ公演, 特別活動結果_失敗
+	AUDIENCE = RESULT:0
+	PAYMENT = RESULT:1
+
+;大成功
+ELSEIF RANDOM(8) < (EXP:魅了経験 / 100)
+	;地の文と口上
+	CALL MESSAGE_SEISAN_IDOL_LIVE,特別活動結果_大成功
+	
+	;資金稼ぎ計算
+	CALL CALC_SEISAN, 特別活動_ライブ公演, 特別活動結果_大成功
+	AUDIENCE = RESULT:0
+	PAYMENT = RESULT:1
+	
+	;魅了経験の上昇値設定
+	CHARM_BASE = 12
+	FEAT_RAND  = 6
+	CHARM_RAND = 2
+
+;成功
+ELSE
+	;地の文と口上
+	CALL MESSAGE_SEISAN_IDOL_LIVE,特別活動結果_成功
+	
+	;資金稼ぎ計算
+	CALL CALC_SEISAN, 特別活動_ライブ公演, 特別活動結果_成功
+	AUDIENCE = RESULT:0
+	PAYMENT = RESULT:1
+	
+	;魅了経験の上昇値設定（アイドルレベルが高い場合は大成功でないと伸びない）
+	IF IDOL_LV(TARGET) < 4
+		CHARM_BASE = 8
+		FEAT_RAND  = 4
+		CHARM_RAND = 2
+	ELSE
+		CHARM_BASE = 2
+		FEAT_RAND  = 0
+		CHARM_RAND = 3
+	ENDIF
+ENDIF
+
+PRINTFORML {AUDIENCE}人の来場者を迎え、%PRINT_TRANSCALLNAME(TARGET)%はギャラとして{PAYMENT}＄の資金を稼ぎました。
+CFLAG:400=AUDIENCE
+
+;魅了経験の上昇値があるなら上昇処理
+SIF CHARM_BASE > 0
+	CALL SEISAN_IDOL_CHARMUP, CHARM_BASE, FEAT_RAND, CHARM_RAND
+
+;人気度の上昇
+LOCAL:2 = 0
+SIF RANDOM(100) < 50
+	LOCAL:2 += 1
+SIF RANDOM(100) < 50
+	LOCAL:2 += 1
+SIF RANDOM(100) < 50
+	LOCAL:2 += 1
+IF LOCAL:2 > 0
+	FLAG:853 += LOCAL:2
+	PRINTFORML 人気度が{LOCAL:2}上がった
+ENDIF
+
+;いくら失敗してもデビュー前の評価には戻らない
+SIF EXP:魅了経験 < 100
+	EXP:魅了経験 = 100
+
+;実績
+CALL GET_STATE_EXPUP,TARGET
