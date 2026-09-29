@@ -18,8 +18,8 @@
 
 ## 下一步
 
-- **使用者決定**：`docs/wiki/bridge/deviations.md` 各項（特別是「亂數」「身體資料生成」「FLASHNEWS」「[1]はい 會中斷」）。
-- **S04**：行動執行 + 回合結束（規格待寫）。建議範圍：
+- deviations.md 各項：使用者 2026-09-29 裁決「暫時維持現狀，嚴重到無法推進時再評估」。
+- **S04**：行動執行 + 回合結束 → 規格 `docs/sessions/S04-action-turnend.md`。範圍摘要：
   1. `ゲーム内_行動実行処理/ACTION.ERB@ACTION_MAIN`:6–175（一次處理一名角色）＋`REST`、`TRAINING` 兩種行動先做；
      其餘行動（出撃→TRAIN 屬 S05；活動／防衛／支援／情報／自由）先以 `NotImplementedError` 或 DEVIATION 佔位。
   2. `インターミッション画面/SHOP_TURNEND.ERB@EVENTTURNEND`:3–139 的主幹（`JUMP ACTION_MAIN` 迴圈、SET_PARTYMEMBER、
