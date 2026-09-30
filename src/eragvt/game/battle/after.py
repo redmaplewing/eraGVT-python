@@ -395,6 +395,6 @@ def event_end(ctx: Ctx) -> Step:
     ):
         from ..ending import ending_1
 
-        ending_1(ctx)  # :528（本文の後、ゲームオーバーモードが未移植なので停止）
+        ending_1(ctx)  # :528（ゲームオーバーモードに移行して戻る → :536 BEGIN TURNEND）
     # :531–532 実績のみ（deviations.md「全域資料」）
     return Step.TURNEND

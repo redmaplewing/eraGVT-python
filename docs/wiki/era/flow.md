@@ -173,3 +173,37 @@ MODE_SELECT（:297）沒有預設值，`[1] NORMAL` 是第一個選項（S03 起
 - 找不到函式時 `RETURN -1`，呼叫端據此決定是否回落地の文。
 
 → 這正是 PLAN 的 `NarrationService` 介面：`(口上番號, 代碼, 性格) → 文字 | 無`。
+
+## 9. ゲームオーバーモード（S12）
+
+路徑：GAMEMODE.ERB = `ゲーム内_イベント発生/オープニング処理_カスタムGAMEMODE.ERB`、ENDING.ERB = `ゲーム内_イベント発生/エンディング/ENDING.ERB`。
+
+- **定義**：`FLAG:0`（オプション bit 列）＝ 0。`MODE_GAMEOVER = 0`、`モードオプション:0 = 0b00000000000`（`DIM.ERH`:40、:83–92）。
+  `CHECK_GAMEOVER_F()` = `GAME_MODE_CHECK_F() == MODE_GAMEOVER`（GAMEMODE.ERB:116–118）＝ FLAG:0 == 0。
+  `GAME_MODE_CHECK`（CALL 版、:124–130）は FLAG:906（周回で時間制限解除）≠ 0 のとき各モードに `| 64` して比べる（@SAVEINFO が使用）。
+  FLAG:0 = 0 なので `GAME_OPTION_CHECK_F(任意)` も全部 0（ソロ・サンドボックス等の分岐も通らない）。
+- **入口**：`CHANGE_GAMEOVER_MODE`（:112–114）= `FLAG:0 = 0`、`DAY:2 = DAY*2+TIME`（RETURN 無し、次の `@` で関数終端：
+  `reference/emuera-1824/Emuera/GameProc/Process.ScriptProc.cs`:61–67）。呼び出し元は ENDING_1（全滅、:295–302）、
+  ENDING_4（ソロ洗脳／悪堕ち、:553–563）、ENDING_5（ソロ取り込まれ、:645–654）。いずれも続けて `FLAG:999 = -998`、`FORCEWAIT`
+  で**呼び出し元へ戻る**（タイトルに戻らない）。
+  - ENDING_1 ← `BATTLE_TRAIN_AFTER.ERB@EVENTEND`:527–528（SAFE + ENSLAVED が 0、非ソロ、非サンドボックス、非ゲームオーバー）→ :536 `BEGIN TURNEND`。
+    敗北で `FLAG:799 -= 1`（`BATTLE_COM_AFTER.ERB`:1091–1092）されているので、EVENTTURNEND:15–16 から残りキャラの ACTION_MAIN
+    （全員操作不能 → スキップ、FLAG:799 == 0 なら「行動開始！」がもう一度出る）→ TURNEND 本体。
+  - ENDING_4／5 ← `PRISON.ERB@PRISON_EVENT`:367–370／:417–420（DRAWLINE・RETURN）→ `@PRISON`:32–33 `FLAG:999 == -998` で BREAK。
+- **`FLAG:999 = -998`**：FLAG:999 は本来デバッグフラグ（== 1）。-998 は「ゲームオーバーモードに入った直後」の目印で、
+  次の `@PRISON`（:5–8）が 0 に戻す。-998 のまま通る読み取りは `IF FLAG:999`（非 0 判定）系のみ意味を持つ：
+  ソロの ENDING_4／5 の後は同ターンの SHOW_SHOP:26 で背景色 0,0,40（Web も `FLAG:999` 非 0 で同色）。
+  全 ERB の `FLAG:999` 參照 100 行（口上 0）を確認済み、他は `== 1`／`> 0` 判定か、この区間では通らない。
+- **ゲームオーバーモード中の流れ**（全員 CFLAG:0 ≠ 0 のまま、救出も脱出（:295 はソロ／サンドボックスのみ）も無い）：
+  SHOP → [100]（確認なし：SHOP.ERB:504／:534）→ ACTION_MAIN は全員スキップ → EVENTTURNEND → `@PRISON` が
+  **CFLAG:0 に関係なく全キャラ**（洗脳 2・悪堕ち 3・取り込まれ 9 も）に PRISON_EVENT（:13）→ … → SHOP。
+  陥落判定は CFLAG:0 == 1 のみ（:187）。地の文 `MESSAGE_PRISON_PRISENTENCE`:225–258 に 2／3／9 用の文あり。
+- **CHECK_GAMEOVER_F の分岐**（`CHECK_GAMEOVER_F|GAME_MODE_CHECK|MODE_GAMEOVER` を全 ERB で grep：定義込み 43 行、口上 0）：SHOP.ERB:133–171（行動選択・強化・衣装・メディカル・購入・施設・スケジュールを
+  隠す）、:253–277（同じ番号の入力を無視）、:405（殲滅猶予を出さない）、:504／:534（確認なし）、:617（行動予定を変えない）；
+  SHOP_TURNEND.ERB:186（支援金・支出なし）、:199（ニュース FLAG:60 = 10001）、:380（防衛力 0）、:461（人気度変動なし）；
+  SET_PARTYMEMBER.ERB:10（妊娠による出撃取消メッセージなし）；BATTLE_TRAIN_AFTER.ERB:527；ENDING.ERB:9／:74（クリア・日数超過判定なし）；
+  PRISON.ERB:13；地の文 MESSAGE_PRISON.ERB:225–258（catalog）。未移植系統内：PREGNANT_CHILD_BIRTH.ERB:127／:154、
+  FORCE_悪堕ちキャラの淫謀.ERB:1609（AKUOTI_EVENT）、SCORE／SUCCESSION（GAME_MODE_CHECK_F、結局後）。
+- **注意**：防衛力 0 のため `AKUOTI_ATTACK`（悪堕ちキャラが居れば）は毎ターン必ず発生（AKUOTI_EVENT 未移植 → 停止）。
+  取り込まれ（CFLAG:0 = 9、苗床化）が居ると `BIRTH_AUTO_RANDOM`:671– の苗床出産が毎ターン 1/4 で発生（未移植 → 停止）。
+  FLASHNEWS の 10001 番（DAY:2 から経過ターン数を出す）も未移植（FLASHNEWS 全体が deviations）。

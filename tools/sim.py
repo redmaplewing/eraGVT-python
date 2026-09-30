@@ -7,7 +7,8 @@
 停止條件：Web「停止」（未移植 → NotImplementedError 的訊息）、SHOP 次數達 `--max-shop`、輸入步數達 `--max-steps`、
 其他例外（記為「例外: 型別」）。
 
-輸出：停止原因頻度、停止前經過的 SHOP 次數（平均／最多）、敗北局數（曾有人幽閉 CFLAG:0 == 1）與敗北後 SHOP 平均。
+輸出：停止原因頻度、停止前經過的 SHOP 次數（平均／最多）、敗北局數（曾有人幽閉 CFLAG:0 == 1）與敗北後 SHOP 平均、
+ゲームオーバーモード（FLAG:0 == 0，S12）進入局數與進入後 SHOP 平均（＝再走幾回合）及其停止原因。
 停止原因以訊息的前 `--key-len` 字歸類。
 """
 
@@ -48,18 +49,21 @@ def run_one(data, narration, seed: int, preset: str, max_shop: int, max_steps: i
     s.input(0 if preset == "default" else 1)
     shops = 0
     defeated_at: int | None = None
+    gameover_at: int | None = None
     reason = "上限"
     steps = 0
     mark = len(s.out.lines)
     while steps < max_steps:
         steps += 1
+        st = s.state
+        if st is not None and defeated_at is None and any(st.charas[i].cflag[0] == 1 for i in range(1, st.charanum)):
+            defeated_at = shops
+        if st is not None and gameover_at is None and st.flag[0] == 0:  # CHANGE_GAMEOVER_MODE 後
+            gameover_at = shops
         if s.phase == Phase.HALTED:
             text = next((ln.text for ln in reversed(s.out.lines) if ln.text.startswith(HALT_PREFIX)), "")
             reason = text[len(HALT_PREFIX):].rstrip("）")
             break
-        st = s.state
-        if st is not None and defeated_at is None and any(st.charas[i].cflag[0] == 1 for i in range(1, st.charanum)):
-            defeated_at = shops
         try:
             if s.phase == Phase.SHOP:
                 shops += 1
@@ -83,7 +87,7 @@ def run_one(data, narration, seed: int, preset: str, max_shop: int, max_steps: i
             break
     else:
         reason = "步數上限"
-    return {"seed": seed, "reason": reason, "shops": shops, "defeated_at": defeated_at}
+    return {"seed": seed, "reason": reason, "shops": shops, "defeated_at": defeated_at, "gameover_at": gameover_at}
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -111,9 +115,16 @@ def main(argv: list[str] | None = None) -> int:
     print(f"SHOP 次數：平均 {sum(shops) / n:.2f}／最多 {max(shops)}")
     after = [r["shops"] - r["defeated_at"] for r in lost]
     print(f"敗北局 {len(lost)}" + (f"／敗北後 SHOP 平均 {sum(after) / len(after):.2f}" if after else ""))
+    go = [r for r in results if r["gameover_at"] is not None]
+    go_after = [r["shops"] - r["gameover_at"] for r in go]
+    print(f"ゲームオーバーモード進入 {len(go)}" + (f"／進入後 SHOP 平均 {sum(go_after) / len(go_after):.2f}／最多 {max(go_after)}" if go else ""))
     print("停止原因：")
     for k, v in Counter(r["reason"][: a.key_len] for r in results).most_common():
         print(f"  {v:4d}  {k}")
+    if go:
+        print("停止原因（ゲームオーバーモード進入局）：")
+        for k, v in Counter(r["reason"][: a.key_len] for r in go).most_common():
+            print(f"  {v:4d}  {k}")
     return 0
 
 

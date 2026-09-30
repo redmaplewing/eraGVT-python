@@ -1,8 +1,9 @@
 """エンディング：`ゲーム内_イベント発生/エンディング/ENDING.ERB`（路徑相對 `source/earGVP/ERB/`）。
 
-S08 では幽閉から到達する @ENDING_4（ソロモードで洗脳／悪堕ち）と @ENDING_5（ソロモードで取り込まれ）の本文まで。
-両者とも最後に `CALL CHANGE_GAMEOVER_MODE / FLAG:999 = -998`（ゲームオーバーモードへ移行し、全キャラが陵辱され続ける
-モードで続行）するが、ゲームオーバーモードは未移植なので本文を出した後で停止する（Web は結末を表示して「タイトルに戻る」）。
+@ENDING_1（全滅）、@ENDING_4（ソロモードで洗脳／悪堕ち）、@ENDING_5（ソロモードで取り込まれ）。
+いずれも最後に `CALL CHANGE_GAMEOVER_MODE` → `FLAG:999 = -998` → `FORCEWAIT` で呼び出し元へ戻り、
+ゲームオーバーモード（FLAG:0 = 0：全キャラが陵辱され続けるモード）でそのまま続行する（S12、`docs/wiki/era/flow.md` §9）。
+FLAG:999 = -998 は次の `@PRISON`（PRISON.ERB:5–8）で 0 に戻る目印（PRISON のループを :32–33 で打ち切る）。
 """
 
 from __future__ import annotations
@@ -24,8 +25,18 @@ def _gameover(ctx: Ctx) -> None:
     out.printl("　　ゲームオーバーモードに移行します。")
     out.printw("　（全キャラが凌辱され続け、終わりはありません。飽きたら終了しましょう）")
     out.printl()
-    # DEVIATION: 原作は CHANGE_GAMEOVER_MODE → FLAG:999 = -998 で続行する。未移植なので停止（deviations.md「幽閉的未移植分岐」）
-    raise NotImplementedError("ゲームオーバーモード（CHANGE_GAMEOVER_MODE）は未移植：GAME OVER")
+    _enter_gameover_mode(ctx)
+
+
+def _enter_gameover_mode(ctx: Ctx) -> None:
+    """ENDING_1:299–302／ENDING_4:560–563／ENDING_5:651–654：`CALL CHANGE_GAMEOVER_MODE`、`FLAG:999 = -998`、`FORCEWAIT`
+    （スキップで省略できない WAIT：reference/emuera-1824/Emuera/GameProc/Function/BuiltInFunctionCode.cs:52、
+    FunctionIdentifier.cs:198 `new WAIT_Instruction(true)`）。"""
+    from .shop import change_gameover_mode
+
+    change_gameover_mode(ctx.state)
+    ctx.state.flag[999] = -998
+    ctx.out.wait()
 
 
 def ending_4(ctx: Ctx) -> None:
@@ -229,8 +240,7 @@ def ending_1(ctx: Ctx) -> None:
     # $SKIP :261–304
     if game_option(st, GameOption.ENDLESS):
         raise NotImplementedError("エンドレスモードの全滅（ENDING_1:266–）は未移植")
-    out.printl("　　ゲームオーバーモードに移行します。")
+    out.printl("　　ゲームオーバーモードに移行します。")  # :295–297
     out.printw("　（全キャラが凌辱され続け、終わりはありません。飽きたら終了しましょう）")
     out.printl()
-    # DEVIATION: 原作は :299–302 CHANGE_GAMEOVER_MODE → FLAG:999 = -998 → FORCEWAIT で続行する。未移植なので停止
-    raise NotImplementedError("ゲームオーバーモード（CHANGE_GAMEOVER_MODE）は未移植：全滅エンド")
+    _enter_gameover_mode(ctx)  # :299–302

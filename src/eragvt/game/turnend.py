@@ -356,12 +356,28 @@ def grow_hantei(ctx: Ctx) -> None:
 
 
 def akuoti_attack(ctx: Ctx) -> None:
-    """`ゲーム内_イベント発生/強制発生イベント/FORCE_悪堕ちキャラの淫謀.ERB@AKUOTI_ATTACK`:5–29：
-    候補は CFLAG:0 == 状態_悪堕ち のキャラのみ。"""
+    """`ゲーム内_イベント発生/強制発生イベント/FORCE_悪堕ちキャラの淫謀.ERB@AKUOTI_ATTACK`:5–29 の候補抽選。
+    候補（CFLAG:0 == 3 かつ ISHOLE かつ `MIN(RAND:(SQRT(FLAG:852)/2+20), 100) < LOCAL`、`&&` は短絡なので RAND は前の条件が
+    真のときだけ引く：reference/emuera-1824/Emuera/GameData/Expression/OperatorMethod.cs:524–555）が居れば
+    :27–29 AKUOTI_EVENT（未移植）→ 停止。ゲームオーバーモードでは防衛力 FLAG:852 = 0（DAILY_DEFENCE_CHANGE:380–383）なので
+    RAND:20 は昼 40・夜 20 未満に必ずなり、悪堕ちキャラが居れば必ず発生する。"""
+    from .battle.core import add_randchoose, choicecount, clear_randchoose
+
     st = ctx.state
-    for i in range(1, st.charanum):
-        if st.charas[i].cflag[0] == CharaState.CORRUPTED:
-            raise NotImplementedError("悪堕ちキャラの淫謀（AKUOTI_ATTACK）は未移植")
+    local = 40 if st.time == 0 else 20  # :7–13
+    clear_randchoose(st)  # :15
+    for i in range(st.charanum):  # :16–22
+        if i == GameState.MASTER:
+            continue
+        if (
+            st.charas[i].cflag[0] == CharaState.CORRUPTED
+            and _ishole(ctx, i)
+            and min(st.rng.rand(div(isqrt(st.flag[852]), 2) + 20), 100) < local
+        ):
+            add_randchoose(st, i)
+    if choicecount(st) == 0:  # :24–25
+        return
+    raise NotImplementedError("悪堕ちキャラの淫謀（AKUOTI_EVENT）は未移植")
 
 
 def self_night(ctx: Ctx) -> None:

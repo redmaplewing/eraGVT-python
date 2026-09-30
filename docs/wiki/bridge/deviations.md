@@ -16,7 +16,8 @@ ERB 路徑相對 `source/earGVP/ERB/`。
   `eragvt.game.body`）。查證結果：初期セットのキャラは `NO ≠ 0`（:498 條件不成立）→ 原作本來就不生成，BASE:40–48／CFLAG:33–34 為 0
   與原作一致（`docs/wiki/era/body-profile.md`）。S10：汎用キャラ的隨機生成（:507–980）與 AGE_SETTING 的年齢指定（CSTR:204–206）
   已移植；仍未移植：角色製作／狀態畫面的手動生成（UI）、TOINT 的 16／2 進與指數表記（停止）。
-- [ ] **FLASHNEWS 未移植**：新聞產生（含亂數、寫入 `SAVESTR:20`、`FLAG:60`）沒有執行，畫面顯示「（未實作）」。（原作：`インターミッション画面/SHOP_FLASHNEWS.ERB@FLASHNEWS`:3–752；Python：`eragvt.game.shop.flashnews`）
+- [ ] **FLASHNEWS 未移植**：新聞產生（含亂數、寫入 `SAVESTR:20`、`FLAG:60`）沒有執行，畫面顯示「（未實作）」。
+  ゲームオーバーモードの固定ニュース（`FLAG:60 = 10001`，:91–；DAY:2 起算的經過ターン數）也不顯示（FLAG:60／DAY:2 照原作設定）。（原作：`インターミッション画面/SHOP_FLASHNEWS.ERB@FLASHNEWS`:3–752；Python：`eragvt.game.shop.flashnews`）
 - [ ] **全域資料（GLOBAL）不讀不寫**：永遠走「真正的初次啟動」路徑（MOB_FLAG 初始化為 100、不套用 GLOBAL 的 config／性嗜好フィルタ），也不存成就等全域資料。（原作：`オープニング処理.ERB@EVENTFIRST`:29–45、`バージョン間互換処理.ERB@UPDATE`:95–130；Python：`eragvt.game.opening.event_first`）— 等設定畫面／成就功能時一起做。
   S05 起戰鬥中的 `UNLOCK_ACHIEVEMENT`（タクティカルオーダー、絶体絶命ヒロイン等）與 `GET_STATE_ABLUP` 同樣不執行（`eragvt.game.battle.core.unlock_achievement`）。
   S04 起同理不執行：`SHOP_TURNEND.ERB@UPDATE_STATUS_RECORD`:263–349（歷代最高紀錄 GLOBAL:103–131／GLOBALS、SAVEGLOBAL）與 `SHOP_TROPHY.ERB@GET_STATE_TROPHY`:398–441→`UNLOCK_ACHIEVEMENT`（成就達成訊息不會顯示）。（Python：`eragvt.game.turnend.recalc_partymember`、`eragvt.game.action.get_state_trophy`）
@@ -42,8 +43,10 @@ ERB 路徑相對 `source/earGVP/ERB/`。
 - [ ] **幽閉的未移植分岐會停止遊戲**（S08 新增）：受精成立（`NINSIN_HANTEI`:140 以降，幽閉中常見）、（膨乳化的
   `SET_PROFILE` 已於 S09 接上）、ラスボス／悪堕ちキャラ 的幽閉（`TENTACLE_ACCESS_PRISON` 的
   LASTBOSS 分岐、悪堕ち的 PALAM_HOSEI）、`CORRUPT_CHANGE_LOOKS_MAIN`:24–（設定 CONFIG_CHECK_PRISON_F(4) ON 時）、`RECOVER_CORRUPTION`、
-  `RESCUE_CHILD`、TS 性別變化（`TS_MtoF` 等）、ラスボス出現後的淫紋陥落、ゲームオーバーモード（`CHANGE_GAMEOVER_MODE`：ENDING_1／4／5
-  的本文顯示後停止）。（Python：`eragvt.game.prison.*`、`party`、`ending`、`turnend._inmon_fall` 的 `raise NotImplementedError`）
+  `RESCUE_CHILD`、TS 性別變化（`TS_MtoF` 等）、ラスボス出現後的淫紋陥落（ゲームオーバーモードは S12 接上；ENDING_1 的
+  エンドレス分岐 :266–293 仍停止）。ゲームオーバーモード中常見的停止：苗床出産（`BIRTH_AUTO_RANDOM`:671–）、
+  悪堕ちキャラの淫謀（`AKUOTI_EVENT`，防衛力 0 時悪堕ちキャラ一在就必定發生）。
+  （Python：`eragvt.game.prison.*`、`party`、`ending`、`turnend._inmon_fall`、`turnend.akuoti_attack` 的 `raise NotImplementedError`）
   — 依規格「牽涉未移植系統時照 S06 慣例停止」。
 - [ ] **振り解く判定的 `LOCAL:O`**（S06 新增，**需裁決**）：`ゲーム内_戦闘処理/COMMON_BATTLE_HANTEI.ERB`:241／:245
   `SIF LOCAL:5 <= 45 && LOCAL:O > 49` 的 `O` 是英文字母，全作沒有這個識別子（grep 僅此 2 處）。1.824 在執行到該行時
@@ -70,6 +73,8 @@ ERB 路徑相對 `source/earGVP/ERB/`。
   RESULT 時會不同）。（Python：`eragvt.narration.runtime`）
 - [ ] **SHOW_SHOP 簡化**：狀態條（`COLOR_BAR` 的色階與長度）以 20 格單色近似；`SHOW_SHOP_STATUS_SIGN`（生理周期・疲勞等標記）、隊伍列表的欄寬對齊與第 2 行詳細、控えメンバー一覽未移植；`SHOP_NG_ACTION_INFO` 的紅字在函式結尾重設顏色（原作不重設）。（Python：`eragvt.game.shop`）
 - [ ] **未實作的選單**：`[50]`、`[110]`〜`[180]`、`[700]`、`[800]` 只顯示「（未實作）」。（`[100]` 已於 S04 接上行動執行。）
+  S12：`[110]`〜`[160]` 先照 USERSHOP:246–285 的條件判斷（ゲームオーバーモード中 [111]〜[150] 不做任何事、[110] 先 LIMIT TARGET、
+  [160] 無可選角色時印原作訊息），條件成立時才顯示「（未實作）」。
 - [ ] **WAIT／PRINTW 不阻塞**：Web 一次顯示到下一個 INPUT 為止，WAIT 位置以虛線標示，不需按鍵繼續。（Python：`eragvt.game.session`、`eragvt.web`）
 - [ ] **存檔格式與檔名**：JSON（`saves/saveNN.json`），不是 Emuera 的 `.sav`；存檔說明文字（日時＋`@SAVEINFO`）與一覽格式照原作。
 - [ ] **Web 專用按鈕**：頁尾「タイトルに戻る」（重建 session）是原作沒有的。
@@ -100,7 +105,7 @@ ERB 路徑相對 `source/earGVP/ERB/`。
 - [ ] **HTML_PRINT 的子集**（S11 新增，只影響顯示）：只支援原作用到的 `<font color>`／`<nonbutton title>`（tooltip 以 Web 的
   title 屬性顯示）；其他タグ停止。（Python：`eragvt.text.TextOutput.html_print`）
 - [ ] **Web 停止狀態**：遇到未移植處理時顯示「（未實作のため停止しました：…）」並停住，是原作沒有的畫面（見上「S04 未翻的行動」）。
-  S08：全滅（ENDING_1）與ソロ的 ENDING_4／5 在顯示結局本文後，因ゲームオーバーモード未移植而以此畫面停止（「タイトルに戻る」）。
+  （S08 的全滅／ソロ結局後停止已於 S12 解除：照原作進入ゲームオーバーモード繼續。）
 
 ## 原作行為（照翻，但請留意）
 

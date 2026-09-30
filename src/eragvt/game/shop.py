@@ -63,6 +63,24 @@ def game_mode_check(state: GameState) -> int:
     return -1
 
 
+def game_mode_check_proc(state: GameState) -> int:
+    """`@GAME_MODE_CHECK`（同:124–130、RESULT を返す CALL 版）：周回要素で時間制限を解除していれば（FLAG:906 ≠ 0）
+    各モードのオプションに 64（OPTION_制限時間無し = bit 6）を足して比べる。@SAVEINFO（オープニング処理.ERB:586）が使う。"""
+    extra = 64 if state.flag[906] else 0
+    for mode, opts in MODE_OPTIONS.items():
+        if state.flag[0] == (opts | extra):
+            return int(mode)
+    return -1
+
+
+def change_gameover_mode(state: GameState) -> None:
+    """`@CHANGE_GAMEOVER_MODE`（同:112–114）：FLAG:0 = 0（全オプション OFF = MODE_GAMEOVER、DIM.ERH:40／:83–92）、
+    DAY:2 = DAY*2+TIME（全滅時点の半日数。SHOP_FLASHNEWS.ERB:93 がゲームオーバー後の経過ターン数に使う）。
+    RETURN は無いが次の `@CHECK_GAMEOVER_F` ラベルで関数終端（reference/emuera-1824/Emuera/GameProc/Process.ScriptProc.cs:61–67）。"""
+    state.flag[0] = 0
+    state.day[2] = state.day[0] * 2 + state.time
+
+
 def charanum_safe(state: GameState) -> int:
     """`汎用関数/CHARANUM.ERB@CHARANUM_SAFE`:9–16。"""
     return (state.charanum - 1) - sum(1 for c in state.charas[1:] if c.cflag[0] not in (0, 10, 11))
@@ -611,6 +629,30 @@ def select_target(state: GameState, out: TextOutput, value: int) -> None:
         out.printl()
 
 
+def usershop_calls_submenu(state: GameState, value: int) -> bool:
+    """USERSHOP:246–278 の [110]〜[150]：原作がその画面を呼ぶか（呼ぶ画面自体は未移植）。
+    ゲームオーバーモードでは [111]〜[150] は何もしない（`SIF CHECK_GAMEOVER_F() == 0 && …`）。
+    [110] は呼ぶ前に `TARGET = LIMIT(TARGET, 1, CHARANUM-1)`（:248）。"""
+    if value == 110:
+        state.target = limit(state.target, 1, state.charanum - 1)
+        return True
+    gameover = check_gameover(state)
+    if value in (111, 112):  # :252–259
+        return not gameover and charanum_active(state) != 0
+    if value in (113, 120):  # :262–269
+        return not gameover and state.flag[63] == 0
+    if value == 150:  # :276–278
+        return not gameover
+    raise ValueError(value)
+
+
+def schedule_selectable(state: GameState) -> bool:
+    """USERSHOP:281–285 [160]：`CFLAG:0 != 状態_無事 || TARGET == MASTER || FLAG:9` なら
+    「スケジュールを設定するキャラクターが選択されていません」（PRINTW）。"""
+    t = state.charas[state.target]
+    return not (t.cflag[0] != CharaState.SAFE or state.target == GameState.MASTER or state.flag[9])
+
+
 def toggle_party_view(state: GameState, out: TextOutput) -> None:
     """USERSHOP:218–227 控え表示切り替え。"""
     if charanum_safe_partycheck(state):
@@ -782,7 +824,7 @@ _MODE_NAMES = ("GAMEOVER", "NORMAL", "SOLO", "HARDCORE", "SURVIVAL", "FREEPLAY",
 
 def save_info(state: GameState, data: GameData) -> str:
     """`ゲーム内_イベント発生/オープニング処理.ERB@SAVEINFO`:583–614 の PUTFORM 内容。"""
-    mode = game_mode_check(state)
+    mode = game_mode_check_proc(state)  # :586 CALL GAME_MODE_CHECK
     s0 = f"{_MODE_NAMES[mode]}モード" if 0 <= mode < len(_MODE_NAMES) else "☆カスタムモード"
     alive = tentacle_survive_num(state)
     if state.flag[64] > 0:

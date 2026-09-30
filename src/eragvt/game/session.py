@@ -201,7 +201,15 @@ class GameSession:
             return
         elif value == 130:  # SHOP.ERB:271–273
             shop.shop_show_situation_list(st, self.data, out, self.narration)
-        elif value in (110, 111, 112, 113, 120, 150, 160, 169, 170, 180, 700, 800):
+        elif value in (110, 111, 112, 113, 120, 150):  # SHOP.ERB:246–278
+            if shop.usershop_calls_submenu(st, value):
+                out.printl(f"（未實作：[{value}]）")
+        elif value == 160:  # SHOP.ERB:281–285
+            if shop.schedule_selectable(st):
+                out.printl(f"（未實作：[{value}]）")
+            else:
+                out.printw("スケジュールを設定するキャラクターが選択されていません")
+        elif value in (169, 170, 180, 700, 800):
             out.printl(f"（未實作：[{value}]）")
         # @USERSHOP 終了 → SystemProc@endCallEventBuy:737–755 → endAutoSave → @SHOW_SHOP
         self._show_shop()

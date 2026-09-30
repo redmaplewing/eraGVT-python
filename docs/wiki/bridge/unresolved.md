@@ -43,3 +43,9 @@
 - [ ] `TOINT` 對 cp932 無法編碼字元的處理（S10）— `Creator.Method.cs@ToIntMethod`:2363 以 `LangManager.GetStrlenLang`（`_Library/LangManager.cs`:17–20，
   `Encoding(932).GetByteCount`）判定全角；無法編碼字元的位元組數取決於 .NET 的替換 fallback，reference 內查不到。預設路徑不會遇到
   （年齢指定 CSTR:204–206 只來自角色 CSV／製作畫面），`eragvt.game.chara_make.toint` 遇到時停止。
+- [ ] `SHOP.ERB@USERSHOP`:288–293 `CASE 169 && GAME_OPTION_CHECK_F(OPTION_加入引退有り)` 等（S12 發現）— CASE 引數整個是式，
+  照字面會變成 `RESULT == (169 && …)`（0／1），[169]／[170]／[180] 可能永遠不會命中。未查 `SELECTCASE` 的 CASE 式解析
+  （`GameProc/Function/Instraction.Child.cs` 的 CASE 相關處）。INSTANT 模式專用、預設路徑不經過；Python 仍只印「（未實作）」。
+- [ ] `GAME_MODE_CHECK_F`／`GAME_MODE_CHECK`（GAMEMODE.ERB:124–137）以全域 `COUNT` 當 FOR 變數（S12）。呼叫端若在 `FOR COUNT`
+  迴圈中呼叫 `CHECK_GAMEOVER_F()` 會被改寫；已移植的呼叫端（SHOP／SHOP_TURNEND／SET_PARTYMEMBER（CCOUNT）／PRISON（LOCAL:999））
+  都不是用 COUNT 迴圈，Python 未模型化 COUNT。之後移植新呼叫端時需確認。
