@@ -177,3 +177,11 @@ ERB 路徑相對 `source/earGVP/ERB/`。
   `BIRTH_HANTEI` 中 SET_PARTYMEMBER 的並べ替え讓同一周回的日數加算落在別的角色上；`ABL_UP_BIRTH` 的氣力由減半後的體力計算、
   快Ｖ／快Ｂ 的珠是代入；`SET_FEAT_DEFAULT` 只要枠 > 0 就取得全部可取得的フィート；`GROW_HANTEI` 在 ADD_CHILD 後的性徴處理落在新角色上；
   `RECALC_PARTYMEMBER` 在 RESCUE_CHILD 施設送り後多跳過 1 人。**使用者裁決（2026-09-30）**：全部照原作（含 LOSEDEF）。
+- S15 戰後レイプ・自慰照原作的怪處：**`CALC_GANGBANG` 不 VARSET LOCAL**（`CALC_GANGBANG.ERB`:3–166），條件式才代入的 LOCAL
+  （:11 快Ｖ、:20 苦痛、:120 Ｖ経験、:113、:142、:150、:151／152）沿用上次呼叫的值 → 第 2 次以後即使沒有 V 插入（男性・聖処女）
+  也會把上次的 Ｖ経験量／快Ｖ 再加一次（`battle.rape.calc_gangbang`，`st.temp.locals`）；`AFTER_TRAIN_RAPE` 的 `LOCAL` 同時是發生機率與
+  パイズリ旗標，機率剛好為 1 時聖処女沒選パイズリ也出「胸に精液をぶっかける」（戦闘イベント.ERB:977、:1230）；:1069 的
+  `CFLAG:286 == 0 && 清純派` 分岐不可能到達（:1028 先取）；:1082／:1195 `CFLAG:42 != 300 || … != 397` 恆真（只看 ISMALE）；
+  **襲われた場合必定 RETURN 1**（:1334），「次も頼むわ」（沒錄影）的分岐也會接到 `DOUGA_RYUSUTU, 1` 動画流出；
+  `SELF_KIND` 的 `#DIM Ｖ自慰可／Ａ自慰可` 是靜態且不歸 0（FORCE_夜間自慰.ERB:183–209），一旦有人 Ｖ感覚 ≥ 1 之後所有角色都走 Ｖ 分岐，
+  :236 的「兩者皆可」分岐不可能到達；`SELF_NIGHT`:10 的初心判定只看 TURNEND 當下的 TARGET。

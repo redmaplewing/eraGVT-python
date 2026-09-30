@@ -20,6 +20,15 @@ from eragvt.state import FixedRng, GameRng, GameState
 from eragvt.text import NullNarrationService, TextOutput
 
 
+def _drive(gen):
+    """入力待ちにならないジェネレータを最後まで実行して戻り値を返す（S15：event_end はジェネレータ）。"""
+    try:
+        next(gen)
+    except StopIteration as e:
+        return e.value
+    raise AssertionError("入力待ちになった")
+
+
 @pytest.fixture(scope="module")
 def data():
     return load_game_data(default_csv_dir())
@@ -292,7 +301,7 @@ def test_event_end_retreat_from_boss(ctx):
     lv = tentacle_level(st)
     # [:148 RAND:10, :159 RAND:101, SELF_CHECK:161 RAND:100, AFTER_TRAIN_RAPE:982 RAND:100]
     st.rng = FixedRng([7, 50, 99, 50])
-    assert after.event_end(ctx) == Step.TURNEND
+    assert _drive(after.event_end(ctx)) == Step.TURNEND
     assert st.rng._values == []
     t = texts(ctx.out)
     assert st.flag[700] == 0  # :7
@@ -332,7 +341,7 @@ def test_event_end_boss_victory(ctx):
     lv = tentacle_level(st)
     # [GET_EXP_BATTLE RAND(15), GET_MONEY RAND:8, RAND:8, 防衛力 RAND:101, SELF_CHECK RAND:100, AFTER_TRAIN_RAPE RAND:100]
     st.rng = FixedRng([5, 3, 4, 60, 99, 99])
-    assert after.event_end(ctx) == Step.TURNEND
+    assert _drive(after.event_end(ctx)) == Step.TURNEND
     assert st.rng._values == []
     # コモン関数.ERB:387 50*(Lv+2)/10 + 5 + 25（上限 150）
     assert c.juel[50] == min(div(50 * (lv + 2), 10) + 30, 150)

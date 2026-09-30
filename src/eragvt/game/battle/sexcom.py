@@ -1596,7 +1596,7 @@ def sex_spcom5(ctx: Ctx) -> None:
 
 
 def sex_spcom6(ctx: Ctx) -> None:
-    """`SEX_SPCOM6.ERB@SEX_SPCOM6`:8–45（強制自慰）。自慰本体 SELF_KIND は未移植で停止。"""
+    """`SEX_SPCOM6.ERB@SEX_SPCOM6`:8–45（強制自慰）。自慰本体は SELF_KIND（`self_kind.py`、ARG:1 = 0）。"""
     st = ctx.state
     L = _begin(ctx)
     st.tflag[3] += 50

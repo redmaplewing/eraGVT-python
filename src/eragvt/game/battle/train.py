@@ -941,6 +941,6 @@ def run_train(ctx: Ctx) -> Generator[None, int, Step]:
             yield from usercom(ctx, value)
     except BeginAfterTrain:
         pass
-    return event_end(ctx)
+    return (yield from event_end(ctx))
 
 

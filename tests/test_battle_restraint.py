@@ -362,7 +362,7 @@ def test_event_end_defeat(ctx, data):
     lv = tentacle_level(st)
     juel50 = c.juel[50]
     st.rng = FixedRng([7, 20])  # [:339 RAND:10, :348 RAND:51]
-    assert after.event_end(ctx) == Step.TURNEND
+    assert run_gen(after.event_end(ctx)) == Step.TURNEND
     assert st.rng._values == []
     t = texts(ctx.out)
     assert "修練Pを48P手に入れた" in t  # :337 40 + 2 * 4
@@ -386,7 +386,7 @@ def test_event_end_defeat_citizen_battle(ctx, data):
     st.charas[2].cflag[71] = -1
     lv = tentacle_level(st)
     st.rng = FixedRng([7, 20])
-    assert after.event_end(ctx) == Step.TURNEND
+    assert run_gen(after.event_end(ctx)) == Step.TURNEND
     t = texts(ctx.out)
     loss = (lv + 65) * (30 - 50) - 200 - 20
     assert st.flag[852] == 50000 + loss

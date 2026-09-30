@@ -129,7 +129,7 @@ def event_turnend(ctx: Ctx) -> Generator[None, int, Step]:
     yield from grow_hantei(ctx)  # :107（ヒロイン関連/PREGNANT_CHILD_BIRTH.ERB@GROW_HANTEI）
     akuoti_attack(ctx)  # :110
     yield from lovesex_night(ctx)  # :112
-    self_night(ctx)  # :114
+    self_night(ctx)  # :116
     if config_check_event(st, 2) > 0:  # :116–117
         yobai(ctx)
     daily_defence_change(ctx)  # :120
@@ -366,7 +366,11 @@ def akuoti_attack(ctx: Ctx) -> None:
 
 
 def self_night(ctx: Ctx) -> None:
-    """`FORCE_夜間自慰.ERB@SELF_NIGHT`:5–61。"""
+    """`FORCE_夜間自慰.ERB@SELF_NIGHT`:5–61。LOCAL:3（最初の 1 人の前だけ DRAWLINE）は :6 VARSET LOCAL で毎回 0。"""
+    from .battle.ablup import ablup
+    from .battle.core import run_chinobun
+    from .battle.self_kind import self_kind
+
     st, data = ctx.state, ctx.data
     if st.time != 1:
         return
@@ -383,6 +387,7 @@ def self_night(ctx: Ctx) -> None:
     ):
         return
     saved = st.target
+    drawn = 0
     for i in range(1, st.charanum):
         c = st.charas[i]
         if c.cflag[999] == 0:
@@ -398,9 +403,17 @@ def self_night(ctx: Ctx) -> None:
         l1 = a(c, "欲望") * 5 + a(c, "触手中毒") * 2
         onani = a(c, "自慰中毒")
         l1 += 35 if onani >= 5 else {4: 30, 3: 25, 2: 20, 1: 15}.get(onani, 0)
-        if st.rng.rand(100) < l1:
-            raise NotImplementedError("夜間自慰イベント（SELF_NIGHT:49–）は未移植")
-    st.target = saved
+        if st.rng.rand(100) < l1:  # :49–59
+            if drawn == 0:
+                ctx.out.drawline()
+            # :53 地の文/MESSAGE_SEX.ERB@MESSAGE_SELF_NIGHT:1070–1089（本文＋:1088 KOJO_ROOT）
+            run_chinobun(ctx, "MESSAGE_SELF_NIGHT", fallback=lambda: kojo_root(ctx, "SELF_NIGHT"))
+            self_kind(ctx, st.target, 0)  # :54
+            ablup(ctx, 0)  # :55
+            ctx.out.printw()  # :56
+            c.palam.clear()  # :57 VARSET PALAM（TARGET = c）
+            drawn = 1  # :58
+    st.target = saved  # :61
 
 
 def yobai(ctx: Ctx) -> None:

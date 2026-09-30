@@ -6,6 +6,8 @@ TFLAG:98 は戦闘の結果（0＝時間切れ／撤退、1＝勝利、2＝敗�
 
 from __future__ import annotations
 
+from collections.abc import Generator
+
 from ...state.constants import ActionPlan, GameOption
 from ..action import (
     Ctx,
@@ -18,16 +20,18 @@ from ..action import (
     print_callname,
     print_transcallname,
 )
-from ..era import div, limit, times
+from ..era import div, limit
 from ..opening import game_option
 from ..shop import charanum_safe, check_gameover
 from ..tentacle import enemy_type_check, tentacle_survive_num
 from .ablup import ablup
 from .cloth import cloth_battle_hosei, cloth_battle_sethp, refresh_cloth_data
-from .core import PALAM_END, config_check_balance, get_battle_situation, is_hole, mark, percent_cal, t, tc, tentacle_level
+from .core import PALAM_END, config_check_balance, get_battle_situation, mark, percent_cal, t, tc, tentacle_level
 from .encount import get_exp_battle, get_kakera, get_money, research_progress, support_heal
 from .func import transform
 from .ninsin import ninsin_check_after  # ヒロイン関連/PREGNANT_SOURCE_NINSIN.ERB@NINSIN_CHECK_AFTER:169–190
+from .rape import after_train_rape  # 戦闘イベント.ERB@AFTER_TRAIN_RAPE:962–1334（S15）
+from .self_kind import self_battleend  # FORCE_夜間自慰.ERB（S15）
 
 # :13–120 刻印：(PALAM 名, MARK 名, 防止 MARK 名, 1 段目の閾値, 防止 1 あたりの加算)
 _MARKS = (
@@ -85,42 +89,6 @@ def _transform_enemy_off(ctx: Ctx) -> None:
         transform(ctx, 0, st.flag[111])
 
 
-def self_check(ctx: Ctx, who: int) -> int:
-    """`ゲーム内_イベント発生/強制発生イベント/FORCE_夜間自慰.ERB@SELF_CHECK, ARG`:77–178。"""
-    st, data = ctx.state, ctx.data
-    c = st.charas[who]
-    p = c.palam[data.index_of("PALAM", "欲情")]
-    if p == 0:
-        local = 0
-    else:
-        for bound, val in ((100, 1), (300, 2), (600, 4), (1500, 6), (3000, 8), (6000, 10), (10000, 12), (30000, 15),
-                           (60000, 18), (150000, 21), (300000, 25)):
-            if p < bound:
-                local = val
-                break
-        else:
-            local = 30
-    a = lambda n: c.abl[data.index_of("ABL", n)]  # noqa: E731
-    step = ("0.25", "0.50", "0.75", "1.00", "1.25", "1.50")
-    if a("欲望") >= 0:  # :114–126（負の値はどの分岐にも当たらない）
-        local = times(local, step[min(a("欲望"), 5)])
-    if a("露出癖") >= 0:  # :129–141
-        local = times(local, step[min(a("露出癖"), 5)])
-    onani = a("自慰中毒")  # :144–154
-    if onani >= 1:
-        local = times(local, {1: "1.25", 2: "1.50", 3: "2.00", 4: "2.50"}.get(onani, "4.00"))
-    if t(ctx, c, "淫乱") == 1:  # :157–158
-        local = times(local, "2.00")
-    r = st.rng.rand(100)  # :161–172
-    for bound, fac in ((20, "0.80"), (40, "0.90"), (60, "1.00"), (80, "1.10")):
-        if r < bound:
-            local = times(local, fac)
-            break
-    else:
-        local = times(local, "1.20")
-    return 1 if local >= 15 else 0
-
-
 def subevent_release_ecstasy(ctx: Ctx) -> None:
     """`SUBEVENT_BATTLEE.ERB@SUBEVENT_RELEASE_ECSTASY`:163–226。"""
     from .palam import calc_ecstasy, message_sex_ecstasy_single
@@ -159,45 +127,7 @@ def subevent_battleend(ctx: Ctx) -> None:
     if tc(ctx).tcvarn[40] > 0:
         subevent_release_ecstasy(ctx)
     if st.tflag[98] in (0, 1):
-        # SELF_BATTLEEND（FORCE_夜間自慰.ERB:65–72）
-        if self_check(ctx, st.target) == 1:
-            raise NotImplementedError("戦闘後自慰（MESSAGE_SELF_BATTLEEND／SELF_KIND）は未移植")
-
-
-def after_train_rape(ctx: Ctx, arg: int) -> int:
-    """`ゲーム内_イベント発生/戦闘イベント.ERB@AFTER_TRAIN_RAPE, ARG`:962–。襲われる場合は未移植で停止。"""
-    st, out = ctx.state, ctx.out
-    c = tc(ctx)
-    if c.cflag[0] != 0:  # :970–971
-        return 0
-    if not is_hole(ctx):  # :973–974（ISHOLE()：ARG 省略 = -1 → TARGET）
-        return 0
-    local = min(div(5000 - st.flag[852], 100), 50) + min(c.cflag[285] * 2, 50) + (t(ctx, c, "嬲られ体質") > 0) * 10
-    if st.flag[72] == 0:
-        local = div(local, 2)
-    if get_battle_situation(st, "レイプ確定") == 0 and st.rng.rand(100) >= local:  # :982–983
-        return 0
-    out.drawline()  # :986–990
-    out.printl("――")
-    out.printl("――――")
-    out.printw("――――――")
-    out.printl()
-    # :992 分母の最後は MAXBASE ではなく BASE:性耐性 * 10（原作どおり）
-    l1 = percent_cal(c.base[0] + c.base[1] + c.base[2] * 10, c.maxbase[0] + c.maxbase[1] + c.base[2] * 10)
-    out.printl()
-    if get_battle_situation(st, "レイプ確定") == 0 and st.rng.rand(100) < (
-        div(l1 * 3, 4) + (st.tflag[98] == 1) * 6 - (st.time == 1) * 12 - (t(ctx, c, "嬲られ体質") > 0) * 12
-    ):
-        name = print_transcallname(st, st.target)
-        if local < 25 or st.rng.rand(2) == 0:
-            out.printl(f"{name}は誰かに尾けられているような気がしたが、")
-            out.printl("どうやら気のせいだったようだ・・・")
-        else:
-            out.printl(f"{name}は誰かに尾けられているような気がしたが、")
-            out.printl("うまく撒くことができたようだ・・・")
-        out.printw()
-        return 0
-    raise NotImplementedError("戦闘終了後のレイプ（AFTER_TRAIN_RAPE:1007–）は未移植")
+        self_battleend(ctx, st.target)  # :13（FORCE_夜間自慰.ERB@SELF_BATTLEEND:65–72）
 
 
 def douga_ryusutu(ctx: Ctx, arg: int) -> None:
@@ -372,8 +302,9 @@ def _event_end_lose(ctx: Ctx) -> None:
     c.cflag[23] = 0  # :421
 
 
-def event_end(ctx: Ctx) -> Step:
-    """`@EVENTEND`:2–536。`BEGIN TURNEND` を返す。"""
+def event_end(ctx: Ctx) -> Generator[None, int, Step]:
+    """`@EVENTEND`:2–536。`BEGIN TURNEND` を返す。AFTER_TRAIN_RAPE → CALC_GANGBANG → AFTER_PILL（INPUT）のため
+    ジェネレータ（S15）。"""
     st, data, out = ctx.state, ctx.data, ctx.out
     c = tc(ctx)
     ex99 = lambda: c.ex[99]  # noqa: E731  EX:行動ポイント
@@ -491,7 +422,7 @@ def event_end(ctx: Ctx) -> Step:
     if config_check_event(st, 3) > 0 and get_battle_situation(st, "レイプなし") == 0:
         result = 0
         if st.flag[73] == 0:
-            result = after_train_rape(ctx, st.tflag[98])
+            result = yield from after_train_rape(ctx, st.tflag[98])
         douga_ryusutu(ctx, result)
     if enemy_type_check(st, "MOB") == 1:  # :507–513
         st.flag[10] = 0 if st.flag[100] else 1
