@@ -167,4 +167,4 @@ ERB 路徑相對 `source/earGVP/ERB/`。
   `NUM_CHILD_TENTACLE(ARG)` 讀的是 TARGET（:579–601），苗床出産的母乳體質／膨乳改造値也加在 TARGET（:729–732）；
   `BIRTH_HANTEI` 中 SET_PARTYMEMBER 的並べ替え讓同一周回的日數加算落在別的角色上；`ABL_UP_BIRTH` 的氣力由減半後的體力計算、
   快Ｖ／快Ｂ 的珠是代入；`SET_FEAT_DEFAULT` 只要枠 > 0 就取得全部可取得的フィート；`GROW_HANTEI` 在 ADD_CHILD 後的性徴處理落在新角色上；
-  `RECALC_PARTYMEMBER` 在 RESCUE_CHILD 施設送り後多跳過 1 人。照原作；若要修正（特別是 LOSEDEF）請決定。
+  `RECALC_PARTYMEMBER` 在 RESCUE_CHILD 施設送り後多跳過 1 人。**使用者裁決（2026-09-30）**：全部照原作（含 LOSEDEF）。

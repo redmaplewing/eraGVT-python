@@ -59,12 +59,12 @@
 
 ## 下一步
 
-- 候選（依 S13 模擬頻度）：**動画流出**（DOUGA_RYUSUTU，最大停止原因）、ＳＰ変身／バースト（COM73／70／17）、戰後レイプ・強制自慰、
+- **S14：動画流出**（`docs/sessions/S14-video-leak.md`）。之後候選：ＳＰ変身／バースト（COM73／70／17）、戰後レイプ・強制自慰、
   悪堕ちキャラ（AKUOTI_EVENT）、狀態畫面、FLASHNEWS、ランダム命名畫面（FIRSTSETTING_RANDOMNAMING，子供加入時的変身後名）。
-- 已裁決（2026-09-30）：拡張度初期值照原作不設定；初期セット身體資料問題因 S10 改回預設開局而不再需要偏離。
+- 已裁決（2026-09-30）：拡張度初期值照原作不設定；初期セット身體資料問題因 S10 改回預設開局而不再需要偏離；
+  S13 苗床出産的 static LOSEDEF 等怪處全部照原作。
 - 口上 catalog 待擴充：改狀態的口上（hook 化）、GOTO、SPLIT／STRDATA、未實作式中関数（覆蓋率報告）。
-- deviations.md 需裁決：振り解く `LOCAL:O`、口上的狀態副作用、口上 catalog 實行時失敗的回復、S08 以後新增項、
-  S13 苗床出産的 static LOSEDEF（ゲームオーバーモード中防衛力下降越來越快，照原作）。
+- deviations.md 需裁決：振り解く `LOCAL:O`、口上的狀態副作用、口上 catalog 實行時失敗的回復、S08 以後新增項。
 
 ## 仍會停止的分岐（`NotImplementedError` → Web 停止）
 
