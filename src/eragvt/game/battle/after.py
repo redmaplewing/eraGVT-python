@@ -393,6 +393,8 @@ def event_end(ctx: Ctx) -> Step:
         and not game_option(st, GameOption.NO_GAMEOVER)
         and not check_gameover(st)
     ):
-        raise NotImplementedError("全滅エンド（ENDING_1）は未移植")
+        from ..ending import ending_1
+
+        ending_1(ctx)  # :528（本文の後、ゲームオーバーモードが未移植なので停止）
     # :531–532 実績のみ（deviations.md「全域資料」）
     return Step.TURNEND

@@ -17,6 +17,9 @@ ERB 路徑相對 `source/earGVP/ERB/`。
 - [ ] **全域資料（GLOBAL）不讀不寫**：永遠走「真正的初次啟動」路徑（MOB_FLAG 初始化為 100、不套用 GLOBAL 的 config／性嗜好フィルタ），也不存成就等全域資料。（原作：`オープニング処理.ERB@EVENTFIRST`:29–45、`バージョン間互換処理.ERB@UPDATE`:95–130；Python：`eragvt.game.opening.event_first`）— 等設定畫面／成就功能時一起做。
   S05 起戰鬥中的 `UNLOCK_ACHIEVEMENT`（タクティカルオーダー、絶体絶命ヒロイン等）與 `GET_STATE_ABLUP` 同樣不執行（`eragvt.game.battle.core.unlock_achievement`）。
   S04 起同理不執行：`SHOP_TURNEND.ERB@UPDATE_STATUS_RECORD`:263–349（歷代最高紀錄 GLOBAL:103–131／GLOBALS、SAVEGLOBAL）與 `SHOP_TROPHY.ERB@GET_STATE_TROPHY`:398–441→`UNLOCK_ACHIEVEMENT`（成就達成訊息不會顯示）。（Python：`eragvt.game.turnend.recalc_partymember`、`eragvt.game.action.get_state_trophy`）
+  S08 起同理不執行：幽閉的 `COMMON_PRISON.ERB@COMMON_PRISON_EXP`:87 `GET_STATE_EXPUP`、救出時的 `UNLOCK_ACHIEVEMENT`（271／273：
+  `BATTLE_COM_AFTER.ERB`:209／240）、`MESSAGE_PRISON_PRISENTENCE_FIRST`:9（hook 為無動作）。（Python：`eragvt.game.prison.commands.common_prison_exp`、
+  `battle.source_check._rescue_captives`、`narration/hooks.py` PRISON_HOOK_LINES）
 - [ ] **開局固定路徑**：模式固定 NORMAL、初期セット固定「特装戦隊」（301–303）、config 固定「基本セット」，不顯示模式選擇／角色製作／序章畫面。（Python：`eragvt.game.opening`）— S03 規格指定的最小路徑。
 
 - [ ] **S04 未翻的行動會停止遊戲**：（出撃已於 S05 接上，戰鬥內的停止見下一項）特別活動、拠点防衛、戦闘支援（本體）、情報収集、自由行動在 `action_main` 丟 `NotImplementedError`，Web session 捕捉後進入「停止」狀態（只能按「タイトルに戻る」）。同樣停止的還有：ENDING（全ボス撃破／**11 日目夜的日數超過**）、救出直後、妊娠・育兒・幽閉・悪堕ち等 S04 無法產生的狀態、鍛錬排程（CFLAG:110）、戦闘基礎 Lv5 的變身能力獲得。（原作：`ゲーム内_行動実行処理/ACTION.ERB`:74–175 等；Python：`eragvt.game.action`、`eragvt.game.turnend`、`eragvt.game.session._advance_turn`）— 各自屬 S05 以後；影響範圍見 `docs/wiki/era/actions.md`。
@@ -27,6 +30,12 @@ ERB 路徑相對 `source/earGVP/ERB/`。
   強制自慰、動画流出、幽閉後的 TURNEND、悪堕ち／雜魚／ラスボス、拡張度 CFLAG:34 != 0 等）。
   （Python：`eragvt.game.battle.*` 各處 `raise NotImplementedError`、`battle.commands.run_com` 的 `# DEVIATION:`）
   — 依規格「未移植分岐必須停止」。
+- [ ] **幽閉的未移植分岐會停止遊戲**（S08 新增）：受精成立（`NINSIN_HANTEI`:140 以降，幽閉中常見）、膨乳化的
+  `SET_PROFILE`（`PRISON_COM105_膨乳化.ERB`:70，身體資料生成未移植）、ラスボス／悪堕ちキャラ 的幽閉（`TENTACLE_ACCESS_PRISON` 的
+  LASTBOSS 分岐、悪堕ち的 PALAM_HOSEI）、`CORRUPT_CHANGE_LOOKS_MAIN`:24–（設定 CONFIG_CHECK_PRISON_F(4) ON 時）、`RECOVER_CORRUPTION`、
+  `RESCUE_CHILD`、TS 性別變化（`TS_MtoF` 等）、ラスボス出現後的淫紋陥落、ゲームオーバーモード（`CHANGE_GAMEOVER_MODE`：ENDING_1／4／5
+  的本文顯示後停止）。（Python：`eragvt.game.prison.*`、`party`、`ending`、`turnend._inmon_fall` 的 `raise NotImplementedError`）
+  — 依規格「牽涉未移植系統時照 S06 慣例停止」。
 - [ ] **振り解く判定的 `LOCAL:O`**（S06 新增，**需裁決**）：`ゲーム内_戦闘処理/COMMON_BATTLE_HANTEI.ERB`:241／:245
   `SIF LOCAL:5 <= 45 && LOCAL:O > 49` 的 `O` 是英文字母，全作沒有這個識別子（grep 僅此 2 處）。1.824 在執行到該行時
   報錯停止（`GameProc/Process.ScriptProc.cs`:38–42、`GameData/Expression/ExpressionParser.cs`:264–269、
@@ -74,7 +83,14 @@ ERB 路徑相對 `source/earGVP/ERB/`。
   ヒロイン側性攻撃的地の文由 catalog 輸出本文，其中的狀態變化行經 `narration/hooks.py`（140 行，對照 sexmsg）依 ERB 順序執行、
   RAND 也照 ERB 順序抽（亂數序列與 S06 不同）。catalog 不可執行（`MESSAGE_SEX_SPCOM7` 的 CFLAG:34 > 0 分岐等）或 Null 時才印
   「〈地の文：函式名〉」並走 S06 的 Python 移植（`eragvt.game.battle.core.run_chinobun`、`sexmsg._catalog`）。
+- [ ] **幽閉的地の文與淫紋顯示**（S08 新增，只影響顯示）：`地の文/MESSAGE_PRISON.ERB`、`MESSAGE_OTHER.ERB` 的 PRISON 系、
+  `MESSAGE_KYUUSHUTU.ERB`、刻印地の文由 catalog 輸出（狀態變化行 21 行經 `narration/hooks.py` PRISON_HOOK_LINES：FLAG:900、
+  TALENT:膨乳改造値、TS 呼叫 → 停止、成就 → 無動作）；catalog 不可執行（Null 等）時印「〈地の文：…〉」並只做末尾的 KOJO_ROOT
+  （`MESSAGE_KYUUSHUTU` 則以 Python 輸出同文）。淫紋圖樣 `CHARA_TATTOO.ERB@PRINT_TATTOO`:239–474／`@TATTOO_LIB`（無代入到狀態、
+  無 RAND）因 `CHKFONT`（依安裝字型）catalog 不支援，改印「〈淫紋：PRINT_TATTOO n〉」一行。
+  （Python：`eragvt.game.prison.*` 的 `run_chinobun`、`eragvt.game.tattoo.print_tattoo`）
 - [ ] **Web 停止狀態**：遇到未移植處理時顯示「（未實作のため停止しました：…）」並停住，是原作沒有的畫面（見上「S04 未翻的行動」）。
+  S08：全滅（ENDING_1）與ソロ的 ENDING_4／5 在顯示結局本文後，因ゲームオーバーモード未移植而以此畫面停止（「タイトルに戻る」）。
 
 ## 原作行為（照翻，但請留意）
 
@@ -96,3 +112,10 @@ ERB 路徑相對 `source/earGVP/ERB/`。
 - `USERSHOP_ACTION_CONFIRM` 的確認只有 `CASE 9` 會開始行動，`[1]はい` 會中斷回到選單（`インターミッション画面/SHOP.ERB`:521–532）。看起來像原作 bug，目前照原作；要不要修正請決定。
 - `RECOVERY_OVER_TIME` 夜間的 `TALENT:夜魔の貴族` 與 `DAILY_POPULARITY_CHANGE` 的 `TALENT:変身時非処女`、`CFLAG:825` 沒有寫角色 index，實際看的是當下 TARGET（`インターミッション画面/SHOP_TURNEND.ERB`:610、:519、:569）。TARGET 為 TURNEND 時最後處理的角色。照原作。
 - `@EVENTSHOP` 的 `PARASITE` 會把 `FLAG:799`（行動中角色）覆寫成 `CHARANUM-1`（`FORCE_深夜の寄生触手暴走.ERB`:9），靠 `SHOW_SHOP`:20 歸 0 才不出錯。照原作。
+- S08 幽閉中照原作移植的疑似 bug／容易誤讀處（詳見 `docs/wiki/era/prison.md`「照原作移植的怪處」）：
+  `EVENT_PALAM_UP.ERB`:19–21／:88–90／:137–139 的迴圈只涵蓋 UP:0–11（習得〜恐怖 不 ×9、不受触手補正），且幽閉中 UP:0–11 被
+  「触手補正 %／100」**覆寫**（:134–140，結果快Ｃ等幾乎只剩 1）；`FUNC_EVENT_PALAM_CALC_TIJYOU_BONUS`:284–293 看未代入的 LOCAL:100–103；
+  巨乳補正加在 快Ｖ（:220–229）；`PRISON_GAPING` 的 RESULT 含 ARG:2／3 → LOCAL:151／152 兩倍（各 PRISON_COM :190–192 等）；
+  `PRISON_COM102`:105–106 恥情表寫入 LOCAL:8；`PRISON.ERB`:41 `今回陥落するフラグ` 與 :175 `LOCAL:2` 為靜態、沿用上次值；
+  `SET_PARTYMEMBER.ERB`:22–24 SHIFTBACK 後遞補的角色本輪不判定；`AFTER_RESCUED.ERB`:23 `FLAG:32 = 0`（非 CFLAG）；
+  `SHOP_SHOW_SITUATION_LIST.ERB`:10–39 不還原 FLAG:11 並設 SAVESTR:13；TFLAG:9 全作無代入（`KYUSHUTU_TIMEUP_HANTEI` 不會輸出）。

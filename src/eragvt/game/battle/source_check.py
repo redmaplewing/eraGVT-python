@@ -9,7 +9,7 @@ from collections.abc import Generator
 
 from ..action import Ctx, config_check_maniac, kojo_root, print_callname, print_transcallname
 from ..chara_common import is_male
-from ..era import div, isqrt
+from ..era import div
 from ..opening import game_option
 from ...state.constants import GameOption
 from ..tentacle import enemy_type_check, get_lastboss_phase
@@ -250,10 +250,7 @@ def _victory(ctx: Ctx) -> None:
 
         st.flag[49] = 1
         research_quota(st)
-        for i in range(1, st.charanum):
-            o = st.charas[i]
-            if o.cflag[0] in (1, 2) and o.cflag[20] == st.flag[10] and o.cflag[21] == st.flag[11]:
-                raise NotImplementedError("撃破したボスに捕らわれていたキャラの救出は未移植")
+        _rescue_captives(ctx)  # :203–262
         if st.flag[100] == 0 and st.flag[101] == 0:
             raise NotImplementedError("ボス全滅（ラスボス出現）は未移植")
     elif enemy_type_check(st, "LASTBOSS") >= 1 or enemy_type_check(st, "AKUOTI") == 1:
@@ -261,6 +258,42 @@ def _victory(ctx: Ctx) -> None:
     elif enemy_type_check(st, "MOB") == 1:
         raise NotImplementedError("雑魚戦の勝利は未移植（雑魚戦システムは基本セットで OFF）")
     raise BeginAfterTrain()
+
+
+def _rescue_captives(ctx: Ctx) -> None:
+    """`BATTLE_COM_AFTER.ERB@SOURCE_CHECK`:203–262：撃破したボス（FLAG:10／FLAG:11）に洗脳・幽閉されていたキャラの救出。
+
+    実績（UNLOCK_ACHIEVEMENT 273／271）は GLOBAL のみ（deviations.md「全域資料」）。地の文は catalog。
+    :214／:245 は救出状態（状態_救出直後 = -1：CSV定数定義/CFLAG.ERH:13）にするだけで、AFTER_RESCUED は
+    ターン終了時の RECALC_PARTYMEMBER（SHOP_TURNEND.ERB:235–244）が行う。
+    """
+    from .core import run_chinobun
+
+    st = ctx.state
+    for state_no, msg, other in ((2, "MESSAGE_BATTLE_END_RESCUE_SENNOU", "MESSAGE_OTHER_BATTLE_END_RESCUED_SENNOU"),
+                                 (1, "MESSAGE_BATTLE_END_RESCUE", "MESSAGE_OTHER_BATTLE_END_RESCUED")):
+        shown = 0  # LOCAL:1
+        for i in range(st.charanum):
+            if i == 0:  # MASTER
+                continue
+            o = st.charas[i]
+            if o.cflag[0] == state_no and o.cflag[20] == st.flag[10] and o.cflag[21] == st.flag[11]:
+                if shown == 0:
+                    run_chinobun(ctx, msg)
+                o.cflag[0] = -1
+                o.cflag[20] = 0
+                o.cflag[21] = 0
+                o.cflag[30] = 0
+                o.cflag[31] = 0
+                o.base[0] = 1  # 体力
+                o.base[1] = 1  # 気力
+                o.base[2] = 1  # 性耐性（:222–223 は 2 回代入）
+                o.cflag[220] = 0
+                saved = st.target
+                st.target = i
+                run_chinobun(ctx, other)
+                st.target = saved
+                shown = 1
 
 
 def _rescue_deadnum(ctx: Ctx) -> None:
@@ -507,22 +540,10 @@ def _battle_lose(ctx: Ctx) -> None:
 
 
 def _check_contamination(ctx: Ctx) -> int:
-    """`ゲーム内_イベント発生/敗北幽閉中イベント/PRISON.ERB@CHECK_CONTAMINATION`:430–443。"""
-    from ..action import config_check_prison
+    """`PRISON.ERB@CHECK_CONTAMINATION`:430–443（`eragvt.game.prison.event.check_contamination`）。"""
+    from ..prison.event import check_contamination
 
-    st = ctx.state
-    c = tc(ctx)
-    a = lambda n: abl(ctx, c, n)  # noqa: E731
-    l1 = 260 + min(isqrt(max(c.base[52] - 60, 0) * 10) * 4, 340)
-    l1 -= (a("触手中毒") * 16 + a("従順") * 8 + a("欲望") * 8 + a("奉仕精神") * 8 + a("露出癖") * 2 + a("マゾっ気") * 2
-           + a("精液中毒") * 4 + a("噴乳中毒") * 4 + a("射精中毒") * 4)
-    if l1 < 160:
-        l1 = 160
-    if config_check_prison(st, 3) > 0:
-        l1 += t(ctx, c, "苗床化") * 80
-    if st.flag[904]:
-        l1 = div(l1 * 3, 4)
-    return l1
+    return check_contamination(ctx)
 
 
 def _abareru(ctx: Ctx) -> None:

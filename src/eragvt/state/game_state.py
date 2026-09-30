@@ -18,6 +18,7 @@ class TempVars:
     turn_limit: int = 0  # ターン上限（:280）
     max_palam: IntArray = field(default_factory=IntArray)  # MAX_PALAM（:138）
     common_palam: IntArray = field(default_factory=IntArray)  # COMMON_PALAM（:16）
+    common_exp: IntArray = field(default_factory=IntArray)  # COMMON_EXP（:18、COMMON_PRISON の経験受け渡し）
     battle_situation: str = ""  # 特殊戦闘シチュエーション（イベントから派生する特殊戦闘/DIM.ERH:3）
     # era LASTLOAD_VERSION：新遊戲 -1、讀檔後 = 存檔的遊戲版本（VariableData.cs:48、653；VariableEvaluator.cs:2174）
     last_load_version: int = -1

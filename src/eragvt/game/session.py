@@ -131,7 +131,11 @@ class GameSession:
 
     def begin_shop(self, called_when_normal: bool) -> None:
         assert self.state is not None
-        shop.event_shop(self.state, self.data, self.out, self.narration)
+        try:
+            shop.event_shop(self.state, self.data, self.out, self.narration)
+        except NotImplementedError as exc:  # @EVENTSHOP 内の未移植イベント（寄生触手の暴走など）
+            self._halt(exc)
+            return
         if AUTOSAVE and called_when_normal:
             self._autosave()
         self._show_shop()
@@ -176,7 +180,9 @@ class GameSession:
             self._load_from_title = False
             self.begin_load_game()
             return
-        elif value in (110, 111, 112, 113, 120, 130, 150, 160, 169, 170, 180, 700, 800):
+        elif value == 130:  # SHOP.ERB:271–273
+            shop.shop_show_situation_list(st, self.data, out, self.narration)
+        elif value in (110, 111, 112, 113, 120, 150, 160, 169, 170, 180, 700, 800):
             out.printl(f"（未實作：[{value}]）")
         # @USERSHOP 終了 → SystemProc@endCallEventBuy:737–755 → endAutoSave → @SHOW_SHOP
         self._show_shop()
@@ -212,11 +218,14 @@ class GameSession:
             return
         except NotImplementedError as exc:
             self._turn = None
-            self.out.printl()
-            self.out.printl(f"（未實作のため停止しました：{exc}）")
-            self.phase = Phase.HALTED
+            self._halt(exc)
             return
         self.phase = Phase.TURN
+
+    def _halt(self, exc: NotImplementedError) -> None:
+        self.out.printl()
+        self.out.printl(f"（未實作のため停止しました：{exc}）")
+        self.phase = Phase.HALTED
 
     def _halted_input(self, value: int) -> None:
         self.out.printl("（未實作のため停止中。「タイトルに戻る」で再開してください）")

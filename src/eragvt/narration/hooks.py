@@ -157,19 +157,55 @@ HOOK_LINES: dict[tuple[str, int], tuple[str, str, str]] = {
     ("MESSAGE_SEX_SPCOM13_MISS", 2117): ('TFLAG:23 += 1', "msg_spcom13_miss", ":2117"),
 }
 
+# S08：幽閉の地の文（`地の文/MESSAGE_PRISON.ERB`）の状態変化行。(函式名, 行): (原文, 意味)。
+# FLAG:900 は直後の KOJO_ROOT の「ランダム分岐フラグ」（KOJO_ROOT が 0 に戻す）。TALENT:膨乳改造値 は膨乳化の地の文で加算。
+# TS_* は幽閉時の性別変化（TS オプション ON かつオトコのキャラのみ）で未移植 → 実行時に停止（eragvt.game.prison.event.ts_change）。
+# UNLOCK_ACHIEVEMENT は実績（GLOBAL）のみ＝何もしない（deviations.md「全域資料」）。
+# tests/test_prison.py::test_prison_hook_table_matches_erb が原文一致と「表外の代入が無い」ことを確認する。
+PRISON_HOOK_LINES: dict[tuple[str, int], tuple[str, str]] = {
+    ("MESSAGE_PRISON_PRISENTENCE_FIRST", 9): ('CALL UNLOCK_ACHIEVEMENT(275,"女性の宿命")', "実績のみ"),
+    ("MESSAGE_PRISON_PRISENTENCE_FIRST", 97): ("CALL TS_MtoF, TARGET", "TS（未移植・停止）"),
+    ("MESSAGE_PRISON_PRISENTENCE_FIRST", 113): ("CALL TS_NORMAL, TARGET", "TS（未移植・停止）"),
+    ("MESSAGE_PRISON_PRISENTENCE_FIRST", 150): ("CALL TS_FtoM, TARGET", "TS（未移植・停止）"),
+    ("MESSAGE_PRISON_COM_1", 813): ("FLAG:900 = 1", "口上分岐"),
+    ("MESSAGE_PRISON_COM_1", 830): ("FLAG:900 = 32", "口上分岐"),
+    ("MESSAGE_PRISON_COM_1", 846): ("FLAG:900 = 22", "口上分岐"),
+    ("MESSAGE_PRISON_COM_1", 851): ("FLAG:900 = 12", "口上分岐"),
+    ("MESSAGE_PRISON_COM_1", 868): ("FLAG:900 = 3", "口上分岐"),
+    ("MESSAGE_PRISON_COM_2", 907): ("FLAG:900 = 1", "口上分岐"),
+    ("MESSAGE_PRISON_COM_2", 921): ("FLAG:900 = 32", "口上分岐"),
+    ("MESSAGE_PRISON_COM_2", 937): ("FLAG:900 = 22", "口上分岐"),
+    ("MESSAGE_PRISON_COM_2", 942): ("FLAG:900 = 12", "口上分岐"),
+    ("MESSAGE_PRISON_COM_4", 1031): ("FLAG:900 = 1", "口上分岐"),
+    ("MESSAGE_PRISON_COM_4", 1049): ("FLAG:900 = 2", "口上分岐"),
+    ("MESSAGE_PRISON_COM_6", 1145): ("FLAG:900 = 1", "口上分岐"),
+    ("MESSAGE_PRISON_COM_6", 1184): ("FLAG:900 = 2", "口上分岐"),
+    ("MESSAGE_PRISON_COM_6", 1224): ("FLAG:900 = 3", "口上分岐"),
+    ("MESSAGE_PRISON_COM_6", 1262): ("FLAG:900 = 4", "口上分岐"),
+    ("MESSAGE_PRISON_COM_105", 1760): ("TALENT:TARGET:膨乳改造値 += RAND(10,30)", "膨乳改造値"),
+    ("MESSAGE_PRISON_COM_105", 1779): ("TALENT:TARGET:膨乳改造値 += RAND(20,40)", "膨乳改造値"),
+}
+
 # hook 化してよい CALL 先 → Python 移植（呼び出し時に import）
 HOOK_CALLS = {
     "SET_TENTACLE_SIZE_BY_MESSAGE": ("eragvt.game.battle.gaping", "set_tentacle_size_by_message"),
     "TENTACLE_SYASEI_UP": ("eragvt.game.battle.syasei", "tentacle_syasei_up"),
     "NINSIN_HANTEI": ("eragvt.game.battle.ninsin", "ninsin_hantei"),
     "LOSTVIRGIN": ("eragvt.game.battle.sexcom", "lostvirgin"),
+    "UNLOCK_ACHIEVEMENT": ("eragvt.game.battle.core", "unlock_achievement"),
+    "TS_MTOF": ("eragvt.game.prison.event", "ts_change"),
+    "TS_NORMAL": ("eragvt.game.prison.event", "ts_change"),
+    "TS_FTOM": ("eragvt.game.prison.event", "ts_change"),
 }
 
 # hook の代入で書き込んでよい変数
-HOOK_WRITABLE = {"FLAG", "TFLAG", "TENTACLE_SIZE", "CFLAG", "TCVARN"}
+HOOK_WRITABLE = {"FLAG", "TFLAG", "TENTACLE_SIZE", "CFLAG", "TCVARN", "TALENT"}
 
 
 def match_hook(func: str, line: int, text: str) -> Optional[str]:
+    prow = PRISON_HOOK_LINES.get((func, line))
+    if prow is not None:
+        return f"{func}:{line}" if prow[0] == text.strip() else None
     row = HOOK_LINES.get((func, line))
     if row is None:
         return None

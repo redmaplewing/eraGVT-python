@@ -37,3 +37,6 @@
   （`BATTLE_COM.ERB`:572–664）再 `DOTRAIN`。
 - [x] 角色 CSV `相性` 的轉換 — 只在 `HEROINE_PRESET` 選 `[30]` 時經 `SYSTEM/キャラメイキング関連/FIRSTSETTING_CONVERTCSV.ERB@CONVERT_RELATION`:3–23 把「CSV 番号索引」複製到「登錄 index 索引」（index = `CFLAG:240`）。直接開始遊戲時不轉換。引擎本身 RELATION 的索引是 CSV 番号（`VariableCode.cs`:146）。
 - [ ] `DIM.ERH`:20 `GFLAG`（「全領域参照用」）用途未調查。
+- [x] 救出時間切れ `TFLAG:9`（S08）— 只有 `COMF15.ERB@KYUSHUTU_TIMEUP_HANTEI`:64 讀取（由 `BATTLE_COM_AFTER.ERB`:1115 TRYCALL），
+  全 ERB（含口上）沒有代入處（`grep -P "TFLAG\s*:\s*9(?![0-9])"` 全 ERB／ERH 僅 1 筆）→ 地の文 `MESSAGE_KYUUSHUTU_TIMEUP` 不會出現。照原作（deviations「原作行為」）。
+- [x] `@SHIFTFOWARD_CHARA`（`ヒロイン関連/SET_PARTYMEMBER.ERB`:48–64）— 全 ERB 沒有呼叫處（grep 只有定義行）→ 不移植。

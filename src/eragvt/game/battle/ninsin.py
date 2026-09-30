@@ -60,6 +60,17 @@ def check_hinin(ctx: Ctx, who: int, arg1: int) -> int:
     return 1 if st.rng.rand(100) < local else 0
 
 
+def charaid(ctx: Ctx, arg: int) -> int:
+    """`汎用関数/コモン関数.ERB@CHARAID_F, ARG`:1062–1070：CFLAG:240（固有番号）== ARG のキャラ番号、無ければ 0。"""
+    st = ctx.state
+    for i in range(st.charanum):
+        if i == 0:  # MASTER
+            continue
+        if st.charas[i].cflag[240] == arg:
+            return i
+    return 0
+
+
 def ninsin_hantei(ctx: Ctx, arg0: int, arg1: int, arg2: int = 0) -> int:
     """`@NINSIN_HANTEI, ARG:0（射精量）, ARG:1（係数）, ARG:2 = 0`:11–165。"""
     st = ctx.state
@@ -90,8 +101,14 @@ def ninsin_hantei(ctx: Ctx, arg0: int, arg1: int, arg2: int = 0) -> int:
             papa += 100
         elif enemy_type_check(st, "MOB") == 1 or enemy_type_check(st, "CITIZEN") == 1:
             papa += 200
+    elif arg2 != 0:  # :61–66
+        papa = arg2
+        o = st.charas[charaid(ctx, -arg2 - 100)]
+        if (t(ctx, o, "ふたなり") == 2 or t(ctx, o, "変身時ふたなり") == 2) and st.rng.rand(4) != 0:
+            papa = 200
     else:
-        raise NotImplementedError("NINSIN_HANTEI の ARG:2（仲間キャラ・一般人の父親指定）は未移植")
+        # PAPA_ID = 0 → :72–97 のどれにも当たらず PREG_PER（静的 #DIM）は前回の値のまま
+        raise NotImplementedError("NINSIN_HANTEI：父親 ID 0（戦闘外・幽閉外）は未移植")
     c.cflag[221] += arg0  # :69
     birth = exp(ctx, c, "出産経験")
     pper = 0  # #DIM PREG_PER（関数ごとに保持されるが :74 以降で必ず代入される分岐のみ到達）

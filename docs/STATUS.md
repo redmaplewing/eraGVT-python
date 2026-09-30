@@ -1,6 +1,6 @@
 # 現況（唯一真相，≤150 行）
 
-更新：2026-09-29（S07）
+更新：2026-09-30（S08）
 
 ## 已完成
 
@@ -61,31 +61,43 @@
     （「代入」＝口上本身改狀態，依規格不移植 → 當「找不到」，deviations 需裁決。）
   - 隨機方針 40 場模擬（seed 0–39）：catalog 實行時失敗 0、例外 0；停止原因同 S06。測試共 381 個（新增 `tests/test_narration.py` 32）。
 
+- **S08**：幽閉（設計與 CFLAG 對照：`docs/wiki/era/prison.md`）。敗北 → TURNEND（SET_PARTYMEMBER／SHIFTBACK_CHARA 把離隊者移到最後）→
+  每回合 PRISON_EVENT（17 種幽閉指令、EVENT_PALAM_UP、刻印、淫紋、汚染度）→ 脫出／救出（ボス擊破、指令 15、AFTER_RESCUED／
+  RECOVER_TO_PARTY）或 洗脳・悪堕ち・取り込まれ；全滅 ENDING_1 與ソロ ENDING_4／5 顯示本文後停止（ゲームオーバーモード未移植）。
+  - 新模組：`eragvt.game.prison`（event／commands／event_palam）、`party`、`tattoo`、`ending`；`turnend.inmon_recovery` 全移植
+    （救出後淫紋進行 → 悪堕ち／自ら幽閉）、PARASITE 前半（寄生経験・順応値，事件本體停止）；`_ABLUP, 1`、淫壷取得、
+    NINSIN_HANTEI 的 ARG:2 父親指定；SHOP `[130] 状況の確認`（SHOP_SHOW_SITUATION_LIST 全體）。
+  - 地の文（MESSAGE_PRISON／OTHER 的 PRISON 系／KYUUSHUTU／刻印）走 catalog；狀態變化 21 行進 `hooks.PRISON_HOOK_LINES`。
+  - Web：@EVENTSHOP 內的未移植也改為「停止」（先前會例外）。測試共 481 個（新增 `tests/test_prison.py` 100，含 Web 敗北→幽閉→SHOP→存讀檔 E2E）。
+  - 幽閉單獨壓力測試（30 seed × ボス 7 種、catalog）：取り込まれ 119／受精成立停止 67／SET_PROFILE 停止 24，catalog 失敗 0；
+    洗脳選項 ON＋半數触手の虜：洗脳 54／悪堕ち 55／受精 76／SET_PROFILE 25。
+
 ## 下一步
 
-- 未指定 S08。候選（PLAN「S08+ 橫向擴充」）：幽閉（PRISON／SHIFTBACK_CHARA，模擬中最常見的停止點）、妊娠（NINSIN_SUBMIT 以後）、
-  反擊・バースト・ＳＰ系指令、其餘行動、開局 `MESSAGE_FIRST` 接上 catalog。
+- 未指定 S09。候選：妊娠（NINSIN_SUBMIT 以降；戰鬥・幽閉兩處最常見的停止）、ゲームオーバーモード（CHANGE_GAMEOVER_MODE：
+  全滅後的繼續）、動画流出（DOUGA_RYUSUTU）、ＳＰ変身／ＳＰバースト／バースト攻擊、身體資料生成（SET_PROFILE／CHARA_SIZE：
+  也解決女性敏捷 0・傷害 2 倍的 deviation）、悪堕ちキャラ（AKUOTI_ATTACK、悪堕ち戰、容貌變化）。
 - 口上 catalog 待擴充：改狀態的口上（hook 化）、GOTO、SPLIT／STRDATA、未實作式中関数（覆蓋率報告）。
-- deviations.md 需裁決：振り解く `LOCAL:O`、口上的狀態副作用（S07 更新）、口上 catalog 實行時失敗的回復。
+- deviations.md 需裁決：振り解く `LOCAL:O`、口上的狀態副作用、口上 catalog 實行時失敗的回復、S08 新增項。
 
-## S06 後仍會停止的分岐（`NotImplementedError` → Web 停止）
+## S08 後仍會停止的分岐（`NotImplementedError` → Web 停止）
 
-隨機方針 250 場模擬（`GameRng` seed 0–249）中實際遇到的依頻度排序；其餘為程式中登記但罕見的分岐。
-- 敗北後：TURNEND `SET_PARTYMEMBER` 的 `SHIFTBACK_CHARA`、之後的 `PRISON_EVENT`（幽閉系統）。
-- 指令：73 ＳＰ變身、70 ＳＰバースト、74 ＳＰフルバースト、47 説得する（悪堕ち戰）、15 救出する；17 バースト攻擊切換後的
-  攻擊／命中／回避／傷害補正；反擊（[反撃]スタイル、`HANGEKI_TO_TENTACLE`）。
-- 受精成立（`NINSIN_HANTEI` 判定成功後的 NINSIN_SUBMIT 以降）、戰後妊娠判明（NINSIN_CHECK_AFTER）。
-- 強制自慰（ボス 7 的 SPCOM6 → `SELF_KIND`）、戰後自慰（SELF_BATTLEEND 成立時）。
-- 動画流出（撮影 bit TFLAG:21 立起時的 `DOUGA_RYUSUTU`）、戰後レイプ（AFTER_TRAIN_RAPE 成立時）。
-- 拡張度（CFLAG:34 != 0：開局固定路徑不會發生）、素股焦らし失敗的處女喪失（COMF103:125–175）、觸手服／觸手拘束具。
-- 悪堕ち／雜魚／クズ市民／ラスボス／事件戰／エンドレス、全滅エンド、デバッグ模式、`HATUJOU_TO_HAIRAN` 地の文。
+隨機方針 250 場模擬（`GameRng` seed 0–249，全員隨機預約、戰鬥隨機按鈕、catalog）依頻度：全滅 ENDING_1 後的ゲームオーバーモード 116、
+動画流出 39、受精成立 30、ＳＰ変身 20、ＳＰバースト 11、バースト攻擊（COM17）的回避補正 10／攻擊 7、膨乳化 SET_PROFILE 7、
+強制自慰 6、戰後レイプ 4。敗北後平均再走 1.5 個半日（最多 7；幽閉最多 8 回）——女性角色敏捷 0・傷害 2 倍（deviation）使敗北極快，
+3 人常在數回合內全滅。其餘登記但罕見：
+- 幽閉：ラスボス／悪堕ちキャラ 的幽閉、容貌變化（設定 ON）、RECOVER_CORRUPTION、RESCUE_CHILD、TS 性別變化、ラスボス出現後的淫紋陥落。
+- TURNEND：AKUOTI_ATTACK（悪堕ち後）、寄生触手的暴走／共生取得、BIRTH_HANTEI／GROW_HANTEI、INTIMIDATION／KIDNAPPING。
+- 指令：47 説得する、反擊（[反撃]スタイル、`HANGEKI_TO_TENTACLE`）；戰後妊娠判明（NINSIN_CHECK_AFTER）、戰後自慰。
+- 拡張度（CFLAG:34 != 0）、素股焦らし失敗的處女喪失、觸手服／觸手拘束具、悪堕ち／雜魚／クズ市民／ラスボス／事件戰／エンドレス、
+  デバッグ模式、`HATUJOU_TO_HAIRAN` 地の文。
 
 ## 已知問題
 
-- 未決：`docs/wiki/bridge/unresolved.md`；偏離：`docs/wiki/bridge/deviations.md`（整體「暫時維持」，S06 新增項待裁決）。
+- 未決：`docs/wiki/bridge/unresolved.md`；偏離：`docs/wiki/bridge/deviations.md`（整體「暫時維持」，S06–S08 新增項待裁決）。
 - 無 BOM 的 7 個角色 CSV 在原版 1.824 會以 Shift-JIS 讀（亂碼）；本程式以 UTF-8 讀，可能是 +v10 差異，待實機確認。
 - 開局僅支援「NORMAL＋特装戦隊」；其他初期セット／自訂角色會 `NotImplementedError`。
-- 可玩範圍：休憩・鍛錬・出撃（含被拘束的戰鬥；敗北後幽閉停止）。其他行動、11 日目夜的日數超過結局、救出／妊娠等狀態會進入
+- 可玩範圍：休憩・鍛錬・出撃（含被拘束的戰鬥、敗北後的幽閉與救出）。其他行動、11 日目夜的日數超過結局、妊娠等狀態會進入
   Web「停止」畫面（deviations、上一節）。
 - 身體資料（体重・胸の重量）為 0，戰鬥中女性角色敏捷被扣成 0、傷害 2 倍（deviations，需裁決）。
 - 襲撃／救援（DAY ≥ 3）與子触手襲来成立時只顯示「スキップ」訊息（deviations）。

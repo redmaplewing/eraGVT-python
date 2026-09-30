@@ -583,9 +583,102 @@ def com14(ctx: Ctx) -> ComGen:
 
 
 def com15(ctx: Ctx) -> ComGen:
-    """`COMF15.ERB@COM15`:34–59（救出する）。成功判定と地の文（MESSAGE_KYUUSHUTU.ERB）は未移植で停止。"""
-    raise NotImplementedError("救出する（COM15：ACT_HANTEI_CHARA_TO_TENTACLE_KYUUSHUTU）は未移植")
+    """`COMF15.ERB@COM15`:34–59（救出する）。地の文は `地の文/MESSAGE_KYUUSHUTU.ERB`（catalog）。"""
+    st = ctx.state
+    c = tc(ctx)
+    out = ctx.out
+    if act_limit(ctx) == 1:  # :36–38
+        return 1
+    print_distance(ctx)  # :41–42
+    out.printl()
+    _kyuushutu_msg(ctx, "MESSAGE_BATTLE_CHARA_KYUUSHUTU")  # :45
+    if act_hantei_kyuushutu(ctx) == 1:  # :46–54
+        _kyuushutu_msg(ctx, "MESSAGE_BATTLE_CHARA_KYUUSHUTU_SUCCESS")
+        st.tflag[19] = 1
+    else:
+        _kyuushutu_msg(ctx, "MESSAGE_BATTLE_CHARA_KYUUSHUTU_FALSE")
+    out.printw()  # :55
+    c.ex[99] += 1  # :57 EX:行動ポイント
+    return 1
     yield  # pragma: no cover
+
+
+def _kyuushutu_msg(ctx: Ctx, name: str) -> None:
+    """`地の文/MESSAGE_KYUUSHUTU.ERB` の各関数（本文のみ、状態変化なし）。catalog で実行できなければ本文を Python で出す。"""
+    if ctx.narration.run_function(ctx, name, []):
+        return
+    # DEVIATION（表示のみ）：catalog が無いときは同じ本文を Python で出す（deviations.md「幽閉的地の文與淫紋顯示」）
+    st = ctx.state
+    s2500 = ctx.data.str_defaults.get(2500, "")
+    me = print_transcallname(st, st.target)
+    from ..action import print_callname
+
+    who = prison_chara(ctx)
+    other = print_callname(st, who) if who >= 0 else ""
+    text = {
+        "MESSAGE_BATTLE_CHARA_KYUUSHUTU": f"{me}は {s2500}に囚われた仲間を救出しようとあがいた！",  # :4–5
+        "MESSAGE_BATTLE_CHARA_KYUUSHUTU_SUCCESS": f"{me}は {s2500}に取り込まれた{other}の救出に成功した！",  # :10–12
+        "MESSAGE_BATTLE_CHARA_KYUUSHUTU_FALSE": f"{s2500}に取り込まれた仲間を探しても、隠されているのかどこにも見つからない……",
+        "MESSAGE_KYUUSHUTU_SUCCESS": f"{me}は{other}を触手から大きく離れた地点まで運んだ！",  # :31–33
+        "MESSAGE_ESCAPE_RESCUED": f"{other}は息も絶え絶えながらなんとか反応している……",  # :38–40
+    }[name]
+    ctx.out.printl(text)
+
+
+def act_hantei_kyuushutu(ctx: Ctx) -> int:
+    """`COMF15.ERB@ACT_HANTEI_CHARA_TO_TENTACLE_KYUUSHUTU`:102–174。"""
+    from .core import correction_binsyou
+
+    st = ctx.state
+    c = tc(ctx)
+    out = ctx.out
+    l0 = percent_cal(c.base[0] * 2 + c.base[1], c.maxbase[0] * 2 + c.maxbase[1])  # :107
+    r = percent_cal(st.flag[13], st.flag[12])  # :110–117
+    l1 = 100 if r > 50 else 105 if r > 25 else 110
+    l2 = c.maxbase[ctx.data.index_of("BASE", "敏捷")]  # :120
+    if t(ctx, c, "小柄") == 1:  # :123–126
+        l2 = times(l2, "0.90")
+    if t(ctx, c, "長身") == 1:
+        l2 = times(l2, "1.20")
+    l2 = correction_trans(ctx, l2)  # :129
+    l2 = div(l2 * cloth_battle_hosei(ctx, "BINSYOU"), 100)  # :132–133
+    l2 = shinkyou_check(ctx, "BINSYOU", l2)  # :136–137
+    l3 = int(tentacle_access(ctx, "BINSYOU"))  # :140–141
+    if st.tflag[2] == 1:  # :144–145
+        l3 = times(l3, "0.50")
+    l4 = correction_binsyou(percent_cal(l2, l3))  # :148
+    l5 = div((div(l0, 2) + 50) * l1 * l4, 10000)  # :151
+    if l5 > 50:  # :153–157
+        l5 = 50
+    if l5 < 10:
+        l5 = 10
+    if st.flag[999] == 1:  # :159–166
+        for k, v in enumerate((l0, l1, l2, l3, l4)):
+            out.printl(f"LOCAL:{k} ＝ {v}")
+        out.printl(f"行動成功値：{l5}")
+    return 1 if st.rng.rand(100) < l5 else 0
+
+
+def kyushutu_success(ctx: Ctx) -> None:
+    """`COMF15.ERB@KYUSHUTU_SUCCESS`:77–97（撤退成功時、TFLAG:19 == 1）。"""
+    st = ctx.state
+    who = prison_chara(ctx)  # :79–82
+    if who < 0:
+        return
+    _kyuushutu_msg(ctx, "MESSAGE_KYUUSHUTU_SUCCESS")  # :83
+    saved = st.target  # :84–88
+    st.target = who
+    _kyuushutu_msg(ctx, "MESSAGE_ESCAPE_RESCUED")
+    st.target = saved
+    o = st.charas[who]  # :90–97
+    o.cflag[0] = -1
+    o.cflag[20] = 0
+    o.cflag[21] = 0
+    o.cflag[30] = 0
+    o.cflag[31] = 0
+    o.base[0] = 1
+    o.base[1] = 1
+    o.base[2] = 1
 
 
 # --- COMF40（引き剥がす）-------------------------------------------------------------------

@@ -225,39 +225,14 @@ def _talent_message(ctx: Ctx, lines: tuple[str, ...], talent_no: int, verb: str,
 
 
 def ablup(ctx: Ctx, arg: int) -> None:
-    """`@_ABLUP, ARG`:6–482。ARG=0 通常、2 は珠の取得のみ（ARG=1 幽閉は未使用）。"""
+    """`@_ABLUP, ARG`:6–482。ARG=0 通常、1 は幽閉（:11 の珠の取得を行わない）、2 は珠の取得のみ。"""
     st, out = ctx.state, ctx.out
     c = tc(ctx)
-    if arg == 1:
-        raise NotImplementedError("_ABLUP, 1（幽閉）は未移植")
-    # :11–62 珠の取得
-    out.set_color((105, 105, 105))
-    if st.flag[999] == 1:
-        out.printl(" * DEGUG　珠の入手 *")
-    for count in range(12):
-        idx = count + 6 if count > 3 else count
-        p = c.palam[idx]
-        for bound, got in ((100, 0), (300, 1), (600, 2), (1500, 10), (3000, 20), (6000, 100), (10000, 200),
-                           (30000, 1000), (60000, 2000), (150000, 10000), (300000, 20000)):
-            if p < bound:
-                gain = got
-                break
-        else:
-            gain = 100000
-        # :46–47 `LOCAL:1 *= 135 / 100`：135/100 は整数除算で 1（原作どおり実質効果なし）
-        if t(ctx, c, "背徳の烙印") > 0:
-            gain *= 135 // 100
-        c.juel[idx] += gain
-        if st.flag[999] == 1:
-            out.printl(f"　　取得する{ctx.data.names['PALAM'].get(idx, '')}の珠 : {gain}")
-        if c.juel[idx] >= 999999 and idx >= 4:
-            c.juel[idx] = 999999
-        elif c.juel[idx] >= 99999999:
-            c.juel[idx] = 99999999
-    out.reset_color()
-    if st.flag[999] == 1:
+    if arg in (0, 2):  # :11–62 珠の取得
+        _juel_from_palam(ctx, c)
+    if st.flag[999] == 1:  # :63–64
         out.printl()
-    if arg == 2:
+    if arg == 2:  # :65–66
         return
     # :73–145 各能力（厳しいものから珠を消費）
     new = {
@@ -285,6 +260,60 @@ def ablup(ctx: Ctx, arg: int) -> None:
         _raise(ctx, c, name, lv[i])
     _talents(ctx, c)
     # :482 GET_STATE_ABLUP（SHOP_TROPHY.ERB:443–：UNLOCK_ACHIEVEMENT のみ。実績は GLOBAL＝deviations.md「全域資料」）
+
+
+def message_gettalent(ctx: Ctx, code: str) -> None:
+    """`地の文/MESSAGE_SEX.ERB@MESSAGE_GETTALENT_{INKAKU,INTUBO,INJIRI,INNYUU}`:1696–1742。"""
+    from .ninsin import estrus_text
+
+    st = ctx.state
+    c = tc(ctx)
+    if code == "INKAKU":  # :1696–1709
+        part = "陰茎" if is_male(ctx.data, c) else "陰核"
+        lines = (f"幾度も刺激を受けて慣らされた{{n}}の{part}は、", "そよ風程度の刺激すら快感として感じるようになってしまった・・・")
+        no = 153
+    elif code == "INTUBO":  # :1713–1720（%ESTRUS_TEXT_F(TARGET)%：ESTRUS_CYCLE.ERB:30–46）
+        lines = (f"触手によって幾度も突き上げられ、注ぎ込まれる精液によって灼かれ続けた{{n}}の{estrus_text(ctx, st.target)}子宮は、",
+                 "子を宿す為であるはずの空間を侵すモノを求め続けている・・・")
+        no = 154
+    elif code == "INJIRI":  # :1724–1731
+        lines = ("度重なる責めによって、数週間前とは比べ物にならないほど緩んだ{n}の菊門は、",
+                 "埋められる快感と排泄の快感を深く刻み込まれてしまっていた・・・")
+        no = 155
+    else:  # INNYUU :1735–1742
+        lines = ("触手によって責められ、弄ばれた{n}の胸はすっかり作り変えられ、",
+                 "衣擦れ程度の刺激すら快感として感じるようになってしまった・・・")
+        no = 156
+    _talent_message(ctx, lines, no, "になった", f"GETTALENT_{code}")
+
+
+def _juel_from_palam(ctx: Ctx, c: Character) -> None:
+    """:11–62 PALAM → 珠。"""
+    st, out = ctx.state, ctx.out
+    out.set_color((105, 105, 105))
+    if st.flag[999] == 1:
+        out.printl(" * DEGUG　珠の入手 *")
+    for count in range(12):
+        idx = count + 6 if count > 3 else count
+        p = c.palam[idx]
+        for bound, got in ((100, 0), (300, 1), (600, 2), (1500, 10), (3000, 20), (6000, 100), (10000, 200),
+                           (30000, 1000), (60000, 2000), (150000, 10000), (300000, 20000)):
+            if p < bound:
+                gain = got
+                break
+        else:
+            gain = 100000
+        # :46–47 `LOCAL:1 *= 135 / 100`：135/100 は整数除算で 1（原作どおり実質効果なし）
+        if t(ctx, c, "背徳の烙印") > 0:
+            gain *= 135 // 100
+        c.juel[idx] += gain
+        if st.flag[999] == 1:
+            out.printl(f"　　取得する{ctx.data.names['PALAM'].get(idx, '')}の珠 : {gain}")
+        if c.juel[idx] >= 999999 and idx >= 4:
+            c.juel[idx] = 999999
+        elif c.juel[idx] >= 99999999:
+            c.juel[idx] = 99999999
+    out.reset_color()
 
 
 def _talents(ctx: Ctx, c: Character) -> None:
@@ -330,23 +359,19 @@ def _talents(ctx: Ctx, c: Character) -> None:
     # :367–371 淫核
     if tl("淫核") == 0 and a("Ｃ感覚") >= 5 and c.ex[0] >= 50:
         set_t("淫核", 1)
-        part = "陰茎" if is_male(data, c) else "陰核"
-        _talent_message(ctx, (f"幾度も刺激を受けて慣らされた{{n}}の{part}は、", "そよ風程度の刺激すら快感として感じるようになってしまった・・・"), 153, "になった", "GETTALENT_INKAKU")
-    # :374–378 淫壷（地の文に ESTRUS_TEXT_F が要る）
+        message_gettalent(ctx, "INKAKU")
+    # :374–378 淫壷
     if tl("淫壷") == 0 and a("Ｖ感覚") >= 5 and exp(ctx, c, "Ｖ経験") >= 200 and c.ex[1] >= 25:
-        raise NotImplementedError("淫壷の取得（MESSAGE_GETTALENT_INTUBO の ESTRUS_TEXT_F）は未移植")
+        set_t("淫壷", 1)
+        message_gettalent(ctx, "INTUBO")
     # :381–385 淫尻
     if tl("淫尻") == 0 and a("Ａ感覚") >= 5 and exp(ctx, c, "Ａ経験") >= 200 and c.ex[2] >= 25:
         set_t("淫尻", 1)
-        _talent_message(ctx, ("度重なる責めによって、数週間前とは比べ物にならないほど緩んだ{n}の菊門は、",
-                              "埋められる快感と排泄の快感を深く刻み込まれてしまっていた・・・"), 155, "になった",
-                        "GETTALENT_INJIRI")
+        message_gettalent(ctx, "INJIRI")
     # :388–392 淫乳
     if tl("淫乳") == 0 and a("Ｂ感覚") >= 5 and c.ex[3] >= 50:
         set_t("淫乳", 1)
-        _talent_message(ctx, ("触手によって責められ、弄ばれた{n}の胸はすっかり作り変えられ、",
-                              "衣擦れ程度の刺激すら快感として感じるようになってしまった・・・"), 156, "になった",
-                        "GETTALENT_INNYUU")
+        message_gettalent(ctx, "INNYUU")
     # :395–399 清純派の消失
     if tl("初心") < 1 and tl("清純派") > 0 and (
         tl("触手の虜") > 0

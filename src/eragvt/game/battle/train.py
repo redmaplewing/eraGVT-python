@@ -579,8 +579,10 @@ def usercom(ctx: Ctx, value: int) -> Generator[None, int, None]:
         # :584 ENEMY_TYPE_CHECK_F("AKUOTI") == 0 側（悪堕ち戦は event_train で停止済み）
         if act_hantei_tettai_tentacle(ctx) == 1:
             _msg_tettai_success(ctx)
-            if st.tflag[19] == 1:  # COMF15.ERB@KYUSHUTU_SUCCESS_HANTEI:70–73
-                raise NotImplementedError("救出成功（KYUSHUTU_SUCCESS）は未移植")
+            if st.tflag[19] == 1:  # :593 TRYCALL KYUSHUTU_SUCCESS_HANTEI（COMF15.ERB:70–73）
+                from .restraint import kyushutu_success
+
+                kyushutu_success(ctx)
             raise BeginAfterTrain
         _msg_tettai_false(ctx)
         yield from source_check(ctx)  # JUMP SOURCE_CHECK

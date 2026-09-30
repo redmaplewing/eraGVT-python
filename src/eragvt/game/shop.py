@@ -797,3 +797,140 @@ def save_info(state: GameState, data: GameData) -> str:
     if state.flag[64] > 0:
         return f"{format_percent(s0, 14, True)} {format_percent(s3, 7, False)} {format_percent(s1, 12, False)}    ver{s2}"
     return f"{format_percent(s0, 14, True)} {format_percent(s3, 7, False)} {format_percent(s1, 6, False)}殲滅中    ver{s2}"
+
+
+# --- [130] 状況の確認（SHOP_SHOW_SITUATION_LIST.ERB）-------------------------------------------------
+
+
+def shop_show_situation_list(state: GameState, data: GameData, out: TextOutput, narration: NarrationService) -> None:
+    """`インターミッション画面/SHOP_SHOW_SITUATION_LIST.ERB@SHOP_SHOW_SITUATION_LIST`:3–209。
+
+    :10 で退避した FLAG:11 は戻さない（最後に表示した生存ボスの番号が残る）、:14 `SAVESTR:13 = BOSS`：原作どおり。
+    """
+    from .action import Ctx, print_transcallname
+    from .battle.core import tentacle_access
+    from .prison.event import tentacle_access_prison
+    from .tentacle import tentacle_survive_check
+
+    ctx = Ctx(state, data, out, narration)
+    f = state.flag
+    lb(out)  # :6
+    out.printl()
+    bit = 1  # :10–39
+    if enemy_type_check(state, "BOSS") == 1:
+        out.printl(f"現在活動中の{data.str_defaults.get(2502, '')}")
+        state.savestr[13] = "BOSS"
+        out.drawline()
+        for _ in range(f[3]):
+            r = tentacle_survive_check(state, bit)
+            if r > 0:
+                f[11] = r
+                out.print("[")
+                tentacle_access(ctx, "NAME")
+                out.print("]")
+            bit *= 2
+    elif get_lastboss_phase(state) >= 1:
+        raise NotImplementedError("ラスボス出現後の状況一覧（SHOP_SHOW_SITUATION_LIST:26–38）は未移植")
+    out.printl()
+    out.drawline()
+    others = [i for i in range(1, state.charanum)]
+    # :44–70 入院／育児中
+    if any(state.charas[i].cflag[0] in (CharaState.BEFORE_BIRTH, CharaState.CHILDCARE) for i in others):
+        out.printl("入院/育児中のキャラ")
+        out.drawline()
+        for i in others:
+            c = state.charas[i]
+            if c.cflag[0] == CharaState.BEFORE_BIRTH:
+                out.print(f" {c.callname}：特別病棟に入院　")
+            elif c.cflag[0] == CharaState.CHILDCARE:
+                out.print(f" {c.callname}：育児中　")
+            if check_pregnant(data, state, i) and c.cflag[0] in (CharaState.BEFORE_BIRTH, CharaState.CHILDCARE):
+                out.print("[妊娠中]")
+            if c.cflag[0] in (CharaState.BEFORE_BIRTH, CharaState.CHILDCARE):
+                out.printl()
+        out.drawline()
+    # :72–111 幽閉中
+    out.printl("幽閉中のキャラ")
+    out.drawline()
+    n = 0
+    for i in others:
+        c = state.charas[i]
+        if c.cflag[0] != CharaState.IMPRISONED:
+            continue
+        out.print(f" {c.callname}：")
+        if c.cflag[20] == 2:  # :87–95（RESULT = 最後に一致した番号、BREAK は一致した直後）
+            who = 0
+            for k in range(state.charanum):
+                who = 0
+                if c.cflag[21] == state.charas[k].cflag[240]:
+                    who = k
+                if who:
+                    break
+            out.print(print_transcallname(state, who))
+        else:
+            tentacle_access_prison(ctx, i, "NAME")
+        out.print(f"によって幽閉中 {div(c.cflag[31], 2)}日目　")
+        if check_pregnant(data, state, i):
+            out.print("[妊娠中]　")
+        if c.cflag[220] and state.flag.get_bit(805, 0) == 0:  # CONFIG_CHECK_OTHER_F(0) == 0
+            out.print(f"育児中の子触手：{c.cflag[220]}")
+        out.printl()
+        n += 1
+    if n == 0:
+        out.printl("なし")
+    out.drawline()
+    # :113–138 拉致監禁中
+    out.printl("拉致監禁中のキャラ")
+    out.drawline()
+    if any(state.charas[i].cflag[0] == CharaState.KIDNAPPED for i in others):
+        # :126 は直前の RESULT を名前に使う（原作の不具合）。監禁は未移植なので到達しない
+        raise NotImplementedError("拉致監禁中キャラの表示（SHOP_SHOW_SITUATION_LIST:121–134）は未移植")
+    out.printl("なし")
+    out.drawline()
+    # :140–169 洗脳／悪堕ち
+    out.printl("洗脳/悪堕ち中のキャラ")
+    out.drawline()
+    n = 0
+    for i in others:
+        c = state.charas[i]
+        if c.cflag[0] == CharaState.BRAINWASHED:
+            out.print(f" {c.callname}：洗脳（")
+            if c.cflag[20] < 2:
+                tentacle_access_prison(ctx, i, "NAME")
+            elif c.cflag[20] == 2:
+                out.print(print_transcallname(state, c.cflag[21]))
+            out.print("）　")
+        elif c.cflag[0] == CharaState.CORRUPTED:
+            out.print(f" {c.callname}：悪堕ち　")
+        if check_pregnant(data, state, i) and c.cflag[0] in (CharaState.BRAINWASHED, CharaState.CORRUPTED):
+            out.print("[妊娠中]")
+        if c.cflag[0] in (CharaState.BRAINWASHED, CharaState.CORRUPTED):
+            out.printl()
+            n += 1
+    if n == 0:
+        out.printl("なし")
+    out.drawline()
+    # :172–196 取り込まれたキャラ
+    if not game_option(state, GameOption.SOLO):
+        out.printl("取り込まれたキャラ")
+        out.drawline()
+        n = 0
+        for i in others:
+            c = state.charas[i]
+            if c.cflag[0] != CharaState.DEAD:
+                continue
+            out.print(f" {c.callname}：")
+            out.print("苗床化" if talent(data, c, "繁殖袋") else "取り込まれ")
+            out.printl()
+            n += 1
+        if n == 0:
+            out.printl("なし")
+        out.drawline()
+    # :199–208 子触手
+    local = f[44] - sum(c.cflag[220] for c in state.charas)
+    if local:
+        out.printl("活動中の子触手の総数")
+        out.drawline()
+        out.printl(f" {local}匹")
+        out.drawline()
+    out.printw()  # :209

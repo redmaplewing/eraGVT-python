@@ -12,6 +12,8 @@ from collections.abc import Generator
 from ..state import GameState, IntArray
 from ..state.constants import ActionPlan, CharaState, GameOption
 from .action import (
+    get_exp,
+    print_transcallname,
     BEAUTY_SALON,
     FUNSUI,
     FUUKEIGA,
@@ -33,8 +35,11 @@ from .action import (
 from .chara_common import charatalent, is_male, level_status, talent
 from .era import div, isqrt, limit, mod, times
 from .opening import game_option
-from .shop import charanum_active, charanum_safe, charanum_safe_partycheck, check_gameover, check_pregnant
+from .shop import charanum_active, charanum_safe, check_gameover
 from .tentacle import enemy_type_check, get_lastboss_phase, tentacle_survive_num
+from .party import after_rescued, set_partymember
+from .prison.event import prison
+from .battle.core import run_chinobun
 
 # --- 1 ターン（JUMP ACTION_MAIN → BEGIN TURNEND の繰り返し → BEGIN SHOP）-------------------
 
@@ -135,31 +140,6 @@ def event_turnend(ctx: Ctx) -> Step:
     raise NotImplementedError("襲撃／救援イベントの戦闘（BEGIN TRAIN）は S05")
 
 
-def set_partymember(ctx: Ctx) -> None:
-    """`ヒロイン関連/SET_PARTYMEMBER.ERB@SET_PARTYMEMBER`:1–28。"""
-    st, data, out = ctx.state, ctx.data, ctx.out
-    if st.charanum < 3 and charanum_safe_partycheck(st) == 0:
-        st.flag[63] = 0
-    for i in range(st.charanum):
-        if i == GameState.MASTER:
-            continue
-        c = st.charas[i]
-        if game_option(st, GameOption.SOLO) or check_gameover(st):
-            pass
-        elif check_pregnant(data, st, i) and c.cflag[100] == ActionPlan.SORTIE and c.cflag[0] < 1:
-            out.printl(f"{c.callname}は妊娠しているため出撃できなくなりました")
-            out.printw()
-            c.cflag[100] = ActionPlan.REST
-        elif check_pregnant(data, st, i) and c.cflag[100] == ActionPlan.DEFENSE:
-            out.printl(f"{c.callname}は妊娠しているため防衛できなくなりました")
-            out.printw()
-            c.cflag[100] = ActionPlan.REST
-        if c.cflag[0] != CharaState.SAFE and i < st.charanum - 1 and c.cflag[999]:
-            raise NotImplementedError("SHIFTBACK_CHARA（離脱キャラを最後尾へ）は未移植")
-        elif c.cflag[0] != CharaState.SAFE and c.cflag[999]:
-            c.cflag[999] = 0
-
-
 def ending(ctx: Ctx) -> None:
     """`ゲーム内_イベント発生/エンディング/ENDING.ERB@ENDING`:3–88 の判定部分。結末画面本体は未移植。"""
     st = ctx.state
@@ -183,29 +163,145 @@ def ending(ctx: Ctx) -> None:
 
 def recalc_partymember(ctx: Ctx) -> None:
     """`SHOP_TURNEND.ERB@RECALC_PARTYMEMBER`:220–258。"""
-    st, data = ctx.state, ctx.data
+    st, data, out = ctx.state, ctx.data, ctx.out
     saved = st.target
-    for i in range(st.charanum):
-        if i == GameState.MASTER:
+    cc = 0
+    while cc < st.charanum:  # :225 FOR CCOUNT, 0, CHARANUM（:229–230 CCOUNT >= CHARANUM で BREAK）
+        if cc == GameState.MASTER:
+            cc += 1
             continue
-        level_status(data, st, i)
-        if st.charas[i].cflag[0] == CharaState.JUST_RESCUED:
-            raise NotImplementedError("救出直後の処理（RESCUE_CHILD／AFTER_RESCUED）は未移植")
-        inmon_recovery(ctx, i)
+        level_status(data, st, cc)  # :233
+        if st.charas[cc].cflag[0] == CharaState.JUST_RESCUED:  # :235–244
+            st.target = cc
+            if st.charas[st.target].cflag[6] == -1:
+                out.printl()
+                raise NotImplementedError("救出された娘キャラの処理（RESCUE_CHILD）は未移植")
+            after_rescued(ctx, st.target)
+            out.printw()
+        else:
+            inmon_recovery(ctx, cc)
+        if cc > st.charanum - 1:  # :248–249
+            break
         # :251–255 UPDATE_STATUS_RECORD（GLOBAL:103–131／GLOBALS と SAVEGLOBAL）と GET_STATE_TROPHY（GLOBAL の実績）。
         # DEVIATION: GLOBAL は読み書きしない（deviations.md「全域資料」）ので実行しない。SAVEDATA への影響はない。
+        cc += 1
     st.target = saved
 
 
 def inmon_recovery(ctx: Ctx, who: int) -> None:
-    """`SHOP_TURNEND.ERB@INMON_RECOVERY`:850–996。淫紋（CFLAG:32）が無ければ何もしない。"""
-    st, data = ctx.state, ctx.data
+    """`SHOP_TURNEND.ERB@INMON_RECOVERY, ARG`:850–996。淫紋（CFLAG:32）の進行（救出後も進行する設定）または回復。"""
+    from .tattoo import PROG_UNIT, save_tattoo, tattoo_access
+
+    st, data, out = ctx.state, ctx.data, ctx.out
+    local2 = st.target  # :853
+    st.target = who
     c = st.charas[who]
-    if config_check_maniac(st, 9) == 1:
+    rand = st.rng.rand
+    if config_check_maniac(st, 9) == 1:  # :856–982
         if c.cflag[32] > 0 and c.cflag[0] == CharaState.SAFE and talent(data, c, "触手の虜") == 1:
-            raise NotImplementedError("淫紋の進行（INMON_RECOVERY:857–）は未移植")
-    elif c.cflag[32] > 0:
-        raise NotImplementedError("淫紋の回復（INMON_RECOVERY:983–）は未移植")
+            a = lambda n: c.abl[data.index_of("ABL", n)]  # noqa: E731
+            # :859 RESULT:1 = 2 + RAND:(LIMIT(SQRT(100 - CFLAG:32 / 10^16),1,8)) + RAND:(MIN(欲望+1,5)) + RAND:(MIN(触手中毒+1,5))
+            r1 = 2 + rand(limit(isqrt(100 - div(c.cflag[32], PROG_UNIT)), 1, 8))
+            r1 += rand(min(a("欲望") + 1, 5))
+            r1 += rand(min(a("触手中毒") + 1, 5))
+            r1 = div(r1 * 3, 4)
+            prog = int(tattoo_access(ctx, "PROGRESS_VAR"))
+            save_tattoo(ctx, limit(prog + r1, 0, 100))
+            out.printl(f"{c.callname}の淫紋が{r1}％進行した・・・（{div(c.cflag[32], PROG_UNIT)}％）")
+            out.printw()
+            if int(tattoo_access(ctx, "PROGRESS_VAR")) >= 100 and config_check_maniac(st, 10) == 1:  # :869–980
+                _inmon_fall(ctx)
+            out.drawline()  # :981
+    else:  # :984–995
+        st.target = who
+        if c.cflag[32] > 0:
+            result = div(int(tattoo_access(ctx, "PROGRESS_VAR")) * 9, 10)
+            if result == 0:
+                c.cflag[32] = 0
+            else:
+                save_tattoo(ctx, result)
+    st.target = local2  # :996
+
+
+def _inmon_fall(ctx: Ctx) -> None:
+    """`INMON_RECOVERY`:870–979：淫紋の進行が 100 に達した → 生存ボスから支配者を選び、悪堕ち／即死／自ら幽閉。
+
+    :878 `FOR LCOUNT, 0, RESULT` の終端は FOR 開始時に 1 回だけ評価される
+    （reference/emuera-1824/Emuera/GameProc/Function/Instraction.Child.cs:1730–1743）。
+    `GET_BOSS_ERB_NUM` は 7（`eragvt.game.tentacle.BOSS_ERB_NUM`）、`TENTACLE_BITVALUE, n` はボスなら 2^(n-1)
+    （COMMON_TENTACLE_DATA.ERB:128–151）。
+    """
+    from .battle.core import add_randchoose, clear_randchoose, is_hole, randchoose_f
+    from .prison.event import corrupt_change_looks_main
+    from .tentacle import BOSS_ERB_NUM, tentacle_survive_check
+
+    st, data, out = ctx.state, ctx.data, ctx.out
+    c = st.target_chara
+    tl = lambda n: talent(data, c, n)  # noqa: E731
+    clear_randchoose(st)  # :872
+    if enemy_type_check(st, "BOSS") != 1:  # :873–877
+        raise NotImplementedError("ラスボス出現後の淫紋陥落（GET_LASTBOSS_ERB_NUM）は未移植")
+    for lc in range(BOSS_ERB_NUM):  # :878–886
+        if lc == 1 and get_lastboss_phase(st) >= 2:
+            continue
+        r = tentacle_survive_check(st, 2**lc)
+        if r > 0:
+            add_randchoose(st, r)
+    c.cflag[20] = st.flag[10]  # :887–888
+    c.cflag[21] = randchoose_f(st)
+    exp_i = lambda n: data.index_of("EXP", n)  # noqa: E731
+    if tl("変身能力") >= 0:  # :891–941 必ず悪堕ち
+        c.cflag[0] = CharaState.CORRUPTED
+        if tl("変身能力") == 1:
+            c.cflag[41] = 401
+        if tl("完堕ち") == 1:  # :897–906
+            if tl("変身能力") == 1:
+                c.cflag[41] = 402
+            else:
+                c.cflag[40] = 196
+                c.cflag[42] = 0
+        c.exp[exp_i("陥落経験")] += 1
+        run_chinobun(ctx, "MESSAGE_SHOP_AKUOTI", fallback=lambda: kojo_root(ctx, "SHOP_AKUOTI"))  # :911
+        corrupt_change_looks_main(ctx, st.target)  # :913
+        if game_option(st, GameOption.SOLO):  # :915–926
+            dark = sum(1 for ch in st.charas if ch.cflag[0] in (CharaState.BRAINWASHED, CharaState.CORRUPTED))
+            if st.charanum - dark < 2:
+                from .ending import ending_4
+
+                ending_4(ctx)
+                out.drawline()
+                return
+        out.printl(f"{ctx.data.str_defaults.get(2500, '')}の尖兵となった{c.callname}に邪悪な力が流れ込む・・・")
+        out.printl()
+        lv = c.abl[data.index_of("ABL", "レベル")]
+        # :931–938（CFLAG:0 は必ず 悪堕ち なので 40 * (5 + Lv) + RAND:50。CALL TENTACLE_LEVEL の RESULT は使われない）
+        local = 40 * (5 + lv) + st.rng.rand(50)
+        if local < 50:
+            local = 50
+        get_exp(ctx, min(local, 750))
+        c.cflag[23] = 0
+    elif not is_hole(ctx, st.target) and tl("変身時ＴＳ") < 1 and config_check_prison(st, 0) == 0:  # :944–963
+        c.cflag[0] = CharaState.DEAD
+        run_chinobun(ctx, "MESSAGE_SHOP_PRISON", fallback=lambda: kojo_root(ctx, "SHOP_PRISON"))
+        out.printw()
+        name = print_transcallname(st, st.target)
+        out.printl(f"……しかしオトコである{name}はそのままトドメを刺され、")
+        out.printl(f"{ctx.data.str_defaults.get(2500, '')}に取り込まれていってしまったようだ・・・")
+        out.printw()
+        out.printl(f"{name}はロストしました")
+        out.printw()
+        if c.exp[exp_i("幽閉経験")] == 0:  # :958–961（SIF は次の 1 行だけ：Instraction.Child.cs:1765–1797）
+            c.exp[exp_i("異常経験")] += 1
+        c.exp[exp_i("幽閉経験")] += 1
+        c.cflag[23] = 0
+    else:  # :965–977 自ら幽閉される
+        c.cflag[0] = CharaState.IMPRISONED
+        run_chinobun(ctx, "MESSAGE_SHOP_PRISON", fallback=lambda: kojo_root(ctx, "SHOP_PRISON"))
+        if c.exp[exp_i("幽閉経験")] == 0:
+            c.exp[exp_i("異常経験")] += 1
+        c.exp[exp_i("幽閉経験")] += 1
+        c.cflag[23] = 0
+    out.printw()  # :979
 
 
 def boss_tentacle_recover(ctx: Ctx) -> None:
@@ -230,18 +326,6 @@ def boss_tentacle_recover(ctx: Ctx) -> None:
 
 
 # --- 夜間イベント（開始条件のみ） ------------------------------------------------------
-
-
-def prison(ctx: Ctx) -> None:
-    """`ゲーム内_イベント発生/敗北幽閉中イベント/PRISON.ERB@PRISON`:3–31。"""
-    st, out = ctx.state, ctx.out
-    if st.flag[999] == -998:
-        st.flag[999] = 0  # RESETBGCOLOR は背景色が時間帯で決まるので不要
-    for i in range(st.charanum):
-        if i == GameState.MASTER:
-            continue
-        if st.charas[i].cflag[0] == CharaState.IMPRISONED or check_gameover(st):
-            raise NotImplementedError("幽閉中イベント（PRISON_EVENT）は未移植")
 
 
 def birth_hantei(ctx: Ctx) -> None:
@@ -674,7 +758,8 @@ def event_shop_normal(ctx: Ctx) -> None:
 
 
 def parasite(ctx: Ctx) -> None:
-    """`FORCE_深夜の寄生触手暴走.ERB@PARASITE`:3–。ループで FLAG:799 を上書きする（:9、原作どおり）。"""
+    """`強制発生イベント/FORCE_深夜の寄生触手暴走.ERB@PARASITE`:3–66。ループで FLAG:799 を上書きする（:9、原作どおり）。
+    共生取得・暴走・慰み者の各イベント本体は未移植（発生したら停止）。"""
     st, data = ctx.state, ctx.data
     if config_check_maniac(st, 3) == 0:
         return
@@ -684,8 +769,24 @@ def parasite(ctx: Ctx) -> None:
             continue
         if st.charas[i].cflag[999] == 0:
             continue
-        if talent(data, st.charas[i], "寄生"):
-            raise NotImplementedError("寄生触手（PARASITE:15–）は未移植")
+        c = st.charas[i]
+        if not talent(data, c, "寄生"):  # :15、:63–64
+            continue
+        c.exp[data.index_of("EXP", "寄生経験")] += 1  # :16
+        if talent(data, c, "共生") == 0:  # :19–20
+            c.cflag[82] += 1
+        if c.cflag[0] != 0:  # :23–24
+            continue
+        if st.time == 0:  # :27–28
+            continue
+        local3 = 20 if c.cflag[83] > 0 else 50  # :31–36
+        if talent(data, c, "共生") == 0 and c.cflag[82] >= local3 and c.cflag[84] == 0:  # :37–42
+            raise NotImplementedError("共生取得イベント（SYNBIOSIS_GET_EVENT）は未移植")
+        e = c.exp[data.index_of("EXP", "寄生経験")]
+        local = min(div(e * e * 200, e), 2500)  # :45（乗除は左結合：(e*e*200)/e）
+        if st.rng.rand(10000) < local:  # :47–59
+            raise NotImplementedError("寄生触手の暴走／慰み者イベント（PARASITE_EVENT／SYNBIOSIS_EVENT）は未移植")
+        # :62 GET_STATE_EXPUP：実績のみ（deviations.md「全域資料」）
 
 
 def small_tentacle_hantei(ctx: Ctx) -> None:
