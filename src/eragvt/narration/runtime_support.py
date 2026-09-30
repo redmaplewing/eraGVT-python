@@ -46,6 +46,12 @@ IMPLEMENTED_METHODS = {
 # Python 實作的使用者函式：名稱 → 說明（實體在 service.py 註冊）
 PY_FUNCTIONS = {
     "KOJO_ROOT": "口上/口上システム関係/KOJO_ROOT.ERB@KOJO_ROOT（派發規則、FLAG:62／FLAG:900）",
+    # S14：汎用関数/WindowDrawer.ERB（＋TagSetText.ERB）→ `narration.windowlib`
+    "WINDOW_CREATE": "汎用関数/WindowDrawer.ERB@WINDOW_CREATE",
+    "WINDOW_SETTEXT": "汎用関数/WindowDrawer.ERB@WINDOW_SETTEXT",
+    "WINDOW_DESTROY": "汎用関数/WindowDrawer.ERB@WINDOW_DESTROY",
+    "WINDOW_DISPLAY": "汎用関数/WindowDrawer.ERB@WINDOW_DISPLAY",
+    "WINDOW_DISPLAY_EX": "汎用関数/WindowDrawer.ERB@WINDOW_DISPLAY_EX（REF 配列引数：実行時 unsupported）",
 }
 
 
@@ -170,6 +176,13 @@ def unsupported_reasons_static(fd: N.FuncDef, catalog) -> list[tuple[int, str]]:
     visit(fd.body)
     for v, _ in fd.params:
         check_expr(fd.line, v)
+    # GOTO：飛び先は関数本体トップレベルの $ラベルのみ対応（runtime.Interp.call）
+    top = {s.name for s in fd.body if isinstance(s, N.Label)}
+    for s in N.iter_stmts(fd.body):
+        if isinstance(s, N.Goto) and s.name not in top:
+            out.append((s.line, f"GOTO 先 ${s.name} がトップレベルにない"))
+        elif isinstance(s, N.DrawLine) and s.form is not None:
+            check_expr(s.line, s.form)
     return out
 
 

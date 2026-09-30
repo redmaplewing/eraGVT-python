@@ -18,6 +18,8 @@ ERB 路徑相對 `source/earGVP/ERB/`。
   已移植；仍未移植：角色製作／狀態畫面的手動生成（UI）、TOINT 的 16／2 進與指數表記（停止）。
 - [ ] **FLASHNEWS 未移植**：新聞產生（含亂數、寫入 `SAVESTR:20`、`FLAG:60`）沒有執行，畫面顯示「（未實作）」。
   ゲームオーバーモードの固定ニュース（`FLAG:60 = 10001`，:91–；DAY:2 起算的經過ターン數）也不顯示（FLAG:60／DAY:2 照原作設定）。（原作：`インターミッション画面/SHOP_FLASHNEWS.ERB@FLASHNEWS`:3–752；Python：`eragvt.game.shop.flashnews`）
+  S14：動画流出的 CFLAG:284 在 FLASHNEWS 只由 `@FLASHNEWS_CHOOSEIDOL`（"内容"，:974–982）讀取，用來加重「動画流出」新聞的
+  RANDCHOOSE 權重（結果只進新聞本文／SAVESTR:20），屬於未移植的新聞產生本體，不另外移植。
 - [ ] **全域資料（GLOBAL）不讀不寫**：永遠走「真正的初次啟動」路徑（MOB_FLAG 初始化為 100、不套用 GLOBAL 的 config／性嗜好フィルタ），也不存成就等全域資料。（原作：`オープニング処理.ERB@EVENTFIRST`:29–45、`バージョン間互換処理.ERB@UPDATE`:95–130；Python：`eragvt.game.opening.event_first`）— 等設定畫面／成就功能時一起做。
   S05 起戰鬥中的 `UNLOCK_ACHIEVEMENT`（タクティカルオーダー、絶体絶命ヒロイン等）與 `GET_STATE_ABLUP` 同樣不執行（`eragvt.game.battle.core.unlock_achievement`）。
   S04 起同理不執行：`SHOP_TURNEND.ERB@UPDATE_STATUS_RECORD`:263–349（歷代最高紀錄 GLOBAL:103–131／GLOBALS、SAVEGLOBAL）與 `SHOP_TROPHY.ERB@GET_STATE_TROPHY`:398–441→`UNLOCK_ACHIEVEMENT`（成就達成訊息不會顯示）。（Python：`eragvt.game.turnend.recalc_partymember`、`eragvt.game.action.get_state_trophy`）
@@ -74,9 +76,14 @@ ERB 路徑相對 `source/earGVP/ERB/`。
 - [ ] **口上 catalog 的實行時失敗**（S07 新增）：執行中才發現的子集外（動態 CALLFORM 的呼叫先不可執行）或引擎會報錯停止的狀況
   （除以 0、範圍外參照），catalog 會回復輸出・亂數・LOCAL，口上當「找不到」、地の文印佔位。原作會報錯停止或照常執行。
   hook（狀態變化）已執行後才失敗者無法回復，改為停止（NotImplementedError）。（Python：`eragvt.narration.service._run`）
+  S14：含 INPUTS 的函式以「重放」執行（`run_function_gen`，`docs/wiki/python/narration.md`），若 INPUTS 之前已有 hook／KOJO_ROOT 的
+  狀態變化則無法重放 → 停止（本作現有的 INPUTS 函式 `MESSAGE_SEX_SPCOM7`／動画サイト在 INPUTS 前都沒有狀態變化）。
 - [ ] **口上 catalog 的顯示簡化**（S07 新增，只影響顯示）：`SETFONT`（字型名）與 `FONTITALIC`（斜體）不反映；`CLEARLINE` 只刪已完成的行；
   RESULT／RESULTS／COUNT 放在口上專用的暫存（`state.temp.narr`），與 Python 移植部分不共用（原作是全域變數；口上函式讀取呼叫前別處設定的
   RESULT 時會不同）。（Python：`eragvt.narration.runtime`）
+  S14：`DRAWLINEFORM 文字列` 畫成與 DRAWLINE 相同的區切線（原作以該字串重複到畫面寬：`GameView/EmueraConsole.Print.cs@getStBar`:543–560；
+  動画サイト :1335 的 `―`）；動画サイトの `PRINT_TAGSET_TEXT` 的 `@F:` フォント指定不反映（本作未使用），既定色的 `SETCOLOR 0x{GETCOLOR}`
+  以「回到呼叫前的顏色」表示（顯示相同）。（Python：`eragvt.narration.runtime`、`eragvt.narration.windowlib`）
 - [ ] **SHOW_SHOP 簡化**：狀態條（`COLOR_BAR` 的色階與長度）以 20 格單色近似；`SHOW_SHOP_STATUS_SIGN`（生理周期・疲勞等標記）、隊伍列表的欄寬對齊與第 2 行詳細、控えメンバー一覽未移植；`SHOP_NG_ACTION_INFO` 的紅字在函式結尾重設顏色（原作不重設）。（Python：`eragvt.game.shop`）
 - [ ] **未實作的選單**：`[50]`、`[110]`〜`[180]`、`[700]`、`[800]` 只顯示「（未實作）」。（`[100]` 已於 S04 接上行動執行。）
   S12：`[110]`〜`[160]` 先照 USERSHOP:246–285 的條件判斷（ゲームオーバーモード中 [111]〜[150] 不做任何事、[110] 先 LIMIT TARGET、
@@ -97,7 +104,7 @@ ERB 路徑相對 `source/earGVP/ERB/`。
   《危険度》的顏色照 `FORECAST_OUTPUT_SETCOLOR`。（Python：`eragvt.game.battle.train.show_status`／`show_usercom`／`usercom`）
 - [ ] **性攻擊的地の文**（S06 新增、S07 更新）：S07 起 `地の文/MESSAGE_SEX*.ERB`、敗北 `MESSAGE_BATTLE_END_LOSS`、射精・處女喪失・
   ヒロイン側性攻撃的地の文由 catalog 輸出本文，其中的狀態變化行經 `narration/hooks.py`（140 行，對照 sexmsg）依 ERB 順序執行、
-  RAND 也照 ERB 順序抽（亂數序列與 S06 不同）。catalog 不可執行（`MESSAGE_SEX_SPCOM7` 的 CFLAG:34 > 0 分岐等）或 Null 時才印
+  RAND 也照 ERB 順序抽（亂數序列與 S06 不同）。S14 起 `MESSAGE_SEX_SPCOM7`（含 INPUTS 與動画サイト）也由 catalog 執行。catalog 不可執行或 Null 時才印
   「〈地の文：函式名〉」並走 S06 的 Python 移植（`eragvt.game.battle.core.run_chinobun`、`sexmsg._catalog`）。
 - [ ] **幽閉的地の文與淫紋顯示**（S08 新增，只影響顯示）：`地の文/MESSAGE_PRISON.ERB`、`MESSAGE_OTHER.ERB` 的 PRISON 系、
   `MESSAGE_KYUUSHUTU.ERB`、刻印地の文由 catalog 輸出（狀態變化行 21 行經 `narration/hooks.py` PRISON_HOOK_LINES：FLAG:900、
@@ -108,6 +115,8 @@ ERB 路徑相對 `source/earGVP/ERB/`。
 - [ ] **INPUTS 只能輸入整數**（S11 新增）：Web 的輸入是整數，`MESSAGE_SEX_SPCOM7`:1236 的 INPUTS 以 `str(整數)` 比較
   （原作可輸入任意字串／空字串：`GameView/EmueraConsole.cs`:722–728）。只有 "1" 有意義，實際選項不變。
   （Python：`eragvt.game.battle.sexmsg.msg_spcom7`）
+  S14：動画サイト（`MESSAGE_WindowLibrary_VideoHostSite.ERB`:1343 INPUTS）也同樣；按鈕值 "0"〜"4"／"99" 都是數字，其他輸入走
+  :1346–1347「上次看的下一段」，只差在不能輸入空字串（原作空字串也走這條），結果相同。（Python：`eragvt.narration.service.run_function_gen`）
 - [ ] **HTML_PRINT 的子集**（S11 新增，只影響顯示）：只支援原作用到的 `<font color>`／`<nonbutton title>`（tooltip 以 Web 的
   title 屬性顯示）；其他タグ停止。（Python：`eragvt.text.TextOutput.html_print`）
 - [ ] **子供加入時的キャラ設定畫面**（S13 新增，只影響顯示）：`ADD_CHILD`:515 的一人称設定（`FIRSTSETTING_CHARA_SELFCALL`）與

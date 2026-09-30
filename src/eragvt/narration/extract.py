@@ -317,8 +317,15 @@ class FuncParser:
                 out.append(self._unsup(no, "関数宣言直後以外の # 行"))
                 continue
             if text.startswith("$"):
+                # $ラベル（LogicalLineParser.cs:290–320：識別子を ToUpper、引数があれば警告のみ）
                 self.k += 1
-                out.append(self._unsup(no, "$ラベル（GOTO 先）"))
+                lst = Stream(text, 1)
+                try:
+                    lname = read_identifier(lst).upper()
+                except ErbSyntaxError:
+                    out.append(self._unsup(no, "$ラベル名が不正"))
+                    continue
+                out.append(N.Label(no, lname))
                 continue
             name, argtext = self._instr_name(text)
             if name in _BLOCK_END:
@@ -466,6 +473,22 @@ class FuncParser:
             return N.ClearLine(no, self._expr_line(arg))
         if name == "DRAWLINE":
             return N.DrawLine(no)
+        if name == "DRAWLINEFORM":
+            f = form_to_expr(analyse_form(Stream(arg), F_EOL), self.res)
+            self._note_calls(f)
+            return N.DrawLine(no, f)
+        if name == "GOTO":
+            # 定数ラベル名のみ（TRYGOTO／GOTOFORM 系は子集合外のまま）。名前は ToUpper（Instraction.Child.cs:2387–2392）
+            lst = Stream(arg.strip())
+            lname = read_identifier(lst).upper()
+            skip_ws(lst)
+            if not lst.eos:
+                raise _Unsup("GOTO の引数")
+            return N.Goto(no, lname)
+        if name == "INPUTS":
+            if arg.strip():
+                raise _Unsup("命令 INPUTS（既定値つき）")
+            return N.Input(no, "S")
         if name in ("WAIT", "FORCEWAIT", "WAITANYKEY"):
             return N.Wait(no, name)
         if name == "RETURN":

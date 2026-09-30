@@ -7,7 +7,17 @@ TFLAG:98 は戦闘の結果（0＝時間切れ／撤退、1＝勝利、2＝敗�
 from __future__ import annotations
 
 from ...state.constants import ActionPlan, GameOption
-from ..action import Ctx, Step, config_check_event, config_check_prison, get_exp, get_syuren, print_callname, print_transcallname
+from ..action import (
+    Ctx,
+    Step,
+    _shortline,
+    config_check_event,
+    config_check_prison,
+    get_exp,
+    get_syuren,
+    print_callname,
+    print_transcallname,
+)
 from ..era import div, limit, times
 from ..opening import game_option
 from ..shop import charanum_safe, check_gameover
@@ -191,13 +201,128 @@ def after_train_rape(ctx: Ctx, arg: int) -> int:
 
 
 def douga_ryusutu(ctx: Ctx, arg: int) -> None:
-    """`戦闘イベント.ERB@DOUGA_RYUSUTU, ARG`:1338–1478。撮影フラグ（TFLAG:21 bit0、性攻撃の地の文でのみ立つ）が
-    無く ARG == 0 なら何もしない。"""
-    st = ctx.state
-    if (st.tflag[21] & 1) and arg == 0:
-        raise NotImplementedError("動画流出（DOUGA_RYUSUTU:1342–1464）は未移植")
-    if arg == 1:
-        raise NotImplementedError("レイプ動画流出（DOUGA_RYUSUTU:1465–1477）は未移植")
+    """`ゲーム内_イベント発生/戦闘イベント.ERB@DOUGA_RYUSUTU, ARG`:1338–1478（S14）。
+
+    TFLAG:21 は「キャラの凌辱目撃フラグ」（`●開発者向け資料/●GVTフラグ一覧.txt`:480–490：1 動画配信された、2 愛撫、
+    4 口、8 挿入、16 膣内射精、32 アナル射精、64 ぶっかけ、128 嬲りもの、256 絶頂、512 自分から）。bit 0 は撮影中
+    （FLAG:71 か 常時撮影）の性攻撃地の文と PERFORM_CHEERS_TENTACLE_SEX_HANTEI（:771–774）で立つ。
+    CFLAG:284 = 触手凌辱映像流出フラグ、CFLAG:285 = ストーカーフラグ（同 :348–349）。いずれも TARGET のもの。
+    ARG = AFTER_TRAIN_RAPE の戻り値（BATTLE_TRAIN_AFTER.ERB:498–504；1 は戦闘後レイプが成立した場合＝:1334 RETURN 1）。
+    """
+    st, data, out = ctx.state, ctx.data, ctx.out
+    c = tc(ctx)
+    f = st.tflag[21]
+    if (f & 1) and arg == 0:  # :1342
+        _shortline(out)  # :1343 CALL SHORTLINE
+        out.printl()
+        out.printl("どうやら撮影された動画がネットに放流されたようだ。")
+        out.printl()
+        out.print(f"そこには{print_transcallname(st, st.target)}が")
+        out.print("触手" if enemy_type_check(st, "AKUOTI") == 0 else "悪の手先")  # :1348–1352
+        out.printl("に捕まり、")
+
+        def b(m: int) -> bool:
+            return (f & m) != 0
+
+        oral_etc = b(2) or b(4) or b(64)
+        if b(2):  # :1355–1362
+            out.print("全身を愛撫されて快楽に")
+            out.print("喘いでいる" if f == 3 else "喘ぎながら")
+        if b(4):  # :1363–1370
+            out.print("口で奉仕させられ")
+            if b(64) or (not b(2) and b(8)):
+                out.print("た上に")
+            elif f == 13:
+                out.printl("、")
+        if b(64):  # :1371–1372
+            out.print("精液をぶっかけられ")
+        if f in (65, 113):  # :1373–1377
+            out.print("ている")
+        elif b(2) and b(4) and b(64) and b(128):
+            out.printl("、")
+        if b(4) or b(64):  # :1379–1382
+            if not b(8) and not b(16) and not b(32) and not b(128) and not b(256):
+                out.print("ている")
+        if oral_etc:  # :1384–1390
+            if b(8) or b(256):
+                out.printl("、")
+                if (b(128) or b(256)) and not b(8):
+                    out.print("それだけでなく")
+        if b(8):  # :1392–1415
+            if b(128):
+                out.print("ボロボロに犯され")
+            else:
+                out.print("挿入")
+                if oral_etc:
+                    out.print("まで")
+                out.print("され")
+            if b(16) or b(32):
+                out.print("て")
+            if b(16) and b(32):
+                out.print("前後の穴に子種を注ぎ込まれ")
+            elif b(16):
+                out.print("膣内射精を受け止め")
+            elif b(32):
+                out.print("アナルに射精を受け止め")
+            if b(256):
+                out.printl("、")
+            else:
+                out.print("ている")
+        if b(256):  # :1417–1426
+            out.print("絶頂")
+            if b(128) and not b(8):
+                out.print("させられた挙句に")
+            else:
+                if oral_etc and not b(8):
+                    out.print("まで")
+                out.print("させられている")
+        if b(128) and not b(8):  # :1428–1433
+            out.print("玩具のように嬲られて")
+            if b(2) or b(256):
+                out.printl("、")
+            out.print("拷問でボロボロになっていく")
+        if f == 1:  # :1435–1437
+            out.print("あわや犯されそうになっている際どい")
+        out.printl("映像が映し出されていた。")  # :1439–1440
+        out.printl()
+        if b(8):  # :1442–1443
+            out.printl("股間にモザイクも掛けられておらず、結合部が丸見えになっている。")
+        charm = c.exp[data.index_of("EXP", "魅了経験")] >= 150
+        # :1444–1462（ELSEIF の RAND は前の条件が偽のときだけ評価される）
+        if st.rng.rand(4) == 0:
+            out.printl("幸運なことに顔はしっかりと映っていないが、")
+            out.printl("どんなところから身元を特定されてしまうか分かったものではない。")
+        elif st.rng.rand(3) == 0:
+            out.printl("不幸中の幸いと言うべきか、顔にはモザイクが掛かっていたが、")
+            out.printl("見る人が見れば容易に身元を特定されてしまうだろう。")
+            if charm:
+                c.cflag[285] += 1
+        elif st.rng.rand(2) == 0:
+            out.printl("顔の映りは不鮮明だが、見る人が見れば容易に身元を特定されてしまうだろう。")
+            c.cflag[285] += 1
+            if charm:
+                c.cflag[285] += 1
+        else:
+            out.printl("顔がはっきり映されてしまっており、ネット上で身元を特定されるのも時間の問題だろう。")
+            c.cflag[285] += 2
+            if charm:
+                c.cflag[285] += 1
+        out.printl("動画が削除されるまでの間、再生数は伸び続けた・・・")  # :1463–1464
+        out.printw()
+    elif arg == 1:  # :1465–1477
+        _shortline(out)
+        out.printl()
+        out.printl("男たちは襲われたことを他言しなければ動画を公開しないと言っていたが、")
+        if t(ctx, c, "主観視点") > 0:
+            out.printl(
+                "初めから約束を守る気など無かったのか、あの後すぐにレイプの一部始終を捉えた動画をネット上にアップロードしたようだ。"
+            )
+        else:
+            out.printl("初めから約束を守る気など無かったのか、すぐにレイプ動画をネット上にアップロードした。")
+        out.printl(f"後になって{print_transcallname(st, st.target)}が気付いた時には既に遅く、")
+        out.printl("動画が多数の人間の目に触れてしまった後だった・・・")
+        out.printw()
+        c.cflag[284] += 4 + st.rng.rand(5)  # :1477
 
 
 def _tofull(n: int) -> str:

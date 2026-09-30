@@ -4,12 +4,13 @@
 找不到對應函式時回傳 -1，由呼叫端回落地の文。`call_kojo` 對應其中 :46–90 的派發部分
 （気絶・結界的判定在 `eragvt.game.action.kojo_root_full`），可寫入 TextOutput、讀寫 GameState。
 `run_function` 執行地の文等 ERB 函式（可執行時 True；否則呼叫端輸出佔位）。
+`run_function_gen` 是其 generator 版（S14）：函式內有 INPUTS 時以 `yield` 取得輸入（`value = yield`），回傳值同上。
 實作：`eragvt.narration.service.CatalogNarrationService`（原作 ERB 抽取）、`NullNarrationService`（無 catalog）。
 """
 
 from __future__ import annotations
 
-from typing import Any, Optional, Protocol
+from typing import Any, Generator, Optional, Protocol
 
 
 class NarrationService(Protocol):
@@ -19,6 +20,12 @@ class NarrationService(Protocol):
 
     def run_function(self, ctx: Any, name: str, args: Optional[list] = None, hooks: Optional[dict] = None) -> bool:
         """執行 ERB 函式 `name`（地の文等）。不可執行（或不存在）時不做任何事並回傳 False。"""
+        ...
+
+    def run_function_gen(
+        self, ctx: Any, name: str, args: Optional[list] = None, hooks: Optional[dict] = None
+    ) -> Generator[None, Any, bool]:
+        """同 `run_function`，但允許 INPUTS（generator；以 `yield from` 呼叫）。"""
         ...
 
 
@@ -34,3 +41,9 @@ class NullNarrationService:
 
     def run_function(self, ctx: Any, name: str, args: Optional[list] = None, hooks: Optional[dict] = None) -> bool:
         return False
+
+    def run_function_gen(
+        self, ctx: Any, name: str, args: Optional[list] = None, hooks: Optional[dict] = None
+    ) -> Generator[None, Any, bool]:
+        return False
+        yield  # pragma: no cover

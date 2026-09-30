@@ -11,6 +11,13 @@
 - RETURN：同:1997–2025（RESULT:0.. に代入）、関数末尾まで流れ落ちると RESULT = 0（`GameProc/Process.ScriptProc.cs`:61–67）。
 - 関数引数：省略時は 0／""（`GameProc/ErbLoader.cs`:582–590）、LOCAL・#DIM は静的（`UserDefinedVariable.cs`:27）。
 - FOR：`Instraction.Child.cs`:1731–1744、WHILE:1754–1760。
+- GOTO：同名の `$ラベル` の次の行へ（`Instraction.Child.cs@GOTO_Instruction`:2366–2406、ラベル名は ToUpper：
+  `GameProc/LogicalLineParser.cs`:305–320）。FOR／REPEAT 等はスタックを持たない線形ジャンプなので、関数本体トップレベルの
+  ラベルへはどの入れ子からでも「本体をラベル位置から再開」で等価。入れ子の中のラベルへの GOTO は静的に unsupported。
+- INPUTS：入力文字列を RESULTS:0 に（`GameProc/Process.cs@InputString`:257–260）。`Env.inputs` が None（通常の呼び出し）なら
+  unsupported。ジェネレータ呼び出しでは、まだ無い入力に達したら `NeedInput` で中断し、入力を足して最初から再実行する
+  （`service.CatalogNarrationService.run_function_gen`：出力・亂數・LOCAL は開始時に戻すので再実行結果は同一）。
+- DRAWLINEFORM：`Process.ScriptProc.cs`:159–172（空文字列ならエラー：`EmueraConsole.Print.cs@printCustomBar`:526–531）。
 """
 
 from __future__ import annotations
@@ -39,6 +46,15 @@ class ErbRuntimeError(Exception):
 
 class NotSupported(Exception):
     """執行中才發現的子集外（動態 CALLFORM 的呼叫先不可執行等）。"""
+
+
+class NeedInput(Exception):
+    """ジェネレータ呼び出しで、まだ与えられていない INPUTS に達した。"""
+
+
+class _Goto(Exception):
+    def __init__(self, name: str) -> None:
+        self.name = name
 
 
 class _Return(Exception):
@@ -85,6 +101,7 @@ class Env:
     py_functions: dict = field(default_factory=dict)
     hooks: dict = field(default_factory=dict)
     ctx: Any = None  # action.Ctx（hook／KOJO_ROOT 用）
+    inputs: Optional[list] = None  # INPUTS に与える入力（None = INPUTS 不可）
 
 
 class Interp:
@@ -98,6 +115,8 @@ class Interp:
         self.out = env.out
         self.depth = 0
         self.hooks_fired = 0
+        self.side_effects = 0  # py_functions による状態変化（KOJO_ROOT）の回数
+        self.input_pos = 0
 
     # --- 呼び出し ------------------------------------------------------------------
     def call(self, name: str, args: list, as_method: bool = False) -> Any:
@@ -130,7 +149,7 @@ class Interp:
                     value = default if default is not None else ("" if is_str else 0)
                 self._assign_var(fr, pv, value)
             try:
-                self.exec_block(fd.body, fr)
+                self._exec_body(fd, fr)
             except _Return as r:
                 return r.value
             # 末尾まで流れ落ちた
@@ -142,6 +161,27 @@ class Interp:
             raise ErbRuntimeError("ループ外の BREAK/CONTINUE") from e
         finally:
             self.depth -= 1
+
+    MAX_GOTO = 100000
+
+    def _exec_body(self, fd: N.FuncDef, fr: Frame) -> None:
+        """関数本体。GOTO はトップレベルの $ラベルの次から再開する。"""
+        body = fd.body
+        start = 0
+        jumps = 0
+        while True:
+            try:
+                for s in body[start:] if start else body:
+                    self.exec(s, fr)
+                return
+            except _Goto as g:
+                idx = next((i for i, s in enumerate(body) if type(s) is N.Label and s.name == g.name), None)
+                if idx is None:
+                    raise NotSupported(f"GOTO 先 ${g.name} がトップレベルにない") from None
+                jumps += 1
+                if jumps > self.MAX_GOTO:
+                    raise ErbRuntimeError("GOTO の繰り返しが多すぎます（無限ループ）") from None
+                start = idx + 1
 
     # --- 文 --------------------------------------------------------------------------
     def exec_block(self, stmts: list, fr: Frame) -> None:
@@ -204,7 +244,25 @@ class Interp:
         elif t is N.ClearLine:
             self.out.clearline(self._int(s.count, fr))
         elif t is N.DrawLine:
+            if s.form is not None:
+                bar = self.eval(s.form, fr)
+                if not bar:
+                    raise ErbRuntimeError("空文字列によるDRAWLINEが行われました")
+            # DEVIATION（表示のみ）：DRAWLINEFORM の線の文字列（画面幅まで繰り返し：EmueraConsole.Print.cs@getStBar:543–560）は
+            # 反映せず、DRAWLINE と同じ区切り線を出す（deviations.md「口上 catalog の表示」）
             self.out.drawline()
+        elif t is N.Label:
+            pass
+        elif t is N.Goto:
+            raise _Goto(s.name)
+        elif t is N.Input:
+            inputs = self.env.inputs
+            if inputs is None:
+                raise NotSupported("INPUTS（ジェネレータ呼び出しのみ対応）")
+            if self.input_pos >= len(inputs):
+                raise NeedInput()
+            self._set_narr("RESULTS", 0, inputs[self.input_pos])
+            self.input_pos += 1
         elif t is N.Wait:
             self.out.wait()
         elif t is N.For:

@@ -49,6 +49,7 @@ def narration_report(csv_dir: Path, top: int = 10) -> int:
     cat = Catalog(csv_dir.parent / "ERB", data.names)
     r = cat.report()
     print(f"口上／地の文 函式 {r['total']}，可執行 {r['ok']}（{r['ok'] * 100 / max(1, r['total']):.1f}%）")
+    print(f"  其中需要 INPUTS（只能由 generator 呼叫端執行）：{r['input']}")
     print(f"unsupported 原因（第一原因）前 {top} 名：")
     for why, n in r["reasons"][:top]:
         print(f"  {n:>5}  {why}")

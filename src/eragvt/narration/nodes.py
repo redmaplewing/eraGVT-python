@@ -109,7 +109,31 @@ class Style(Stmt):
 
 @dataclass(slots=True)
 class DrawLine(Stmt):
-    pass
+    """DRAWLINE／DRAWLINEFORM（form = 線の文字列の FORM 式：GameProc/Process.ScriptProc.cs:154–172）。"""
+
+    form: object = None
+
+
+@dataclass(slots=True)
+class Label(Stmt):
+    """`$ラベル`（GOTO 先。名前は ToUpper：GameProc/LogicalLineParser.cs:305–320）。"""
+
+    name: str
+
+
+@dataclass(slots=True)
+class Goto(Stmt):
+    """GOTO ラベル（定数名のみ：Instraction.Child.cs@GOTO_Instruction:2366–2406）。"""
+
+    name: str
+
+
+@dataclass(slots=True)
+class Input(Stmt):
+    """INPUTS（Instraction.Child.cs@INPUTS_Instruction:642–667；入力文字列 → RESULTS:0）。
+    ジェネレータ呼び出し（`CatalogNarrationService.run_function_gen`）でのみ実行できる。"""
+
+    kind: str = "S"
 
 
 @dataclass(slots=True)
@@ -223,3 +247,27 @@ class FuncDef:
     calls: set = field(default_factory=set)  # 静的に決まる CALL 先・式中関数
     dynamic_calls: list = field(default_factory=list)  # CALLFORM の行
     hooks: list = field(default_factory=list)  # list[Hook]
+
+
+def iter_stmts(stmts):
+    """文リストを入れ子まで含めて前順に列挙する。"""
+    for s in stmts or ():
+        if s is None:
+            continue
+        yield s
+        t = type(s)
+        if t is If:
+            for _, b in s.branches:
+                yield from iter_stmts(b)
+            yield from iter_stmts(s.orelse)
+        elif t is Select:
+            for _, b in s.cases:
+                yield from iter_stmts(b)
+            yield from iter_stmts(s.orelse)
+        elif t is Sif:
+            yield from iter_stmts([s.body])
+        elif t is CallStmt:
+            yield from iter_stmts(s.catch)
+            yield from iter_stmts(s.success)
+        elif t in (For, While, Repeat, Loop):
+            yield from iter_stmts(s.body)

@@ -17,7 +17,8 @@
 | `runtime_support.py` | 可讀變數（狀態模型有對應欄位者）、已實作式中関数、靜態檢查 |
 | `runtime.py`／`builtins.py` | 執行器、式中関数（`GameData/Function/Creator.Method.cs`） |
 | `hooks.py` | 狀態變化行的 hook 表（下述） |
-| `service.py` | `CatalogNarrationService`：`call_kojo`（KOJO_ROOT 派發）、`run_function`（地の文）、失敗回復 |
+| `service.py` | `CatalogNarrationService`：`call_kojo`（KOJO_ROOT 派發）、`run_function`（地の文）、`run_function_gen`（含 INPUTS，S14）、失敗回復 |
+| `windowlib.py` | `汎用関数/WindowDrawer.ERB`＋`TagSetText.ERB` 的 Python 移植（`CALL WINDOW_*`，S14；只有動画サイト使用） |
 
 產生物不落地：啟動時只掃 label（約 0.5 秒），函式本體第一次用到時解析、快取在記憶體。
 
@@ -29,7 +30,8 @@ DATA／DATAFORM／DATALIST）、`If(branches, orelse)`、`Select(expr, cases[(Ca
 （CaseCond: eq／`a TO b`／`IS 演算子 a`）、`Sif(cond, body)`、`Assign(target, op, values)`、`BitOp`、`VarSet`、`StrLen`、
 `Style(SETCOLOR|RESETCOLOR|FONTBOLD|FONTITALIC|FONTREGULAR|ALIGNMENT|SETFONT)`、`DrawLine`、`ClearLine`、`Wait`、
 `Return`、`ReturnF`、`CallStmt(name=str|Form, args, try_, catch, success, callf)`、`MethodStmt`（式中関数を命令として：
-結果は RESULT／RESULTS）、`For`／`While`／`Repeat`／`Loop`／`Break`／`Continue`、`Hook(key, text, [文])`、`Unsupported(reason)`。
+結果は RESULT／RESULTS）、`For`／`While`／`Repeat`／`Loop`／`Break`／`Continue`、`Hook(key, text, [文])`、`Unsupported(reason)`、
+S14：`Label(name)`／`Goto(name)`、`Input`（INPUTS）、`DrawLine(form)`（DRAWLINEFORM）。
 式：`Lit`、`Var(name, args)`、`Call(name, args)`、`Unary`、`Binary`、`Ternary`、`Form(strs, parts)`。
 
 ## 子集（可執行的條件）
@@ -42,9 +44,17 @@ DATA／DATAFORM／DATALIST）、`If(branches, orelse)`、`Select(expr, cases[(Ca
 - 讀取：狀態模型有對應的變數（BASE・TALENT・CFLAG…・FLAG・TFLAG・DAY・TCVARn・TENTACLE_SIZE・CLOTH_*・SHIELD・STR（Str.csv）…）。
   SOURCE・TEQUIP・PLAYER・GLOBAL 等模型沒有的變數 → unsupported（讀了等於猜 0）。
 - 呼叫：呼叫先（任何 ERB 檔的函式，包含 `汎用関数/` 等）本身也可執行才算可執行（遞迴判定）。
-  KOJO_ROOT 以 Python 實作（`action.kojo_root_full`＋`service.call_kojo`）。
-- 不支援：GOTO／$ラベル、INPUT 系、BEGIN、JUMP、PRINTV・PRINT K 系・PRINTC 系、SPLIT、STRDATA、TIMES、SETCOLORBYNAME、
-  `@` 付き変数、未實作的式中関数（`STRCOUNT`、`REPLACE` 等）。
+  KOJO_ROOT 以 Python 實作（`action.kojo_root_full`＋`service.call_kojo`）；`WINDOW_CREATE／SETTEXT／DESTROY／DISPLAY` 也是
+  （`windowlib.py`，`WINDOW_DISPLAY_EX` 的 REF 配列引數在執行時 unsupported）。
+- GOTO（S14）：只支援定數ラベル、且 `$ラベル` 在函式本體最上層（入れ子內的ラベル → 靜態 unsupported）。FOR 等在引擎是線形跳躍、
+  沒有堆疊（`Instraction.Child.cs@GOTO_Instruction`:2366–2406），所以「從最上層ラベル的下一行重新執行本體」等價。
+- INPUTS（S14，無既定值者）：只有 generator 呼叫端（`run_function_gen`，以 `yield from` 呼叫）可執行；`run_function`／口上派發遇到
+  （含靜態呼叫先，`Catalog.needs_input`）視為不可執行。實作是**重放**：到達尚無輸入的 INPUTS 時中斷、`yield` 取得輸入、把輸出・亂數・
+  LOCAL 回到開始時，再以累積的輸入列從頭執行（同輸入列 → 同結果）。中斷前若已有狀態變化（hook、KOJO_ROOT）則無法重放 → 停止。
+  輸入值 = `str(Web 的整數)`（deviations「INPUTS 只能輸入整數」）。
+- DRAWLINEFORM：評價字串（空字串 → 引擎錯誤），但畫面上與 DRAWLINE 同樣是區切線（線的字元不反映，deviations「口上 catalog 的表示」）。
+- 不支援：GOTOFORM／TRYGOTO 系、入れ子內的 $ラベル、INPUT（整數）・TINPUT・ONEINPUT 系與有既定值的 INPUTS、BEGIN、JUMP、PRINTV・
+  PRINT K 系・PRINTC 系、SPLIT、STRDATA、TIMES、SETCOLORBYNAME、`@` 付き変数、未實作的式中関数（`STRCOUNT`、`REPLACE` 等）。
 
 語意重點（皆有引擎行號，見 `runtime.py` docstring）：`&&`／`||` 短絡；`/`・`%` 先評價右辺；C# 的切り捨て除算；
 `PRINTDATA` 以 `RAND(件數)` 選 1 件；`%…,幅%` 以 cp932 位元組寬補空白；文字列中 `\n` 換行；函式末尾流れ落ち → RESULT = 0；
@@ -78,4 +88,11 @@ sexmsg 引用、以及「表外沒有漏掉的代入」。
 
 ## 覆蓋率
 
-`python -m eragvt --narration-report`（函式數・可執行數・unsupported 第一原因前 10 名・檔案別）。數字見 `docs/STATUS.md`。
+`python -m eragvt --narration-report`（函式數・可執行數〔其中需要 INPUTS 者〕・unsupported 第一原因前 10 名・檔案別）。數字見 `docs/STATUS.md`。
+
+## 動画サイト（S14）
+
+`MESSAGE_SEX_SPCOM7`（`地の文/MESSAGE_SEX_COMSP.ERB`:1126–1300）與其呼叫的 `MESSAGE_WindowLibrary_VideoHostSite.ERB@MESSAGE_SEX_VIDEO_SITE_Window`
+整個由 catalog 執行（`sexmsg.msg_spcom7` 以 `run_function_gen`）。視窗內容（`strVSWBrowser`／`strVSWText`，函式內靜態 #DIMS）照 ERB 組出，
+`CALL WINDOW_*` 走 `windowlib.py`：各視窗以 cp932 位元組寬成形、疊合成 84 桁的行，`@B:n@…@/B@` 變成按鈕（PRINTBUTTON），其餘 PRINTPLAIN。
+迴圈 `$PRINT_LOOP`→INPUTS→`CLEARLINE LINECOUNT`（清除整個畫面紀錄，照原作）→`GOTO PRINT_LOOP`，輸入 "99" 結束。無狀態變化。

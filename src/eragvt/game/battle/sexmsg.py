@@ -520,14 +520,14 @@ def msg_spcom6(ctx: Ctx) -> None:
 
 
 def msg_spcom7(ctx: Ctx):
-    """`@MESSAGE_SEX_SPCOM7`:1126–1300（ジェネレータ：:1235–1238 の INPUTS）。
+    """`@MESSAGE_SEX_SPCOM7`:1126–1300（ジェネレータ：:1237 の INPUTS）。
 
-    catalog では INPUTS（:1237）が子集合外のため常に Python 移植（本文は佔位）。
-    :1234–1240 CFLAG:34 > 0 なら「[1]映像を見る」を出して INPUTS、CLEARLINE。RESULTS == "1" なら動画サイト
-    （MESSAGE_WindowLibrary_VideoHostSite.ERB@MESSAGE_SEX_VIDEO_SITE_Window：独自ウィンドウ描画＋GOTO／INPUTS ループ）
-    に入るが未移植のため停止。
+    S14：catalog はジェネレータ呼び出し（`run_function_gen`）で INPUTS を扱えるので、本文・動画サイト
+    （`MESSAGE_WindowLibrary_VideoHostSite.ERB@MESSAGE_SEX_VIDEO_SITE_Window`）とも catalog で実行する。
+    以下は catalog が無い（Null）場合の Python 移植（本文は佔位）。
+    :1234–1240 CFLAG:34 > 0 なら「[1]映像を見る」を出して INPUTS、CLEARLINE。RESULTS == "1" なら動画サイト（状態変化なし）。
     DEVIATION: Web の入力は整数のみなので、INPUTS の文字列は `str(整数)`（空文字・非数値は入力できない）。"""
-    if ctx.narration.run_function(ctx, "MESSAGE_SEX_SPCOM7", []):
+    if (yield from ctx.narration.run_function_gen(ctx, "MESSAGE_SEX_SPCOM7", [])):
         return
     st = ctx.state
     c = tc(ctx)
@@ -550,8 +550,9 @@ def msg_spcom7(ctx: Ctx):
             # DEVIATION: INPUTS は任意の文字列だが、Web の入力は整数のみ → str(整数)（deviations.md「INPUTS 只能輸入整數」）
             results = str((yield))  # INPUTS（Instraction.Child.cs:642–667、EmueraConsole.cs:722–728）
             ctx.out.clearline(ctx.out.linecount - lcount)
-        if results == "1":  # :1242
-            raise NotImplementedError("動画サイト表示（MESSAGE_SEX_VIDEO_SITE_Window、MESSAGE_SEX_SPCOM7:1242–1279）は未移植")
+        if results == "1":  # :1242–1279（本文は佔位。動画サイトは :1260 CALL）
+            if not (yield from ctx.narration.run_function_gen(ctx, "MESSAGE_SEX_VIDEO_SITE_Window", [])):
+                chinobun(ctx, "MESSAGE_SEX_VIDEO_SITE_Window")
         st.flag[900] = 3
     kojo_root(ctx, "SEX_SPCOM7")  # :1297
 

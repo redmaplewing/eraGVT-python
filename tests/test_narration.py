@@ -144,8 +144,9 @@ def test_extract_form_yen_at_and_raw_print():
     "src,reason",
     [
         ("@F\nFLAG:900 = 1\n", "非 LOCAL 変数 FLAG への代入"),
-        ("@F\nGOTO L\n$L\n", "命令 GOTO"),
+        ("@F\nTRYGOTO L\n$L\n", "命令 TRYGOTO"),  # S14：GOTO（定数ラベル）のみ対応
         ("@F\nINPUT\n", "命令 INPUT"),
+        ("@F\nINPUTS 既定\n", "INPUTS（既定値つき）"),
         ("@F\nIF 1\nPRINTL a\n", "ENDIF がありません"),
     ],
 )

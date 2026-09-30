@@ -82,6 +82,7 @@ class Catalog:
         self.ctx = ExtractContext(self.user_vars, names, self.is_user_method, match_hook)
         self._parsed: dict[str, N.FuncDef] = {}
         self._support: dict[str, Optional[str]] = {}
+        self._input: dict[str, bool] = {}
 
     def _mark_narration_owned(self, texts: dict[str, bytes]) -> None:
         """口上／地の文の ERH で宣言され、口上／地の文以外の ERB から一切参照されない非 SAVEDATA 変数は
@@ -153,6 +154,28 @@ class Catalog:
         self._support[up] = reason
         return reason
 
+    def needs_input(self, name: str, _stack: Optional[set] = None) -> bool:
+        """INPUTS を（静的な呼び出し先も含めて）実行しうるか。True の函式はジェネレータ呼び出し
+        （`service.run_function_gen`）でのみ実行できる。"""
+        up = name.upper()
+        if up in PY_FUNCTIONS:
+            return False
+        if up in self._input:
+            return self._input[up]
+        stack = _stack if _stack is not None else set()
+        if up in stack:
+            return False
+        fd = self.get(up)
+        if fd is None:
+            return False
+        stack.add(up)
+        r = any(isinstance(s, N.Input) for s in N.iter_stmts(fd.body))
+        if not r:
+            r = any(self.needs_input(c, stack) for c in sorted(fd.calls) if self.exists(c))
+        stack.discard(up)
+        self._input[up] = r
+        return r
+
     def _own_reason(self, fd: N.FuncDef) -> Optional[str]:
         if fd.unsupported:
             line, why = fd.unsupported[0]
@@ -167,10 +190,11 @@ class Catalog:
         return [n for n, e in self.index.items() if e.rel.startswith(NARRATION_DIRS)]
 
     def report(self) -> dict:
-        """覆蓋率：函式數・可執行數・unsupported 原因（第一原因）的前 10 名・檔案別。"""
+        """覆蓋率：函式數・可執行數・unsupported 原因（第一原因）的前 10 名・檔案別。
+        input = 可執行數之中需要 INPUTS（只有 generator 呼叫端可執行）的函式數。"""
         per_file: dict[str, list[int]] = {}
         reasons: dict[str, int] = {}
-        total = ok = 0
+        total = ok = inp = 0
         for name in self.narration_functions():
             e = self.index[name]
             total += 1
@@ -180,11 +204,13 @@ class Catalog:
             if r is None:
                 ok += 1
                 pf[1] += 1
+                if self.needs_input(name):
+                    inp += 1
             else:
                 key = _reason_key(r)
                 reasons[key] = reasons.get(key, 0) + 1
         top = sorted(reasons.items(), key=lambda kv: -kv[1])
-        return {"total": total, "ok": ok, "reasons": top, "files": per_file}
+        return {"total": total, "ok": ok, "input": inp, "reasons": top, "files": per_file}
 
 
 def _reason_key(r: str) -> str:

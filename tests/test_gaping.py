@@ -328,12 +328,16 @@ def test_spcom7_inputs_skip(ctx, monkeypatch):
     assert all(ln.text != "[1]映像を見る" for ln in ctx.out.lines)  # :1237 CLEARLINE
 
 
-def test_spcom7_inputs_video_site_unported(ctx, monkeypatch):
-    ctx = _spcom7_ctx(ctx, monkeypatch, [])
+def test_spcom7_inputs_video_site_without_catalog(ctx, monkeypatch):
+    """S14：動画サイト（:1258 CALL MESSAGE_SEX_VIDEO_SITE_Window）は状態変化なし。catalog が無ければ佔位 1 行で続行。"""
+    seen = []
+    ctx = _spcom7_ctx(ctx, monkeypatch, seen)
     gen = msg_spcom7(ctx)
     next(gen)
-    with pytest.raises(NotImplementedError, match="動画サイト"):
+    with pytest.raises(StopIteration):
         gen.send(1)
+    assert any(ln.text == "〈地の文：MESSAGE_SEX_VIDEO_SITE_Window〉" for ln in ctx.out.lines)
+    assert seen == [("SEX_SPCOM7", 3)]
 
 
 def test_spcom7_no_input_when_cflag34_zero(ctx, monkeypatch):

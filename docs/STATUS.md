@@ -1,6 +1,6 @@
 # 現況（唯一真相，≤150 行）
 
-更新：2026-09-30（S13）
+更新：2026-09-30（S14）
 
 ## 已完成
 
@@ -21,7 +21,7 @@
   - 新模組 `eragvt.game.lovesex`：LOVESEX_NIGHT／LOVESEX_KIND／SEX_V／SEX_A／SEX_V_CONDOM（INPUT）；`ninsin.after_pill`（INPUT）、
     NINSIN_HANTEI 的一般人父親分岐（`愛する人 = -3`）。`turnend.event_turnend` 改為 generator。地の文 4 函式走 catalog，
     `MESSAGE_KATAOMOI_NIGHT` 的 TALENT 代入 2 行進 `hooks.LOVESEX_HOOK_LINES`。
-  - `MESSAGE_SEX_SPCOM7` 的 INPUTS（CFLAG:34 > 0）接上（generator），輸入 "1" 的動画サイト視窗未移植 → 停止。
+  - `MESSAGE_SEX_SPCOM7` 的 INPUTS（CFLAG:34 > 0）接上（generator），輸入 "1" 的動画サイト視窗 S14 移植。
   - 模擬腳本 `tools/sim.py`（之後各階段共用）。測試共 646 個（新增 `tests/test_gaping.py` 52、`tests/test_lovesex.py` 34）。
 
 - **S12** ゲームオーバーモード（`docs/wiki/era/flow.md` §9）：`shop.change_gameover_mode`（FLAG:0 = 0、DAY:2 = DAY*2+TIME）、
@@ -39,42 +39,46 @@
     `turnend.recalc_partymember` 改為 generator（RESCUE_CHILD）。地の文 `MESSAGE_NINSIN.ERB` 走 catalog，CFLAG:226 兩行進
     `hooks.NINSIN_HOOK_LINES`。測試共 775 個（新增 `tests/test_pregnancy.py` 70）。
 
-## S13 模擬（`python tools/sim.py --preset default|tokusou --seeds 0-249`，`--max-shop 200`）
+- **S14** 動画流出（`battle.after.douga_ryusutu`：`戦闘イベント.ERB@DOUGA_RYUSUTU`:1338–1478 全 TFLAG:21 組合、CFLAG:284／285）。
+  CFLAG:284／285 的後續讀取（SHOP_TURNEND:543／751–754）已在 S04 移植，本階段補測試；FLASHNEWS 的讀取屬未移植新聞本體（deviations）。
+  catalog 擴充：`$ラベル`／GOTO（最上層ラベル）、INPUTS（generator 呼叫 `run_function_gen`，以重放實作）、DRAWLINEFORM；
+  `汎用関数/WindowDrawer.ERB`＋`TagSetText.ERB` 以 Python 移植（`narration/windowlib.py`）→ `MESSAGE_SEX_SPCOM7` 與動画サイト
+  `MESSAGE_SEX_VIDEO_SITE_Window` 全由 catalog 執行（`docs/wiki/python/narration.md`「動画サイト」）。覆蓋率 13384 中可執行 12828
+  （95.8%，其中需 INPUTS 2）。測試共 821 個（新增 `tests/test_video_leak.py` 45）。
 
-方針同 S11／S12。妊娠系的停止全部消失；ゲームオーバーモード中不再停止，全部跑到 SHOP 上限 200（「上限」）。
-進入局數增加是因為 S12 有許多局在進入前就停在受精成立。
+## S14 模擬（`python tools/sim.py --preset default|tokusou --seeds 0-249`，`--max-shop 200`）
 
-| 指標 | 預設 S12 | 預設 S13 | 初期セット S12 | 初期セット S13 |
+方針同 S11〜S13。動画流出（S13：預設 40／初期セット 41）與動画サイト表示（10／0）的停止全部消失，無例外。
+
+| 指標 | 預設 S13 | 預設 S14 | 初期セット S13 | 初期セット S14 |
 |---|---:|---:|---:|---:|
-| 停止前 SHOP 次數（平均／最多） | 13.82／45 | 117.85／201 | 14.51／43 | 104.76／201 |
-| ゲームオーバーモード進入局／進入後 SHOP 平均（最多） | 88／6.75（22） | 141／186.20（197） | 90／10.01（21） | 124／187.88（197） |
-| 敗北局／敗北後 SHOP 平均 | 215／6.60 | 224／122.44 | 204／8.04 | 212／114.16 |
+| 停止前 SHOP 次數（平均／最多） | 117.85／201 | 153.60／201 | 104.76／201 | 133.82／201 |
+| ゲームオーバーモード進入局／進入後 SHOP 平均（最多） | 141／186.20（197） | 188／186.48（197） | 124／187.88（197） | 162／188.00（197） |
+| 敗北局／敗北後 SHOP 平均 | 224／122.44 | 228／159.50 | 212／114.16 | 212／148.43 |
 
-- 停止原因（預設 S13）：上限 141（全部是ゲームオーバーモード局）、動画流出 40、戰後レイプ 16、強制自慰 14、動画サイト表示 10、
-  ＳＰ変身 9、COM17 回避補正 9、COM17 5、ＳＰバースト 5、ＳＰフルバースト 1。
-- 停止原因（初期セット S13）：上限 124、動画流出 41、ＳＰ変身 27、強制自慰 16、ＳＰバースト 16、COM17 回避補正 11、
-  戰後レイプ 10、COM17 4、夜間自慰（SELF_NIGHT:49–）1。
-- S13 新增的停止（TS 女體化、手入力 INPUTS 選項）在隨機方針 250×2 局中未出現；人間の子の出産→育児→ADD_CHILD 另以腳本確認可走通
-  （所持金 $10000、[1]育てる → 數回合後加入，選到手入力選項時停止）。
+- 停止原因（預設 S14）：上限 188（全部是ゲームオーバーモード局）、強制自慰 16、戰後レイプ 15、COM17 回避補正 10、ＳＰ変身 9、
+  ＳＰバースト 7、COM17 4、ＳＰフルバースト 1。
+- 停止原因（初期セット S14）：上限 162、ＳＰ変身 29、ＳＰバースト 17、強制自慰 16、COM17 回避補正 11、戰後レイプ 10、COM17 4、
+  夜間自慰（SELF_NIGHT:49–）1。
 
 ## 下一步
 
-- **S14：動画流出**（`docs/sessions/S14-video-leak.md`）。之後候選：ＳＰ変身／バースト（COM73／70／17）、戰後レイプ・強制自慰、
-  悪堕ちキャラ（AKUOTI_EVENT）、狀態畫面、FLASHNEWS、ランダム命名畫面（FIRSTSETTING_RANDOMNAMING，子供加入時的変身後名）。
+- **S15 候選**（規格未寫）：ＳＰ変身／バースト（COM73／70／17／74，初期セット最大停止原因）、戰後レイプ（AFTER_TRAIN_RAPE:1007–，
+  成立時 RETURN 1 → 已移植的レイプ動画流出）・強制自慰、悪堕ちキャラ（AKUOTI_EVENT）、狀態畫面、FLASHNEWS、ランダム命名畫面。
 - 已裁決（2026-09-30）：拡張度初期值照原作不設定；初期セット身體資料問題因 S10 改回預設開局而不再需要偏離；
   S13 苗床出産的 static LOSEDEF 等怪處全部照原作。
-- 口上 catalog 待擴充：改狀態的口上（hook 化）、GOTO、SPLIT／STRDATA、未實作式中関数（覆蓋率報告）。
+- 口上 catalog 待擴充：改狀態的口上（hook 化）、入れ子內 $ラベル 的 GOTO（`KOJO_AEGI.ERB` $ＭＡＸ２，199 函式受影響）、SPLIT／STRDATA、未實作式中関数（覆蓋率報告）。
 - deviations.md 需裁決：振り解く `LOCAL:O`、口上的狀態副作用、口上 catalog 實行時失敗的回復、S08 以後新增項。
 
 ## 仍會停止的分岐（`NotImplementedError` → Web 停止）
 
-頻度見上方 S13 模擬。其餘登記但罕見：
+頻度見上方 S14 模擬。其餘登記但罕見：
 - 幽閉：ラスボス／悪堕ちキャラ 的幽閉、容貌變化（設定 ON）、RECOVER_CORRUPTION、TS 性別變化、ラスボス出現後的淫紋陥落。
 - 妊娠・子供（S13）：TS 変身キャラ妊娠時的女體化（TS_MtoF）、子供名字／変身後名／かけ声／名乗り的手入力（INPUTS）與ランダム命名畫面、
   デバッグモード的妊娠確率輸入。
 - TURNEND：AKUOTI_EVENT（悪堕ちキャラが抽選に當選）、ENDING_1 的エンドレス分岐、寄生触手的暴走／共生取得、INTIMIDATION／KIDNAPPING。
 - 指令：47 説得する、反擊（[反撃]スタイル、`HANGEKI_TO_TENTACLE`）；戰後自慰。
-- 動画サイト視窗（SPCOM7）、ステータス PALAM 表示（FLAG:801 bit 5）、素股焦らし失敗的處女喪失、觸手服／觸手拘束具、
+- ステータス PALAM 表示（FLAG:801 bit 5）、素股焦らし失敗的處女喪失、觸手服／觸手拘束具、
   悪堕ち／雜魚／クズ市民／ラスボス／事件戰／エンドレス、デバッグ模式、`HATUJOU_TO_HAIRAN` 地の文。
 
 ## 已知問題
