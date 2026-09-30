@@ -145,4 +145,4 @@ ERB 路徑相對 `source/earGVP/ERB/`。
   （`GAPING.ERB@PRINTFORM_GAPING_NOW`:800–808；呼叫者是 FLAG:801 bit 5 的戰鬥 PALAM 表示〔既定 OFF〕與ステータス畫面 PAGE5〔未移植〕），
   所以既定遊玩時從 0（rank 0）開始、第一次被插入就大幅上升（例：0 → 55、膣径 +3.8 cm）；GET_*_GAPING_EXP 的靜態 LOCAL 在 ARG < 3 時沿用
   上次值（:1018–1022）；V_GAPING 等的早期 RETURN 不還原 TARGET；いちゃラブ的処女地の文（MESSAGE_SEX.ERB:1301）因 SEX_V:221 先把
-  処女改成 −1 而不會出現。**需使用者決定**：拡張度初期值是否以 DEVIATION 在開局（或第一次插入前）設定。
+  処女改成 −1 而不會出現。**使用者裁決（2026-09-30）**：照原作，不在開局設定初期值（狀態畫面 PAGE5 移植後自然會在顯示時設定）。
