@@ -49,3 +49,6 @@
 - [ ] `GAME_MODE_CHECK_F`／`GAME_MODE_CHECK`（GAMEMODE.ERB:124–137）以全域 `COUNT` 當 FOR 變數（S12）。呼叫端若在 `FOR COUNT`
   迴圈中呼叫 `CHECK_GAMEOVER_F()` 會被改寫；已移植的呼叫端（SHOP／SHOP_TURNEND／SET_PARTYMEMBER（CCOUNT）／PRISON（LOCAL:999））
   都不是用 COUNT 迴圈，Python 未模型化 COUNT。之後移植新呼叫端時需確認。
+- [ ] 悪堕ちキャラ戰（FLAG:110 > 0）中受精時 `NINSIN_HANTEI`:150–151 的 `TENTACLE_ACCESS "GETNAME"`（S13）— TENTACLE_ACCESS
+  （`COMMON_TENTACLE_DATA.ERB`:198–）沒有悪堕ち分岐，名字取決於當時的 SAVESTR:13／FLAG:11；悪堕ちキャラ戰本身未移植，
+  Python 目前沿用 `battle.core.tentacle_access`（非 BOSS 時停止）。移植悪堕ち戰時需確認 SAVESTR:13／FLAG:11 的值。

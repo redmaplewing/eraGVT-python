@@ -8,7 +8,6 @@ from __future__ import annotations
 
 from ...state.constants import ActionPlan, GameOption
 from ..action import Ctx, Step, config_check_event, config_check_prison, get_exp, get_syuren, print_callname, print_transcallname
-from ..chara_common import is_female
 from ..era import div, limit, times
 from ..opening import game_option
 from ..shop import charanum_safe, check_gameover
@@ -18,6 +17,7 @@ from .cloth import cloth_battle_hosei, cloth_battle_sethp, refresh_cloth_data
 from .core import PALAM_END, config_check_balance, get_battle_situation, is_hole, mark, percent_cal, t, tc, tentacle_level
 from .encount import get_exp_battle, get_kakera, get_money, research_progress, support_heal
 from .func import transform
+from .ninsin import ninsin_check_after  # ヒロイン関連/PREGNANT_SOURCE_NINSIN.ERB@NINSIN_CHECK_AFTER:169–190
 
 # :13–120 刻印：(PALAM 名, MARK 名, 防止 MARK 名, 1 段目の閾値, 防止 1 あたりの加算)
 _MARKS = (
@@ -65,13 +65,6 @@ def event_battle_reset_costume(ctx: Ctx, num: int) -> None:
     c.cflag[544] = 0
     cloth_battle_sethp(ctx)
     refresh_cloth_data(ctx)
-
-
-def ninsin_check_after(ctx: Ctx) -> None:
-    """`ヒロイン関連/PREGNANT_SOURCE_NINSIN.ERB@NINSIN_CHECK_AFTER`:169–190。"""
-    c = tc(ctx)
-    if t(ctx, c, "妊娠") == 2 and is_female(ctx.data, c):
-        raise NotImplementedError("戦闘後の妊娠判明（NINSIN_CHECK_AFTER）は未移植")
 
 
 def _transform_enemy_off(ctx: Ctx) -> None:

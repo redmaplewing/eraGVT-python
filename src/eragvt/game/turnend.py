@@ -41,6 +41,8 @@ from .party import after_rescued, set_partymember
 from .prison.event import prison
 from .battle.core import run_chinobun
 from .lovesex import lovesex_night
+from .pregnancy import birth_hantei, nae_birth
+from .child import grow_hantei
 
 # --- 1 ターン（JUMP ACTION_MAIN → BEGIN TURNEND の繰り返し → BEGIN SHOP）-------------------
 
@@ -94,7 +96,7 @@ def event_turnend(ctx: Ctx) -> Generator[None, int, Step]:
     # :42–49（ENDING が戻ってきた場合のみ到達。FLAG:999 == -999／FLAG:64 != 0 は ENDING 本体でしか立たない）
     if st.flag[999] == -999 or st.flag[64] != 0:
         raise NotImplementedError("ENDING 後のタイトル復帰／引き継ぎは未移植")
-    recalc_partymember(ctx)  # :52
+    yield from recalc_partymember(ctx)  # :52
     # :56–61
     if st.flag[45] > 0:
         st.flag[45] = 0
@@ -123,8 +125,8 @@ def event_turnend(ctx: Ctx) -> Generator[None, int, Step]:
         if c.cflag[0] == CharaState.KIDNAPPED:
             raise NotImplementedError("KIDNAPPING（クズ市民監禁）は未移植")
     prison(ctx)  # :103
-    birth_hantei(ctx)  # :105
-    grow_hantei(ctx)  # :107
+    yield from birth_hantei(ctx)  # :105（ヒロイン関連/PREGNANT_SOURCE_NINSIN.ERB@BIRTH_HANTEI）
+    yield from grow_hantei(ctx)  # :107（ヒロイン関連/PREGNANT_CHILD_BIRTH.ERB@GROW_HANTEI）
     akuoti_attack(ctx)  # :110
     yield from lovesex_night(ctx)  # :112
     self_night(ctx)  # :114
@@ -163,8 +165,13 @@ def ending(ctx: Ctx) -> None:
         raise NotImplementedError("ENDING（FLAG:999 == -997 のスコア処理）は未移植")
 
 
-def recalc_partymember(ctx: Ctx) -> None:
-    """`SHOP_TURNEND.ERB@RECALC_PARTYMEMBER`:220–258。"""
+def recalc_partymember(ctx: Ctx) -> Generator[None, int, None]:
+    """`SHOP_TURNEND.ERB@RECALC_PARTYMEMBER`:220–258（ジェネレータ：RESCUE_CHILD の INPUT）。
+
+    :238–240 `CALL RESCUE_CHILD / SIF RESULT < 0 / CCOUNT -= RESULT`：施設に預けた（DELCHARA）とき RESULT = -1 なので
+    CCOUNT は **1 増える**（原作どおり：詰められた次のキャラに加えてもう 1 人飛ばす）。"""
+    from .child import rescue_child
+
     st, data, out = ctx.state, ctx.data, ctx.out
     saved = st.target
     cc = 0
@@ -177,8 +184,11 @@ def recalc_partymember(ctx: Ctx) -> None:
             st.target = cc
             if st.charas[st.target].cflag[6] == -1:
                 out.printl()
-                raise NotImplementedError("救出された娘キャラの処理（RESCUE_CHILD）は未移植")
-            after_rescued(ctx, st.target)
+                result = yield from rescue_child(ctx, st.target)
+                if result < 0:
+                    cc -= result
+            else:
+                after_rescued(ctx, st.target)
             out.printw()
         else:
             inmon_recovery(ctx, cc)
@@ -328,31 +338,6 @@ def boss_tentacle_recover(ctx: Ctx) -> None:
 
 
 # --- 夜間イベント（開始条件のみ） ------------------------------------------------------
-
-
-def birth_hantei(ctx: Ctx) -> None:
-    """`ヒロイン関連/PREGNANT_SOURCE_NINSIN.ERB@BIRTH_HANTEI`:277–410。妊娠（素質 妊娠 = 1,3,4,5）が無ければ何もしない。"""
-    st, data = ctx.state, ctx.data
-    for c in st.charas:
-        if c.cflag[0] == CharaState.DEAD:
-            continue
-        if talent(data, c, "妊娠") in (1, 3, 4, 5):
-            raise NotImplementedError("妊娠・出産の進行（BIRTH_HANTEI）は未移植")
-    # TARGET は :279 で退避・:410 で復元
-
-
-def grow_hantei(ctx: Ctx) -> None:
-    """`ヒロイン関連/PREGNANT_CHILD_BIRTH.ERB@GROW_HANTEI`:4–25。"""
-    st, data = ctx.state, ctx.data
-    for c in st.charas:
-        if c.cflag[0] == CharaState.CHILDCARE or c.cflag[22] > 0:
-            raise NotImplementedError("育児（GROW_HANTEI:10–15）は未移植")
-        if talent(data, c, "性徴停滞") > 0:
-            pass
-        elif c.cflag[225] > 14 or c.cflag[225] == 7:
-            raise NotImplementedError("CHILD_GROW_1／2 は未移植")
-        elif c.cflag[225] > 0:
-            c.cflag[225] += 1
 
 
 def akuoti_attack(ctx: Ctx) -> None:
@@ -863,10 +848,14 @@ def birth_auto_random(ctx: Ctx) -> None:
             "衣服を残して行方不明になってしまったようだ...",
         )))
     # :671–742 苗床出産
-    for i in range(1, st.charanum):
+    drawn = born > 0  # LOCAL:2（:621 で 1）
+    for i in range(st.charanum):  # :672–743（MASTER は :673 で CONTINUE）
+        if i == GameState.MASTER:
+            continue
         c = st.charas[i]
         if c.cflag[0] == CharaState.DEAD and talent(data, c, "苗床化") and st.rng.rand(4) == 0:
-            raise NotImplementedError("苗床出産（BIRTH_AUTO_RANDOM:675–）は未移植")
+            born += nae_birth(ctx, i, drawn)
+            drawn = True
     if born > 0:  # :744–746
         st.flag[44] += born
 

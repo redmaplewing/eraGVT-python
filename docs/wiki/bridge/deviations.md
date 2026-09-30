@@ -40,14 +40,20 @@ ERB 路徑相對 `source/earGVP/ERB/`。
   動画サイト視窗 `MESSAGE_SEX_VIDEO_SITE_Window`）。
   （Python：`eragvt.game.battle.*` 各處 `raise NotImplementedError`、`battle.commands.run_com` 的 `# DEVIATION:`）
   — 依規格「未移植分岐必須停止」。
-- [ ] **幽閉的未移植分岐會停止遊戲**（S08 新增）：受精成立（`NINSIN_HANTEI`:140 以降，幽閉中常見）、（膨乳化的
+- [ ] **幽閉的未移植分岐會停止遊戲**（S08 新增）：（受精成立・苗床出産・`RESCUE_CHILD` 已於 S13 接上；膨乳化的
   `SET_PROFILE` 已於 S09 接上）、ラスボス／悪堕ちキャラ 的幽閉（`TENTACLE_ACCESS_PRISON` 的
   LASTBOSS 分岐、悪堕ち的 PALAM_HOSEI）、`CORRUPT_CHANGE_LOOKS_MAIN`:24–（設定 CONFIG_CHECK_PRISON_F(4) ON 時）、`RECOVER_CORRUPTION`、
-  `RESCUE_CHILD`、TS 性別變化（`TS_MtoF` 等）、ラスボス出現後的淫紋陥落（ゲームオーバーモードは S12 接上；ENDING_1 的
-  エンドレス分岐 :266–293 仍停止）。ゲームオーバーモード中常見的停止：苗床出産（`BIRTH_AUTO_RANDOM`:671–）、
-  悪堕ちキャラの淫謀（`AKUOTI_EVENT`，防衛力 0 時悪堕ちキャラ一在就必定發生）。
+  TS 性別變化（`TS_MtoF` 等）、ラスボス出現後的淫紋陥落（ゲームオーバーモードは S12 接上；ENDING_1 的
+  エンドレス分岐 :266–293 仍停止）、悪堕ちキャラの淫謀（`AKUOTI_EVENT`，防衛力 0 時悪堕ちキャラ一在就必定發生）。
   （Python：`eragvt.game.prison.*`、`party`、`ending`、`turnend._inmon_fall`、`turnend.akuoti_attack` 的 `raise NotImplementedError`）
   — 依規格「牽涉未移植系統時照 S06 慣例停止」。
+- [ ] **妊娠・子供的未移植分岐會停止遊戲**（S13 新增）：TS 変身キャラ妊娠時的女體化（`TRANS_SEX.ERB@TS_MtoF`：
+  `PREGNANT_SOURCE_NINSIN.ERB@NINSIN_TS_FIX`:263–267、`@NINSIN_FLAG`:248–256）、手入力（INPUTS）的選項：子供名字 [1]
+  （`PREGNANT_CHILD_BIRTH.ERB@ADD_CHILD`:419–427、`@BIRTH_DAUGHTER_TENTACLE_ORIGIN`:235–243）、変身後名 [1]〜[4]（含
+  ランダム命名畫面 `FIRSTSETTING_RANDOMNAMING(_ALL)`）、変身後呼び名・かけ声・名乗り口上的「自分で設定」
+  （`FIRSTSETTING_CHARA_TRANSFORMATION.ERB`）、デバッグモード的妊娠確率輸入（`NINSIN_HANTEI`:125–138）。
+  （Python：`eragvt.game.battle.ninsin`、`eragvt.game.child`、`eragvt.game.firstsetting` 的 `raise NotImplementedError`）
+  — Web 只能輸入整數（見下「INPUTS 只能輸入整數」）；隨機命名畫面與 TS 系統屬之後的階段。
 - [ ] **振り解く判定的 `LOCAL:O`**（S06 新增，**需裁決**）：`ゲーム内_戦闘処理/COMMON_BATTLE_HANTEI.ERB`:241／:245
   `SIF LOCAL:5 <= 45 && LOCAL:O > 49` 的 `O` 是英文字母，全作沒有這個識別子（grep 僅此 2 處）。1.824 在執行到該行時
   報錯停止（`GameProc/Process.ScriptProc.cs`:38–42、`GameData/Expression/ExpressionParser.cs`:264–269、
@@ -104,6 +110,11 @@ ERB 路徑相對 `source/earGVP/ERB/`。
   （Python：`eragvt.game.battle.sexmsg.msg_spcom7`）
 - [ ] **HTML_PRINT 的子集**（S11 新增，只影響顯示）：只支援原作用到的 `<font color>`／`<nonbutton title>`（tooltip 以 Web 的
   title 屬性顯示）；其他タグ停止。（Python：`eragvt.text.TextOutput.html_print`）
+- [ ] **子供加入時的キャラ設定畫面**（S13 新增，只影響顯示）：`ADD_CHILD`:515 的一人称設定（`FIRSTSETTING_CHARA_SELFCALL`）與
+  :1078 的プロフィール設定（`CHARA_SIZE_UI.ERB@SIZE_SETTING`）不顯示，照 AGENTS.md 以「什麼都不改、直接按 [99] 決定」的狀態變化執行
+  （CSTR:4 = 一人称、パーソナリティ前詰め、身體資料照 GENERATE_CHAR_SIZE 重算；顯示部分無代入・無 RAND）。フィート選擇畫面
+  （[0]はい）有移植，種族／フィート說明（`SYUZOKU_INFO`／`FEAT_INFO`）走 catalog，不可執行時印「〈SYUZOKU_INFO n〉」。
+  （Python：`eragvt.game.firstsetting.selfcall_default`／`size_setting_default`／`feat_select_ui`）
 - [ ] **Web 停止狀態**：遇到未移植處理時顯示「（未實作のため停止しました：…）」並停住，是原作沒有的畫面（見上「S04 未翻的行動」）。
   （S08 的全滅／ソロ結局後停止已於 S12 解除：照原作進入ゲームオーバーモード繼續。）
 
@@ -151,3 +162,9 @@ ERB 路徑相對 `source/earGVP/ERB/`。
   所以既定遊玩時從 0（rank 0）開始、第一次被插入就大幅上升（例：0 → 55、膣径 +3.8 cm）；GET_*_GAPING_EXP 的靜態 LOCAL 在 ARG < 3 時沿用
   上次值（:1018–1022）；V_GAPING 等的早期 RETURN 不還原 TARGET；いちゃラブ的処女地の文（MESSAGE_SEX.ERB:1301）因 SEX_V:221 先把
   処女改成 −1 而不會出現。**使用者裁決（2026-09-30）**：照原作，不在開局設定初期值（狀態畫面 PAGE5 移植後自然會在顯示時設定）。
+- S13 妊娠・子供照原作的怪處（詳見 `docs/wiki/era/pregnancy.md`「照原作移植的怪處」）：**苗床出産的 `LOSEDEF` 是 static**
+  （`BIRTH_AUTO_RANDOM`:607），每次呼叫都累加並以累計值扣防衛力，ゲームオーバーモード中防衛力下降會越來越快；
+  `NUM_CHILD_TENTACLE(ARG)` 讀的是 TARGET（:579–601），苗床出産的母乳體質／膨乳改造値也加在 TARGET（:729–732）；
+  `BIRTH_HANTEI` 中 SET_PARTYMEMBER 的並べ替え讓同一周回的日數加算落在別的角色上；`ABL_UP_BIRTH` 的氣力由減半後的體力計算、
+  快Ｖ／快Ｂ 的珠是代入；`SET_FEAT_DEFAULT` 只要枠 > 0 就取得全部可取得的フィート；`GROW_HANTEI` 在 ADD_CHILD 後的性徴處理落在新角色上；
+  `RECALC_PARTYMEMBER` 在 RESCUE_CHILD 施設送り後多跳過 1 人。照原作；若要修正（特別是 LOSEDEF）請決定。

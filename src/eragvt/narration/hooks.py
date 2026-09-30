@@ -194,6 +194,14 @@ LOVESEX_HOOK_LINES: dict[tuple[str, int], tuple[str, str]] = {
     ("MESSAGE_KATAOMOI_NIGHT", 1575): ("TALENT:交際相手 += 1", "告白成功（片思い → 彼氏持ち）"),
 }
 
+# S13：出産の地の文 `地の文/MESSAGE_NINSIN.ERB@MESSAGE_BIRTH_DAUGHTER_HUMAN_ORIGIN` の状態変化行（子供の性別）。
+# Python 側の fallback は `eragvt.game.child.message_birth_daughter_human_origin`。
+# tests/test_pregnancy.py::test_ninsin_hook_table_matches_erb が原文一致と「表外の代入が無い」ことを確認する。
+NINSIN_HOOK_LINES: dict[tuple[str, int], tuple[str, str]] = {
+    ("MESSAGE_BIRTH_DAUGHTER_HUMAN_ORIGIN", 731): ("CFLAG:TARGET:226 = 0", "女の子"),
+    ("MESSAGE_BIRTH_DAUGHTER_HUMAN_ORIGIN", 734): ("CFLAG:TARGET:226 = 1", "男の子"),
+}
+
 # hook 化してよい CALL 先 → Python 移植（呼び出し時に import）
 HOOK_CALLS = {
     "SET_TENTACLE_SIZE_BY_MESSAGE": ("eragvt.game.battle.gaping", "set_tentacle_size_by_message"),
@@ -211,7 +219,11 @@ HOOK_WRITABLE = {"FLAG", "TFLAG", "TENTACLE_SIZE", "CFLAG", "TCVARN", "TALENT"}
 
 
 def match_hook(func: str, line: int, text: str) -> Optional[str]:
-    prow = PRISON_HOOK_LINES.get((func, line)) or LOVESEX_HOOK_LINES.get((func, line))
+    prow = (
+        PRISON_HOOK_LINES.get((func, line))
+        or LOVESEX_HOOK_LINES.get((func, line))
+        or NINSIN_HOOK_LINES.get((func, line))
+    )
     if prow is not None:
         return f"{func}:{line}" if prow[0] == text.strip() else None
     row = HOOK_LINES.get((func, line))

@@ -191,8 +191,12 @@ def act_limit(ctx: Ctx) -> int:
             return 1
     if t(ctx, c, "寄生") == 1:
         raise NotImplementedError("ACT_LIMIT：寄生による行動制限は未移植")
-    if t(ctx, c, "妊娠") in (4, 5) and c.cflag[222] >= 56:
-        raise NotImplementedError("ACT_LIMIT：妊娠後期の行動制限は未移植")
+    if t(ctx, c, "妊娠") in (4, 5) and c.cflag[222] >= 56:  # COMMON_BATTLE_FUNC.ERB:256–272 妊娠後期
+        if st.rng.rand(100) < 3 + isqrt(div(c.cflag[222], 4)):
+            _land_and_print(ctx)
+            ctx.out.printl(f"{print_transcallname(st, st.target)}は突然強い吐き気を感じて")
+            ctx.out.printl("体が竦んでしまった・・・")
+            return 1
     if st.flag[72] > 0 and st.flag[70] > 0 and st.tflag[30] > 2 and c.tcvarn[0] == 3:
         raise NotImplementedError("ACT_LIMIT：クズ市民観衆による妨害は未移植")
     for count in range(5):

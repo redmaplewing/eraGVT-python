@@ -521,7 +521,7 @@ def test_recalc_partymember_rescued(ctx):
     c = st.charas[2]
     c.cflag[0] = -1
     c.cflag[999] = 0
-    turnend.recalc_partymember(ctx)
+    list(turnend.recalc_partymember(ctx))
     assert c.cflag[0] == 0 and c.cflag[999] == 1  # SHOP_TURNEND.ERB:235–244 → AFTER_RESCUED
 
 

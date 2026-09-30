@@ -276,8 +276,8 @@ def test_night_events_not_triggered_in_opening_state(ctx):
     st.time = 1
     st.rng = FixedRng([])  # 乱数を消費しない（消費したら FixedRng が例外）
     turnend.prison(ctx)  # 幽閉中（CFLAG:0 == 1）なし
-    turnend.birth_hantei(ctx)  # 妊娠なし
-    turnend.grow_hantei(ctx)  # 育児なし
+    list(turnend.birth_hantei(ctx))  # 妊娠なし
+    list(turnend.grow_hantei(ctx))  # 育児なし
     turnend.akuoti_attack(ctx)  # 悪堕ちなし
     list(turnend.lovesex_night(ctx))  # 交際相手 0 → :28 CONTINUE（RAND 短絡：OperatorMethod.cs:532–536）
     turnend.yobai(ctx)  # 淫核等・感覚 0 → 候補判定の対象外
@@ -296,7 +296,6 @@ def test_self_night_rolls_but_zero_chance(ctx):
     ("setup", "func"),
     [
         (lambda st, d: st.charas[1].cflag.__setitem__(0, 1), turnend.prison),
-        (lambda st, d: st.charas[1].talent.__setitem__(d.index_of("TALENT", "妊娠"), 1), turnend.birth_hantei),
     ],
 )
 def test_night_events_unported(ctx, data, setup, func):

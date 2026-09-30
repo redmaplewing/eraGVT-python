@@ -68,3 +68,14 @@ def tentacle_survive_num(state: GameState) -> int:
             count += 1
         bit *= 2
     return count
+
+
+def tentacle_bitvalue(state: GameState, arg: int) -> int:
+    """`COMMON_TENTACLE_DATA.ERB@TENTACLE_BITVALUE, ARG`:128–191：ボス番号 → ビット値（ボス／雑魚戦後なら 1〜7 → 2^(n-1)、
+    それ以外〔ラスボス〕は 1〜2 → 1／2）。範囲外は原作ではエラー表示のみ（RESULT は前回値）→ 停止。"""
+    if enemy_type_check(state, "BOSS") == 1 or enemy_type_check(state, "MOB") == 1:
+        if 1 <= arg <= 7:
+            return 2 ** (arg - 1)
+    elif arg in (1, 2):
+        return arg
+    raise NotImplementedError(f"TENTACLE_BITVALUE：範囲外のボス番号 {arg}（原作はエラー表示）")

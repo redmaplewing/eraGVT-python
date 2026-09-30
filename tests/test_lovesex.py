@@ -327,13 +327,17 @@ def test_ninsin_hantei_human_father(ctx, roll, pregnant):
     st = ctx.state
     c = st.charas[1]
     c.cflag[217] = 0
-    st.rng = FixedRng([0, roll])
+    st.rng = FixedRng([0, roll, 20])
     if pregnant:
-        with pytest.raises(NotImplementedError, match="受精成立"):
-            ninsin.ninsin_hantei(ctx, 6, 800, -3)
+        # S13：受精成立 → NINSIN_SUBMIT（出産経験 0：屈服 +2500・恐怖 +1500、:765–766）、:144–148、
+        # NINSIN_FLAG（普通の人間・寄生なし → 妊娠 = 4、CFLAG:228 = 266 × (80 + RAND:41) / 100：:214–218、:837–839）
+        assert ninsin.ninsin_hantei(ctx, 6, 800, -3) == 1
+        assert c.cflag[233] == 0 and c.cflag[221] == 0 and c.cflag[232] == 0 and c.cflag[230] == -3
+        assert c.talent[T(ctx.data, "妊娠")] == 4 and c.cflag[228] == 266
+        assert c.juel[ctx.data.index_of("PALAM", "屈服")] == 2500 and c.juel[ctx.data.index_of("PALAM", "恐怖")] == 1500
     else:
         assert ninsin.ninsin_hantei(ctx, 6, 800, -3) == 0
-    assert c.cflag[233] == 6 and c.cflag[221] == 6 and c.cflag[232] == 0
+        assert c.cflag[233] == 6 and c.cflag[221] == 6 and c.cflag[232] == 0
 
 
 # --- 地の文（catalog）と hook ------------------------------------------------------------------------

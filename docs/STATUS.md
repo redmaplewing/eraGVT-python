@@ -1,6 +1,6 @@
 # 現況（唯一真相，≤150 行）
 
-更新：2026-09-30（S12）
+更新：2026-09-30（S13）
 
 ## 已完成
 
@@ -30,37 +30,50 @@
   `AKUOTI_ATTACK` 的候補抽選（候補有才停止）。CHECK_GAMEOVER_F 的其餘分岐 S04〜S08 已移植，本階段逐一加測試。
   `tools/sim.py` 新增ゲームオーバーモード統計（並改為停止前先記錄敗北／進入）。測試共 705 個（新增 `tests/test_gameover.py` 59）。
 
-## S12 模擬（`python tools/sim.py --preset default|tokusou --seeds 0-249`）
+- **S13** 妊娠・出産・子供（`docs/wiki/era/pregnancy.md`：狀態機與 CFLAG 對照、照原作的怪處）。
+  - `battle.ninsin`：NINSIN_HANTEI 全父親分岐（悪堕ちキャラ・仲間・PAPA_ID 0 的 static PREG_PER）、NINSIN_SUBMIT／NINSIN_FLAG／
+    NINSIN_CHECK_AFTER／NUM_CHILD_TENTACLE／PREGNANT_RANDOM_SIZE／PREGNANCY_*_EXPAND、Ｈ触手＋排卵。ACT_LIMIT 妊娠後期。
+  - 新模組 `game.pregnancy`（BIRTH_HANTEI〔generator〕、BIRTH_TENTACLES、ABL_UP_BIRTH、苗床出産）、`game.child`（BIRTH_DAUGHTER_HUMAN／
+    TENTACLE_ORIGIN、GROW_HANTEI、ADD_CHILD、CHILD_GROW_1／2、RESCUE_CHILD）、`game.firstsetting`（SELFCALL／SIZE_SETTING 的
+    「直接 [99] 決定」、フィート選擇・SET_FEAT_DEFAULT、変身後名等選單）、`game.relation`（CHECK_ALL_RELATION／GET_RELATION）。
+    `turnend.recalc_partymember` 改為 generator（RESCUE_CHILD）。地の文 `MESSAGE_NINSIN.ERB` 走 catalog，CFLAG:226 兩行進
+    `hooks.NINSIN_HOOK_LINES`。測試共 775 個（新增 `tests/test_pregnancy.py` 70）。
 
-方針同 S11（每次 SHOP 全員隨機預約 101–103 → [100]，其他畫面隨機按鈕）。敗北局數比 S11 多是因為腳本改為停止前也記錄
-（S11：停止發生在敗北那一步時不算），進入數與 S11 的「ゲームオーバーモード」停止數一致（88／90）。
+## S13 模擬（`python tools/sim.py --preset default|tokusou --seeds 0-249`，`--max-shop 200`）
 
-| 指標 | 預設 S11 | 預設 S12 | 初期セット S11 | 初期セット S12 |
+方針同 S11／S12。妊娠系的停止全部消失；ゲームオーバーモード中不再停止，全部跑到 SHOP 上限 200（「上限」）。
+進入局數增加是因為 S12 有許多局在進入前就停在受精成立。
+
+| 指標 | 預設 S12 | 預設 S13 | 初期セット S12 | 初期セット S13 |
 |---|---:|---:|---:|---:|
-| 停止前 SHOP 次數（平均／最多） | 11.44／32 | 13.82／45 | 10.91／32 | 14.51／43 |
-| ゲームオーバーモード進入局／進入後 SHOP 平均（最多） | 88（停止） | 88／6.75（22） | 90（停止） | 90／10.01（21） |
+| 停止前 SHOP 次數（平均／最多） | 13.82／45 | 117.85／201 | 14.51／43 | 104.76／201 |
+| ゲームオーバーモード進入局／進入後 SHOP 平均（最多） | 88／6.75（22） | 141／186.20（197） | 90／10.01（21） | 124／187.88（197） |
+| 敗北局／敗北後 SHOP 平均 | 215／6.60 | 224／122.44 | 204／8.04 | 212／114.16 |
 
-- 停止原因（預設 S12）：受精成立 137、動画流出 33、苗床出産 15、戰後レイプ 14、強制自慰 14、ＳＰ変身 9、動画サイト表示 9、
-  COM17 回避補正 8、COM17 5、ＳＰバースト 5、ＳＰフルバースト 1。
-- 停止原因（初期セット S12）：受精成立 122、動画流出 35、ＳＰ変身 24、苗床出産 19、ＳＰバースト 14、強制自慰 13、
-  COM17 回避補正 10、戰後レイプ 9、COM17 4。
-- 進入ゲームオーバーモード後的停止只有兩種：受精成立（幽閉中，預設 73／初期セット 71）、苗床出産（`BIRTH_AUTO_RANDOM`:671–，
-  取り込まれ角色每回合 1/4，15／19）。非ゲームオーバー局的停止原因與 S11 相同。
+- 停止原因（預設 S13）：上限 141（全部是ゲームオーバーモード局）、動画流出 40、戰後レイプ 16、強制自慰 14、動画サイト表示 10、
+  ＳＰ変身 9、COM17 回避補正 9、COM17 5、ＳＰバースト 5、ＳＰフルバースト 1。
+- 停止原因（初期セット S13）：上限 124、動画流出 41、ＳＰ変身 27、強制自慰 16、ＳＰバースト 16、COM17 回避補正 11、
+  戰後レイプ 10、COM17 4、夜間自慰（SELF_NIGHT:49–）1。
+- S13 新增的停止（TS 女體化、手入力 INPUTS 選項）在隨機方針 250×2 局中未出現；人間の子の出産→育児→ADD_CHILD 另以腳本確認可走通
+  （所持金 $10000、[1]育てる → 數回合後加入，選到手入力選項時停止）。
 
 ## 下一步
 
-- 候選（依 S12 模擬頻度）：**妊娠（受精成立以降＋苗床出産）**——現在最大停止原因，也是ゲームオーバーモード中唯一的停止；
-  之後動画流出、戰後レイプ・強制自慰、ＳＰ変身／バースト、悪堕ちキャラ（AKUOTI_EVENT：ゲームオーバーモードで悪堕ちが居れば毎ターン）、狀態畫面、FLASHNEWS。
+- 候選（依 S13 模擬頻度）：**動画流出**（DOUGA_RYUSUTU，最大停止原因）、ＳＰ変身／バースト（COM73／70／17）、戰後レイプ・強制自慰、
+  悪堕ちキャラ（AKUOTI_EVENT）、狀態畫面、FLASHNEWS、ランダム命名畫面（FIRSTSETTING_RANDOMNAMING，子供加入時的変身後名）。
 - 已裁決（2026-09-30）：拡張度初期值照原作不設定；初期セット身體資料問題因 S10 改回預設開局而不再需要偏離。
 - 口上 catalog 待擴充：改狀態的口上（hook 化）、GOTO、SPLIT／STRDATA、未實作式中関数（覆蓋率報告）。
-- deviations.md 需裁決：振り解く `LOCAL:O`、口上的狀態副作用、口上 catalog 實行時失敗的回復、S08 以後新增項。
+- deviations.md 需裁決：振り解く `LOCAL:O`、口上的狀態副作用、口上 catalog 實行時失敗的回復、S08 以後新增項、
+  S13 苗床出産的 static LOSEDEF（ゲームオーバーモード中防衛力下降越來越快，照原作）。
 
 ## 仍會停止的分岐（`NotImplementedError` → Web 停止）
 
-頻度見上方 S11 模擬。其餘登記但罕見：
-- 幽閉：ラスボス／悪堕ちキャラ 的幽閉、容貌變化（設定 ON）、RECOVER_CORRUPTION、RESCUE_CHILD、TS 性別變化、ラスボス出現後的淫紋陥落。
-- TURNEND：AKUOTI_EVENT（悪堕ちキャラが抽選に當選）、苗床出産（BIRTH_AUTO_RANDOM:671–）、ENDING_1 的エンドレス分岐、寄生触手的暴走／共生取得、BIRTH_HANTEI／GROW_HANTEI、INTIMIDATION／KIDNAPPING。
-- 指令：47 説得する、反擊（[反撃]スタイル、`HANGEKI_TO_TENTACLE`）；戰後妊娠判明（NINSIN_CHECK_AFTER）、戰後自慰。
+頻度見上方 S13 模擬。其餘登記但罕見：
+- 幽閉：ラスボス／悪堕ちキャラ 的幽閉、容貌變化（設定 ON）、RECOVER_CORRUPTION、TS 性別變化、ラスボス出現後的淫紋陥落。
+- 妊娠・子供（S13）：TS 変身キャラ妊娠時的女體化（TS_MtoF）、子供名字／変身後名／かけ声／名乗り的手入力（INPUTS）與ランダム命名畫面、
+  デバッグモード的妊娠確率輸入。
+- TURNEND：AKUOTI_EVENT（悪堕ちキャラが抽選に當選）、ENDING_1 的エンドレス分岐、寄生触手的暴走／共生取得、INTIMIDATION／KIDNAPPING。
+- 指令：47 説得する、反擊（[反撃]スタイル、`HANGEKI_TO_TENTACLE`）；戰後自慰。
 - 動画サイト視窗（SPCOM7）、ステータス PALAM 表示（FLAG:801 bit 5）、素股焦らし失敗的處女喪失、觸手服／觸手拘束具、
   悪堕ち／雜魚／クズ市民／ラスボス／事件戰／エンドレス、デバッグ模式、`HATUJOU_TO_HAIRAN` 地の文。
 
@@ -69,8 +82,8 @@
 - 未決：`docs/wiki/bridge/unresolved.md`；偏離：`docs/wiki/bridge/deviations.md`（整體「暫時維持」，S06 以後新增項待裁決）。
 - 無 BOM 的 7 個角色 CSV 在原版 1.824 會以 Shift-JIS 讀（亂碼）；本程式以 UTF-8 讀，可能是 +v10 差異，待實機確認。
 - 開局：預設（NORMAL＋汎用キャラ 3 名おまかせ）與初期セット「特装戦隊」；其他初期セット／キャラメイク畫面的手動設定未移植。
-- 可玩範圍：休憩・鍛錬・出撃（含被拘束的戰鬥、拡張度、敗北後的幽閉與救出）、夜間いちゃラブ、全滅後的ゲームオーバーモード。其他行動、11 日目夜的日數超過結局、
-  妊娠等狀態會進入 Web「停止」畫面（deviations、上一節）。
+- 可玩範圍：休憩・鍛錬・出撃（含被拘束的戰鬥、拡張度、敗北後的幽閉與救出）、夜間いちゃラブ、妊娠・出産・子供的加入、
+  全滅後的ゲームオーバーモード。其他行動、11 日目夜的日數超過結局等會進入 Web「停止」畫面（deviations、上一節）。
 - 初期セット選項的角色身體資料為 0（原作同樣不生成），戰鬥中女性敏捷 0・攻擊 2 倍（原作行為，是否偏離待決定）。
   預設開局的汎用キャラ會生成（體重正常）。角色製作／狀態畫面的手動生成未移植。
 - 襲撃／救援（DAY ≥ 3）與子触手襲来成立時只顯示「スキップ」訊息（deviations）。
