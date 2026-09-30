@@ -39,7 +39,7 @@
 | 63–64 | `SWAPCHARA 0, 1` / `DELCHARA 1`：MASTER 放成 Chara999 ダミー（`GameBase.csv` 最初からいるキャラ,999） |
 | 67–87 | 模式選擇迴圈 `CALL MODE_SELECT`（:297）；每次重設 `FLAG:100/101`、`FLAG:852 = 5000`（防衛力） |
 | 90–105 | `FLAG:50 = FLAG:51 = 1`（設施等級）；`CALL GET_BOSS_ERB_NUM` → `FLAG:3`；`FLAG:4 = 1`；`FLAG:100` 逐位 SETBIT |
-| 111–135 | 角色製作：solo 模式 1 人、否則 3 人 `ADDCHARA 0`（汎用キャラ），`CALL CHARA_MAKE_MAIN, 0`（`SYSTEM/キャラメイキング関連/CHARA_MAKE.ERB`），`CALL CHARA_MAKE_FINALIZE`（`CHARA_MAKE_DEFAULT.ERB`:221） |
+| 111–135 | 角色製作：solo 模式 1 人、否則 3 人 `ADDCHARA 0`（汎用キャラ），`CALL CHARA_MAKE_MAIN, 0`（`SYSTEM/キャラメイキング関連/CHARA_MAKE.ERB`），`CALL CHARA_MAKE_FINALIZE`（`CHARA_MAKE_DEFAULT.ERB`:221）。**預設（不改設定直接 [1000]）的實際執行順序見下方「預設路徑」** |
 | 143–166 | 每名角色設定 `CFLAG:6`（口上番號，依 `NO` 與 `TALENT:口上設定`）、`CFLAG:100 = 予定_休憩` |
 | 169, 173 | `CALL SET_LIMIT_DAY`（:411）、`CALL HEROINE_PRESET`（:617） |
 | 177–238 | 是否顯示序章（`INPUT` 0/1） |
@@ -47,6 +47,28 @@
 | 254–267 | 每名角色 `CALL MESSAGE_FIRST`（口上）；`LOCAL <= パーティ人数最大値` 者 `CFLAG:999 = 1`（入隊） |
 | 269–283 | 角色裝備中的衣裝（`CFLAG:40–43`、`EQUIP:600–699`）登記為持有 |
 | 286–292 | `FLAG:41 = 1`、`CALL RESEARCH_QUOTA`、`CALL UPDATE`、**`BEGIN SHOP`** |
+
+**預設路徑（S10 查證；玩家在所有選單都不改設定直接確定，程式：`opening.event_first(preset=None)`、`game/chara_make.py`）**
+
+MODE_SELECT（:297）沒有預設值，`[1] NORMAL` 是第一個選項（S03 起沿用）。之後：
+
+1. `ADDCHARA 0` ×3（:115–122）：Chara000 → `NO = 0`、`CALLNAME = "汎用キャラ"`（`reference/emuera-1824/Emuera/GameData/Variable/CharacterData.cs`:99–101，
+   `CSV/Chara/Chara000汎用キャラ(女性).CSV`：基礎 体力・気力 1000／其他 100、珠 修練Ｐ 200、CFLAG:10/11/40/41/42 = 25/110/100/200/300、CSTR:12–14/18）。
+2. `CHARA_MAKE_MAIN`（CHARA_MAKE.ERB:5）：`LOADGLOBAL` 失敗 → 共通設定 FLAG:5–7・820–825、SAVESTR:10–12 全為 0／空（:9–21）＝主題なし、
+   変身名なし、苗字／名前の言語「デフォルト」、種族「ランダム」、フィート「なし」、性格「完全ランダム」。`[1000]`（:206–209）→ `CHARA_MAKE_FINALIZE`。
+3. 第 1 次 `CHARA_MAKE_FINALIZE`（DEFAULT:221）對 SELECT = 1..3 **逐人**：`CHARA_MAKE_INITIALIZE`（DEFAULT:5）→ 其餘 FINALIZE 本體（:233–487）。
+   INITIALIZE 的順序：種族 `RAND:24`（FLAG:823 = 0，:36–66；FLAG:824 = 0 → 不呼叫 SET_FEAT_DEFAULT）→ 性格 `RAND:18`（FLAG:825 = 0 →
+   WHILE 第 1 圈就 BREAK，:77–140）→ SEIKAKU_HOSEI_F 修正 BASE 0–2・10–13（:141–153）→ 一人称 CFLAG:8（:155–164）→
+   `CHARA_MAKE_BASE_PROFILE`（:493）的汎用分岐（:507–980）：処女・清純派 → GENERATE_BODYLINE → AGE_SETTING → STATUS_TALENT（:985）→
+   STATUS_TALENT_FLAVOR（:1063）→ CHARA_SIZE_DEFAULT → 髪型 STR:30000〜 → 人間なら変身能力 → 名字與外見色（STR:3000〜、12000〜）→
+   NAME／CALLNAME／CSTR:10・200 → 變身名＝CALLNAME、名乗り（FIRSTSETTING_CHANGINGCALL_DETAIL）→ 一人称低機率變更 → `CFLAG:34 = 1`。
+   CALLNAME 因此不再是「汎用キャラ」，INITIALIZE 末尾（:169–209）的變身名載入也會對這名角色執行（已設定，實際不變）。
+   FINALIZE 本體：修練Ｐ 200 → `CFLAG:(50+RAND:7)` 20 次、LEVELSTATUS 等（同 S03）。
+   `STATUS_TALENT_SEIKAKU`（精神素質）只由キャラメイク畫面（FIRSTSETTING_CHARA_SEIKAKU.ERB:230）呼叫，預設路徑不經過。
+4. EVENTFIRST:135 第 2 次 FINALIZE：INITIALIZE 的種族／性格已設定 → 跳過；BASE_PROFILE 走 CSV 分岐（CALLNAME ≠ 汎用キャラ），
+   `CFLAG:34 = 1 ≠ 0` → 不再生成，RETURN（:496–505）；修練Ｐ 已用完；LEVELSTATUS 再套一次（同 S03）。
+5. :143–166 `CFLAG:6`：`NO == 0` → 0；ロボっ子 → 2；再依 `TALENT:口上設定`（汎用キャラ為 0）女性 → **0**（男性 → 1）。
+   所以 3 名全部是 0（女性汎用口上，`KOJO_0_*_{性格}`）。
 
 **開局要點（S03 翻寫時確認，程式：`src/eragvt/game/opening.py`）**
 - `CHARA_MAKE_FINALIZE` 會執行兩次：角色製作選單 `[1000]`（`SYSTEM/キャラメイキング関連/CHARA_MAKE.ERB`:210）
@@ -57,7 +79,7 @@
   直接開始遊戲時維持 CSV 原值。
 - `CFLAG:240`（固有番號）= 登錄 index（CHARA_MAKE_DEFAULT.ERB:242–243）。
 
-預設隊伍（初期セット）：`SYSTEM/キャラメイキング関連/初期セット/*.ERB@SHOKISET_SELECT_n` 以
+初期セット（**不是**預設，是キャラメイク畫面的 `[200]` 選項；本程式 `event_first(preset=PRESET_TOKUSOU)`）：`SYSTEM/キャラメイキング関連/初期セット/*.ERB@SHOKISET_SELECT_n` 以
 `ADDCHARA <CSV番号>` 加入 CSV 角色，例如 `0_特捜戦隊.ERB@SHOKISET_SELECT_0` 加 301/302/303，
 之後 `CALL SHOKISET_CSVFIX`（`SHOKISET.ERB`:96）。由 `SHOKISET.ERB@CHARA_MAKE_FINALIZE_KAI` 選單呼叫。
 

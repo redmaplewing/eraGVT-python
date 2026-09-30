@@ -15,7 +15,7 @@ from eragvt.game.battle import ablup as ablup_mod
 from eragvt.game.battle import after, encount, train
 from eragvt.game.battle.core import BeginAfterTrain, get_local, set_local, tentacle_level
 from eragvt.game.era import div
-from eragvt.game.opening import event_first
+from eragvt.game.opening import PRESET_TOKUSOU, event_first
 from eragvt.state import FixedRng, GameRng, GameState
 from eragvt.text import NullNarrationService, TextOutput
 
@@ -28,7 +28,7 @@ def data():
 @pytest.fixture
 def ctx(data):
     s = GameState.new(data, rng=GameRng(1))
-    event_first(s, data)
+    event_first(s, data, preset=PRESET_TOKUSOU)
     shop.event_shop(s, data, TextOutput(), NullNarrationService())  # DAY=1、TIME=0、TARGET=1（紅葉）
     return Ctx(s, data, TextOutput(), NullNarrationService())
 

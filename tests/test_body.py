@@ -23,7 +23,7 @@ from eragvt.game.body import (
     top_under,
 )
 from eragvt.game.chara_common import charatalent
-from eragvt.game.opening import chara_make_base_profile, event_first
+from eragvt.game.opening import PRESET_TOKUSOU, chara_make_base_profile, event_first
 from eragvt.game.prison import commands
 from eragvt.state import FixedRng, GameRng, GameState
 from eragvt.text import NullNarrationService, TextOutput
@@ -187,7 +187,7 @@ def test_chara_make_age_setting(data, talents, rolls, expected):
 @pytest.fixture
 def ctx(data):
     s = GameState.new(data, rng=GameRng(1))
-    event_first(s, data)
+    event_first(s, data, preset=PRESET_TOKUSOU)
     shop.event_shop(s, data, TextOutput(), NullNarrationService())  # TARGET=1（紅葉）
     return Ctx(s, data, TextOutput(), NullNarrationService())
 
@@ -224,7 +224,7 @@ def test_new_game_preset_has_no_profile(data):
     """初期セットのキャラは NO = CSV 番号（CharacterData.cs:99）≠ 0 なので :498 の条件が偽 → 何も生成せず :505 で RETURN。
     BASE:40–48 は 0、CFLAG:33／34 も 0（プロフィール未設定）のまま（原作どおり）。"""
     st = GameState.new(data, rng=GameRng(3))
-    event_first(st, data)
+    event_first(st, data, preset=PRESET_TOKUSOU)
     for i in (1, 2, 3):
         c = st.charas[i]
         assert c.no in (301, 302, 303)

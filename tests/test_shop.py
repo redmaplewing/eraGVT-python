@@ -6,7 +6,7 @@ import pytest
 
 from eragvt.data import default_csv_dir, load_game_data
 from eragvt.game import shop
-from eragvt.game.opening import event_first
+from eragvt.game.opening import PRESET_TOKUSOU, event_first
 from eragvt.state import FixedRng, GameRng, GameState
 from eragvt.text import NullNarrationService, TextOutput
 
@@ -19,7 +19,7 @@ def data():
 @pytest.fixture
 def st(data):
     s = GameState.new(data, rng=GameRng(1))
-    event_first(s, data)
+    event_first(s, data, preset=PRESET_TOKUSOU)
     shop.event_shop(s, data, TextOutput(), NullNarrationService())
     return s
 
@@ -85,7 +85,7 @@ def test_training_hp_constraint(st, data):
 
 def test_multi_set_picks_random_target_only_from_master(data):
     s = GameState.new(data, rng=FixedRng([0] * 50))
-    event_first(s, data)
+    event_first(s, data, preset=PRESET_TOKUSOU)
     s.target = 0
     shop.multi_set(s, TextOutput())
     assert s.target == 1  # RAND:(CHARANUM-1)+1 = 0+1

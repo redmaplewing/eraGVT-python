@@ -16,7 +16,7 @@ import pytest
 from eragvt.data import default_csv_dir, load_game_data
 from eragvt.game import shop
 from eragvt.game.action import Ctx, kojo_root
-from eragvt.game.opening import event_first
+from eragvt.game.opening import PRESET_TOKUSOU, event_first
 from eragvt.narration import nodes as N
 from eragvt.narration.expr import Binary, Lit, Resolver, Ternary, Unary, Var, parse_expr
 from eragvt.narration.extract import ExtractContext, parse_function, read_logical_lines
@@ -42,7 +42,7 @@ def svc(data):
 @pytest.fixture
 def ctx(data, svc):
     s = GameState.new(data, rng=GameRng(1))
-    event_first(s, data)
+    event_first(s, data, preset=PRESET_TOKUSOU)
     shop.event_shop(s, data, TextOutput(), NullNarrationService())
     s.target = 1  # 赤羽 紅葉（勝気 12）
     s.savestr[13] = "BOSS"
@@ -341,6 +341,7 @@ def test_web_shop_shows_hitokuti(data, tmp_path):
     app = create_app(data, tmp_path, rng_factory=lambda: GameRng(7), now=lambda: datetime(2026, 9, 29))
     client = TestClient(app)
     client.post("/api/input", json={"value": 0})
+    client.post("/api/input", json={"value": 1})  # 初期セット『特装戦隊』
     lines = [ln["parts"] for ln in client.get("/api/screen").json()["lines"]]
     text = ["".join(s["text"] for p in parts for s in p["segments"]) for parts in lines]
     # KOJO_0_12_勝気.ERB の HITOKUTI_SHOP_12 の本文のどれか 1 行（ERB から候補を取る）

@@ -40,3 +40,6 @@
 - [x] 救出時間切れ `TFLAG:9`（S08）— 只有 `COMF15.ERB@KYUSHUTU_TIMEUP_HANTEI`:64 讀取（由 `BATTLE_COM_AFTER.ERB`:1115 TRYCALL），
   全 ERB（含口上）沒有代入處（`grep -P "TFLAG\s*:\s*9(?![0-9])"` 全 ERB／ERH 僅 1 筆）→ 地の文 `MESSAGE_KYUUSHUTU_TIMEUP` 不會出現。照原作（deviations「原作行為」）。
 - [x] `@SHIFTFOWARD_CHARA`（`ヒロイン関連/SET_PARTYMEMBER.ERB`:48–64）— 全 ERB 沒有呼叫處（grep 只有定義行）→ 不移植。
+- [ ] `TOINT` 對 cp932 無法編碼字元的處理（S10）— `Creator.Method.cs@ToIntMethod`:2363 以 `LangManager.GetStrlenLang`（`_Library/LangManager.cs`:17–20，
+  `Encoding(932).GetByteCount`）判定全角；無法編碼字元的位元組數取決於 .NET 的替換 fallback，reference 內查不到。預設路徑不會遇到
+  （年齢指定 CSTR:204–206 只來自角色 CSV／製作畫面），`eragvt.game.chara_make.toint` 遇到時停止。

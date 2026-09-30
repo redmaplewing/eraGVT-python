@@ -21,7 +21,7 @@ from eragvt.game.battle import source_check
 from eragvt.game.battle.core import seikaku_hosei_palam, set_local
 from eragvt.game.battle.restraint import kyushutu_success
 from eragvt.game.chara_common import seikaku_check
-from eragvt.game.opening import event_first
+from eragvt.game.opening import PRESET_TOKUSOU, event_first
 from eragvt.game.prison import commands, event
 from eragvt.game.prison.event_palam import got_event_sex_mark_check
 from eragvt.game.session import GameSession, Phase
@@ -42,7 +42,7 @@ def data():
 @pytest.fixture
 def ctx(data):
     s = GameState.new(data, rng=GameRng(1))
-    event_first(s, data)
+    event_first(s, data, preset=PRESET_TOKUSOU)
     shop.event_shop(s, data, TextOutput(), NullNarrationService())  # TARGET=1（紅葉）
     return Ctx(s, data, TextOutput(), NullNarrationService())
 
@@ -621,7 +621,7 @@ def test_prison_messages_run_with_catalog(data):
     """catalog で MESSAGE_PRISON_COM_1 を実行：FLAG:900 は hook で書かれ、KOJO_ROOT が 0 に戻す（KOJO_ROOT.ERB:46–90）。"""
     svc = CatalogNarrationService(ERB, data)
     s = GameState.new(data, rng=GameRng(5))
-    event_first(s, data)
+    event_first(s, data, preset=PRESET_TOKUSOU)
     shop.event_shop(s, data, TextOutput(), NullNarrationService())
     ctx = Ctx(s, data, TextOutput(), svc)
     imprison(s, 1, boss=2)
@@ -656,6 +656,7 @@ def test_e2e_defeat_prison_shop_save_load(data):
     tmp = Path(tempfile.mkdtemp())
     s = GameSession(data, tmp, rng=GameRng(0))
     s.input(0)
+    s.input(1)  # 初期セット『特装戦隊』で開始
     for _ in range(400):
         st = s.state
         if s.phase == Phase.SHOP and any(c.cflag[0] == 1 for c in st.charas[1:]):
@@ -738,6 +739,7 @@ def test_session_halts_on_eventshop_stop(data, monkeypatch):
     """@EVENTSHOP 内の未移植イベント（寄生触手の暴走など）は例外で落とさず「停止」にする。"""
     s = GameSession(data, Path(tempfile.mkdtemp()), rng=GameRng(1))
     s.input(0)
+    s.input(1)  # 初期セット『特装戦隊』で開始
 
     def boom(*a, **k):
         raise NotImplementedError("テスト用")

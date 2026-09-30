@@ -32,13 +32,35 @@ def buttons(screen):
     return [p["button"] for l in screen["lines"] for p in l["parts"] if p["button"] is not None]
 
 
+def test_new_game_default_opening_to_shop_and_save(client):
+    """S10：タイトル [0] → [0] おまかせ（原作の既定経路：汎用キャラ 3 名）→ SHOP、存檔・讀檔。"""
+    c, app, _ = client
+    c.post("/api/input", json={"value": 0})
+    shop = c.post("/api/input", json={"value": 0}).json()
+    assert shop["phase"] == "shop"
+    st = app.state.session.state
+    assert [ch.no for ch in st.charas[1:]] == [0, 0, 0]
+    names = [ch.callname for ch in st.charas[1:]]
+    assert all(n and n != "汎用キャラ" for n in names)
+    assert any(names[0] in x for x in texts(shop))
+    c.post("/api/input", json={"value": 200})  # SAVEGAME
+    c.post("/api/input", json={"value": 0})
+    c.post("/api/input", json={"value": 300})  # LOADGAME
+    s = c.post("/api/input", json={"value": 0}).json()
+    assert s["phase"] == "shop"
+    assert [ch.callname for ch in app.state.session.state.charas[1:]] == names
+
+
 def test_new_game_shop_action_save_load(client):
     c, app, save_dir = client
     title = c.get("/api/screen").json()
     assert title["phase"] == "title"
     assert buttons(title) == [0, 1]
 
-    shop = c.post("/api/input", json={"value": 0}).json()
+    new_game = c.post("/api/input", json={"value": 0}).json()
+    assert new_game["phase"] == "new_game" and set(buttons(new_game)) == {0, 1}
+    assert any("おまかせで開始" in x for x in texts(new_game))
+    shop = c.post("/api/input", json={"value": 1}).json()  # 初期セット『特装戦隊』
     assert shop["phase"] == "shop"
     t = texts(shop)
     assert any("インターミッション" in x and "1 日目" in x for x in t)
@@ -73,6 +95,7 @@ def test_new_game_shop_action_save_load(client):
 def test_html_page_renders_buttons(client):
     c, _, _ = client
     c.post("/input", data={"value": 0})
+    c.post("/input", data={"value": 1})
     html = c.get("/").text
     assert 'name="value" value="100"' in html
     assert "インターミッション" in html
@@ -91,6 +114,7 @@ def test_full_turn_rest_back_to_shop(client):
     """開局 → 全員休憩（EVENTFIRST:165 で初期値が 予定_休憩）→ [100][9] → 1 ターン後 SHOP（夜）→ 再度 [100] → 翌日昼。"""
     c, app, save_dir = client
     c.post("/api/input", json={"value": 0})
+    c.post("/api/input", json={"value": 1})  # 初期セット『特装戦隊』
     s = c.post("/api/input", json={"value": 100}).json()  # USERSHOP_ACTION_CONFIRM の確認
     assert s["phase"] == "action_confirm"
     s = c.post("/api/input", json={"value": 9}).json()  # [9] → FLAG:40 = 2（出撃なし）→ JUMP ACTION_MAIN
@@ -109,6 +133,7 @@ def test_full_turn_rest_back_to_shop(client):
 def test_training_input_and_unported_halt(client):
     c, app, _ = client
     c.post("/api/input", json={"value": 0})
+    c.post("/api/input", json={"value": 1})  # 初期セット『特装戦隊』
     c.post("/api/input", json={"value": 102})  # 紅葉 → 鍛錬
     c.post("/api/input", json={"value": 100})
     s = c.post("/api/input", json={"value": 9}).json()
@@ -127,6 +152,7 @@ def test_sortie_battle_retreat_back_to_shop(client):
     """出撃 → ボス遭遇（探索度をノルマに設定）→ 戦闘画面で攻撃・撤退 → EVENTEND → TURNEND → SHOP → セーブ／ロード。"""
     c, app, save_dir = client
     c.post("/api/input", json={"value": 0})
+    c.post("/api/input", json={"value": 1})  # 初期セット『特装戦隊』
     st = app.state.session.state
     st.flag[47] = st.flag[46]  # ENCOUNT.ERB:159 のボス遭遇条件（探索度 >= ノルマ）
     c.post("/api/input", json={"value": 101})  # 紅葉 → 出撃
@@ -169,6 +195,7 @@ def test_sortie_restraint_battle_save_load(tmp_path, data):
     app = create_app(data, tmp_path, rng_factory=lambda: GameRng(12), now=lambda: datetime(2026, 9, 29, 12, 34, 56))
     c = TestClient(app)
     c.post("/api/input", json={"value": 0})
+    c.post("/api/input", json={"value": 1})  # 初期セット『特装戦隊』
     app.state.session.state.flag[47] = app.state.session.state.flag[46]  # ENCOUNT.ERB:159
     c.post("/api/input", json={"value": 101})
     s = c.post("/api/input", json={"value": 100}).json()

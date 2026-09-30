@@ -436,6 +436,24 @@ def chara_make_age_setting(state: GameState, data: GameData, c: Character) -> No
     c.base[AGE] = age  # :1404–1406
     c.maxbase[AGE] = age
     c.base[REAL_AGE] = real
-    if c.cstr[204] != "" or c.cstr[205] != "" or c.cstr[206] != "":
-        # :1409–1444 年齢指定（TOINT・RANDOM_AGE_F）。本作の到達経路（初期セット）では空。
-        raise NotImplementedError("CHARA_MAKE_AGE_SETTING の年齢指定（CSTR:204–206）は未移植")
+    # :1408–1444 年齢指定（CSTR:204 実年齢、205 年齢、206 変身時年齢）
+    from .chara_make import random_age_f, toint
+
+    for k, store, slot in ((204, c.base, REAL_AGE), (205, c.base, AGE), (206, c.maxbase, AGE)):
+        s = c.cstr[k]
+        if s == "":
+            continue
+        if s == "0":
+            store[slot] = 0
+        elif toint(s) > 0:
+            store[slot] = toint(s)
+        else:
+            store[slot] = random_age_f(state, s)
+    if c.cstr[204] == "年齢に合わせる":  # :1436–1443
+        c.base[REAL_AGE] = c.base[AGE]
+    if c.cstr[205] == "実年齢に合わせる":
+        c.base[AGE] = c.base[REAL_AGE]
+    if c.cstr[206] == "年齢に合わせる":
+        c.maxbase[AGE] = c.base[AGE]
+    if c.cstr[206] == "実年齢に合わせる":
+        c.maxbase[AGE] = c.base[REAL_AGE]

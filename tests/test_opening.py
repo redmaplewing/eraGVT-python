@@ -8,7 +8,7 @@ from __future__ import annotations
 import pytest
 
 from eragvt.data import default_csv_dir, load_game_data
-from eragvt.game.opening import _CALL_HEAD, _CALL_TAIL, _CALL_TAIL_DEFAULT, event_first
+from eragvt.game.opening import PRESET_TOKUSOU, _CALL_HEAD, _CALL_TAIL, _CALL_TAIL_DEFAULT, event_first
 from eragvt.state import GameRng, GameState
 
 
@@ -20,7 +20,7 @@ def data():
 @pytest.fixture(scope="module")
 def st(data):
     s = GameState.new(data, rng=GameRng(12345))
-    event_first(s, data)
+    event_first(s, data, preset=PRESET_TOKUSOU)
     return s
 
 
@@ -179,6 +179,6 @@ def test_color_conversion(st):
 def test_relation_not_converted(data):
     # CONVERT_RELATION は HEROINE_PRESET の [30] でのみ呼ばれる（オープニング処理.ERB:661）→ 最小路徑では CSV のまま
     s = GameState.new(data, rng=GameRng(1))
-    event_first(s, data)
+    event_first(s, data, preset=PRESET_TOKUSOU)
     for c in s.charas[1:]:
         assert dict(c.relation.items()) == data.charas[c.no].relation

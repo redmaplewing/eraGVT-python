@@ -17,7 +17,7 @@ from ..state.savefile import GameIdentity, SaveFormatError, load_from_file, read
 from ..text import Line, NarrationService, NullNarrationService, TextOutput
 from . import shop
 from .action import Ctx
-from .opening import event_first
+from .opening import PRESET_TOKUSOU, event_first
 from .turnend import run_turn
 
 AUTOSAVE_INDEX = 99  # SystemProc:805
@@ -28,6 +28,7 @@ AUTOSAVE = True
 
 class Phase(str, Enum):
     TITLE = "title"
+    NEW_GAME = "new_game"  # 開局経路の選択（モード選択・キャラメイク画面の代わり）
     SHOP = "shop"
     ACTION_CONFIRM = "action_confirm"
     TURN = "turn"  # ACTION_MAIN〜TURNEND 中の INPUT 待ち
@@ -80,6 +81,7 @@ class GameSession:
     def input(self, value: int) -> None:
         handler = {
             Phase.TITLE: self._title_input,
+            Phase.NEW_GAME: self._new_game_input,
             Phase.SHOP: self._shop_input,
             Phase.ACTION_CONFIRM: self._action_confirm_input,
             Phase.TURN: self._turn_input,
@@ -115,17 +117,34 @@ class GameSession:
 
     def _title_input(self, value: int) -> None:
         if value == 0:
-            self.state = GameState.new(self.data, rng=self.rng)
+            # DEVIATION: モード選択・キャラメイク等の画面は未移植。代わりに開局経路を 2 択で選ばせる
+            # （[0] が原作の既定＝何も変えずに確定した場合、[1] はキャラメイクで初期セットを読み込んだ場合）。
             self.out.drawline()
-            self.out.printl()
-            event_first(self.state, self.data)  # SystemProc@beginFirst:233–242
-            self.begin_shop(called_when_normal=True)  # オープニング処理.ERB:292 BEGIN SHOP
+            self.out.printl("[0] おまかせで開始（原作の既定：汎用キャラ 3 名をランダム生成）")
+            self.out.printl("[1] 初期セット『特装戦隊』で開始")
+            self.phase = Phase.NEW_GAME
         elif value == 1:
             self._load_from_title = True
             self.begin_load_game()
         else:
             self.out.clearline(1)
             self.out.printl("無効な値です")
+
+    def _new_game_input(self, value: int) -> None:
+        if value not in (0, 1):
+            self.out.clearline(1)
+            self.out.printl("無効な値です")
+            return
+        self.state = GameState.new(self.data, rng=self.rng)
+        self.out.drawline()
+        self.out.printl()
+        try:
+            # SystemProc@beginFirst:233–242
+            event_first(self.state, self.data, preset=None if value == 0 else PRESET_TOKUSOU)
+        except NotImplementedError as exc:  # 開局中の未移植分岐（年齢指定の特殊表記など）
+            self._halt(exc)
+            return
+        self.begin_shop(called_when_normal=True)  # オープニング処理.ERB:292 BEGIN SHOP
 
     # --- SHOP（SystemProc@beginShop:614–628、@endCallEventShop:630–640、@endAutoSave:670–680）
 

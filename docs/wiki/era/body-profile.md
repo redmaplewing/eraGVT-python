@@ -19,13 +19,17 @@ CFLAG:34 == 0 時停用的機能（原作）：拡張（`GAPING.ERB`:864 等）�
 | 呼叫點 | 內容 | 本作 |
 |---|---|---|
 | `CHARA_MAKE_DEFAULT.ERB@CHARA_MAKE_BASE_PROFILE`:493–505 | CSV キャラ：**CFLAG:34 == 0 且 `NO == 0`** 才 GENERATE_BODYLINE → AGE_SETTING → CHARA_SIZE_DEFAULT，之後一律 RETURN | 移植（`opening.chara_make_base_profile`） |
-| 同 :507–980 | 汎用キャラ（未初期化）的全隨機生成 | 未移植（初期セット不經過，NotImplementedError） |
+| 同 :507–980 | 汎用キャラ（未初期化）的全隨機生成（**預設開局經過這裡**） | S10 移植（`eragvt.game.chara_make.base_profile_generic`）：BODYLINE → AGE_SETTING → STATUS_TALENT／FLAVOR → CHARA_SIZE_DEFAULT，最後 `CFLAG:34 = 1`（:980，覆寫成長曲線） |
 | `FIRSTSETTING_CHARA.ERB`:256–261（[6]身体データ：BODYLINE → SIZE_SETTING 畫面）／:321–333（[999]CSV 再ロード：AGE_SETTING → CHARA_SIZE_DEFAULT，**不跑 BODYLINE，CFLAG:33／34 仍為 0**） | 角色製作畫面的手動操作 | 未移植（UI） |
 | `ヒロイン関連/ステータス画面/SHOW_STATUS_CHARA_SELECT_PAGE5.ERB`:73–79（指令 20、FLAG:700 == 0） | 狀態畫面的「スリーサイズ等設定」 | 未移植（UI） |
 | `FIRSTSETTING_CHARA_TALENT.ERB@SET_PROFILE`:4–19 | 只重算 43–48（BASE／MAXBASE），**不看 CFLAG:34、不改 CFLAG:33／34 與年齢** | 移植，接 `PRISON_COM105_膨乳化.ERB`:70 |
 
 `NO` 是 CSV 番号（`reference/emuera-1824/Emuera/GameData/Variable/CharacterData.cs`:99），初期セット（301〜303）≠ 0，
-所以**原作的新遊戲（初期セット → [1000]）不會生成身體資料**：BASE:40–48 = 0、CFLAG:33／34 = 0。
+所以**初期セット → [1000] 的新遊戲不會生成身體資料**：BASE:40–48 = 0、CFLAG:33／34 = 0。原作的預設開局（汎用キャラ）則會生成（S10）。
+
+汎用キャラ的怪處（照原作）：CHARA_SIZE_DEFAULT（:519）比「人間には必ず変身能力」（:531–534）早 → 人間也是 `MAXBASE:年齢 = -1`、
+MAXBASE:43–48 = 0；`CFLAG:34 = 1`（:980）→ 之後拡張度系（`GAPING.ERB`:864 等，CFLAG:34 != 0）會動作（本程式該處未移植、會停止）；
+AGE_SETTING 在決定「学生」（FLAVOR :1077–1087）之前，年齢一律 RAND:11+10（10〜20 歲）。
 玩家在キャラメイク畫面按 [1]〜[3] → [6] 或 [999]，或開局後在狀態畫面 PAGE5 按 20，才會生成。
 
 ### 對戰鬥的影響（原作行為）
@@ -55,4 +59,5 @@ GENERATE_BODYLINE:460–544：CFLAG:33 = RAND:535627332240；成長値以權重 
 所以 `成長値:(LCOUNT:1 - 1)` 就是抽中的那一年。
 
 CHARA_MAKE_AGE_SETTING:1336–1444：年齢 = RAND:11+10，學生／交際相手／種族改寫；:1404–1406 把 MAXBASE:年齢 也設成 AGE。
-年齢指定（CSTR:204–206，TOINT・RANDOM_AGE_F）未移植（非空時停止）。
+年齢指定（CSTR:204–206，:1408–1444）S10 移植：`"0"` → 0、`TOINT > 0` → 該值、否則 `RANDOM_AGE_F`（:1448–1497，未知字串 -99）；
+最後「年齢に合わせる」「実年齢に合わせる」覆寫。TOINT 依 `Creator.Method.cs@ToIntMethod`:2357–2387（全角 → 0；16／2 進、指數表記未移植 → 停止）。

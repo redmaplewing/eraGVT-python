@@ -22,7 +22,7 @@ from eragvt.game.battle.restraint import com_able_restraint
 from eragvt.game.battle.sexcom import sex_comable
 from eragvt.game.battle.syasei import tentacle_syasei_check, tentacle_syasei_up
 from eragvt.game.era import div, times
-from eragvt.game.opening import event_first
+from eragvt.game.opening import PRESET_TOKUSOU, event_first
 from eragvt.game.session import GameSession, Phase
 from eragvt.state import FixedRng, GameRng, GameState
 from eragvt.text import NullNarrationService, TextOutput
@@ -36,7 +36,7 @@ def data():
 @pytest.fixture
 def ctx(data):
     s = GameState.new(data, rng=GameRng(1))
-    event_first(s, data)
+    event_first(s, data, preset=PRESET_TOKUSOU)
     shop.event_shop(s, data, TextOutput(), NullNarrationService())  # TARGET=1（紅葉）
     s.savestr[13] = "BOSS"  # ENEMY_TYPE_CHECK_F("BOSS") == 1
     s.flag[110] = 0  # 悪堕ちキャラ戦ではない
@@ -450,6 +450,7 @@ def _play_restraint_battle(s: GameSession) -> list[int]:
 def test_e2e_sortie_restraint_back_to_shop(data):
     s = GameSession(data, Path(tempfile.mkdtemp()), rng=GameRng(12))
     s.input(0)
+    s.input(1)  # 初期セット『特装戦隊』で開始
     s.state.flag[47] = s.state.flag[46]  # ENCOUNT.ERB:159 ボス遭遇条件
     s.input(101)
     s.input(100)

@@ -14,8 +14,8 @@ ERB 路徑相對 `source/earGVP/ERB/`。
 - [ ] **亂數**：用 Python `random.Random`（可 seed），不是 Emuera 的 MT 實作；RAND 的呼叫次數也不追求一致（例：`RESEARCH_QUOTA` 的 `RAND:5` 是否短路求值）。同 seed 不會得到原作同樣的結果。（原作：`reference/.../GameData/Variable/VariableEvaluator.cs`:36–52；Python：`eragvt.state.rng.GameRng`）— 要完全一致需移植 MTRandom 並逐一核對求值順序，成本高。
 - [x] ~~**開局：身體資料生成未移植**~~（S09 解決）：`CHARA_MAKE_BASE_PROFILE` 已移植（`eragvt.game.opening.chara_make_base_profile`、
   `eragvt.game.body`）。查證結果：初期セットのキャラは `NO ≠ 0`（:498 條件不成立）→ 原作本來就不生成，BASE:40–48／CFLAG:33–34 為 0
-  與原作一致（`docs/wiki/era/body-profile.md`）。仍未移植：汎用キャラ的隨機生成（:507–980，初期セット不經過）、角色製作／狀態畫面的
-  手動生成（UI）、AGE_SETTING 的年齢指定（CSTR:204–206，非空時停止）。
+  與原作一致（`docs/wiki/era/body-profile.md`）。S10：汎用キャラ的隨機生成（:507–980）與 AGE_SETTING 的年齢指定（CSTR:204–206）
+  已移植；仍未移植：角色製作／狀態畫面的手動生成（UI）、TOINT 的 16／2 進與指數表記（停止）。
 - [ ] **FLASHNEWS 未移植**：新聞產生（含亂數、寫入 `SAVESTR:20`、`FLAG:60`）沒有執行，畫面顯示「（未實作）」。（原作：`インターミッション画面/SHOP_FLASHNEWS.ERB@FLASHNEWS`:3–752；Python：`eragvt.game.shop.flashnews`）
 - [ ] **全域資料（GLOBAL）不讀不寫**：永遠走「真正的初次啟動」路徑（MOB_FLAG 初始化為 100、不套用 GLOBAL 的 config／性嗜好フィルタ），也不存成就等全域資料。（原作：`オープニング処理.ERB@EVENTFIRST`:29–45、`バージョン間互換処理.ERB@UPDATE`:95–130；Python：`eragvt.game.opening.event_first`）— 等設定畫面／成就功能時一起做。
   S05 起戰鬥中的 `UNLOCK_ACHIEVEMENT`（タクティカルオーダー、絶体絶命ヒロイン等）與 `GET_STATE_ABLUP` 同樣不執行（`eragvt.game.battle.core.unlock_achievement`）。
@@ -23,7 +23,12 @@ ERB 路徑相對 `source/earGVP/ERB/`。
   S08 起同理不執行：幽閉的 `COMMON_PRISON.ERB@COMMON_PRISON_EXP`:87 `GET_STATE_EXPUP`、救出時的 `UNLOCK_ACHIEVEMENT`（271／273：
   `BATTLE_COM_AFTER.ERB`:209／240）、`MESSAGE_PRISON_PRISENTENCE_FIRST`:9（hook 為無動作）。（Python：`eragvt.game.prison.commands.common_prison_exp`、
   `battle.source_check._rescue_captives`、`narration/hooks.py` PRISON_HOOK_LINES）
-- [ ] **開局固定路徑**：模式固定 NORMAL、初期セット固定「特装戦隊」（301–303）、config 固定「基本セット」，不顯示模式選擇／角色製作／序章畫面。（Python：`eragvt.game.opening`）— S03 規格指定的最小路徑。
+- [ ] **開局的 UI 跳過**（S10 改寫）：狀態已照原作預設路徑（NORMAL → キャラメイク不設定直接 `[1000]`＝汎用キャラ 3 名おまかせ生成
+  → HEROINE_PRESET `[1]` 基本セット → 序章 `[0]`，`docs/wiki/era/flow.md` §1）；剩下的偏離只有**畫面**：模式選擇／キャラメイク／
+  HEROINE_PRESET／序章畫面不顯示，改為標題 `[0]` 之後的 2 択「[0] おまかせで開始（原作既定）／[1] 初期セット『特装戦隊』で開始」
+  （後者＝キャラメイクで `[200]`→`[0]`→`[1]はい`→`[1000]`）。模式固定 NORMAL（MODE_SELECT 沒有預設值，[1] 是第一個選項）。
+  共通設定（FLAG:5–7・820–825）永遠是 GLOBAL 不存在時的 0。（Python：`eragvt.game.opening.event_first`、`session._new_game_input`）
+  開局 `MESSAGE_FIRST` 口上仍不輸出（見下「口上」）。
 
 - [ ] **S04 未翻的行動會停止遊戲**：（出撃已於 S05 接上，戰鬥內的停止見下一項）特別活動、拠点防衛、戦闘支援（本體）、情報収集、自由行動在 `action_main` 丟 `NotImplementedError`，Web session 捕捉後進入「停止」狀態（只能按「タイトルに戻る」）。同樣停止的還有：ENDING（全ボス撃破／**11 日目夜的日數超過**）、救出直後、妊娠・育兒・幽閉・悪堕ち等 S04 無法產生的狀態、鍛錬排程（CFLAG:110）、戦闘基礎 Lv5 的變身能力獲得。（原作：`ゲーム内_行動実行処理/ACTION.ERB`:74–175 等；Python：`eragvt.game.action`、`eragvt.game.turnend`、`eragvt.game.session._advance_turn`）— 各自屬 S05 以後；影響範圍見 `docs/wiki/era/actions.md`。
 - [ ] **襲撃／救援、子触手襲来 會被跳過**：`RAID_HANTEI`（DAY ≥ 3 起依防衛力的亂數）與 `SMALL_TENTACLE_HANTEI`（夜、FLAG:44 > 0）判定成立時，原作會 `JUMP RAID_RESCUE／RAID_ATTACK`（戰鬥）或 `CALL SMALL_TENTACLE_ATTACK`；這裡只印「（未實作：…が発生しましたが、スキップします）」並當作沒發生。（原作：`ゲーム内_イベント発生/強制発生イベント/FORCE_襲撃or救援イベント発生.ERB`:94–105、`FORCE_深夜の子触手襲来.ERB`:48–53；Python：`eragvt.game.turnend.raid_hantei`／`small_tentacle_hantei`／`_skip_event`）— 通常遊玩一定會遇到，若改成停止則無法連續遊玩；戰鬥在 S05／S06 接上。
@@ -118,10 +123,15 @@ ERB 路徑相對 `source/earGVP/ERB/`。
   `PRISON_COM102`:105–106 恥情表寫入 LOCAL:8；`PRISON.ERB`:41 `今回陥落するフラグ` 與 :175 `LOCAL:2` 為靜態、沿用上次值；
   `SET_PARTYMEMBER.ERB`:22–24 SHIFTBACK 後遞補的角色本輪不判定；`AFTER_RESCUED.ERB`:23 `FLAG:32 = 0`（非 CFLAG）；
   `SHOP_SHOW_SITUATION_LIST.ERB`:10–39 不還原 FLAG:11 並設 SAVESTR:13；TFLAG:9 全作無代入（`KYUSHUTU_TIMEUP_HANTEI` 不會輸出）。
-- S09 身體資料（`docs/wiki/era/body-profile.md`）：初期セット直接開始時原作也不生成身體資料（`CHARA_MAKE_DEFAULT.ERB`:498 的
+- S09 身體資料（`docs/wiki/era/body-profile.md`）：**僅初期セット路徑如此**（S10 起預設開局是汎用キャラ，身體資料照原文生成，
+  體重正常、此補正約 1–5%）。初期セット直接開始時原作也不生成身體資料（`CHARA_MAKE_DEFAULT.ERB`:498 的
   `NO:SELECT == 0` 條件；NO＝CSV 番号，`reference/emuera-1824/Emuera/GameData/Variable/CharacterData.cs`:99），所以 BASE:体重(44)／
   胸の重量(48) 為 0，`COMMON_BATTLE_HANTEI.ERB` 的胸部重量補正 `value*(1+胸の重量)/(1+体重)`（:606–614 被弾、:1097–1105 撤退 減去；
   :1207–1214 DAMAGE 加上）讓女性角色敏捷變 0、攻擊 2 倍。照原作（`battle.hantei.breast_weight_term`）。
   **需使用者決定**：是否以 DEVIATION 在開局為初期セット角色生成身體資料（等同玩家在キャラメイク畫面按 [6]／狀態畫面 PAGE5 指令 20，
   `body.generate_bodyline`＋`chara_make_age_setting`＋`chara_size_default` 已移植可直接呼叫），以得到「正常體重」的戰鬥數值。
   另外 SET_PROFILE（膨乳化）不看 CFLAG:34，年齢 0 的初期セット角色會得到嬰兒體格（身長 544mm・体重 4.8kg 左右）。
+- S10 汎用キャラ生成（`CHARA_MAKE_DEFAULT.ERB`）照原作的怪處：`CHARA_SIZE_DEFAULT`（:519）在「人間には必ず変身能力」（:531–534）
+  **之前**執行，所以人間也得到 `MAXBASE:年齢 = -1`、變身時身體資料（MAXBASE:43–48）= 0；BASE_PROFILE 最後 `CFLAG:34 = 1`（:980）
+  覆寫 GENERATE_BODYLINE 的成長曲線；AGE_SETTING（:514）在 FLAVOR 決定「学生」（:1077–1087）之前，所以學生別的年齢幅不會套用；
+  STATUS_TALENT 可把 :508–512 立的処女拿掉（20%）但清純派留著。`CFLAG:123`（裕福な実家）在 FINALIZE 兩次各 +2500（本作 FLAVOR 不給此素質）。

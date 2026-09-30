@@ -1,12 +1,15 @@
-"""新遊戲：`@EVENTFIRST` 的最小路徑翻寫。路徑相對 `source/earGVP/ERB/`。
+"""新遊戲：`@EVENTFIRST` の翻寫。路徑相對 `source/earGVP/ERB/`。
 
-固定的選擇（玩家輸入）：
+既定の経路（AGENTS.md「跳過 UI 必須走原作預設路徑」：プレイヤーが何も設定を変えずに確定した場合）：
 - 全域資料（GLOBAL）不存在＝真正的初次啟動（本程式尚未寫入全域檔）。
-- ゲームモード選択 `[1] NORMAL`（`オープニング処理.ERB@MODE_SELECT`:297）。
-- キャラメイキング `[200]プリセットを読み込む` → `[0] 特装戦隊` → `[1]はい` → `[1000]キャラメイクを完了する`
-  （`SYSTEM/キャラメイキング関連/CHARA_MAKE.ERB@CHARA_MAKE_MAIN`:5）。
+- ゲームモード選択 `[1] NORMAL`（`オープニング処理.ERB@MODE_SELECT`:297。既定値のない選択なので先頭の NORMAL）。
+- キャラメイキング：何も設定せず `[1000]★キャラメイクを完了する（未設定のキャラはおまかせ）`
+  （`SYSTEM/キャラメイキング関連/CHARA_MAKE.ERB@CHARA_MAKE_MAIN`:5、:206–209）→ 3 名の汎用キャラをランダム生成。
 - ヒロインデータ確認 `[1]「基本セット」で開始`（`オープニング処理.ERB@HEROINE_PRESET`:617）。
 - プロローグ `[0]いいえ`。
+
+選択肢として `preset=PRESET_TOKUSOU`：キャラメイキングで `[200]プリセットを読み込む` → `[0] 特装戦隊` → `[1]はい`
+→ `[1000]`（S03〜S09 の開局）。
 
 與原作不同之處都標 `DEVIATION:`，並列在 `docs/wiki/bridge/deviations.md`。
 """
@@ -22,11 +25,11 @@ from .chara_common import (
     is_male,
     level_status,
     seikaku_check,
-    syuzoku_check,
     talent,
 )
 from .era import div, isqrt, limit
 from .body import chara_make_age_setting, chara_size_default, generate_bodyline
+from .chara_make import base_profile_generic, initialize_personality, initialize_race
 from .tentacle import BOSS_ERB_NUM, MOB_TENTACLE_NUMBERS, get_lastboss_phase, tentacle_survive_num
 
 PRESET_TOKUSOU = 0  # 初期セット/0_特捜戦隊.ERB
@@ -40,10 +43,11 @@ def game_option(state: GameState, option: GameOption) -> bool:
 # --- @EVENTFIRST ------------------------------------------------------------
 
 
-def event_first(state: GameState, data: GameData) -> None:
+def event_first(state: GameState, data: GameData, preset: int | None = None) -> None:
     """`ゲーム内_イベント発生/オープニング処理.ERB@EVENTFIRST`:19–292（最後の BEGIN SHOP の直前まで）。
 
     `state` は `GameState.new(data)`（endOpenning 後：キャラ 0 と 999）であること。
+    `preset` が None なら既定の経路（汎用キャラ 3 名をおまかせ生成）、番号ならその初期セットを読み込む。
     """
     # :29–45 LOADGLOBAL 失敗（初回起動）→ 雑魚敵出現率フィルターを 100 で初期化
     for n in MOB_TENTACLE_NUMBERS:
@@ -77,7 +81,10 @@ def event_first(state: GameState, data: GameData) -> None:
         state.add_chara(data, 0)
         state.flag[8] += 1
     # :127 CALL CHARA_MAKE_MAIN, 0
-    chara_make_main_preset(state, data, PRESET_TOKUSOU)
+    if preset is None:
+        chara_make_main_default(state, data)
+    else:
+        chara_make_main_preset(state, data, preset)
     # :135 キャラメイク完了処理（CHARA_MAKE_MAIN の [1000] に続いて 2 回目）
     chara_make_finalize(state, data)
     # :143–166 口上番号・行動予定
@@ -216,15 +223,28 @@ def research_quota(state: GameState) -> None:
 # --- キャラメイキング ---------------------------------------------------------
 
 
-def chara_make_main_preset(state: GameState, data: GameData, preset: int) -> None:
-    """`CHARA_MAKE.ERB@CHARA_MAKE_MAIN`:5 で [200] → 初期セット → [1000] と進んだ場合の状態変化。"""
-    if preset != PRESET_TOKUSOU:
-        raise NotImplementedError("初期セットは 0_特捜戦隊 のみ移植")
-    # :9–21 LOADGLOBAL（失敗）後、GLOBAL の既定値（すべて 0／空）から共通設定を読む
+def _chara_make_load_global(state: GameState) -> None:
+    """`CHARA_MAKE.ERB@CHARA_MAKE_MAIN`:9–21：LOADGLOBAL（失敗）後、GLOBAL の既定値（すべて 0／空）から共通設定を読む。
+    つまり主題・変身名・かけ声なし、苗字／名前の言語「デフォルト」、種族「ランダム」、フィート自動割り当て「なし」、
+    性格「完全ランダム」（:32–40 の表示）。"""
     for k in (5, 6, 7, 820, 821, 822, 823, 824, 825):
         state.flag[k] = 0
     for k in (10, 11, 12):
         state.savestr[k] = ""
+
+
+def chara_make_main_default(state: GameState, data: GameData) -> None:
+    """`CHARA_MAKE.ERB@CHARA_MAKE_MAIN`:5 で何も設定せず [1000] を押した場合の状態変化。"""
+    _chara_make_load_global(state)
+    # :206–209 [1000] キャラメイクを完了する → CHARA_MAKE_FINALIZE（未設定のキャラは INITIALIZE でおまかせ生成）
+    chara_make_finalize(state, data)
+
+
+def chara_make_main_preset(state: GameState, data: GameData, preset: int) -> None:
+    """`CHARA_MAKE.ERB@CHARA_MAKE_MAIN`:5 で [200] → 初期セット → [1000] と進んだ場合の状態変化。"""
+    if preset != PRESET_TOKUSOU:
+        raise NotImplementedError("初期セットは 0_特捜戦隊 のみ移植")
+    _chara_make_load_global(state)
     # :316–322 [200] → SHOKISET.ERB@CHARA_MAKE_FINALIZE_KAI:5–45 → [0] → [1]はい
     for _ in range(state.charanum - 1):
         state.del_chara(1)
@@ -368,7 +388,7 @@ def chara_make_finalize(state: GameState, data: GameData, arg: int = 0) -> None:
         if c.cflag[41] == -1:
             c.cflag[41] = 0
         if c.cflag[42] == 0:
-            # CLOTH_NO_INNER（武器と衣装/衣装関連/CLOTH_BATTLE.ERB:452）は未移植。初期セット 0 では CSV で 300 が入る。
+            # CLOTH_NO_INNER（武器と衣装/衣装関連/CLOTH_BATTLE.ERB:452）は未移植。初期セット 0・汎用キャラ（Chara000 CSV `フラグ,42,300`）とも 300 が入っている。
             raise NotImplementedError("CFLAG:42 == 0（CLOTH_NO_INNER）は未移植")
         if c.cflag[42] == -1:
             c.cflag[42] = 0
@@ -460,11 +480,9 @@ def _set_basic_values(data: GameData, c) -> None:
 def chara_make_initialize(state: GameState, data: GameData, sel: int) -> None:
     """`CHARA_MAKE_DEFAULT.ERB@CHARA_MAKE_INITIALIZE`:5–211。"""
     c = state.charas[sel]
-    if syuzoku_check(c) == 0:
-        raise NotImplementedError("種族の自動設定（:10–68）は未移植")
-    if seikaku_check(data, c) == 0:
-        raise NotImplementedError("性格の自動設定（:71–160）は未移植")
-    # :167 CALL CHARA_MAKE_BASE_PROFILE(SELECT)
+    initialize_race(state, data, sel)  # :8–72
+    initialize_personality(state, data, sel)  # :74–164
+    # :166 CALL CHARA_MAKE_BASE_PROFILE(SELECT)
     chara_make_base_profile(state, data, sel)
     # 変身名のロード（:166–209）
     if c.callname != "汎用キャラ" and talent(data, c, "変身能力") == 1:
@@ -502,8 +520,8 @@ def chara_make_base_profile(state: GameState, data: GameData, sel: int) -> None:
             chara_make_age_setting(state, data, c)
             chara_size_default(data, c)
         return  # :505
-    # :507–980 未初期化キャラ（汎用キャラ）のランダム生成。初期セット経路では到達しない。
-    raise NotImplementedError("CHARA_MAKE_BASE_PROFILE の汎用キャラ分岐（:507–980）は未移植")
+    # :507–975 未初期化キャラ（汎用キャラ）のランダム生成（既定の開局はここを通る）
+    base_profile_generic(state, data, sel)
 
 
 _CALL_HEAD = ("、参上", "、見参", "、推参", "、準備完了")
