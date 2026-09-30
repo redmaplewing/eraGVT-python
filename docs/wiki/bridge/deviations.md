@@ -35,7 +35,8 @@ ERB 路徑相對 `source/earGVP/ERB/`。
 - [ ] **未移植的戰鬥分岐會停止遊戲**（S05 新增、S06 更新）：戰鬥中下列情況丟 `NotImplementedError` → Web「停止」。
   S06 接上了拘束後的性攻擊、拘束中指令、絶頂／射精、敗北（→ 幽閉）與指令 6・7・16・17・69・71・72；
   仍停止的一覽見 `docs/STATUS.md`「S06 後仍會停止的分岐」（ＳＰ變身／ＳＰバースト、バースト攻擊的效果、反擊、受精成立、
-  強制自慰、動画流出、幽閉後的 TURNEND、悪堕ち／雜魚／ラスボス、拡張度 CFLAG:34 != 0 等）。
+  強制自慰、動画流出、幽閉後的 TURNEND、悪堕ち／雜魚／ラスボス等；拡張度 CFLAG:34 != 0 於 S11 接上，只剩羞恥プレイ的
+  動画サイト視窗 `MESSAGE_SEX_VIDEO_SITE_Window`）。
   （Python：`eragvt.game.battle.*` 各處 `raise NotImplementedError`、`battle.commands.run_com` 的 `# DEVIATION:`）
   — 依規格「未移植分岐必須停止」。
 - [ ] **幽閉的未移植分岐會停止遊戲**（S08 新增）：受精成立（`NINSIN_HANTEI`:140 以降，幽閉中常見）、（膨乳化的
@@ -93,6 +94,11 @@ ERB 路徑相對 `source/earGVP/ERB/`。
   （`MESSAGE_KYUUSHUTU` 則以 Python 輸出同文）。淫紋圖樣 `CHARA_TATTOO.ERB@PRINT_TATTOO`:239–474／`@TATTOO_LIB`（無代入到狀態、
   無 RAND）因 `CHKFONT`（依安裝字型）catalog 不支援，改印「〈淫紋：PRINT_TATTOO n〉」一行。
   （Python：`eragvt.game.prison.*` 的 `run_chinobun`、`eragvt.game.tattoo.print_tattoo`）
+- [ ] **INPUTS 只能輸入整數**（S11 新增）：Web 的輸入是整數，`MESSAGE_SEX_SPCOM7`:1236 的 INPUTS 以 `str(整數)` 比較
+  （原作可輸入任意字串／空字串：`GameView/EmueraConsole.cs`:722–728）。只有 "1" 有意義，實際選項不變。
+  （Python：`eragvt.game.battle.sexmsg.msg_spcom7`）
+- [ ] **HTML_PRINT 的子集**（S11 新增，只影響顯示）：只支援原作用到的 `<font color>`／`<nonbutton title>`（tooltip 以 Web 的
+  title 屬性顯示）；其他タグ停止。（Python：`eragvt.text.TextOutput.html_print`）
 - [ ] **Web 停止狀態**：遇到未移植處理時顯示「（未實作のため停止しました：…）」並停住，是原作沒有的畫面（見上「S04 未翻的行動」）。
   S08：全滅（ENDING_1）與ソロ的 ENDING_4／5 在顯示結局本文後，因ゲームオーバーモード未移植而以此畫面停止（「タイトルに戻る」）。
 
@@ -135,3 +141,8 @@ ERB 路徑相對 `source/earGVP/ERB/`。
   **之前**執行，所以人間也得到 `MAXBASE:年齢 = -1`、變身時身體資料（MAXBASE:43–48）= 0；BASE_PROFILE 最後 `CFLAG:34 = 1`（:980）
   覆寫 GENERATE_BODYLINE 的成長曲線；AGE_SETTING（:514）在 FLAVOR 決定「学生」（:1077–1087）之前，所以學生別的年齢幅不會套用；
   STATUS_TALENT 可把 :508–512 立的処女拿掉（20%）但清純派留著。`CFLAG:123`（裕福な実家）在 FINALIZE 兩次各 +2500（本作 FLAVOR 不給此素質）。
+- S11 拡張度・いちゃラブ照原作的怪處（`docs/wiki/era/gaping.md`）：**Ｖ／Ａ拡張度 CFLAG:35／36 的初期值只在顯示拡張度時設定**
+  （`GAPING.ERB@PRINTFORM_GAPING_NOW`:800–808；呼叫者是 FLAG:801 bit 5 的戰鬥 PALAM 表示〔既定 OFF〕與ステータス畫面 PAGE5〔未移植〕），
+  所以既定遊玩時從 0（rank 0）開始、第一次被插入就大幅上升（例：0 → 55、膣径 +3.8 cm）；GET_*_GAPING_EXP 的靜態 LOCAL 在 ARG < 3 時沿用
+  上次值（:1018–1022）；V_GAPING 等的早期 RETURN 不還原 TARGET；いちゃラブ的処女地の文（MESSAGE_SEX.ERB:1301）因 SEX_V:221 先把
+  処女改成 −1 而不會出現。**需使用者決定**：拡張度初期值是否以 DEVIATION 在開局（或第一次插入前）設定。

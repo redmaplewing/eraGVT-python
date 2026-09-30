@@ -100,7 +100,10 @@ def test_two_turns_all_rest(ctx):
 def test_turnend_loops_back_to_action_main(ctx):
     st = ctx.state
     st.flag[799] = 1
-    assert turnend.event_turnend(ctx) == Step.ACTION_MAIN  # :15–16
+    gen = turnend.event_turnend(ctx)
+    with pytest.raises(StopIteration) as e:
+        next(gen)
+    assert e.value.value == Step.ACTION_MAIN  # :15–16
     assert (st.flag[70], st.flag[71], st.flag[72]) == (0, 0, 0)
 
 
@@ -276,7 +279,7 @@ def test_night_events_not_triggered_in_opening_state(ctx):
     turnend.birth_hantei(ctx)  # 妊娠なし
     turnend.grow_hantei(ctx)  # 育児なし
     turnend.akuoti_attack(ctx)  # 悪堕ちなし
-    turnend.lovesex_night(ctx)  # 交際相手 0 → :28 CONTINUE（RAND 短絡：OperatorMethod.cs:532–536）
+    list(turnend.lovesex_night(ctx))  # 交際相手 0 → :28 CONTINUE（RAND 短絡：OperatorMethod.cs:532–536）
     turnend.yobai(ctx)  # 淫核等・感覚 0 → 候補判定の対象外
     st.day[0] = 2
     turnend.raid_hantei(ctx)  # :30 DAY < 3
@@ -294,7 +297,6 @@ def test_self_night_rolls_but_zero_chance(ctx):
     [
         (lambda st, d: st.charas[1].cflag.__setitem__(0, 1), turnend.prison),
         (lambda st, d: st.charas[1].talent.__setitem__(d.index_of("TALENT", "妊娠"), 1), turnend.birth_hantei),
-        (lambda st, d: st.charas[1].talent.__setitem__(d.index_of("TALENT", "交際相手"), 2), turnend.lovesex_night),
     ],
 )
 def test_night_events_unported(ctx, data, setup, func):

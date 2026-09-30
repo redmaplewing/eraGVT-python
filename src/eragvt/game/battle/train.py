@@ -274,8 +274,14 @@ def show_status(ctx: Ctx) -> None:
     SHOW_TRAIN_PALAM_STATUS、CLOTH_BATTLE_DISPHP、SHOW_DISTANCE_WINDOW）は COLOR_BAR 等を多用するため、同じ情報の一部を
     単純なバーと文字で表示する（deviations.md「戦闘画面の簡略表示」）。SHOW_STATUS とその下位関数には
     代入・RAND が無い（上記ファイルを grep で確認）ので、状態への影響はない。
+    例外は SHOW_TRAIN_PALAM_STATUS（CHARA_STATUS.ERB:1715–1750）→ SHOW_STATUS_PALAM（BATTLE_SHOW_STATUS.ERB:353–）→
+    PRINTFORM_GAPING_NOW（GAPING.ERB:789–：CFLAG:35／36 の初期値代入と V_GAPING／A_GAPING の RAND）で、
+    CONFIG_CHECK_SCREEN_F(5) == 1（FLAG:801 bit 5）のときだけ呼ばれる。既定（FLAG:801 = 1）では呼ばれず、
+    コンフィグ画面が未移植なので到達しないが、到達したら停止する（S11）。
     """
     st, data, out = ctx.state, ctx.data, ctx.out
+    if config_check_screen(st, 5) == 1:
+        raise NotImplementedError("調教ステータス表示（SHOW_TRAIN_PALAM_STATUS、FLAG:801 bit 5）は未移植")
     c = tc(ctx)
     v = c.tcvarn
     out.reset_color()

@@ -1,138 +1,71 @@
 # 現況（唯一真相，≤150 行）
 
-更新：2026-09-30（S10）
+更新：2026-09-30（S11）
 
 ## 已完成
 
 - 建立 repo，`source/earGVP/` 原作基線入庫（唯讀）；`reference/emuera-1824/` 引擎原始碼（查證用）。
-- **S01**：原作分析 wiki（`docs/wiki/era/`）＋ `src/eragvt` 骨架、CSV 載入器。
-- **S02**：狀態模型（`eragvt.state`）、版本化 JSON 存讀檔、文字輸出層、`NarrationService`。設計：`docs/wiki/python/state.md`。
-- **S03**：查證補課 + 新遊戲 + SHOP Web。
-  - Part 0：unresolved「Emuera 規格」全部對照引擎原始碼（僅剩無 BOM 檔編碼一項待實機確認）。修正：CSV 解析（省略／無法解析 → 1、
-    不 trim、`;` 不處理、番号重複保留先者、JUEL 名稱查 palam）、存檔範圍（TFLAG 存、TCVARn 不存、遊戲代碼／版本檢查）、
-    新遊戲 [0, 999]＋TARGET=1、`_Replace.csv`、自動按鈕（移植 ButtonStringCreator）、DAY 改為陣列、flow.md 引擎流程。
-  - Part 1：`eragvt.game.opening`（EVENTFIRST 最小路徑：NORMAL＋特装戦隊 301–303，含 CHARA_MAKE_FINALIZE×2、LEVELSTATUS、
-    CSVFIX、武器解碼、SET_LIMIT_DAY、RESEARCH_QUOTA）。
-  - Part 2：`eragvt.game.shop`／`session`、`eragvt.web`（FastAPI＋Jinja2）。`python -m eragvt` 可在瀏覽器開新遊戲、
-    看 SHOP、預約 101–108、切換操作角色、一括設定、存讀檔（0–19＋自動存檔 99）。測試共 227 個。
-- **S04**：行動執行＋回合結束。`[100]` 確認後跑完一回合回到 SHOP（晝→夜→翌日晝），可重複並存讀檔。
-  - `eragvt.game.action`：`ACTION_MAIN`（一次一人、FLAG:798/799、支援人數、控え・行動不能 → 強制休憩、
-    `ACTION_NGREASON`）、`REST`、`TRAINING`（0–10 全選項、INPUT 以 generator 等待；BASEUP／SEIKAKU_HOSEI_F／
-    SENGIUP／GET_EXP＋CHECK_LEVELUP／GET_SYUREN）。
-  - `eragvt.game.turnend`：`run_turn`（JUMP／BEGIN 迴圈）、`EVENTTURNEND` 主幹（SET_PARTYMEMBER、ENDING 判定骨架、
-    RECALC_PARTYMEMBER、BOSS_TENTACLE_RECOVER、DAILY_DEFENCE／POPULARITY、夜間事件的開始條件）、
-    `EVENTSHOP` 一般分岐（PARASITE、SMALL_TENTACLE、BIRTH_AUTO_RANDOM、晝夜、RECOVERY_OVER_TIME、ESTRUS_CYCLE、
-    日期、CALC_INCOME_EXPEND、新聞旗標、CHECK_SHIELD_ALL）。session 新增 `turn`／`halted` phase。
-  - 各行動影響範圍與開局狀態下的事件觸發表：`docs/wiki/era/actions.md`。測試共 273 個。
-- **S05**：戰鬥核心。出撃 → 遭遇 → 戰鬥（非拘束狀態）→ 撤退／勝利／時間切れ → EVENTEND → TURNEND → SHOP，可存讀檔。
-  - `eragvt.game.battle`：`encount`（ENCOUNT／ENCOUNT_ENEMY／ENCOUNT_BOSS、MOB_TENTACLE_ENCOUNT 文章版、GET_EXP_BATTLE 等報酬）、
-    `train`（UpdateInBeginTrain、EVENTTRAIN＋先制、SHOW_STATUS 簡略、SHOW_USERCOM 不分類版、USERCOM、DOTRAIN→EVENTCOM→COMn
-    →SOURCE_CHECK→EVENTCOMEND＋自動 WAIT）、`commands`（COM_ABLE／0・201–203・1–3・4・5・99）、`hantei`（命中・傷害）、
-    `palam`（PALAM_CAL／PALAM_UP）、`enemy`（ENEMY_ACTION 非拘束分岐、SELECT_TENTACLE_ACTION、ボス 1–7 資料）、
-    `source_check`（勝利・時間切れ・狀態異常・回合）、`cheers`、`cloth`、`func`、`after`（EVENTEND 撤退／時間切れ・ボス勝利、
-    刻印、蓄積ダメージ）、`ablup`（_ABLUP：珠→能力上昇、素質取得的一部分）。
-  - `action_main` 出撃接上；`run_turn` 的 `Step.TRAIN` 以 generator 進入戰鬥（session 沿用 `turn` phase，戰鬥中不能存檔）。
-  - 查清 unresolved「雜魚／クズ市民戰結束路徑」「TRAIN 輸入一律經 USERCOM」。基本設定下雜魚只有文章（不進 TRAIN）；
-    ボス遭遇需 探索度 FLAG:47 ≥ ノルマ FLAG:46（開局 28，出撃一次 +6〜9），故前幾次出撃不會遇到ボス。測試共 303 個。
+- **S01** 原作分析 wiki（`docs/wiki/era/`）＋骨架、CSV 載入器。**S02** 狀態模型（`docs/wiki/python/state.md`）、JSON 存讀檔、文字輸出層。
+- **S03** 引擎規格查證、新遊戲、SHOP Web（`python -m eragvt`）、存讀檔（0–19＋自動 99）。**S04** 行動（休憩・鍛錬・出撃）與
+  TURNEND／EVENTSHOP（`docs/wiki/era/actions.md`）。**S05** 戰鬥核心（`eragvt.game.battle`）。**S06** 拘束・性攻擊・敗北 → 幽閉。
+- **S07** 口上／地の文 catalog（`eragvt.narration`，`docs/wiki/python/narration.md`；狀態變化行走 `narration/hooks.py`）。
+  覆蓋率 13384 函式中可執行 12814（95.7%），`python -m eragvt --narration-report`。
+- **S08** 幽閉（`docs/wiki/era/prison.md`）：PRISON_EVENT、救出、洗脳・悪堕ち、全滅／ソロ結局本文（ゲームオーバーモード未移植 → 停止）。
+- **S09** 身體資料（`eragvt.game.body`，`docs/wiki/era/body-profile.md`）：初期セット角色原作也不生成（NO ≠ 0）→ 敏捷 0・攻擊 2 倍是原作行為。
+- **S10** 開局改回原作預設路徑（`eragvt.game.chara_make`，`docs/wiki/era/flow.md` §1）：標題 `[0]` 後 2 択「[0] おまかせ（汎用キャラ 3 名）／
+  [1] 初期セット『特装戦隊』」。`event_first(state, data, preset=None)` 為預設；既有測試明確指定 `preset=PRESET_TOKUSOU`。
+- **S11** 拡張度與いちゃラブセックス（設計與照原作的怪處：`docs/wiki/era/gaping.md`）。
+  - `battle.gaping`：V_GAPING／A_GAPING／GET_V・A_GAPING_EXP（CFLAG:34 ≠ 0）、GAPING_RANK_STR、PRINT_TENTACLE_SIZE、PRINTFORM_GAPING_NOW；
+    `PALAM_CALC_GAPING`・`PRISON_GAPING` 的停止點解除（PRISON_GAPING 的 GET_*_EXP 改為 OPTION 1，照原作）。
+    `TextOutput.html_print`（HTML_PRINT；`<nonbutton title>` → Web tooltip）。
+  - 新模組 `eragvt.game.lovesex`：LOVESEX_NIGHT／LOVESEX_KIND／SEX_V／SEX_A／SEX_V_CONDOM（INPUT）；`ninsin.after_pill`（INPUT）、
+    NINSIN_HANTEI 的一般人父親分岐（`愛する人 = -3`）。`turnend.event_turnend` 改為 generator。地の文 4 函式走 catalog，
+    `MESSAGE_KATAOMOI_NIGHT` 的 TALENT 代入 2 行進 `hooks.LOVESEX_HOOK_LINES`。
+  - `MESSAGE_SEX_SPCOM7` 的 INPUTS（CFLAG:34 > 0）接上（generator），輸入 "1" 的動画サイト視窗未移植 → 停止。
+  - 模擬腳本 `tools/sim.py`（之後各階段共用）。測試共 646 個（新增 `tests/test_gaping.py` 52、`tests/test_lovesex.py` 34）。
 
+## S11 模擬（`python tools/sim.py --preset default|tokusou --seeds 0-249`）
 
-- **S06**：拘束與性攻擊。出撃 → 戰鬥 → 被拘束（性攻擊・拘束中指令）→ 脫出／勝利／時間切れ／撤退 → SHOP，或敗北 → 幽閉（停在 TURNEND）。
-  - `battle.enemy`：ENEMY_ACTION 拘束分岐（:969–1009、再行動・連續行動）；`sexcom`：SEX_COMABLE、SEX_COM0–20、SPCOM0–15、
-    SEX_COMEX(_RANDOM)、AUTO_V_DEFENCE（INPUT）、ボス 1–7 SEX_ROUTINE／REACTION_REF、ENEMY_ACTION_SEX_ROUTINE；`sexmsg`：性攻擊地の文
-    中的狀態變化（本文以「〈地の文：…〉」一行代替，deviations）；`gaping`（觸手サイズ・拡張度；CFLAG:34 = 0 時不動作）、
-    `syasei`（TENTACLE_SYASEI_UP／CHECK／POINT、SAKUSEI）、`ninsin`（受精判定到成立前）。
-  - `palam.palam_up` 全面移植（結界消耗、絶頂・我慢・懇願、キャラ射精／噴乳、體力氣力性耐性低下、刻印、JUMP SOURCE_CHECK）；
-    `source_check`：暴れる、拘束中自動振り解き、麻痺・腰くだけ・恍惚持續、BATTLE_LOSE（:969–1095 → 幽閉）；`hantei`：振り解く判定、
-    暴れる傷害；`cheers`：性攻擊時的觀眾反應；`after`：EVENTEND 敗北分岐（:335–422）、SUBEVENT_RELEASE_ECSTASY。
-  - `restraint`：COM_ABLE 8–15・40・44–47・70・100–104、COMF8–14・40・44–46・100–104；`train.show_usercom` 拘束分岐（:382–441）；
-    `commands`：COM6 背後に回る・7 見切り・16／17 切替・69 何もしない・71／72 EX ゲージ。
-  - 修正 S05：`message_branch_faith_down` 性抵抗分岐的文與旗標、`SENGIUP` 的 `&&`／`||` 優先順位（同順位・左結合）。
-  - 測試共 349 個（新增 `tests/test_battle_restraint.py`、Web 拘束戰→存讀檔 1 case）；Chromium 實機跑完拘束戰→SHOP。
+方針：每次 SHOP 全員隨機預約 101–103（出撃・鍛錬・休憩）→ [100]，其他畫面從最近的按鈕隨機選（catalog）。
+S10 的腳本未留存，「S10」欄是以同一 `tools/sim.py` 在 S10 HEAD 重跑的結果（S10 STATUS 記載的 4.58／17 是舊腳本，不可直接比）。
 
-- **S07**：口上／地の文抽取管線（`eragvt.narration`，設計：`docs/wiki/python/narration.md`）。執行期從 `source/earGVP/ERB` lazy 抽取
-  （啟動約 0.5 秒、不落地），「文字輸出＋條件分岐」子集以執行器求值（RAND 照 ERB 順序、引擎語意附 reference 行號）。
-  - `NarrationService` 改為 `call_kojo(ctx, C_NO, code)`（KOJO_ROOT.ERB:46–90 派發）／`run_function(ctx, 函式, args)`；
-    `action.kojo_root_full` 移植 KOJO_ROOT 全體。Web 預設用 `CatalogNarrationService`（無 `ERB/` 時 Null）。
-  - 接上：SHOP 一口メッセージ、全 `kojo_root` 呼叫點、性攻擊地の文（`sexmsg` 33 函式＋COM15–20，狀態變化行 140 行經 `narration/hooks.py`
-    依 ERB 順序執行）、射精・處女喪失・ヒロイン側性攻撃・敗北 `MESSAGE_BATTLE_END_LOSS`（`core.run_chinobun`）。
-  - 修正 S06：地の文中的 `KOJO_ROOT`（LOSTVIRGIN、SYASEI_*、SEX_ATTACK104）在 Null／佔位路徑也照原作呼叫。
-  - 覆蓋率（`python -m eragvt --narration-report`）：口上／地の文函式 **13384，可執行 12814（95.7%）**。unsupported 第一原因前 10：
-    GOTO 199、CFLAG 代入 186、TALENT 代入 32、NAME／CSTR／BASE 代入 各 20、CDFLAG 代入 13、未對應變數 TCVAR 12、STRDATA 9、SPLIT 8。
-    （「代入」＝口上本身改狀態，依規格不移植 → 當「找不到」，deviations 需裁決。）
-  - 隨機方針 40 場模擬（seed 0–39）：catalog 實行時失敗 0、例外 0；停止原因同 S06。測試共 381 個（新增 `tests/test_narration.py` 32）。
+| 指標 | 預設 S10 | 預設 S11 | 初期セット S10 = S11 |
+|---|---:|---:|---:|
+| 停止前 SHOP 次數（平均／最多） | 6.47／19 | 11.44／32 | 10.91／32 |
+| 敗北局／敗北後 SHOP 平均 | 0／— | 201／4.10 | 190／3.89 |
 
-- **S08**：幽閉（設計與 CFLAG 對照：`docs/wiki/era/prison.md`）。敗北 → TURNEND（SET_PARTYMEMBER／SHIFTBACK_CHARA 把離隊者移到最後）→
-  每回合 PRISON_EVENT（17 種幽閉指令、EVENT_PALAM_UP、刻印、淫紋、汚染度）→ 脫出／救出（ボス擊破、指令 15、AFTER_RESCUED／
-  RECOVER_TO_PARTY）或 洗脳・悪堕ち・取り込まれ；全滅 ENDING_1 與ソロ ENDING_4／5 顯示本文後停止（ゲームオーバーモード未移植）。
-  - 新模組：`eragvt.game.prison`（event／commands／event_palam）、`party`、`tattoo`、`ending`；`turnend.inmon_recovery` 全移植
-    （救出後淫紋進行 → 悪堕ち／自ら幽閉）、PARASITE 前半（寄生経験・順応値，事件本體停止）；`_ABLUP, 1`、淫壷取得、
-    NINSIN_HANTEI 的 ARG:2 父親指定；SHOP `[130] 状況の確認`（SHOP_SHOW_SITUATION_LIST 全體）。
-  - 地の文（MESSAGE_PRISON／OTHER 的 PRISON 系／KYUUSHUTU／刻印）走 catalog；狀態變化 21 行進 `hooks.PRISON_HOOK_LINES`。
-  - Web：@EVENTSHOP 內的未移植也改為「停止」（先前會例外）。測試共 481 個（新增 `tests/test_prison.py` 100，含 Web 敗北→幽閉→SHOP→存讀檔 E2E）。
-  - 幽閉單獨壓力測試（30 seed × ボス 7 種、catalog）：取り込まれ 119／受精成立停止 67／SET_PROFILE 停止 24，catalog 失敗 0；
-    洗脳選項 ON＋半數触手の虜：洗脳 54／悪堕ち 55／受精 76／SET_PROFILE 25。
-
-- **S09**：身體資料（設計與查證：`docs/wiki/era/body-profile.md`）。新模組 `eragvt.game.body`：GENERATE_CHAR_SIZE／TOP_UNDER／
-  CUP_SIZE／CALC_BREAST_WEIGHT／GENERATE_BODYLINE／CHARA_SIZE_DEFAULT／CHARA_MAKE_AGE_SETTING／SET_PROFILE；`CHARATALENT_F` 補上
-  変身中分岐；`opening.chara_make_base_profile`（:493–505）；膨乳化（PRISON_COM105:70）接上 SET_PROFILE；`battle.hantei.breast_weight_term`。
-  - **查證結論**：初期セットのキャラは `NO ≠ 0`（CHARA_MAKE_DEFAULT.ERB:498、CharacterData.cs:99）→ 原作也不生成身體資料，
-    BASE:40–48・CFLAG:33／34 = 0，女性敏捷 0・攻擊 2 倍是**原作行為**（deviations 移到「原作行為」，是否要偏離待使用者決定）。
-    開局亂數序列不變，既有 seed 測試無需改動。測試共 520 個（新增 `tests/test_body.py` 39）。
-  - 模擬（seed 0–249，全員隨機預約 101–103、其餘畫面隨機按鈕、catalog；S08 當時的腳本未留存，以同一腳本在 S08 HEAD 重跑作基準）：
-    停止原因 S08→S09：ゲームオーバーモード 90→98、動画流出 40→42、受精成立 34→37、ＳＰ変身 25→25、強制自慰 15→15、
-    戰後レイプ 11→11、COM17 回避補正 9→9、ＳＰバースト 9→9、COM17 4→4、膨乳化 SET_PROFILE 13→0。
-    敗北後（首次有人幽閉起）經過的 SHOP 次數＝半日數：平均 5.25→5.60（敗北局 190→191），最多 147→147。
-    （此指標與 S08 STATUS 的「平均 1.5」定義不同，無法直接比較。）
-
-- **S10**：開局改回原作預設路徑（預設路徑追蹤：`docs/wiki/era/flow.md` §1「預設路徑」）。新模組 `eragvt.game.chara_make`：
-  CHARA_MAKE_INITIALIZE 的種族 `RAND:24`／性格ガチャ `RAND:18`（FLAG:825 = 0）／SEIKAKU_HOSEI／一人称、BASE_PROFILE 汎用分岐
-  （:507–980：処女・清純派、BODYLINE→AGE_SETTING→STATUS_TALENT→FLAVOR→CHARA_SIZE_DEFAULT、髪型、名字與外見色 STR、變身名・名乗り、
-  `CFLAG:34 = 1`）、AGE_SETTING 年齢指定（CSTR:204–206、RANDOM_AGE_F、TOINT）。共通設定全為 GLOBAL 不存在時的 0
-  （SET_FEAT_DEFAULT／口上限定ガチャ／RANDOMNAMING_FROMGENRE 不經過，非 0 時停止）。
-  - `event_first(state, data, preset=None)`＝預設（汎用キャラ 3 名，CFLAG:6 全為 0 → 女性汎用口上）；`preset=PRESET_TOKUSOU`＝初期セット。
-    Web：標題 `[0]` 後 2 択「[0] おまかせ／[1] 初期セット『特装戦隊』」。既有測試全部改為明確指定 `preset=PRESET_TOKUSOU`
-    （Web／session 測試改按 [1]），expected 不變。測試共 561 個（新增 `tests/test_chara_make.py` 40、Web 1）。
-  - 模擬（seed 0–249，同一腳本：全員隨機預約 101–103、其餘隨機按鈕、catalog）：見下方「S10 模擬」。
-
-## S10 模擬（預設開局 vs 初期セット）
-
-S09 的腳本未留存，以新腳本對兩種開局各跑 250 場（數字只在本表內可比，與 S09 表不同定義）：
-
-| 指標 | 預設（汎用キャラ） | 初期セット（S09 相當） |
-|---|---:|---:|
-| 停止前經過的 SHOP 次數（平均／最多） | 4.58／17 | 9.22／21 |
-| 敗北局（有人幽閉）／敗北後 SHOP 平均 | 0／— | 191／3.24 |
-| 停止原因 | 拡張度（CFLAG:34 != 0）159、いちゃラブ（LOVESEX_NIGHT）90、強制自慰 1 | ゲームオーバーモード 128、受精成立 46、動画流出 34、ＳＰ変身 13、強制自慰 13、COM17 回避補正 7、ＳＰバースト 4、COM17 3、戰後レイプ 2 |
-
-預設開局：身體資料正常（敏捷不再歸 0）但 `CFLAG:34 = 1`（:980）→ 第一次被性攻擊就進入未移植的拡張度分岐；交際相手 1–4（每人約 16%）
-→ 夜間 LOVESEX_NIGHT 停止。兩者都在敗北前發生，故 250 場無一局到幽閉。
+- 停止原因（預設 S10）：拡張度 153、いちゃラブ 92、強制自慰 3、動画サイト表示 2。
+- 停止原因（預設 S11）：ゲームオーバーモード 88、受精成立 64、動画流出 33、戰後レイプ 14、強制自慰 14、ＳＰ変身 9、
+  動画サイト表示（SPCOM7 輸入 1）9、COM17 回避補正 8、COM17 5、ＳＰバースト 5、ＳＰフルバースト 1。
+- 停止原因（初期セット，S10 與 S11 完全相同＝CFLAG:34 = 0 路徑不變）：ゲームオーバーモード 90、受精成立 51、動画流出 35、
+  ＳＰ変身 24、ＳＰバースト 14、強制自慰 13、COM17 回避補正 10、戰後レイプ 9、COM17 4。
+- 預設開局的いちゃラブ：ABL 全 0 時發生機率 0（欲望×5 等），此方針下幾乎不發生；S10 的停止是在機率判定之前。
 
 ## 下一步
 
-- 未指定 S11。**預設開局最優先**：拡張度（`GAPING.ERB` 的 CFLAG:34 != 0 分岐：V_GAPING／A_GAPING／PRINT_TENTACLE_SIZE）與
-  いちゃラブセックス（`FORCE_いちゃラブセックス.ERB@LOVESEX_NIGHT`:31–，交際相手 1–4）——預設開局幾乎一定在最初幾回合停在這兩處。
-  其後：ゲームオーバーモード、妊娠、動画流出、ＳＰ変身／バースト、悪堕ちキャラ。
-- 需使用者決定：初期セット角色是否偏離原作生成身體資料（deviations.md「原作行為」S09 項；S10 起僅影響初期セット選項）。
+- 未指定 S12。依 S11 模擬頻度：ゲームオーバーモード（全滅後）、妊娠（受精成立以降）、動画流出、戰後レイプ・強制自慰、
+  ＳＰ変身／バースト、悪堕ちキャラ。
+- 需使用者決定：拡張度初期值（CFLAG:35／36）只在顯示時設定、既定遊玩從 0 開始（deviations.md「原作行為」S11）；
+  初期セット角色是否偏離原作生成身體資料（同「原作行為」S09 項）。
 - 口上 catalog 待擴充：改狀態的口上（hook 化）、GOTO、SPLIT／STRDATA、未實作式中関数（覆蓋率報告）。
-- deviations.md 需裁決：振り解く `LOCAL:O`、口上的狀態副作用、口上 catalog 實行時失敗的回復、S08 新增項。
+- deviations.md 需裁決：振り解く `LOCAL:O`、口上的狀態副作用、口上 catalog 實行時失敗的回復、S08 以後新增項。
 
-## S09 後仍會停止的分岐（`NotImplementedError` → Web 停止）
+## 仍會停止的分岐（`NotImplementedError` → Web 停止）
 
-頻度見上方 S09 模擬（ゲームオーバーモード 98、動画流出 42、受精成立 37、ＳＰ変身 25、強制自慰 15、戰後レイプ 11、
-バースト攻擊 13、ＳＰバースト 9）。女性角色敏捷 0・攻擊 2 倍（原作初期セットの状態）使敗北很快。其餘登記但罕見：
+頻度見上方 S11 模擬。其餘登記但罕見：
 - 幽閉：ラスボス／悪堕ちキャラ 的幽閉、容貌變化（設定 ON）、RECOVER_CORRUPTION、RESCUE_CHILD、TS 性別變化、ラスボス出現後的淫紋陥落。
 - TURNEND：AKUOTI_ATTACK（悪堕ち後）、寄生触手的暴走／共生取得、BIRTH_HANTEI／GROW_HANTEI、INTIMIDATION／KIDNAPPING。
 - 指令：47 説得する、反擊（[反撃]スタイル、`HANGEKI_TO_TENTACLE`）；戰後妊娠判明（NINSIN_CHECK_AFTER）、戰後自慰。
-- 拡張度（CFLAG:34 != 0）、素股焦らし失敗的處女喪失、觸手服／觸手拘束具、悪堕ち／雜魚／クズ市民／ラスボス／事件戰／エンドレス、
-  デバッグ模式、`HATUJOU_TO_HAIRAN` 地の文。
+- 動画サイト視窗（SPCOM7）、ステータス PALAM 表示（FLAG:801 bit 5）、素股焦らし失敗的處女喪失、觸手服／觸手拘束具、
+  悪堕ち／雜魚／クズ市民／ラスボス／事件戰／エンドレス、デバッグ模式、`HATUJOU_TO_HAIRAN` 地の文。
 
 ## 已知問題
 
-- 未決：`docs/wiki/bridge/unresolved.md`；偏離：`docs/wiki/bridge/deviations.md`（整體「暫時維持」，S06–S09 新增項待裁決）。
+- 未決：`docs/wiki/bridge/unresolved.md`；偏離：`docs/wiki/bridge/deviations.md`（整體「暫時維持」，S06 以後新增項待裁決）。
 - 無 BOM 的 7 個角色 CSV 在原版 1.824 會以 Shift-JIS 讀（亂碼）；本程式以 UTF-8 讀，可能是 +v10 差異，待實機確認。
 - 開局：預設（NORMAL＋汎用キャラ 3 名おまかせ）與初期セット「特装戦隊」；其他初期セット／キャラメイク畫面的手動設定未移植。
-- 可玩範圍：休憩・鍛錬・出撃（含被拘束的戰鬥、敗北後的幽閉與救出）。其他行動、11 日目夜的日數超過結局、妊娠等狀態會進入
-  Web「停止」畫面（deviations、上一節）。
+- 可玩範圍：休憩・鍛錬・出撃（含被拘束的戰鬥、拡張度、敗北後的幽閉與救出）、夜間いちゃラブ。其他行動、11 日目夜的日數超過結局、
+  妊娠等狀態會進入 Web「停止」畫面（deviations、上一節）。
 - 初期セット選項的角色身體資料為 0（原作同樣不生成），戰鬥中女性敏捷 0・攻擊 2 倍（原作行為，是否偏離待決定）。
   預設開局的汎用キャラ會生成（體重正常）。角色製作／狀態畫面的手動生成未移植。
 - 襲撃／救援（DAY ≥ 3）與子触手襲来成立時只顯示「スキップ」訊息（deviations）。

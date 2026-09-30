@@ -519,9 +519,16 @@ def msg_spcom6(ctx: Ctx) -> None:
     kojo_root(ctx, "SEX_SPCOM6")  # :1120
 
 
-@_catalog("MESSAGE_SEX_SPCOM7", 0)
-def msg_spcom7(ctx: Ctx) -> None:
-    """`@MESSAGE_SEX_SPCOM7`:1126–1300。"""
+def msg_spcom7(ctx: Ctx):
+    """`@MESSAGE_SEX_SPCOM7`:1126–1300（ジェネレータ：:1235–1238 の INPUTS）。
+
+    catalog では INPUTS（:1237）が子集合外のため常に Python 移植（本文は佔位）。
+    :1234–1240 CFLAG:34 > 0 なら「[1]映像を見る」を出して INPUTS、CLEARLINE。RESULTS == "1" なら動画サイト
+    （MESSAGE_WindowLibrary_VideoHostSite.ERB@MESSAGE_SEX_VIDEO_SITE_Window：独自ウィンドウ描画＋GOTO／INPUTS ループ）
+    に入るが未移植のため停止。
+    DEVIATION: Web の入力は整数のみなので、INPUTS の文字列は `str(整数)`（空文字・非数値は入力できない）。"""
+    if ctx.narration.run_function(ctx, "MESSAGE_SEX_SPCOM7", []):
+        return
     st = ctx.state
     c = tc(ctx)
     cl = st.temp.cloth
@@ -536,8 +543,15 @@ def msg_spcom7(ctx: Ctx) -> None:
             c.tcvarn[25] = 0
         st.flag[900] = 2
     else:  # :1229–1293
-        if c.cflag[34] > 0:  # :1234–1238 INPUTS（動画サイト表示）
-            raise NotImplementedError("羞恥プレイの動画サイト表示（MESSAGE_SEX_SPCOM7:1234–1260、CFLAG:34 > 0）は未移植")
+        results = "0"
+        if c.cflag[34] > 0:  # :1234–1238
+            lcount = ctx.out.linecount
+            ctx.out.printl("[1]映像を見る")
+            # DEVIATION: INPUTS は任意の文字列だが、Web の入力は整数のみ → str(整数)（deviations.md「INPUTS 只能輸入整數」）
+            results = str((yield))  # INPUTS（Instraction.Child.cs:642–667、EmueraConsole.cs:722–728）
+            ctx.out.clearline(ctx.out.linecount - lcount)
+        if results == "1":  # :1242
+            raise NotImplementedError("動画サイト表示（MESSAGE_SEX_VIDEO_SITE_Window、MESSAGE_SEX_SPCOM7:1242–1279）は未移植")
         st.flag[900] = 3
     kojo_root(ctx, "SEX_SPCOM7")  # :1297
 

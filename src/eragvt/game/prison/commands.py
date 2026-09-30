@@ -91,14 +91,15 @@ def common_prison_exp(ctx: Ctx, arg0: int, arg1: int) -> None:
     ctx.out.printl(f"{name}：＋{arg1}")
 
 
-def prison_gaping(ctx: Ctx, a0: int, a1: int, a2: int, a3: int) -> tuple[int, int]:
-    """`GAPING.ERB@PRISON_GAPING, ARG:0〜4, LOCAL:0〜3`:1298–1339（ARG:4 と LOCAL:0〜3 は拡張度表示にだけ使う）。"""
+def prison_gaping(ctx: Ctx, a0: int, a1: int, a2: int, a3: int, locs: tuple[int, int, int, int] = (0, 0, 0, 0)) -> tuple[int, int]:
+    """`GAPING.ERB@PRISON_GAPING, ARG:0〜4, LOCAL:0〜3`:1298–1339（ARG:4 は未使用、LOCAL:0〜3 は触手サイズ表示の条件）。"""
     from ..action import config_check_maniac
     from ..battle.gaping import (
         a_gaping,
         gaping_size_to_point,
         get_a_gaping_exp,
         get_v_gaping_exp,
+        print_tentacle_size,
         set_tentacle_size,
         set_tentacle_size_r,
         v_gaping,
@@ -113,14 +114,14 @@ def prison_gaping(ctx: Ctx, a0: int, a1: int, a2: int, a3: int) -> tuple[int, in
         set_tentacle_size(ctx, c.cflag[20], c.cflag[21], 0, 0, -st.tflag[10])
     set_tentacle_size_r(ctx)  # :1312
     if config_check_maniac(st, 16) == 1 and c.cflag[34] > 0:  # :1315–1316
-        raise NotImplementedError("拡張度の表示（PRINT_TENTACLE_SIZE）は未移植")
+        print_tentacle_size(ctx, *locs)
     if a0 > 0:  # :1320–1326
-        a2 += get_v_gaping_exp(ctx, gaping_size_to_point(ctx, "Ｖ"))
+        a2 += get_v_gaping_exp(ctx, gaping_size_to_point(ctx, "Ｖ"), st.target, 1)
         r = v_gaping(ctx, gaping_size_to_point(ctx, "Ｖ"))
         if r > 0 and config_check_maniac(st, 16) == 1:
             ctx.out.printl(f"膣径：＋{div(r, 10)}.{r % 10} cm")
     if a1 > 0:  # :1328–1334
-        a3 += get_a_gaping_exp(ctx, gaping_size_to_point(ctx, "Ａ"))
+        a3 += get_a_gaping_exp(ctx, gaping_size_to_point(ctx, "Ａ"), st.target, 1)
         r = a_gaping(ctx, gaping_size_to_point(ctx, "Ａ"))
         if r > 0 and config_check_maniac(st, 16) == 1:
             ctx.out.printl(f"肛径：＋{div(r, 10)}.{r % 10} cm")
@@ -147,7 +148,7 @@ def _tail(ctx: Ctx, L: list[int]) -> None:
     LOCAL:151／152 は 2 倍＋拡張経験になる（原作どおり）。"""
     common_prison(ctx, L[0:12])
     L[120], L[121], L[151], L[152] = common_prison_exp_sh(ctx, L[120], L[121], L[151], L[152])
-    r0, r1 = prison_gaping(ctx, L[120], L[121], L[151], L[152])
+    r0, r1 = prison_gaping(ctx, L[120], L[121], L[151], L[152], (L[0], L[1], L[2], L[3]))
     L[151] += r0
     L[152] += r1
     for cc in range(100, 200):

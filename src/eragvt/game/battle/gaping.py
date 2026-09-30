@@ -6,14 +6,14 @@
 拡張（V_GAPING／A_GAPING／GET_*_GAPING_EXP）は CFLAG:34 == 0 なら何もしない（GAPING.ERB:864–865、942–943、
 1015–1016、1044–1045）。CFLAG:34（成長曲線）を書くのは GENERATE_BODYLINE（CHARA_SIZE.ERB:540）・
 CHARA_SIZE_DEFAULT（CHARA_SIZE_UI.ERB:2157）・CHARA_MAKE_BASE_PROFILE:980 で、初期セットのキャラ（NO ≠ 0）は
-原作でもどれも通らない（`eragvt.game.body`、`docs/wiki/era/body-profile.md`）ため 0 のまま。0 以外に到達したら停止する。
-身長・腰囲（BASE:43／47）も同じ理由で 0（膨乳化の SET_PROFILE 後は非 0）。式は原作どおり。
+0 のまま、預設開局の汎用キャラは 1（S10）。S11 で CFLAG:34 ≠ 0 の分岐（拡張度・触手サイズ表示）を移植。
+設計と CFLAG:35／36 の初期値の扱いは `docs/wiki/era/gaping.md`。
 """
 
 from __future__ import annotations
 
 from ..action import Ctx, config_check_maniac
-from ..era import div, isqrt, times
+from ..era import div, format_curly, format_percent, isqrt, limit, mod, power, times
 from .core import t, tc, tentacle_level
 
 # DIM.ERH:94–105
@@ -175,41 +175,292 @@ def gaping_size_to_point(ctx: Ctx, part: str) -> int:
     return local + max(0, min(gaping_size_to_rank(ctx, e_size) - p_rank, 99))
 
 
-def _need_no_gaping(ctx: Ctx) -> None:
-    if tc(ctx).cflag[34] != 0:
-        raise NotImplementedError("拡張度（CFLAG:34 != 0 の V_GAPING／A_GAPING／PRINT_TENTACLE_SIZE）は未移植")
+def _set_target(ctx: Ctx, tar: int) -> int:
+    """`KEEPTARGET = TARGET / SIF TAR > 0 / TARGET = TAR`。戻り値 = KEEPTARGET。"""
+    st = ctx.state
+    keep = st.target
+    if tar > 0:
+        st.target = tar
+    return keep
 
 
-def get_v_gaping_exp(ctx: Ctx, arg: int) -> int:
-    """`@GET_V_GAPING_EXP`:1004–1029（CFLAG:34 == 0 → RETURN 0）。ISMALE の早期 RETURN も 0。"""
+def _local(st, func: str) -> int:
+    return st.temp.locals.get((func, 0), 0)
+
+
+def get_v_gaping_exp(ctx: Ctx, arg: int, tar: int = 0, option: int = 0) -> int:
+    """`@GET_V_GAPING_EXP(ARG, TAR, OPTION = 0)`:1004–1029。
+
+    - ISMALE・CFLAG:34 == 0 の早期 RETURN では TARGET を戻さない（原作どおり：:1015–1016 は KEEPTARGET 復元の前）。
+    - LOCAL は静的（`reference/emuera-1824/Emuera/GameData/Variable/VariableToken.cs`:1712–1737、関数ごとの配列を保持）で、
+      :1018–1022 は ARG < 3 のとき LOCAL を代入しない → 前回の値が残る（原作どおり）。
+    """
     from ..chara_common import is_male
 
-    if is_male(ctx.data, tc(ctx)):
+    st = ctx.state
+    keep = _set_target(ctx, tar)
+    c = tc(ctx)
+    if is_male(ctx.data, c):
         return 0
-    _need_no_gaping(ctx)
+    if c.cflag[34] == 0:
+        return 0
+    if arg >= 6:
+        st.temp.locals[("GET_V_GAPING_EXP", 0)] = 2
+    elif arg >= 3:
+        st.temp.locals[("GET_V_GAPING_EXP", 0)] = 1
+    local = _local(st, "GET_V_GAPING_EXP")
+    if local > 0 and c.cflag[0] != 1 and option == 0:  # :1023–1026
+        c.exp[ctx.data.index_of("EXP", "Ｖ拡張経験")] += local
+        ctx.out.printl(f"Ｖ拡張経験 + {local}")
+    st.target = keep
+    return local
+
+
+def get_a_gaping_exp(ctx: Ctx, arg: int, tar: int = 0, option: int = 0) -> int:
+    """`@GET_A_GAPING_EXP(ARG, TAR, OPTION = 0)`:1035–1059（ISMALE 判定なし。静的 LOCAL は V と同じ）。"""
+    st = ctx.state
+    keep = _set_target(ctx, tar)
+    c = tc(ctx)
+    if c.cflag[34] == 0:
+        return 0
+    if arg >= 6:
+        st.temp.locals[("GET_A_GAPING_EXP", 0)] = 2
+    elif arg >= 3:
+        st.temp.locals[("GET_A_GAPING_EXP", 0)] = 1
+    local = _local(st, "GET_A_GAPING_EXP")
+    if local > 0 and c.cflag[0] != 1 and option == 0:  # :1052–1055
+        c.exp[ctx.data.index_of("EXP", "Ａ拡張経験")] += local
+        ctx.out.printl(f"Ａ拡張経験 + {local}")
+    st.target = keep
+    return local
+
+
+def _arg_bonus(arg: int) -> int:
+    """V_GAPING:896–904／A_GAPING:972–980。"""
+    if arg >= 8:
+        return 4000
+    if arg >= 7:
+        return 2000
+    if arg >= 6:
+        return 1000
+    if arg >= 5:
+        return 500
     return 0
 
 
-def get_a_gaping_exp(ctx: Ctx, arg: int) -> int:
-    """`@GET_A_GAPING_EXP`:1035–1059。"""
-    _need_no_gaping(ctx)
-    return 0
+def v_gaping(ctx: Ctx, arg: int, tar: int = 0) -> int:
+    """`@V_GAPING(ARG, TAR)`:851–925：CFLAG:35（Ｖ拡張度）を ARG² 回の RAND:10000 判定で上げ、膣径の増分（mm）を返す。
 
-
-def v_gaping(ctx: Ctx, arg: int) -> int:
-    """`@V_GAPING`:851–925。"""
+    早期 RETURN（ISMALE・CFLAG:34 == 0・ARG == 0・拡張抑制時の上限）は TARGET を戻さない（原作どおり）。
+    """
     from ..chara_common import is_male
 
-    if is_male(ctx.data, tc(ctx)):
+    st, data = ctx.state, ctx.data
+    keep = _set_target(ctx, tar)
+    c = tc(ctx)
+    if is_male(data, c):
         return 0
-    _need_no_gaping(ctx)
-    return 0
+    if c.cflag[34] == 0:
+        return 0
+    if arg == 0:
+        return 0
+    p_size = gaping_size(ctx, c.cflag[35])  # :871
+    age = data.index_of("BASE", "年齢")
+    for _ in range(arg * arg):  # :873 FOR LCOUNT, 0, ARG * ARG
+        # :875 V_RANK = GAPING_RANK_TO_POINT(CFLAG:35) は以降で使われない
+        base_age = c.maxbase[age] if c.cflag[1] > 0 else c.base[age]  # :876–880
+        uprate = limit(20 - base_age, 0, 15) * 3 + 30
+        uprate = (
+            2500
+            - div((div(power(c.cflag[35], 2), 150) + gaping_rank(c.cflag[35]) * 100) * uprate, 20)
+            + c.exp[data.index_of("EXP", "Ｖ拡張経験")] * 10
+            + c.exp[data.index_of("EXP", "出産経験")] * 20
+        )  # :881
+        if t(ctx, c, "未熟") > 0:
+            uprate -= 200
+        if t(ctx, c, "Ｖ敏感") > 0:
+            uprate += 200
+        if t(ctx, c, "Ｖ鈍感") > 0:
+            uprate -= 300
+        if t(ctx, c, "淫壷") > 0:
+            uprate += 300
+        uprate += _arg_bonus(arg)
+        uprate = limit(uprate, 50, 9999)  # :906
+        if config_check_maniac(st, 17) == 0:  # :909–915
+            if c.cflag[35] >= gaping_rank_to_point(8) - 1:
+                return 0
+            uprate = div(uprate, 3)
+            if c.cflag[35] >= 110:
+                c.cflag[35] = 110
+        if uprate > st.rng.rand(10000):  # :917–918
+            c.cflag[35] += 1
+    local = 0 if t(ctx, c, "処女") > 0 else gaping_size(ctx, c.cflag[35]) - p_size  # :921–925
+    st.target = keep
+    return local
 
 
-def a_gaping(ctx: Ctx, arg: int) -> int:
-    """`@A_GAPING`:932–998。"""
-    _need_no_gaping(ctx)
-    return 0
+def a_gaping(ctx: Ctx, arg: int, tar: int = 0) -> int:
+    """`@A_GAPING(ARG, TAR)`:932–998：CFLAG:36（Ａ拡張度）。ISMALE／処女の判定はない。"""
+    st, data = ctx.state, ctx.data
+    keep = _set_target(ctx, tar)
+    c = tc(ctx)
+    if c.cflag[34] == 0:
+        return 0
+    if arg == 0:
+        return 0
+    p_size = gaping_size(ctx, c.cflag[36])  # :950
+    age = data.index_of("BASE", "年齢")
+    for _ in range(arg * arg):  # :952
+        base_age = c.maxbase[age] if c.cflag[1] > 0 else c.base[age]  # :954–959
+        uprate = limit(base_age - 10, 0, 15) * 3 + 30
+        uprate = (
+            2500
+            - div((div(power(c.cflag[36], 2), 150) + gaping_rank(c.cflag[36]) * 100) * uprate, 20)
+            + c.exp[data.index_of("EXP", "Ａ拡張経験")] * 10
+        )  # :960
+        if t(ctx, c, "Ａ敏感") > 0:
+            uprate += div(uprate, 8) + 200
+        if t(ctx, c, "Ａ鈍感") > 0:
+            uprate -= div(uprate, 8) + 200
+        if t(ctx, c, "淫尻") > 0:
+            uprate += div(uprate, 8) + 100
+        uprate += _arg_bonus(arg)
+        uprate = limit(uprate, 500, 9999)  # :982
+        if config_check_maniac(st, 17) == 0:  # :985–991
+            if c.cflag[36] >= gaping_rank_to_point(8) - 1:
+                return 0
+            uprate = div(uprate, 3)
+            if c.cflag[36] >= 110:
+                c.cflag[36] = 110
+        if uprate > st.rng.rand(10000):  # :993–994
+            c.cflag[36] += 1
+    local = gaping_size(ctx, c.cflag[36]) - p_size  # :997
+    st.target = keep
+    return local
+
+
+# --- GAPING_RANK_STR（:150–279）・表示（:754–845）-----------------------------------------
+
+_RANK_NAME = {-2: " ― ", -1: "処女", 0: " Ｅ ", 1: " Ｅ+", 2: " Ｄ ", 3: " Ｄ+", 4: " Ｃ ", 5: " Ｃ+", 6: " Ｂ ",
+              7: " Ｂ+", 8: " Ａ ", 9: " Ａ+", 10: " Ｓ ", 11: " Ｓ+", 12: " 凄 ", 13: " 極 ", 14: " 絶 ", 15: " 獄 ",
+              16: " 狂 "}
+_RANK_TEXT = ("繊毛と同程度の", "繊毛よりも太い", "自身の指と同程度の", "自身の指よりも太い", "一般的な男性器と同程度の",
+              "一般的な男性器よりも太い", "自身の腕と同程度の", "自身の腕より太い", "自身の脛と同程度の", "自身の脛より太い",
+              "自身の太ももと同程度の", "自身の太ももより太い", "自身の頭と同程度の", "自身の頭より太い", "自身の腰より太い",
+              "自身の腰よりも格段に太い", "破城槌のように太い")
+_RANK_T_TEXT = ("繊毛サイズ", "繊毛よりは太い程度", "{}の指と同程度", "{}の指よりも太い", "一般的な男性器と同程度",
+                "一般的な男性器よりも太い", "{}の腕と同程度", "{}の腕より太い", "{}の脛と同程度", "{}の脛よりも太い",
+                "{}の太ももと同程度", "{}の太ももよりも太い", "{}の頭と同程度", "{}の頭よりも太い", "{}の腰よりも太い",
+                "{}の腰よりも格段に太い", "{}を引き裂けそうなほど太い")
+
+
+def gaping_rank_str(ctx: Ctx, arg: int, kind: str) -> str:
+    """`@GAPING_RANK_STR(ARG, ARGS)`:150–279（#FUNCTIONS）。`%UNICODE(0x0020)%` は半角空白。
+
+    NAME：-2〜16 以外（17 以上・-3 以下）は ELSE の「最狂」。TEXT：0〜16 以外は ELSE の「船の船首…」に「モノを受け入れられる」
+    を付けた後、-2 → 空、-1 → 「未だ純潔を保っている」。T_TEXT：0〜16 以外は ELSE。それ以外の ARGS は LOCALS（静的）の
+    前回値を返す（原作どおり）。"""
+    from ..action import print_callname
+
+    st = ctx.state
+    key = ("GAPING_RANK_STR", "LOCALS")
+    if kind == "NAME":
+        s = _RANK_NAME.get(arg, " 最狂 ")
+    elif kind == "TEXT":
+        s = (_RANK_TEXT[arg] if 0 <= arg <= 16 else "船の船首ほどの大きさの") + "モノを受け入れられる"
+        if arg == -2:
+            s = ""
+        if arg == -1:
+            s = "未だ純潔を保っている"
+    elif kind == "T_TEXT":
+        name = print_callname(st, st.target)
+        s = (_RANK_T_TEXT[arg] if 0 <= arg <= 16 else "{}を粉砕しそうなほど太い").format(name)
+    else:
+        return st.temp.locals.get(key, "")  # type: ignore[return-value]
+    st.temp.locals[key] = s  # type: ignore[assignment]
+    return s
+
+
+def print_tentacle_size(ctx: Ctx, l0: int, l1: int, l2: int, l3: int) -> None:
+    """`@PRINT_TENTACLE_SIZE, LOCAL:0〜3`:754–783：各部位の触手サイズ（ランク）を HTML_PRINT で表示。
+
+    LOCAL:n は呼び出し元の上昇値（PALAM_CALC_GAPING では COMMON_PALAM 加算後の UP:快Ｃ〜快Ｂ）で、
+    `LOCAL:COUNT - COMMON_PALAM:COUNT > 0` の部位だけ表示する（:778）。GAPING_SIZE_TO_RANK の CON／TAR は省略 = 0。"""
+    st, data, out = ctx.state, ctx.data, ctx.out
+    c = tc(ctx)
+    sz, num = _sz(st), _num(st)
+    args = (l0, l1, l2, l3)
+    for i in range(4):  # REPEAT 感覚数（DIM.ERH:154 = 4）
+        if not (sz[(0, i)] > 0 or sz[(1, i)] > 0):
+            continue
+        r0 = gaping_size_to_rank(ctx, sz[(0, i)])
+        r1 = gaping_size_to_rank(ctx, sz[(1, i)])
+        head = data.names["ABL"].get(i, "")[:1]  # SUBSTRINGU ABLNAME:COUNT, 0, 1
+        s = f"　{head}用触手　"
+        if sz[(0, i)] == 0:  # :765–766
+            s += f"[{gaping_rank_str(ctx, r1, 'NAME')}] {gaping_rank_str(ctx, r1, 'T_TEXT')}"
+        else:  # :768–773
+            s += f"[{gaping_rank_str(ctx, r1, 'NAME')}] {gaping_rank_str(ctx, r0, 'T_TEXT')} {num[(0, i)]}本 "
+            if st.flag[700] == 1 and ((i == 1 and st.temp.insert & V_BIT) or (i == 2 and st.temp.insert & A_BIT)):
+                s += "（挿入中）"
+            if (st.shield[i] > 0 and st.flag[700] == 0) or (num[(1, i)] == 0 and st.flag[700] == 1):
+                s = format_percent(s, 50, True) + " → [ × ] 結界に阻まれている"
+        if st.flag[999] > 0:  # :776–777
+            raise NotImplementedError("デバッグ表示（PRINT_TENTACLE_SIZE:776–777、FLAG:999）は未移植")
+        if args[i] - st.temp.common_palam[i] > 0 and (st.flag[700] == 0 or st.tflag[10] != 1006 or c.cflag[0] == 1):
+            out.html_print(s)
+    out.printl()  # :781
+
+
+def printform_gaping_now(ctx: Ctx, tar: int = -1, con: int = -1) -> None:
+    """`@PRINTFORM_GAPING_NOW, TAR = -1, CON = -1`:789–845：現在の拡張度の表示。
+
+    表示だけでなく、CFLAG:35／36 が 0 なら初期値を代入して V_GAPING／A_GAPING（RAND を引く）を呼ぶ（:800–808）。
+    呼び出し元（BATTLE_SHOW_STATUS.ERB@SHOW_STATUS_PALAM:357–358、SHOW_STATUS_CHARA_SELECT_PAGE5.ERB:45）は
+    どちらも現状の移植範囲では到達しない（`train.show_status` の docstring 参照）。"""
+    from ..chara_common import is_male
+
+    st, data, out = ctx.state, ctx.data, ctx.out
+    if tar == -1:
+        tar = st.target
+    c = st.charas[tar]
+    if con == -1:
+        con = c.cflag[1]
+    if not (config_check_maniac(st, 16) == 1 and c.cflag[34] > 0):
+        return
+    age = c.base[data.index_of("BASE", "年齢")]
+    if c.cflag[35] == 0:  # :801–804
+        c.cflag[35] = (
+            div(limit(age - 10, 0, 15), 3)
+            - (t(ctx, c, "未熟") > 0) * 3
+            + (t(ctx, c, "Ｖ敏感") > 0) * 3
+            - (t(ctx, c, "Ｖ鈍感") > 0) * 3
+            + 20
+        )
+        v_gaping(ctx, c.exp[data.index_of("EXP", "Ｖ拡張経験")] * 10, tar)
+    if c.cflag[36] == 0:  # :805–808
+        c.cflag[36] = div(limit(20 - age, 0, 15), 3) + (t(ctx, c, "Ａ敏感") > 0) * 3 - (t(ctx, c, "Ａ鈍感") > 0) * 3 + 20
+        a_gaping(ctx, c.exp[data.index_of("EXP", "Ａ拡張経験")] * 10, tar)
+    out.printl("　　拡張度")  # :810
+    male = is_male(data, c)
+    for l1 in range(2):  # :812 FOR LOCAL:1, 0, 2
+        label = (" ― " if male else "膣径") if l1 == 0 else "肛径"
+        l2 = gaping_rank(c.cflag[35 + l1])
+        l3 = gaping_size(ctx, c.cflag[35 + l1], con, tar)
+        # :826 LOCALS:1 = %LOCALS:1, 3, LEFT%（LOCALS:1 は以降使われない：表示に影響なし）
+        if l1 == 0 and (t(ctx, c, "処女") == 1 or male):
+            s = f"　　　　{label}：　 ― "
+        else:
+            s = f"　　　　{label}：{format_curly(div(l3, 10), 4)}.{mod(l3, 10)}"
+        if l1 == 0 and t(ctx, c, "処女") == 1:
+            l2 = -1
+        if l1 == 0 and male:
+            l2 = -2
+        s += (f" cm　/　<nonbutton title='{gaping_rank_str(ctx, l2, 'TEXT')}'>"
+              f"[{gaping_rank_str(ctx, l2, 'NAME')}]</nonbutton>")
+        if st.flag[999] and st.flag[700] == 0:  # :840–841
+            raise NotImplementedError("デバッグ表示（PRINTFORM_GAPING_NOW:840–841、FLAG:999）は未移植")
+        out.html_print(s)
 
 
 # --- ボス触手のサイズ補正（触手データ/ボス触手/TENTACLE_BOSS_{n}_*.ERB@..._TENTACLE_SIZE）--------------
@@ -430,7 +681,8 @@ def palam_calc_gaping(ctx: Ctx) -> None:
     local1 = get_local_gaping(st)
     if st.tflag[1] == 0:
         if st.flag[700] > 0 and config_check_maniac(st, 16) == 1 and c.cflag[34] > 0:
-            _need_no_gaping(ctx)  # PRINT_TENTACLE_SIZE
+            up = st.temp.up
+            print_tentacle_size(ctx, up[0], up[1], up[2], up[3])  # :775
         local1 = 0
         ins = st.temp.insert
         if sz[(1, 1)] > 0 and (ins & V_BIT):

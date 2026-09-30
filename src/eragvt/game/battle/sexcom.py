@@ -1613,8 +1613,8 @@ def sex_spcom6(ctx: Ctx) -> None:
     self_kind(ctx, st.target, 0)  # :45
 
 
-def sex_spcom7(ctx: Ctx) -> None:
-    """`SEX_SPCOM7.ERB@SEX_SPCOM7`:7–108（羞恥プレイ）。"""
+def sex_spcom7(ctx: Ctx) -> SexGen:
+    """`SEX_SPCOM7.ERB@SEX_SPCOM7`:7–108（羞恥プレイ）。地の文の INPUTS（CFLAG:34 > 0）のためジェネレータ。"""
     st = ctx.state
     c = tc(ctx)
     L = _begin(ctx)
@@ -1623,7 +1623,7 @@ def sex_spcom7(ctx: Ctx) -> None:
     _size(ctx, 1007)
     palam_vabc_estimate(ctx, L, -1)
     _no_mob_sp(ctx)
-    sexmsg.msg_spcom7(ctx)
+    yield from sexmsg.msg_spcom7(ctx)
     set_tentacle_pool(ctx)
     cloth_battle_damage(ctx, 4)
     add_exp(ctx, c, "露出快楽経験", 1)
@@ -2030,11 +2030,11 @@ _COM_FUNCS = {
 }
 _COM_GENS = {3: sex_com3, 5: sex_com5, 17: sex_com17}
 _SP_FUNCS = {
-    1000: sex_spcom0, 1003: sex_spcom3, 1004: sex_spcom4, 1005: sex_spcom5, 1006: sex_spcom6, 1007: sex_spcom7,
+    1000: sex_spcom0, 1003: sex_spcom3, 1004: sex_spcom4, 1005: sex_spcom5, 1006: sex_spcom6,
     1008: sex_spcom8, 1009: sex_spcom9, 1010: sex_spcom10, 1011: sex_spcom11, 1012: sex_spcom12,
     1013: sex_spcom13, 1014: sex_spcom14, 1015: sex_spcom15,
 }
-_SP_GENS = {1001: sex_spcom1, 1002: sex_spcom2}
+_SP_GENS = {1001: sex_spcom1, 1002: sex_spcom2, 1007: sex_spcom7}
 
 
 def _run(ctx: Ctx, n: int, local: int) -> SexGen:

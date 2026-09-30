@@ -115,8 +115,14 @@ def ninsin_hantei(ctx: Ctx, arg0: int, arg1: int, arg2: int = 0) -> int:
     if papa > 0:  # :72–75
         c.cflag[232] += arg0
         pper = isqrt(div(arg1 * c.cflag[232] * (birth + 1), 2))
+    elif papa <= -100:  # :77–92
+        raise NotImplementedError("NINSIN_HANTEI：仲間キャラの父親（PAPA_ID <= -100）は未移植")
+    elif papa <= -1:  # :93–96 一般人（いちゃラブセックスの `愛する人` = -3：DIM.ERH:256）
+        c.cflag[233] += arg0
+        pper = isqrt(div(arg1 * c.cflag[233] * (birth + 1), 2))
     else:
-        raise NotImplementedError("NINSIN_HANTEI：人間の父親（PAPA_ID <= -1）は未移植")
+        # PAPA_ID == 0 は :72–94 のどれにも当たらず PREG_PER（静的 #DIM）が前回値のまま
+        raise NotImplementedError("NINSIN_HANTEI：PAPA_ID == 0 は未移植")
     if st.flag[700] == 1:  # :99–121
         pper *= 2
     if t(ctx, c, "苗床化"):
@@ -143,3 +149,71 @@ def ninsin_hantei(ctx: Ctx, arg0: int, arg1: int, arg2: int = 0) -> int:
     if st.rng.rand(1000) < pper + 100 * (c.cflag[0] == 0) and t(ctx, c, "妊娠") == 0:
         raise NotImplementedError("受精成立（NINSIN_SUBMIT／NINSIN_FLAG 以降の妊娠処理）は未移植")
     return 0
+
+
+def _dot_after(ctx: Ctx) -> None:
+    """`汎用関数/PRINT_LINE.ERB@DOT_AFTER, 1`:34–43。"""
+    from ..action import config_check_screen
+
+    out = ctx.out
+    if config_check_screen(ctx.state, 3) == 0:
+        out.printw("・・")
+        out.printw("・・・・")
+    else:
+        out.printl("・・")
+        out.printl("・・・・")
+    out.printw("・・・・・・")
+
+
+def after_pill(ctx: Ctx, arg: int, arg1: int, arg2: int):
+    """`@AFTER_PILL, ARG, ARG:1, ARG:2`:898–957（ジェネレータ：INPUT）。ARG:1 = 成功率、ARG:2 = CHECK_HININ_F へ渡す父親。
+
+    既定コンフィグ（FLAG:805 = 2：オープニング処理.ERB の初期設定）では CONFIG_CHECK_OTHER_F(3) == 0 で即 RETURN。"""
+    from ..action import print_callname
+
+    st, out = ctx.state, ctx.out
+    c = st.charas[arg]
+    if config_check_other(st, 3) == 0:
+        return 0
+    if is_male(ctx.data, c):
+        return 0
+    if t(ctx, c, "未熟") > 0:
+        return 0
+    if t(ctx, c, "妊娠") in (1, 3, 5):
+        return 0
+    if c.cflag[241] > 0:
+        return 0
+    if config_check_other(st, 2) > 0:  # :911–912 常時避妊モード
+        return 0
+    out.printl()
+    _dot_after(ctx)
+    out.printl()
+    out.printl(f"{print_callname(st, arg, 1)}は膣内射精されたことを自覚している…")
+    out.print("時間が経ち過ぎて効果がないかもしれないが、" if arg1 < 25 else "このままでは妊娠してしまうかもしれないが、")
+    out.printl("$500支払って緊急用アフターピルを飲んでおくべきだろうか？")
+    out.printl("[0]アフターピルは飲まない")
+    out.printl(f"[1]アフターピルを飲んで避妊する（所持金:${st.money}）")
+    lcount = out.linecount  # :925
+    while True:  # :926–957
+        r = yield
+        if r == 0:
+            out.printl(f"{print_callname(st, arg)}はアフターピルを飲まないことにした…")
+            return 0
+        if r == 1:
+            if st.money >= 500:
+                st.money -= 500
+                out.printl(f"{print_callname(st, arg)}はアフターピルを飲んだ…")
+                out.printl("身体の底に疲労が蓄積した……（＋１５）")
+                c.cflag[99] += 15
+                if st.rng.rand(100) < arg1:  # :936–940（:938 は CHECK_HININ_F（RAND を引く）が && の左辺）
+                    c.cflag[241] = 1
+                    if check_hinin(ctx, arg, arg2) > 0 and c.cflag[222] == 0:
+                        c.talent[ctx.data.index_of("TALENT", "妊娠")] = 0
+                if st.flag[999] == 1:  # :941–948
+                    raise NotImplementedError("デバッグ表示（AFTER_PILL:943–950）は未移植")
+            else:
+                out.printl("なんと、所持金が足りない！")
+            return 0
+        out.printl("妊娠の可能性に慌ててしまう気持ちも分かるが、ここは冷静になるべきだろう…")
+        out.printw()
+        out.clearline(out.linecount - lcount)

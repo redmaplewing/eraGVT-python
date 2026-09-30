@@ -37,6 +37,7 @@ class Part:
 
     segments: list[Segment]
     button: int | None = None
+    title: str | None = None  # HTML_PRINT の <nonbutton title='…'>（ツールチップ）
 
     @property
     def text(self) -> str:
@@ -238,6 +239,54 @@ def _divide(segments: list[Segment], pieces: list[tuple[str, int | None]]) -> li
 # --- 輸出緩衝 ----------------------------------------------------------------
 
 
+_HTML_TAG = re.compile(r"<(/?)([A-Za-z]+)((?:\s+[A-Za-z]+\s*=\s*'[^']*')*)\s*>")
+_HTML_ATTR = re.compile(r"([A-Za-z]+)\s*=\s*'([^']*)'")
+_HTML_ENT = {"nbsp": " ", "amp": "&", "gt": ">", "lt": "<", "quot": '"', "apos": "'"}
+
+
+def _html_unescape(text: str) -> str:
+    """`HtmlManager.Unescape`:398–455：`&名前;` と `&#10進;`／`&#x16進;`。"""
+
+    def rep(m: re.Match) -> str:
+        w = m.group(1).lower()
+        if w in _HTML_ENT:
+            return _HTML_ENT[w]
+        if w.startswith("#x"):
+            return chr(int(w[2:], 16))
+        if w.startswith("#"):
+            return chr(int(w[1:]))
+        raise NotImplementedError(f"HTML_PRINT：不明な文字参照 &{w};")
+
+    return re.sub(r"&([^;&]+);", rep, text)
+
+
+def _parse_html(html: str) -> list[Part]:
+    parts: list[Part] = []
+    colors: list[str | None] = [None]
+    title: str | None = None
+    pos = 0
+
+    def add(text: str) -> None:
+        if text:
+            parts.append(Part([Segment(_html_unescape(text), colors[-1])], title=title))
+
+    for m in _HTML_TAG.finditer(html):
+        add(html[pos : m.start()])
+        pos = m.end()
+        close, tag, attrs = m.group(1) == "/", m.group(2).lower(), dict(_HTML_ATTR.findall(m.group(3)))
+        if tag == "font":
+            if close:
+                colors.pop()
+            else:
+                colors.append(_hex_color(attrs["color"]) if "color" in attrs else colors[-1])
+        elif tag == "nonbutton":
+            title = None if close else attrs.get("title")
+        else:
+            raise NotImplementedError(f"HTML_PRINT：未対応のタグ <{m.group(0)}>")
+    add(html[pos:])
+    return parts
+
+
 class TextOutput:
     def __init__(self) -> None:
         self._lines: list[Line] = []
@@ -292,6 +341,18 @@ class TextOutput:
         if n < 26:
             text += " " * (26 - n)
         self.print(text)
+
+    def html_print(self, html: str) -> None:
+        """HTML_PRINT（GameProc/Function/Instraction.Child.cs:239–257 → GameView/EmueraConsole.Print.cs@PrintHtml:344–357）：
+        空文字なら何もしない；未換行の PRINT 文字列を先に 1 行として確定し、HTML を独立した行として追加する。
+        HTML 内の `[数字]` は按鈕化されない（按鈕は `<button>` タグのみ：GameView/HtmlManager.cs@Html2DisplayLine:266–）。
+        文字は Unescape（HtmlManager.cs@Unescape:398–）以外そのまま（空白を詰めない）。色は HTML 側の既定（SETCOLOR は効かない）。
+        対応タグは原作で使う `<font color='#rrggbb'>`・`<nonbutton title='…'>` のみ（他は NotImplementedError）。"""
+        if not html:
+            return
+        self._flush_partial()
+        # DEVIATION: HTML タグは原作で使う font／nonbutton のみ（deviations.md「HTML_PRINT 的子集」）
+        self._lines.append(Line(_parse_html(html)))
 
     def printl(self, text: str = "") -> None:
         """PRINTL：輸出後換行。"""

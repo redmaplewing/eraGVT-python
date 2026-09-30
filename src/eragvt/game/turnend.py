@@ -40,6 +40,7 @@ from .tentacle import enemy_type_check, get_lastboss_phase, tentacle_survive_num
 from .party import after_rescued, set_partymember
 from .prison.event import prison
 from .battle.core import run_chinobun
+from .lovesex import lovesex_night
 
 # --- 1 ターン（JUMP ACTION_MAIN → BEGIN TURNEND の繰り返し → BEGIN SHOP）-------------------
 
@@ -50,7 +51,7 @@ def run_turn(ctx: Ctx) -> Generator[None, int, None]:
     step = yield from action_main(ctx)
     while True:
         if step == Step.TURNEND:
-            step = event_turnend(ctx)
+            step = yield from event_turnend(ctx)
         elif step == Step.ACTION_MAIN:
             step = yield from action_main(ctx)
         elif step == Step.SHOP:
@@ -66,8 +67,9 @@ def run_turn(ctx: Ctx) -> Generator[None, int, None]:
 # --- @EVENTTURNEND ---------------------------------------------------------------
 
 
-def event_turnend(ctx: Ctx) -> Step:
-    """`SHOP_TURNEND.ERB@EVENTTURNEND`:3–139。戻り値は JUMP／BEGIN の行き先。"""
+def event_turnend(ctx: Ctx) -> Generator[None, int, Step]:
+    """`SHOP_TURNEND.ERB@EVENTTURNEND`:3–139。戻り値は JUMP／BEGIN の行き先。
+    LOVESEX_NIGHT（SEX_V_CONDOM／AFTER_PILL の INPUT）のためジェネレータ。"""
     st, out = ctx.state, ctx.out
     # :7–12
     st.flag[70] = 0
@@ -124,7 +126,7 @@ def event_turnend(ctx: Ctx) -> Step:
     birth_hantei(ctx)  # :105
     grow_hantei(ctx)  # :107
     akuoti_attack(ctx)  # :110
-    lovesex_night(ctx)  # :112
+    yield from lovesex_night(ctx)  # :112
     self_night(ctx)  # :114
     if config_check_event(st, 2) > 0:  # :116–117
         yobai(ctx)
@@ -360,26 +362,6 @@ def akuoti_attack(ctx: Ctx) -> None:
     for i in range(1, st.charanum):
         if st.charas[i].cflag[0] == CharaState.CORRUPTED:
             raise NotImplementedError("悪堕ちキャラの淫謀（AKUOTI_ATTACK）は未移植")
-
-
-def lovesex_night(ctx: Ctx) -> None:
-    """`FORCE_いちゃラブセックス.ERB@LOVESEX_NIGHT`:5–97：夜のみ。交際相手 1–4 が居なければ必ず CONTINUE（:28–29）。"""
-    st, data = ctx.state, ctx.data
-    if st.time != 1:
-        return
-    saved = st.target
-    for i in range(1, st.charanum):
-        c = st.charas[i]
-        if c.cflag[999] == 0:
-            continue
-        st.target = i
-        if c.cflag[0] != 0 or c.cflag[99] >= 30:
-            continue
-        partner = talent(data, c, "交際相手")
-        if partner == 0 or partner >= 5 or (partner == 1 and st.rng.rand(10) > 4):
-            continue
-        raise NotImplementedError("いちゃラブセックス（LOVESEX_NIGHT:31–）の判定は未移植")
-    st.target = saved
 
 
 def self_night(ctx: Ctx) -> None:
