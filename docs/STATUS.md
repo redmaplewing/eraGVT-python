@@ -1,6 +1,6 @@
 # 現況（唯一真相，≤150 行）
 
-更新：2026-09-30（S08）
+更新：2026-09-30（S09）
 
 ## 已完成
 
@@ -72,20 +72,30 @@
   - 幽閉單獨壓力測試（30 seed × ボス 7 種、catalog）：取り込まれ 119／受精成立停止 67／SET_PROFILE 停止 24，catalog 失敗 0；
     洗脳選項 ON＋半數触手の虜：洗脳 54／悪堕ち 55／受精 76／SET_PROFILE 25。
 
+- **S09**：身體資料（設計與查證：`docs/wiki/era/body-profile.md`）。新模組 `eragvt.game.body`：GENERATE_CHAR_SIZE／TOP_UNDER／
+  CUP_SIZE／CALC_BREAST_WEIGHT／GENERATE_BODYLINE／CHARA_SIZE_DEFAULT／CHARA_MAKE_AGE_SETTING／SET_PROFILE；`CHARATALENT_F` 補上
+  変身中分岐；`opening.chara_make_base_profile`（:493–505）；膨乳化（PRISON_COM105:70）接上 SET_PROFILE；`battle.hantei.breast_weight_term`。
+  - **查證結論**：初期セットのキャラは `NO ≠ 0`（CHARA_MAKE_DEFAULT.ERB:498、CharacterData.cs:99）→ 原作也不生成身體資料，
+    BASE:40–48・CFLAG:33／34 = 0，女性敏捷 0・攻擊 2 倍是**原作行為**（deviations 移到「原作行為」，是否要偏離待使用者決定）。
+    開局亂數序列不變，既有 seed 測試無需改動。測試共 520 個（新增 `tests/test_body.py` 39）。
+  - 模擬（seed 0–249，全員隨機預約 101–103、其餘畫面隨機按鈕、catalog；S08 當時的腳本未留存，以同一腳本在 S08 HEAD 重跑作基準）：
+    停止原因 S08→S09：ゲームオーバーモード 90→98、動画流出 40→42、受精成立 34→37、ＳＰ変身 25→25、強制自慰 15→15、
+    戰後レイプ 11→11、COM17 回避補正 9→9、ＳＰバースト 9→9、COM17 4→4、膨乳化 SET_PROFILE 13→0。
+    敗北後（首次有人幽閉起）經過的 SHOP 次數＝半日數：平均 5.25→5.60（敗北局 190→191），最多 147→147。
+    （此指標與 S08 STATUS 的「平均 1.5」定義不同，無法直接比較。）
+
 ## 下一步
 
-- 未指定 S09。候選：妊娠（NINSIN_SUBMIT 以降；戰鬥・幽閉兩處最常見的停止）、ゲームオーバーモード（CHANGE_GAMEOVER_MODE：
-  全滅後的繼續）、動画流出（DOUGA_RYUSUTU）、ＳＰ変身／ＳＰバースト／バースト攻擊、身體資料生成（SET_PROFILE／CHARA_SIZE：
-  也解決女性敏捷 0・傷害 2 倍的 deviation）、悪堕ちキャラ（AKUOTI_ATTACK、悪堕ち戰、容貌變化）。
+- 未指定 S10。候選：ゲームオーバーモード（CHANGE_GAMEOVER_MODE：全滅後的繼續，最常見停止）、妊娠（NINSIN_SUBMIT 以降）、
+  動画流出（DOUGA_RYUSUTU）、ＳＰ変身／ＳＰバースト／バースト攻擊、悪堕ちキャラ（AKUOTI_ATTACK、悪堕ち戰、容貌變化）。
+- 需使用者決定：初期セット角色是否偏離原作生成身體資料（deviations.md「原作行為」S09 項）。
 - 口上 catalog 待擴充：改狀態的口上（hook 化）、GOTO、SPLIT／STRDATA、未實作式中関数（覆蓋率報告）。
 - deviations.md 需裁決：振り解く `LOCAL:O`、口上的狀態副作用、口上 catalog 實行時失敗的回復、S08 新增項。
 
-## S08 後仍會停止的分岐（`NotImplementedError` → Web 停止）
+## S09 後仍會停止的分岐（`NotImplementedError` → Web 停止）
 
-隨機方針 250 場模擬（`GameRng` seed 0–249，全員隨機預約、戰鬥隨機按鈕、catalog）依頻度：全滅 ENDING_1 後的ゲームオーバーモード 116、
-動画流出 39、受精成立 30、ＳＰ変身 20、ＳＰバースト 11、バースト攻擊（COM17）的回避補正 10／攻擊 7、膨乳化 SET_PROFILE 7、
-強制自慰 6、戰後レイプ 4。敗北後平均再走 1.5 個半日（最多 7；幽閉最多 8 回）——女性角色敏捷 0・傷害 2 倍（deviation）使敗北極快，
-3 人常在數回合內全滅。其餘登記但罕見：
+頻度見上方 S09 模擬（ゲームオーバーモード 98、動画流出 42、受精成立 37、ＳＰ変身 25、強制自慰 15、戰後レイプ 11、
+バースト攻擊 13、ＳＰバースト 9）。女性角色敏捷 0・攻擊 2 倍（原作初期セットの状態）使敗北很快。其餘登記但罕見：
 - 幽閉：ラスボス／悪堕ちキャラ 的幽閉、容貌變化（設定 ON）、RECOVER_CORRUPTION、RESCUE_CHILD、TS 性別變化、ラスボス出現後的淫紋陥落。
 - TURNEND：AKUOTI_ATTACK（悪堕ち後）、寄生触手的暴走／共生取得、BIRTH_HANTEI／GROW_HANTEI、INTIMIDATION／KIDNAPPING。
 - 指令：47 説得する、反擊（[反撃]スタイル、`HANGEKI_TO_TENTACLE`）；戰後妊娠判明（NINSIN_CHECK_AFTER）、戰後自慰。
@@ -94,10 +104,11 @@
 
 ## 已知問題
 
-- 未決：`docs/wiki/bridge/unresolved.md`；偏離：`docs/wiki/bridge/deviations.md`（整體「暫時維持」，S06–S08 新增項待裁決）。
+- 未決：`docs/wiki/bridge/unresolved.md`；偏離：`docs/wiki/bridge/deviations.md`（整體「暫時維持」，S06–S09 新增項待裁決）。
 - 無 BOM 的 7 個角色 CSV 在原版 1.824 會以 Shift-JIS 讀（亂碼）；本程式以 UTF-8 讀，可能是 +v10 差異，待實機確認。
 - 開局僅支援「NORMAL＋特装戦隊」；其他初期セット／自訂角色會 `NotImplementedError`。
 - 可玩範圍：休憩・鍛錬・出撃（含被拘束的戰鬥、敗北後的幽閉與救出）。其他行動、11 日目夜的日數超過結局、妊娠等狀態會進入
   Web「停止」畫面（deviations、上一節）。
-- 身體資料（体重・胸の重量）為 0，戰鬥中女性角色敏捷被扣成 0、傷害 2 倍（deviations，需裁決）。
+- 初期セット角色的身體資料為 0（原作同樣不生成），戰鬥中女性敏捷 0・攻擊 2 倍（原作行為，是否偏離待決定）。
+  汎用キャラ的隨機生成、角色製作／狀態畫面的手動生成、年齢指定（CSTR:204–206）未移植。
 - 襲撃／救援（DAY ≥ 3）與子触手襲来成立時只顯示「スキップ」訊息（deviations）。

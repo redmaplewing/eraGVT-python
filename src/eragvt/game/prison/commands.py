@@ -11,6 +11,7 @@ catalog で実行できないとき（Null など）は佔位 1 行＋末尾の 
 
 from __future__ import annotations
 
+from ..body import set_profile
 from ..action import Ctx, kojo_root
 from ..battle.core import KANKAKU_NUM, abl, exp, run_chinobun, t, tc
 from ..battle.sexcom import check_holyvirgin, incest, lostvirgin, palam_vabc_estimate
@@ -604,8 +605,10 @@ def prison_com105(ctx: Ctx) -> None:
                 c.talent[ti("変身時胸サイズ変動")] -= 1
                 c.cflag[38] -= 1
             c.cflag[37] += 1
-        # :70 CALL SET_PROFILE, TARGET（SYSTEM/キャラメイキング関連/FIRSTSETTING_CHARA_TALENT.ERB:4–）
-        raise NotImplementedError("膨乳化後のプロフィール再設定（SET_PROFILE）は未移植")
+        set_profile(data, c)  # :70 CALL SET_PROFILE, TARGET（FIRSTSETTING_CHARA_TALENT.ERB:4–19）
+        L[11] = 800  # :73 恐怖　固定で
+        _other(ctx, "MESSAGE_OTHER_PRISON_BOUNYU")  # :76–77
+        _msg(ctx, "MESSAGE_PRISON_BOUNYU", "PRISON_BOUNYU")  # :79（地の文/MESSAGE_PRISON.ERB:594–、口上 :651）
     else:  # :82–124
         _set(L, 3, _lv(_a(ctx, "Ｂ感覚"), (100, 150, 200, 600, 1000, 1500)))
         palam_vabc_estimate(ctx, L, 3, -1)  # :99

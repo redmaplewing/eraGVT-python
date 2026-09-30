@@ -33,8 +33,17 @@ def isqrt(value: int) -> int:
     return int(math.sqrt(value))
 
 
+def power(x: int, y: int) -> int:
+    """`POWER(x, y)`：`(long)Math.Pow(x, y)`、非数・無限大・int64 範囲外はエラー
+    （GameData/Function/Creator.Method.cs@PowerMethod:1043–1064）。"""
+    p = math.pow(x, y)
+    if math.isnan(p) or math.isinf(p) or p >= 2**63 or p <= -(2**63):
+        raise OverflowError(f"累乗結果({p})が64ビット符号付き整数の範囲外です")
+    return int(p)
+
+
 def limit(value: int, low: int, high: int) -> int:
-    """`LIMIT(v, low, high)`。"""
+    """`LIMIT(v, low, high)`（GameData/Function/Creator.Method.cs@GetLimitMethod:1178–1201）。"""
     return max(low, min(high, value))
 
 

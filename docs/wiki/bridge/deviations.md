@@ -12,7 +12,10 @@ ERB 路徑相對 `source/earGVP/ERB/`。
 ## 狀態會不同
 
 - [ ] **亂數**：用 Python `random.Random`（可 seed），不是 Emuera 的 MT 實作；RAND 的呼叫次數也不追求一致（例：`RESEARCH_QUOTA` 的 `RAND:5` 是否短路求值）。同 seed 不會得到原作同樣的結果。（原作：`reference/.../GameData/Variable/VariableEvaluator.cs`:36–52；Python：`eragvt.state.rng.GameRng`）— 要完全一致需移植 MTRandom 並逐一核對求值順序，成本高。
-- [ ] **開局：身體資料生成未移植**：`CHARA_MAKE_BASE_PROFILE`（年齡、身高體重三圍 `CHARA_SIZE_DEFAULT`、`GENERATE_BODYLINE`、髮色瞳色等的補完，含亂數）沒有執行，這些 BASE（40–48）／CSTR 維持 CSV 值或空。（原作：`SYSTEM/キャラメイキング関連/CHARA_MAKE_DEFAULT.ERB@CHARA_MAKE_BASE_PROFILE`:493–984；Python：`eragvt.game.opening.chara_make_initialize`）— 約 500 行＋`CHARA_SIZE.ERB` 670 行，主選單與戰鬥用不到；建議排到角色製作完整版時一併翻。
+- [x] ~~**開局：身體資料生成未移植**~~（S09 解決）：`CHARA_MAKE_BASE_PROFILE` 已移植（`eragvt.game.opening.chara_make_base_profile`、
+  `eragvt.game.body`）。查證結果：初期セットのキャラは `NO ≠ 0`（:498 條件不成立）→ 原作本來就不生成，BASE:40–48／CFLAG:33–34 為 0
+  與原作一致（`docs/wiki/era/body-profile.md`）。仍未移植：汎用キャラ的隨機生成（:507–980，初期セット不經過）、角色製作／狀態畫面的
+  手動生成（UI）、AGE_SETTING 的年齢指定（CSTR:204–206，非空時停止）。
 - [ ] **FLASHNEWS 未移植**：新聞產生（含亂數、寫入 `SAVESTR:20`、`FLAG:60`）沒有執行，畫面顯示「（未實作）」。（原作：`インターミッション画面/SHOP_FLASHNEWS.ERB@FLASHNEWS`:3–752；Python：`eragvt.game.shop.flashnews`）
 - [ ] **全域資料（GLOBAL）不讀不寫**：永遠走「真正的初次啟動」路徑（MOB_FLAG 初始化為 100、不套用 GLOBAL 的 config／性嗜好フィルタ），也不存成就等全域資料。（原作：`オープニング処理.ERB@EVENTFIRST`:29–45、`バージョン間互換処理.ERB@UPDATE`:95–130；Python：`eragvt.game.opening.event_first`）— 等設定畫面／成就功能時一起做。
   S05 起戰鬥中的 `UNLOCK_ACHIEVEMENT`（タクティカルオーダー、絶体絶命ヒロイン等）與 `GET_STATE_ABLUP` 同樣不執行（`eragvt.game.battle.core.unlock_achievement`）。
@@ -30,8 +33,8 @@ ERB 路徑相對 `source/earGVP/ERB/`。
   強制自慰、動画流出、幽閉後的 TURNEND、悪堕ち／雜魚／ラスボス、拡張度 CFLAG:34 != 0 等）。
   （Python：`eragvt.game.battle.*` 各處 `raise NotImplementedError`、`battle.commands.run_com` 的 `# DEVIATION:`）
   — 依規格「未移植分岐必須停止」。
-- [ ] **幽閉的未移植分岐會停止遊戲**（S08 新增）：受精成立（`NINSIN_HANTEI`:140 以降，幽閉中常見）、膨乳化的
-  `SET_PROFILE`（`PRISON_COM105_膨乳化.ERB`:70，身體資料生成未移植）、ラスボス／悪堕ちキャラ 的幽閉（`TENTACLE_ACCESS_PRISON` 的
+- [ ] **幽閉的未移植分岐會停止遊戲**（S08 新增）：受精成立（`NINSIN_HANTEI`:140 以降，幽閉中常見）、（膨乳化的
+  `SET_PROFILE` 已於 S09 接上）、ラスボス／悪堕ちキャラ 的幽閉（`TENTACLE_ACCESS_PRISON` 的
   LASTBOSS 分岐、悪堕ち的 PALAM_HOSEI）、`CORRUPT_CHANGE_LOOKS_MAIN`:24–（設定 CONFIG_CHECK_PRISON_F(4) ON 時）、`RECOVER_CORRUPTION`、
   `RESCUE_CHILD`、TS 性別變化（`TS_MtoF` 等）、ラスボス出現後的淫紋陥落、ゲームオーバーモード（`CHANGE_GAMEOVER_MODE`：ENDING_1／4／5
   的本文顯示後停止）。（Python：`eragvt.game.prison.*`、`party`、`ending`、`turnend._inmon_fall` 的 `raise NotImplementedError`）
@@ -42,11 +45,7 @@ ERB 路徑相對 `source/earGVP/ERB/`。
   `GameData/IdentifierDictionary.cs`:645），而振り解く的％顯示（`PRINT_COMNAME.ERB`:6–13）每次都會經過這裡，
   也就是原作（1.824）一被拘束就無法繼續。本作當作 `LOCAL:0`（體力氣力殘量％）的筆誤來判定。
   （Python：`eragvt.game.battle.hantei._hurihodoku`）— 替代方案：照 1.824 停止（等同無法玩拘束），或確認 +v10 的行為。
-- [ ] **開局身體資料未生成對戰鬥的影響（既有「身體資料生成未移植」的後果，需裁決）**：BASE:体重(44)／胸の重量(48) 為 0，
-  原作的「胸部重量ペナルティ」式 `LOCAL:2 -= LOCAL:2 * (1+胸の重量) / (1+体重)` 會把女性角色的敏捷整個扣成 0
-  （`ゲーム内_戦闘処理/COMMON_BATTLE_HANTEI.ERB`:606–614 被弾判定、:1097–1105 撤退判定），`DAMAGE` 的巨乳ボーナス
-  `LOCAL:5 += LOCAL:5 * (1+胸の重量) / (1+体重)`（:1207–1214）讓傷害變 2 倍。照原作公式移植，結果是「幾乎必中＋攻擊 2 倍」。
-  （Python：`eragvt.game.battle.hantei`）— 若要正常數值，需先移植 `CHARA_MAKE_BASE_PROFILE`／`CHARA_SIZE.ERB`。
+- [x] ~~**開局身體資料未生成對戰鬥的影響**~~（S09：**不是偏離**，移到下方「原作行為」）。
 - [ ] **口上的狀態副作用**（S07 更新，**需裁決**）：口上函式本身若對非 LOCAL 變數代入（CFLAG・TALENT・BASE・CSTR…，覆蓋率報告的
   「非 LOCAL 変数 … への代入」，約 300 函式；例：`★KOJO_0_16_真面目/鍛錬.ERB` 的 TRAINING 系 9 函式寫 CFLAG），catalog 判為 unsupported，
   KOJO_ROOT 當作「找不到」（-1、不輸出）。原作會輸出口上並改變狀態。（Python：`eragvt.narration.service.call_kojo`）
@@ -119,3 +118,10 @@ ERB 路徑相對 `source/earGVP/ERB/`。
   `PRISON_COM102`:105–106 恥情表寫入 LOCAL:8；`PRISON.ERB`:41 `今回陥落するフラグ` 與 :175 `LOCAL:2` 為靜態、沿用上次值；
   `SET_PARTYMEMBER.ERB`:22–24 SHIFTBACK 後遞補的角色本輪不判定；`AFTER_RESCUED.ERB`:23 `FLAG:32 = 0`（非 CFLAG）；
   `SHOP_SHOW_SITUATION_LIST.ERB`:10–39 不還原 FLAG:11 並設 SAVESTR:13；TFLAG:9 全作無代入（`KYUSHUTU_TIMEUP_HANTEI` 不會輸出）。
+- S09 身體資料（`docs/wiki/era/body-profile.md`）：初期セット直接開始時原作也不生成身體資料（`CHARA_MAKE_DEFAULT.ERB`:498 的
+  `NO:SELECT == 0` 條件；NO＝CSV 番号，`reference/emuera-1824/Emuera/GameData/Variable/CharacterData.cs`:99），所以 BASE:体重(44)／
+  胸の重量(48) 為 0，`COMMON_BATTLE_HANTEI.ERB` 的胸部重量補正 `value*(1+胸の重量)/(1+体重)`（:606–614 被弾、:1097–1105 撤退 減去；
+  :1207–1214 DAMAGE 加上）讓女性角色敏捷變 0、攻擊 2 倍。照原作（`battle.hantei.breast_weight_term`）。
+  **需使用者決定**：是否以 DEVIATION 在開局為初期セット角色生成身體資料（等同玩家在キャラメイク畫面按 [6]／狀態畫面 PAGE5 指令 20，
+  `body.generate_bodyline`＋`chara_make_age_setting`＋`chara_size_default` 已移植可直接呼叫），以得到「正常體重」的戰鬥數值。
+  另外 SET_PROFILE（膨乳化）不看 CFLAG:34，年齢 0 的初期セット角色會得到嬰兒體格（身長 544mm・体重 4.8kg 左右）。

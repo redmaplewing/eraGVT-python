@@ -348,12 +348,24 @@ _AVOID_TABLE = {
 }
 
 
+def breast_weight_term(ctx: Ctx, c, value: int) -> int:
+    """胸部重量の補正項 `value * (1 + 胸の重量) / (1 + BASE:体重)`（女性のみ、男性は 0）。
+    被弾判定 :606–614・撤退判定 :1097–1105 では引き、DAMAGE :1207–1214 では足す。
+    SP変身中（変身能力 == 1 && CFLAG:1 == 2）は胸の重量だけ MAXBASE、体重は常に BASE（原文どおり）。
+    身体データ未生成（BASE:44 = BASE:48 = 0）だと項は value 自身になる（初期セットのキャラは原作でもこの状態、
+    `docs/wiki/era/body-profile.md`）。"""
+    if not is_female(ctx.data, c):
+        return 0
+    breast = c.maxbase[48] if (t(ctx, c, "変身能力") == 1 and c.cflag[1] == 2) else c.base[48]
+    return div(value * (1 + breast), 1 + c.base[44])
+
+
 def act_hantei_tentacle_to_chara(ctx: Ctx, kind: str) -> int:
     """`@ACT_HANTEI_TENTACLE_TO_CHARA, ARGS`:574–1052。
 
     戻り値 1＝キャラが回避、2＝その距離にいない（空振り）、0＝被弾。
     """
-    st, data = ctx.state, ctx.data
+    st = ctx.state
     c = tc(ctx)
     v = c.tcvarn
     _need_tentacle(ctx)
@@ -364,10 +376,7 @@ def act_hantei_tentacle_to_chara(ctx: Ctx, kind: str) -> int:
         l0 = 100
     l1 = _enemy_hp_bonus(ctx, (100, 105, 110), 2)
     l2 = c.maxbase[12]
-    # :606–614 胸部重量ペナルティ（BASE:胸の重量(48)・BASE:体重(44)）
-    if is_female(data, c):
-        breast = c.maxbase[48] if (t(ctx, c, "変身能力") == 1 and c.cflag[1] == 2) else c.base[48]
-        l2 -= div(l2 * (1 + breast), 1 + c.base[44])
+    l2 -= breast_weight_term(ctx, c, l2)  # :606–614 胸部重量ペナルティ
     l6 = c.maxbase[11]
     if v.get_bit(3, 1):
         l6 *= 2
@@ -461,7 +470,7 @@ def act_hantei_tentacle_to_chara(ctx: Ctx, kind: str) -> int:
 
 def act_hantei_tettai_tentacle(ctx: Ctx) -> int:
     """`@ACT_HANTEI_TETTAI_TENTACLE`:1056–1171。"""
-    st, data = ctx.state, ctx.data
+    st = ctx.state
     c = tc(ctx)
     v = c.tcvarn
     _need_tentacle(ctx)
@@ -477,9 +486,7 @@ def act_hantei_tettai_tentacle(ctx: Ctx) -> int:
     if t(ctx, c, "長身") == 1:
         l2 = times(l2, "0.90")
     l2 = correction_trans(ctx, l2)
-    if is_female(data, c):
-        breast = c.maxbase[48] if (t(ctx, c, "変身能力") == 1 and c.cflag[1] == 2) else c.base[48]
-        l2 -= div(l2 * (1 + breast), 1 + c.base[44])
+    l2 -= breast_weight_term(ctx, c, l2)  # :1097–1105 胸部重量ペナルティ
     l2 = div(l2 * cloth_battle_hosei(ctx, "BINSYOU"), 100)
     l2 = shinkyou_check(ctx, "BINSYOU", l2)
     l3 = int(tentacle_access(ctx, "BINSYOU"))
@@ -543,7 +550,7 @@ def fstyle_attack(ctx: Ctx, who: int, dist: int) -> int:
 
 def damage(ctx: Ctx, kind: str) -> int:
     """`@DAMAGE, ARGS`:1175–1546。LOCAL:7 は呼び出し間で保持される（:1500–1510 で代入されない場合がある）。"""
-    st, data = ctx.state, ctx.data
+    st = ctx.state
     c = tc(ctx)
     v = c.tcvarn
     _need_tentacle(ctx)
@@ -554,10 +561,7 @@ def damage(ctx: Ctx, kind: str) -> int:
     piercing = t(ctx, c, "乳首ピアス")
     if piercing in (1, 2, 3, 4, 5):
         l5 = times(l5, {1: "1.40", 2: "1.60", 3: "1.80", 4: "2.00", 5: "5.00"}[piercing])
-    if is_female(data, c):
-        # :1207–1214 巨乳攻撃ボーナス（BASE:胸の重量・BASE:体重）
-        breast = c.maxbase[48] if (t(ctx, c, "変身能力") == 1 and c.cflag[1] == 2) else c.base[48]
-        l5 += div(l5 * (1 + breast), 1 + c.base[44])
+    l5 += breast_weight_term(ctx, c, l5)  # :1207–1214 巨乳攻撃ボーナス
     l6 = c.maxbase[11]
     if v.get_bit(3, 1):
         l6 = div(l6 * 200, 100)

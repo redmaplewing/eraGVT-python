@@ -26,6 +26,7 @@ from .chara_common import (
     talent,
 )
 from .era import div, isqrt, limit
+from .body import chara_make_age_setting, chara_size_default, generate_bodyline
 from .tentacle import BOSS_ERB_NUM, MOB_TENTACLE_NUMBERS, get_lastboss_phase, tentacle_survive_num
 
 PRESET_TOKUSOU = 0  # 初期セット/0_特捜戦隊.ERB
@@ -463,8 +464,8 @@ def chara_make_initialize(state: GameState, data: GameData, sel: int) -> None:
         raise NotImplementedError("種族の自動設定（:10–68）は未移植")
     if seikaku_check(data, c) == 0:
         raise NotImplementedError("性格の自動設定（:71–160）は未移植")
-    # :163 CALL CHARA_MAKE_BASE_PROFILE(SELECT)
-    # DEVIATION: 身体データの生成（:493–984、年齢・身長・体重・スリーサイズ等、乱数あり）は未移植。
+    # :167 CALL CHARA_MAKE_BASE_PROFILE(SELECT)
+    chara_make_base_profile(state, data, sel)
     # 変身名のロード（:166–209）
     if c.callname != "汎用キャラ" and talent(data, c, "変身能力") == 1:
         if c.cstr[0] == "":
@@ -484,6 +485,25 @@ def chara_make_initialize(state: GameState, data: GameData, sel: int) -> None:
         if c.cstr[2] == "" and state.savestr[12] != "":
             c.cstr[2] = state.savestr[12]
             c.cflag[4] = 1
+
+
+def chara_make_base_profile(state: GameState, data: GameData, sel: int) -> None:
+    """`CHARA_MAKE_DEFAULT.ERB@CHARA_MAKE_BASE_PROFILE(SELECT)`:493–980（身体データの生成）。
+
+    CSV キャラ（呼び名が「汎用キャラ」でない）は、プロフィール未設定（CFLAG:34 == 0）かつ `NO == 0` のときだけ
+    GENERATE_BODYLINE → CHARA_MAKE_AGE_SETTING → CHARA_SIZE_DEFAULT を行い、いずれにせよ :505 で RETURN する。
+    NO は CSV の番号（reference/emuera-1824/Emuera/GameData/Variable/CharacterData.cs:99 `NO = tmpl.No`）なので、
+    初期セットのキャラ（301〜303 など）では何もしない＝BASE:40–48 は 0、CFLAG:34 は 0 のまま（原作どおり）。
+    """
+    c = state.charas[sel]
+    if c.callname != "汎用キャラ":  # :496
+        if c.cflag[34] == 0 and c.no == 0:  # :498–503
+            generate_bodyline(state, data, c)
+            chara_make_age_setting(state, data, c)
+            chara_size_default(data, c)
+        return  # :505
+    # :507–980 未初期化キャラ（汎用キャラ）のランダム生成。初期セット経路では到達しない。
+    raise NotImplementedError("CHARA_MAKE_BASE_PROFILE の汎用キャラ分岐（:507–980）は未移植")
 
 
 _CALL_HEAD = ("、参上", "、見参", "、推参", "、準備完了")

@@ -4,9 +4,10 @@
 路徑相對 `source/earGVP/ERB/`。TENTACLE_SIZE／TENTACLE_NUM は `st.temp.tentacle_size[(i, j)]`（DIM.ERH:159–160）。
 
 拡張（V_GAPING／A_GAPING／GET_*_GAPING_EXP）は CFLAG:34 == 0 なら何もしない（GAPING.ERB:864–865、942–943、
-1015–1016、1044–1045）。CFLAG:34 は `CHARA_MAKE_BASE_PROFILE`:980 でしか 1 にならず、同関数は未移植
-（deviations.md「開局：身體資料生成未移植」）なので、現状は常に 0。0 以外に到達したら停止する。
-身長・腰囲（BASE:43／47）も同じ理由で 0 のため、GAPING_SIZE の値は原作の通常プレイと異なる（式は原作どおり）。
+1015–1016、1044–1045）。CFLAG:34（成長曲線）を書くのは GENERATE_BODYLINE（CHARA_SIZE.ERB:540）・
+CHARA_SIZE_DEFAULT（CHARA_SIZE_UI.ERB:2157）・CHARA_MAKE_BASE_PROFILE:980 で、初期セットのキャラ（NO ≠ 0）は
+原作でもどれも通らない（`eragvt.game.body`、`docs/wiki/era/body-profile.md`）ため 0 のまま。0 以外に到達したら停止する。
+身長・腰囲（BASE:43／47）も同じ理由で 0（膨乳化の SET_PROFILE 後は非 0）。式は原作どおり。
 """
 
 from __future__ import annotations

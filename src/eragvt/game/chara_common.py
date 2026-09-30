@@ -44,20 +44,47 @@ def syuzoku_check(chara: Character) -> int:
 
 
 def charatalent(data: GameData, chara: Character, transformed: int, name: str) -> int:
-    """`汎用関数/コモン関数.ERB@CHARATALENT_F`:1079–（未変身時 CFLAG:1 == 0 の分岐のみ移植）。
+    """`汎用関数/コモン関数.ERB@CHARATALENT_F`:1079–1321。
 
-    ARG:1（`transformed`）= 0 なら通常時、>0 なら変身時の素質を返す。
+    ARG:1（`transformed`）= 0 なら通常時、>0 なら変身時の素質を返す。変身中（CFLAG:1 > 0）は TALENT が
+    変身後の値になっているので、分岐（:1083–1206）で通常時の値を逆算する。
     """
-    if chara.cflag[1] > 0:
-        # UNVERIFIED なのではなく未移植：キャラメイク中は常に未変身（CFLAG:1 = 0）なので到達しない。
-        raise NotImplementedError("CHARATALENT_F の変身中分岐は未移植")
     t = lambda n: talent(data, chara, n)  # noqa: E731
     result = ""
-    if transformed > 0:
+    if chara.cflag[1] > 0:  # :1083 変身時
+        if transformed > 0:  # :1084–1130 現在の TALENT がそのまま変身時の値
+            result = _plain_talent_name(data, chara, name, "変身時外見")
+        else:  # :1131–1205 通常時の値を逆算
+            if name in ("小柄", "長身"):
+                v = t("長身") - t("小柄") - t("変身時体格変動")
+                if v < 0:
+                    result = "小柄"
+                elif v > 0:
+                    result = "長身"
+                elif t("変身時体格変動") == 0:
+                    result = "小柄" if t("小柄") > 0 else "長身" if t("長身") > 0 else ""
+            elif name in _BUSTS:
+                v = t("巨乳") - t("貧乳") - t("変身時胸サイズ変動")
+                result = _bust_name(v)
+                if v == 0 and t("変身時胸サイズ変動") == 0:
+                    result = _plain_bust(data, chara)
+            elif name == "オトコ":
+                if is_female(data, chara):
+                    if t("変身時ＴＳ") > 0:
+                        result = "オトコ"
+                elif t("変身時ＴＳ") == 0:
+                    result = "オトコ"
+            elif name == "男の娘":
+                result = "男の娘" if t("変身時男の娘") > 0 else ""
+            elif name == "ふたなり":
+                result = "ふたなり" if t("変身時ふたなり") > 0 else ""
+            elif name in _APPEARANCE:
+                result = _APPEARANCE_BY_VALUE.get(t("外見"), "")
+    elif transformed > 0:  # :1209–1267
         if name in ("小柄", "長身"):
             v = t("長身") - t("小柄") + t("変身時体格変動")
             result = "小柄" if v < 0 else "長身" if v > 0 else ""
-        elif name in ("絶壁", "貧乳", "巨乳", "爆乳", "超乳", "魔乳", "奇乳"):
+        elif name in _BUSTS:
             v = t("巨乳") - t("貧乳") + t("変身時胸サイズ変動")
             if is_male(data, chara):
                 if t("変身時ＴＳ") == 0:
@@ -77,25 +104,40 @@ def charatalent(data: GameData, chara: Character, transformed: int, name: str) -
             result = "ふたなり" if t("変身時ふたなり") > 0 else ""
         elif name in _APPEARANCE:
             result = _APPEARANCE_BY_VALUE.get(t("変身時外見"), "")
-    else:
-        if name in ("小柄", "長身"):
-            result = "小柄" if t("小柄") > 0 else "長身" if t("長身") > 0 else ""
-        elif name in ("絶壁", "貧乳", "巨乳", "爆乳", "超乳", "魔乳", "奇乳"):
-            if t("貧乳") == 2:
-                result = "絶壁"
-            elif t("貧乳") == 1:
-                result = "貧乳"
-            else:
-                result = {5: "奇乳", 4: "魔乳", 3: "超乳", 2: "爆乳", 1: "巨乳"}.get(t("巨乳"), "")
-        elif name == "オトコ":
-            result = "オトコ" if is_male(data, chara) else ""
-        elif name == "男の娘":
-            result = "男の娘" if t("男の娘") > 0 else ""
-        elif name == "ふたなり":
-            result = "ふたなり" if t("ふたなり") > 0 else ""
-        elif name in _APPEARANCE:
-            result = _APPEARANCE_BY_VALUE.get(t("外見"), "")
+    else:  # :1268–1315
+        result = _plain_talent_name(data, chara, name, "外見")
     return 1 if result == name else 0
+
+
+_BUSTS = ("絶壁", "貧乳", "巨乳", "爆乳", "超乳", "魔乳", "奇乳")
+
+
+def _plain_bust(data: GameData, chara: Character) -> str:
+    """TALENT:貧乳／巨乳 の値から胸の素質名（:1090–1104 などの共通形）。"""
+    hin, kyo = talent(data, chara, "貧乳"), talent(data, chara, "巨乳")
+    if hin == 2:
+        return "絶壁"
+    if hin == 1:
+        return "貧乳"
+    return {5: "奇乳", 4: "魔乳", 3: "超乳", 2: "爆乳", 1: "巨乳"}.get(kyo, "")
+
+
+def _plain_talent_name(data: GameData, chara: Character, name: str, appearance: str) -> str:
+    """TALENT をそのまま読む分岐（:1084–1130、:1268–1315）。外見系は `appearance`（外見／変身時外見）の値で判定。"""
+    t = lambda n: talent(data, chara, n)  # noqa: E731
+    if name in ("小柄", "長身"):
+        return "小柄" if t("小柄") > 0 else "長身" if t("長身") > 0 else ""
+    if name in _BUSTS:
+        return _plain_bust(data, chara)
+    if name == "オトコ":
+        return "オトコ" if is_male(data, chara) else ""
+    if name == "男の娘":
+        return "男の娘" if t("男の娘") > 0 else ""
+    if name == "ふたなり":
+        return "ふたなり" if t("ふたなり") > 0 else ""
+    if name in _APPEARANCE:
+        return _APPEARANCE_BY_VALUE.get(t(appearance), "")
+    return ""
 
 
 _APPEARANCE = ("安産型", "むちむち", "イカ腹", "スレンダー", "巨尻", "爆尻")
