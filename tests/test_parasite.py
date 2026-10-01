@@ -442,9 +442,10 @@ def test_session_eventshop_input(data):
     assert (Path(s.save_dir) / "save99.json").exists()
 
 
-def test_tokusou_seed101_no_longer_halts(data, svc, monkeypatch):
-    """S16 模擬で唯一停止した初期セット seed 101（ACT_LIMIT 寄生）：PRISON_COM301 で寄生されたキャラが救出後の戦闘で
-    寄生の行動制限（COMMON_BATTLE_FUNC.ERB:226–255）を引く経路。停止せず SHOP 上限まで進む。"""
+def test_tokusou_act_limit_parasite_no_longer_halts(data, svc, monkeypatch):
+    """S16 模擬で唯一停止した経路（初期セット seed 101：PRISON_COM301 で寄生されたキャラが救出後の戦闘で
+    寄生の行動制限 COMMON_BATTLE_FUNC.ERB:226–255 を引く）。S18 で乱数の消費が変わり seed 101 では到達しなくなったので、
+    開局直後にキャラ 1〜3 へ 寄生 を付けて同じ経路を通す（seed 0）。停止せず SHOP 上限まで進む。"""
     import sys
 
     sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools"))
@@ -460,6 +461,10 @@ def test_tokusou_seed101_no_longer_halts(data, svc, monkeypatch):
         return orig(ctx, fn, *a, **k)
 
     monkeypatch.setattr(func, "run_chinobun", rc)
-    r = sim.run_one(data, svc, 101, "tokusou", 30, 100000, Path(tempfile.mkdtemp()))
+    def setup(st):
+        for i in (1, 2, 3):
+            _parasitize(data, st.charas[i])
+
+    r = sim.run_one(data, svc, 0, "tokusou", 30, 100000, Path(tempfile.mkdtemp()), setup=setup)
     assert r["reason"] == "上限"
     assert hits

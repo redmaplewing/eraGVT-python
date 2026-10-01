@@ -34,7 +34,7 @@ ERB 路徑相對 `source/earGVP/ERB/`。
   開局 `MESSAGE_FIRST` 口上仍不輸出（見下「口上」）。
 
 - [ ] **S04 未翻的行動會停止遊戲**：（出撃已於 S05 接上，戰鬥內的停止見下一項）特別活動、拠点防衛、戦闘支援（本體）、情報収集、自由行動在 `action_main` 丟 `NotImplementedError`，Web session 捕捉後進入「停止」狀態（只能按「タイトルに戻る」）。同樣停止的還有：ENDING（全ボス撃破／**11 日目夜的日數超過**）、救出直後、妊娠・育兒・幽閉・悪堕ち等 S04 無法產生的狀態、鍛錬排程（CFLAG:110）、戦闘基礎 Lv5 的變身能力獲得。（原作：`ゲーム内_行動実行処理/ACTION.ERB`:74–175 等；Python：`eragvt.game.action`、`eragvt.game.turnend`、`eragvt.game.session._advance_turn`）— 各自屬 S05 以後；影響範圍見 `docs/wiki/era/actions.md`。
-- [ ] **襲撃／救援、子触手襲来 會被跳過**：`RAID_HANTEI`（DAY ≥ 3 起依防衛力的亂數）與 `SMALL_TENTACLE_HANTEI`（夜、FLAG:44 > 0）判定成立時，原作會 `JUMP RAID_RESCUE／RAID_ATTACK`（戰鬥）或 `CALL SMALL_TENTACLE_ATTACK`；這裡只印「（未實作：…が発生しましたが、スキップします）」並當作沒發生。（原作：`ゲーム内_イベント発生/強制発生イベント/FORCE_襲撃or救援イベント発生.ERB`:94–105、`FORCE_深夜の子触手襲来.ERB`:48–53；Python：`eragvt.game.turnend.raid_hantei`／`small_tentacle_hantei`／`_skip_event`）— 通常遊玩一定會遇到，若改成停止則無法連續遊玩；戰鬥在 S05／S06 接上。
+- [ ] **襲撃／救援 會被跳過**：`RAID_HANTEI`（DAY ≥ 3 起依防衛力的亂數）判定成立時，原作會 `JUMP RAID_RESCUE／RAID_ATTACK`（戰鬥）；這裡只印「（未實作：…が発生しましたが、スキップします）」並當作沒發生。（原作：`ゲーム内_イベント発生/強制発生イベント/FORCE_襲撃or救援イベント発生.ERB`:94–105；Python：`eragvt.game.turnend.raid_hantei`／`_skip_event`）— 通常遊玩一定會遇到，若改成停止則無法連續遊玩。S18：子触手襲来（`SMALL_TENTACLE_HANTEI`）已照原作接上（`eragvt.game.small_tentacle`），不再跳過。
 - [ ] **未移植的戰鬥分岐會停止遊戲**（S05 新增、S06 更新）：戰鬥中下列情況丟 `NotImplementedError` → Web「停止」。
   S06 接上了拘束後的性攻擊、拘束中指令、絶頂／射精、敗北（→ 幽閉）與指令 6・7・16・17・69・71・72；
   S16 接上 ＳＰ変身（73）・ＳＰバースト（70）・ＳＰフルバースト（74）與バースト攻撃（TCVARn:217）的全部補正；
@@ -202,3 +202,19 @@ ERB 路徑相對 `source/earGVP/ERB/`。
   夜這い的對象輸入接受 `0 < RESULT < CHARANUM` 的任何角色番號（:655，含名單外、實行者自己）；`PRINT_CHARA_LIST` 的年上判定
   `TOSHIUE_F(TARGET, …)` 用 TARGET 而非實行者（:834／:851／:868），只有「いとこ」時括號不閉合（:931）；
   `SYNBIOSIS_OUT_OF_CONTROL_EVENT`（:542–565）的兩個呼叫處（:411／:420）原作已註解掉 → 無呼叫者，不移植。
+- S18 強制發生事件照原作的怪處（`強制発生イベント/`，Python：`eragvt.game.intimidation`／`yobai`／`small_tentacle`）：
+  **クズ市民**：CFLAG:72（監禁クールダウン）只被設成 8、全 ERB 沒有遞減處 → 一旦救出／解放，該角色之後**永遠不再被脅迫**（:13）；
+  CFLAG:291 全 ERB 無代入（恆 0）；CFLAG:71（救出所需點數）只在情報収集（`ACTION_GATHER_INFORMATION.ERB`:1004–1041，未移植→停止）減少，
+  目前監禁只會以「廃棄」解放（CFLAG:70 > 6 後每回合 20〜40%，CFLAG:70 由 CALC_GANGBANG "監禁" 每回合 +1，晝夜都會 KIDNAPPING）；
+  二次脅迫的 :166 分岐與 :123 同條件 → 到達不了；:290 `IF LOCAL == 1` 在未選パイズリ時看的是發生機率值（恰為 1 時出胸射文）；
+  :248 `PRINT る痛みの中、` 不換行、與下一行相連；KIDNAPPING 的 `SELECTCASE RAND(35)` 各 CASE 全被註解 → 恆 INTIMIDATION_RAPE（RAND 仍消耗）。
+  **夜這い**：YOBAI_SELECT_PLAY 的 `CALL CLEARRANDCHOOSE`（:545）覆寫 YOBAI 的候補清單 → YOBAI_EVENT 在 SELECT_PLAY 之後回 -999（:275）時
+  REROLL 會從プレイ内容（1／2／4／8／16／32）抽 TARGET（原作照做；角色不存在時原作報錯 → 停止）；YOBAI_EVENT 的條件把淫乳寫成
+  `TALENT:淫乳 * 3 + ABL:Ｃ感覚`（:160–177）→ 只有 Ｂ感覚 ≥ 3 的角色會被 YOBAI 選中但必定 -999；CASE 1 的 `GOTO V_SEX／A_SEX…`（:1098–1213）
+  跳進 CASE 2／4 的標籤、執行到該 IF 分岐結束後經 ENDIF → 下一個 CASE 行 → ENDSELECT（`Instraction.Child.cs`:1805–1821）；
+  `%CALLNAME:ARG%`／`%CALLNAME:MASTER%`（:1450、:1796）印的是 ARG（2／4）號角色與 MASTER 的名字（ARG 號不存在時原作報錯 → 停止）；
+  HOUSHI_4 的處女喪失把 `CFLAG:206` 寫在實行者 LCOUNT（:3088–3092），對象的 CFLAG:206 不變；HOUSHI_4／5 的 `LOCAL:124 = LOCAL:324`
+  在 VARSET LOCAL 之後（:3237、:3622）→ 恆 0；HOUSHI_4／5 的續柄用 `ISMALE()`＝實行者的性別；Ａ系（A_LOSTVERGIN・A_SEX・HOUSHI_5）中出し
+  不做 AFTER_PILL／NINSIN；實行者疲勞寝落ち（:949、:960）的 RETURN 連最後的 `_ABLUP, 1`（:2645）也跳過；YOBAI_ACTION 結束時 TARGET 留在對象。
+  **子触手**：SMALL_TENTACLE_ATTACK 的 `ISHOLE()`（:105）看的是呼叫時的 TARGET 而非候補；成功襲來不減 FLAG:44（子触手留著）；
+  Ｖ襲來的處女喪失直接寫 `TALENT:処女 = -1`・`CFLAG:206 = 1`（不呼叫 LOSTVIRGIN），之後 `処女 < 1` 成立 → 以精液 0 呼叫 AFTER_PILL／NINSIN_HANTEI。

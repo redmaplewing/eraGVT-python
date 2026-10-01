@@ -516,8 +516,11 @@ def synbiosis_yobai_action(ctx: Ctx) -> None:
     synbiosis_abl_up(ctx, 1)  # :713
 
 
-def _relation_text(ctx: Ctx, rel: int, other: int) -> str:
-    """`@PRINT_CHARA_LIST` :790–933 の LOCALS（GETBIT は RELATION:(FLAG:799):(対象)）。"""
+def _relation_text(ctx: Ctx, rel: int, other: int, close_itoko: bool = False) -> str:
+    """`@PRINT_CHARA_LIST` :790–933 の LOCALS（GETBIT は RELATION:(FLAG:799):(対象)）。
+
+    `FORCE_夜這い.ERB@YOBAI_EVENT`:312–452 も同じ文面（RELATION:TARGET:LCOUNT、年上判定 TOSHIUE_F(TARGET, LCOUNT)）で、
+    違いは閉じ括弧の条件に いとこ を含むこと（:450）だけ → `close_itoko=True`。"""
     st, data = ctx.state, ctx.data
     g = lambda bit: (rel >> bit) & 1 == 1  # noqa: E731
     male = is_male(data, st.charas[other])
@@ -610,7 +613,7 @@ def _relation_text(ctx: Ctx, rel: int, other: int) -> str:
     if g(DOREI):
         s += "奴隷"
     # :931–932 閉じ括弧の条件に いとこ が含まれない（いとこだけなら "(" が閉じない：原作どおり）
-    if g(OYAKO) or g(KYOUDAI) or g(SOFUBO) or g(OJIOBA) or g(OIMEI):
+    if g(OYAKO) or g(KYOUDAI) or g(SOFUBO) or g(OJIOBA) or g(OIMEI) or (close_itoko and g(ITOKO)):
         s += ")"
     return s
 

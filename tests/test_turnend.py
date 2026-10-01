@@ -280,7 +280,7 @@ def test_night_events_not_triggered_in_opening_state(ctx):
     list(turnend.grow_hantei(ctx))  # 育児なし
     turnend.akuoti_attack(ctx)  # 悪堕ちなし
     list(turnend.lovesex_night(ctx))  # 交際相手 0 → :28 CONTINUE（RAND 短絡：OperatorMethod.cs:532–536）
-    turnend.yobai(ctx)  # 淫核等・感覚 0 → 候補判定の対象外
+    list(turnend.yobai(ctx))  # 淫核等・感覚 0 → 候補判定の対象外
     st.day[0] = 2
     turnend.raid_hantei(ctx)  # :30 DAY < 3
 
@@ -303,16 +303,6 @@ def test_night_events_unported(ctx, data, setup, func):
     setup(ctx.state, data)
     with pytest.raises(NotImplementedError):
         func(ctx)
-
-
-def test_yobai_candidate_unported(ctx, data):
-    st = ctx.state
-    st.time = 1
-    st.charas[1].abl[data.index_of("ABL", "Ｃ感覚")] = 3
-    # :50–60 LOCAL:1 = 1 → (1*2 + 22) * 125 = 3000、RAND:10000 = 0 < 3000
-    st.rng = FixedRng([0])
-    with pytest.raises(NotImplementedError, match="夜這い"):
-        turnend.yobai(ctx)
 
 
 def test_raid_skipped_as_deviation(ctx):
@@ -345,16 +335,13 @@ def test_birth_auto_random_contraception_config(ctx):
     assert ctx.state.flag[44] == 0
 
 
-def test_small_tentacle(ctx):
+def test_small_tentacle_not_at_day(ctx):
     st = ctx.state
-    st.time = 1
     st.flag[44] = 1
-    # FORCE_深夜の子触手襲来.ERB:36–46：5000 < 5000 + 1*50 → RAND:8 = 0、:48 RAND:12 = 1 != 0 → 襲来
-    st.rng = FixedRng([0, 1])
-    turnend.small_tentacle_hantei(ctx)
-    assert texts(ctx.out) == ["（未實作：子触手襲来（SMALL_TENTACLE_ATTACK）が発生しましたが、スキップします）"]
     st.time = 0
-    turnend.small_tentacle_hantei(ctx)  # :27–28 夜以外は判定しない（乱数も使わない）
+    st.rng = FixedRng([])
+    list(turnend.small_tentacle_hantei(ctx))  # FORCE_深夜の子触手襲来.ERB:29–30 夜以外は判定しない（乱数も使わない）
+    assert texts(ctx.out) == []
 
 
 def test_parasite_overwrites_flag799(ctx):

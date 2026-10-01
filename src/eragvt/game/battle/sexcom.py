@@ -165,9 +165,17 @@ def lostvirgin(ctx: Ctx, arg0: int = 0) -> None:
 
 
 def incest(ctx: Ctx, who: int, other: int, arg2: int = 0) -> int:
-    """`SYSTEM/キャラメイキング関連/CHARA_RELATION.ERB@INCEST_F(ARG:0, ARG:1, ARG:2 = 0)`:1002–1016（ARG:2 != 0 の分岐）。"""
+    """`SYSTEM/キャラメイキング関連/CHARA_RELATION.ERB@INCEST_F(ARG:0, ARG:1, ARG:2 = 0)`:1002–1016。
+
+    ARG:2 == 0（仲間キャラ、S18）：RELATION:(ARG:0):(ARG:1) に 義理の が立っていれば 0、親子・兄弟姉妹・祖父祖母孫・おじおば・
+    甥姪 のどれかなら 1（いとこ は含まない）。ARG:2 != 0：CFLAG:9（父親）との比較。"""
     if arg2 == 0:
-        raise NotImplementedError("INCEST_F の人間関係（RELATION）分岐は未移植")
+        from ..relation import GIRI, KYOUDAI, OIMEI, OJIOBA, OYAKO, SOFUBO
+
+        rel = ctx.state.charas[who].relation[other]
+        if (rel >> GIRI) & 1:
+            return 0
+        return 1 if any((rel >> b) & 1 for b in (OYAKO, KYOUDAI, SOFUBO, OJIOBA, OIMEI)) else 0
     c = ctx.state.charas[who]
     if c.cflag[9] >= 200:
         return 0

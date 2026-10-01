@@ -41,6 +41,11 @@ def toshiue(st: GameState, a: int, b: int) -> int:
     return 0
 
 
+def lover_f(st: GameState, a: int, b: int) -> int:
+    """`@LOVER_F, ARG, ARG:1`:1023–1028：RELATION:A:B に 片思い・恋人・婚約者・配偶者 のどれかが立っていれば 1。"""
+    return 1 if any(_gb(st, a, b, bit) for bit in (KATAOMOI, KOIBITO, KONYAKU, HAIGUUSHA)) else 0
+
+
 def get_relation(ctx: Ctx, a: int, b: int) -> str:
     """`@GET_RELATION, ARG:0, ARG:1`:5–181（RESULTS に入る文字列）。"""
     st, data = ctx.state, ctx.data

@@ -37,15 +37,15 @@ Python：`eragvt.game.action`（ACTION_MAIN／REST／TRAINING）、`eragvt.game.
 
 | 事件 | 開始條件 | 開局狀態 |
 |---|---|---|
-| INTIMIDATION／KIDNAPPING | PRISON config bit10（OFF）／CFLAG:0 == 4 | 不觸發 |
+| INTIMIDATION／KIDNAPPING | PRISON config bit10（OFF）／CFLAG:0 == 4 | 不觸發（S18 已移植：`eragvt.game.intimidation`） |
 | PRISON | CFLAG:0 == 1 或 GAMEOVER 模式 | 不觸發 |
 | BIRTH_HANTEI／GROW_HANTEI | 素質「妊娠」1/3/4/5；育兒 CFLAG:0 == 11、CFLAG:22、225 | 不觸發 |
 | AKUOTI_ATTACK | CFLAG:0 == 3 | 不觸發 |
 | LOVESEX_NIGHT | 夜、交際相手 1–4 | 不觸發（交際相手 0） |
 | SELF_NIGHT | 夜、RAND:100 < 欲望*5 + 触手中毒*2 + 自慰中毒段階 | 機率 0 |
-| YOBAI | 夜、淫核等素質或感覺 ABL ≥ 3 | 不觸發 |
+| YOBAI | 夜、淫核等素質或感覺 ABL ≥ 3 | 不觸發（S18 已移植：`eragvt.game.yobai`） |
 | RAID_HANTEI | DAY ≥ 3、有人沒出撃／防衛、依防衛力 RAND | **會觸發** → DEVIATION 跳過 |
 | PARASITE | 素質「寄生」；迴圈會把 FLAG:799 覆寫成 CHARANUM-1（SHOW_SHOP:20 歸 0） | 不觸發 |
-| SMALL_TENTACLE_HANTEI | 夜、FLAG:44（子触手數）> 0 | FLAG:44 > 0 後**會觸發** → DEVIATION 跳過 |
+| SMALL_TENTACLE_HANTEI | 夜、FLAG:44（子触手數）> 0 | FLAG:44 > 0 後**會觸發**（S18 起照原作：`eragvt.game.small_tentacle`） |
 | BIRTH_AUTO_RANDOM | 防衛力 < 10000 時 1/(防衛力/100)：FLAG:44 += 1（已翻）；苗床死亡角色出產（未翻） | 前半會觸發（已翻） |
 | ENDING | 全ボス撃破（ENDING_2）、日數超過（ENDING_3：開局 NORMAL 為 11 日目夜） | 11 日目夜觸發 → NotImplemented |

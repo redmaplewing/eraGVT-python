@@ -10,6 +10,10 @@
 輸出：停止原因頻度、停止前經過的 SHOP 次數（平均／最多）、敗北局數（曾有人幽閉 CFLAG:0 == 1）與敗北後 SHOP 平均、
 ゲームオーバーモード（FLAG:0 == 0，S12）進入局數與進入後 SHOP 平均（＝再走幾回合）及其停止原因。
 停止原因以訊息的前 `--key-len` 字歸類。
+
+S18：各強制發生事件的實際觸發次數（`install_event_counters`：包裝模組函式計數，不改變遊戲行為）。
+`--enable-intimidation` 在開局後把 FLAG:804 bit10（`CONFIG_CHECK_PRISON_F(10)`「クズ市民による幽閉」）打開
+（基本セットは OFF：脅迫イベントは起きない）。
 """
 
 from __future__ import annotations
@@ -42,11 +46,61 @@ def _parse_seeds(text: str) -> list[int]:
     return out
 
 
-def run_one(data, narration, seed: int, preset: str, max_shop: int, max_steps: int, save_dir: Path) -> dict:
+def install_event_counters() -> Counter:
+    """S18：強制發生事件的函式呼叫／狀態變化を数える（モジュール属性を包む。呼び出しは全てモジュールの大域名経由）。"""
+    from eragvt.game import intimidation, small_tentacle, turnend, yobai
+
+    counts: Counter = Counter()
+
+    def wrap(mod, name, before=None, after=None):
+        orig = getattr(mod, name)
+
+        def w(ctx, *a, **k):
+            snap = before(ctx, *a) if before else None
+            r = yield from orig(ctx, *a, **k)
+            if after:
+                after(ctx, snap, *a)
+            return r
+
+        setattr(mod, name, w)
+
+    def intim_before(ctx):
+        c = ctx.state.target_chara
+        return (c.cflag[290], c.cflag[0])
+
+    def intim_after(ctx, snap):
+        c = ctx.state.target_chara
+        if c.cflag[290] != snap[0]:
+            counts["脅迫（発生）"] += 1
+        if c.cflag[0] == 4 and snap[1] != 4:
+            counts["脅迫→拉致監禁"] += 1
+
+    def kid_after(ctx, snap):
+        counts["拉致監禁（KIDNAPPING 呼出）"] += 1
+        if ctx.state.charas[snap].cflag[0] != 4:
+            counts["拉致監禁→救出／解放"] += 1
+
+    wrap(turnend, "intimidation_event", intim_before, intim_after)
+    wrap(turnend, "kidnapping", lambda ctx: ctx.state.target, kid_after)
+    wrap(yobai, "yobai_event", after=lambda ctx, snap: counts.update(["夜這い（YOBAI_EVENT）"]))
+    wrap(yobai, "yobai_action", after=lambda ctx, snap, arg, *a: counts.update([f"夜這い実行 ARG={arg}"]))
+    wrap(small_tentacle, "small_tentacle_attack", after=lambda ctx, snap: counts.update(["子触手襲来（ATTACK）"]))
+    wrap(small_tentacle, "small_prison_event", after=lambda ctx, snap: counts.update(["子触手襲来（成功）"]))
+    wrap(small_tentacle, "small_prison_com", after=lambda ctx, snap, arg: counts.update([f"子触手 SMALL_PRISON_COM {arg}"]))
+    return counts
+
+
+def run_one(data, narration, seed: int, preset: str, max_shop: int, max_steps: int, save_dir: Path,
+            enable_intimidation: bool = False, setup=None) -> dict:
+    """`setup(state)`：開局直後に状態を変える（テスト用）。"""
     policy = random.Random(seed)
     s = GameSession(data, save_dir, rng=GameRng(seed), narration=narration)
     s.input(0)
     s.input(0 if preset == "default" else 1)
+    if enable_intimidation:
+        s.state.flag[804] |= 1 << 10
+    if setup is not None:
+        setup(s.state)
     shops = 0
     defeated_at: int | None = None
     gameover_at: int | None = None
@@ -98,13 +152,19 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--max-steps", type=int, default=100000)
     p.add_argument("--key-len", type=int, default=40)
     p.add_argument("--verbose", action="store_true")
+    p.add_argument("--enable-intimidation", action="store_true")
     a = p.parse_args(argv)
+    counts = install_event_counters()
+    games_with: Counter = Counter()
     data = load_game_data(default_csv_dir())
     narration = CatalogNarrationService(default_csv_dir().parent / "ERB", data)
     results = []
     with tempfile.TemporaryDirectory() as tmp:
         for seed in _parse_seeds(a.seeds):
-            r = run_one(data, narration, seed, a.preset, a.max_shop, a.max_steps, Path(tmp))
+            before = Counter(counts)
+            r = run_one(data, narration, seed, a.preset, a.max_shop, a.max_steps, Path(tmp), a.enable_intimidation)
+            r["events"] = dict(counts - before)
+            games_with.update(r["events"].keys())
             results.append(r)
             if a.verbose:
                 print(r, flush=True)
@@ -121,6 +181,9 @@ def main(argv: list[str] | None = None) -> int:
     print("停止原因：")
     for k, v in Counter(r["reason"][: a.key_len] for r in results).most_common():
         print(f"  {v:4d}  {k}")
+    print("強制發生事件（總次數／發生局數）：" if counts else "強制發生事件：なし")
+    for k in sorted(counts):
+        print(f"  {counts[k]:5d}／{games_with[k]:3d}  {k}")
     if go:
         print("停止原因（ゲームオーバーモード進入局）：")
         for k, v in Counter(r["reason"][: a.key_len] for r in go).most_common():

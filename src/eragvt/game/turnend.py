@@ -2,7 +2,8 @@
 
 路徑相對 `source/earGVP/ERB/`。夜間イベント等のうち未移植のものは「開始条件」だけを原作どおり判定し、
 条件が成立したら `NotImplementedError`（戦闘なしでは起こり得ない状態）か、
-DEVIATION として発生を見送る（通常プレイで起こる乱数イベント：襲撃・救援、子触手襲来）。
+DEVIATION として発生を見送る（通常プレイで起こる乱数イベント：襲撃・救援）。
+S18：クズ市民の脅迫・拉致監禁（`intimidation`）、夜這い（`yobai`）、深夜の子触手襲来（`small_tentacle`）を接続。
 """
 
 from __future__ import annotations
@@ -32,10 +33,10 @@ from .action import (
     config_check_screen,
     kojo_root,
 )
-from .chara_common import charatalent, is_male, level_status, talent
+from .chara_common import charatalent, level_status, talent
 from .era import div, isqrt, limit, mod, times
 from .opening import game_option
-from .shop import charanum_active, charanum_safe, check_gameover
+from .shop import charanum_safe, check_gameover
 from .tentacle import enemy_type_check, get_lastboss_phase, tentacle_survive_num
 from .party import after_rescued, set_partymember
 from .prison.event import prison
@@ -43,6 +44,9 @@ from .battle.core import run_chinobun
 from .lovesex import lovesex_night
 from .pregnancy import birth_hantei, nae_birth
 from .child import grow_hantei
+from .intimidation import intimidation_event, kidnapping
+from .small_tentacle import small_tentacle_hantei
+from .yobai import yobai
 
 # --- 1 ターン（JUMP ACTION_MAIN → BEGIN TURNEND の繰り返し → BEGIN SHOP）-------------------
 
@@ -113,7 +117,7 @@ def event_turnend(ctx: Ctx) -> Generator[None, int, Step]:
             continue
         st.target = i
         kojo_root(ctx, "TURNEND")  # 地の文/MESSAGE.ERB@MESSAGE_TURNEND:8–10
-    # :88–99 クズ市民による脅迫／誘拐監禁
+    # :90–101 クズ市民による脅迫／誘拐監禁（FORCE_クズ市民の脅迫.ERB、S18）
     for i in range(1, st.charanum):
         c = st.charas[i]
         if (
@@ -121,17 +125,19 @@ def event_turnend(ctx: Ctx) -> Generator[None, int, Step]:
             and c.cflag[0] in (CharaState.SAFE, 5)
             and (c.cflag[286] + c.cflag[320] + c.cflag[321]) > 0
         ):
-            raise NotImplementedError("INTIMIDATION_EVENT（クズ市民の脅迫）は未移植")
-        if c.cflag[0] == CharaState.KIDNAPPED:
-            raise NotImplementedError("KIDNAPPING（クズ市民監禁）は未移植")
+            st.target = i
+            yield from intimidation_event(ctx)
+        elif c.cflag[0] == CharaState.KIDNAPPED:
+            st.target = i
+            yield from kidnapping(ctx)
     prison(ctx)  # :103
     yield from birth_hantei(ctx)  # :105（ヒロイン関連/PREGNANT_SOURCE_NINSIN.ERB@BIRTH_HANTEI）
     yield from grow_hantei(ctx)  # :107（ヒロイン関連/PREGNANT_CHILD_BIRTH.ERB@GROW_HANTEI）
     akuoti_attack(ctx)  # :110
     yield from lovesex_night(ctx)  # :112
     self_night(ctx)  # :116
-    if config_check_event(st, 2) > 0:  # :116–117
-        yobai(ctx)
+    if config_check_event(st, 2) > 0:  # :116–117（FORCE_夜這い.ERB、S18）
+        yield from yobai(ctx)
     daily_defence_change(ctx)  # :120
     daily_popularity_change(ctx)  # :122
     if config_check_screen(st, 3) == 0:  # :125–126
@@ -416,55 +422,6 @@ def self_night(ctx: Ctx) -> None:
     st.target = saved  # :61
 
 
-def yobai(ctx: Ctx) -> None:
-    """`FORCE_夜這い.ERB@YOBAI`:8–100 の候補選び。候補がいれば YOBAI_EVENT（未移植）。"""
-    st, data = ctx.state, ctx.data
-    if st.time == 0:
-        return
-    if charanum_active(st) < 2:
-        return
-    if not any(st.charas[i].cflag[999] for i in range(1, st.charanum)):
-        return
-    if st.flag[999] == 1:
-        ctx.out.set_color((105, 105, 105))
-        ctx.out.printl("------ 夜這い判定 ------")
-        ctx.out.reset_color()
-    a = lambda c, n: c.abl[data.index_of("ABL", n)]  # noqa: E731
-    candidates = []
-    for i in range(1, st.charanum):
-        c = st.charas[i]
-        if c.cflag[999] == 0:
-            continue
-        t = lambda n: talent(data, c, n)  # noqa: E731
-        if t("繁殖袋") > 0 or t("四肢欠損") > 0:
-            continue
-        st.target = i
-        conds = (
-            t("淫核") * 3 + a(c, "Ｃ感覚") >= 3,
-            t("淫壷") * 3 + a(c, "Ｖ感覚") >= 3,
-            t("淫尻") * 3 + a(c, "Ａ感覚") >= 3,
-            t("淫乳") * 3 + a(c, "Ｂ感覚") >= 3,
-            (t("ふたなり") > 0 or t("変身時ふたなり") > 0 or is_male(data, c)) and a(c, "射精中毒") > 0,
-        )
-        if not any(conds):
-            continue
-        if c.cflag[0] != 0:
-            continue
-        l1 = (t("淫乱") > 0) * 2 + sum(int(x) for x in conds)
-        l2 = max(a(c, "欲望") + a(c, "自慰中毒") + a(c, "触手中毒"), 0)
-        local = (l1 * 2 + 22) * (125 + l2 * 10) if l1 else 0
-        if 1 <= t("交際相手") < 5:
-            local = times(local, "0.5")
-        if t("清純派"):
-            local = times(local, "0.5")
-        if t("人間不信") > 0:
-            local = times(local, "0.25")
-        if st.rng.rand(10000) < local:
-            candidates.append(i)
-    if candidates:
-        raise NotImplementedError("夜這いイベント（YOBAI_EVENT）は未移植")
-
-
 def raid_hantei(ctx: Ctx) -> None:
     """`ゲーム内_イベント発生/強制発生イベント/FORCE_襲撃or救援イベント発生.ERB@RAID_HANTEI`:9–106。"""
     st = ctx.state
@@ -729,8 +686,8 @@ def event_shop_normal(ctx: Ctx) -> Generator[None, int, None]:
 
     st, out = ctx.state, ctx.out
     yield from parasite(ctx)  # :161
-    if config_check_event(st, 1) > 0:  # :162–163
-        small_tentacle_hantei(ctx)
+    if config_check_event(st, 1) > 0:  # :162–163（FORCE_深夜の子触手襲来.ERB、S18）
+        yield from small_tentacle_hantei(ctx)
     birth_auto_random(ctx)  # :165
     st.flag[41] = 0  # :168–169
     st.flag[43] = 0
@@ -754,42 +711,6 @@ def event_shop_normal(ctx: Ctx) -> Generator[None, int, None]:
         st.flag[60] = 10000
     check_shield_all(ctx)  # :206
     st.target = st.flag[798]  # :209
-
-
-def small_tentacle_hantei(ctx: Ctx) -> None:
-    """`FORCE_深夜の子触手襲来.ERB@SMALL_TENTACLE_HANTEI`:8–74。"""
-    st, out = ctx.state, ctx.out
-    if charanum_active(st) == 0:
-        return
-    if not any(st.charas[i].cflag[999] and _ishole(ctx, i) for i in range(1, st.charanum)):
-        return
-    if st.time != 1:
-        return
-    local = st.flag[44] - sum(c.cflag[220] for c in st.charas)
-    if local < 1:
-        return
-    saved = st.target
-    d = st.flag[852]
-    for bound, n in ((1000, 3), (2500, 4), (5000, 8), (10000, 16), (15000, 32), (20000, 64)):
-        if d < bound + local * 50:
-            l2 = st.rng.rand(n)
-            break
-    else:
-        l2 = st.rng.rand(128)
-    if l2 == 0 and st.rng.rand(12 - st.flag[52] * 2) != 0:
-        _skip_event(ctx, "子触手襲来（SMALL_TENTACLE_ATTACK）")
-    elif st.rng.rand(20) == 10:
-        _skip_event(ctx, "子触手襲来（SMALL_TENTACLE_ATTACK）")
-    elif st.rng.rand(local) >= 9:
-        st.flag[44] -= 1
-        out.drawline()
-        if st.flag[52] and (st.rng.rand(st.flag[52]) != 0 or l2 != 0):
-            out.printw("子触手は防衛システムに引っかかって黒焦げにされた...")
-        elif st.rng.rand(2) == 0:
-            out.printw("子触手は何かの動物に襲われた...")
-        else:
-            out.printw("子触手は迷子になった...")
-    st.target = saved
 
 
 def _printdata(ctx: Ctx, choices: tuple[str, ...]) -> str:
