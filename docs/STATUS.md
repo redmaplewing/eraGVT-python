@@ -104,9 +104,11 @@
 
 ## 下一步
 
-- S20 候選：悪堕ち容姿（CORRUPT_CHANGE_LOOKS_MAIN／RECOVER_CORRUPTION，設定 FLAG:804 bit4 ON 時のみ）、襲撃／救援戰鬥、
-  [反撃]スタイル、狀態畫面、FLASHNEWS、ランダム命名畫面。
-- 需裁決（S19）：AKUOTI_ATTACK 在防衛力為負時的 SQRT 錯誤（原作亦錯誤停止）、悪堕ちキャラ幽閉的 PALAM_HOSEI（stale RESULT:1–11）。
+- **S20：襲撃／救援イベント戰＋使用者裁決的修正**（`docs/sessions/S20-raid-and-rulings.md`）。之後候選：悪堕ち容姿
+  （CORRUPT_CHANGE_LOOKS_MAIN／RECOVER_CORRUPTION，設定 FLAG:804 bit4 ON 時のみ）、[反撃]スタイル、狀態畫面、設定畫面／プリセット、FLASHNEWS、ランダム命名畫面。
+- 已裁決（2026-10-01）：S19 防衛力為負時 SQRT 當 0；S18 脅迫クールダウン每回合 −1、夜這い淫乳改看Ｂ感覚、奉仕補フェラ経験、
+  子触手襲擊成功時 −1（以上皆 DEVIATION，S20 實作）；S18／S19 其餘怪處照原作。
+- 待裁決：悪堕ちキャラ幽閉的 PALAM_HOSEI（stale RESULT:1–11）、夜這い HOUSHI_4 處女喪失原因寫在實行者、FONTITALIC 是否支援。
 - 已裁決（2026-09-30）：拡張度初期值照原作不設定；初期セット身體資料問題因 S10 改回預設開局而不再需要偏離；
   S13 苗床出産的 static LOSEDEF 等怪處全部照原作。
 - 口上 catalog 待擴充：改狀態的口上（hook 化）、入れ子內 $ラベル 的 GOTO（`KOJO_AEGI.ERB` $ＭＡＸ２，199 函式受影響）、SPLIT／STRDATA、未實作式中関数（覆蓋率報告）。
