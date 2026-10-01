@@ -722,10 +722,13 @@ def daily_popularity_change(ctx: Ctx) -> None:
 # --- @EVENTSHOP（通常ターン）------------------------------------------------------------
 
 
-def event_shop_normal(ctx: Ctx) -> None:
-    """`SHOP_TURNEND.ERB@EVENTSHOP`:158–215（DAY != 0）。この後 SystemProc がオートセーブ → @SHOW_SHOP。"""
+def event_shop_normal(ctx: Ctx) -> Generator[None, int, None]:
+    """`SHOP_TURNEND.ERB@EVENTSHOP`:158–215（DAY != 0）。この後 SystemProc がオートセーブ → @SHOW_SHOP。
+    PARASITE（寄生触手：共生取得・慰み者で INPUT）を呼ぶのでジェネレータ。"""
+    from .parasite import parasite
+
     st, out = ctx.state, ctx.out
-    parasite(ctx)  # :160
+    yield from parasite(ctx)  # :161
     if config_check_event(st, 1) > 0:  # :162–163
         small_tentacle_hantei(ctx)
     birth_auto_random(ctx)  # :165
@@ -751,38 +754,6 @@ def event_shop_normal(ctx: Ctx) -> None:
         st.flag[60] = 10000
     check_shield_all(ctx)  # :206
     st.target = st.flag[798]  # :209
-
-
-def parasite(ctx: Ctx) -> None:
-    """`強制発生イベント/FORCE_深夜の寄生触手暴走.ERB@PARASITE`:3–66。ループで FLAG:799 を上書きする（:9、原作どおり）。
-    共生取得・暴走・慰み者の各イベント本体は未移植（発生したら停止）。"""
-    st, data = ctx.state, ctx.data
-    if config_check_maniac(st, 3) == 0:
-        return
-    for i in range(st.charanum):
-        st.flag[799] = i
-        if i == GameState.MASTER:
-            continue
-        if st.charas[i].cflag[999] == 0:
-            continue
-        c = st.charas[i]
-        if not talent(data, c, "寄生"):  # :15、:63–64
-            continue
-        c.exp[data.index_of("EXP", "寄生経験")] += 1  # :16
-        if talent(data, c, "共生") == 0:  # :19–20
-            c.cflag[82] += 1
-        if c.cflag[0] != 0:  # :23–24
-            continue
-        if st.time == 0:  # :27–28
-            continue
-        local3 = 20 if c.cflag[83] > 0 else 50  # :31–36
-        if talent(data, c, "共生") == 0 and c.cflag[82] >= local3 and c.cflag[84] == 0:  # :37–42
-            raise NotImplementedError("共生取得イベント（SYNBIOSIS_GET_EVENT）は未移植")
-        e = c.exp[data.index_of("EXP", "寄生経験")]
-        local = min(div(e * e * 200, e), 2500)  # :45（乗除は左結合：(e*e*200)/e）
-        if st.rng.rand(10000) < local:  # :47–59
-            raise NotImplementedError("寄生触手の暴走／慰み者イベント（PARASITE_EVENT／SYNBIOSIS_EVENT）は未移植")
-        # :62 GET_STATE_EXPUP：実績のみ（deviations.md「全域資料」）
 
 
 def small_tentacle_hantei(ctx: Ctx) -> None:

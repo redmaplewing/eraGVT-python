@@ -710,33 +710,30 @@ def test_e2e_defeat_prison_shop_save_load(data):
 
 
 @pytest.mark.parametrize(
-    "time, cflag82, rng, stop",
+    "time, cflag82, rng",
     [
-        (0, 0, [], None),  # :27–28 昼は暴走判定をしない（RAND なし）
-        (1, 0, [200], None),  # :45 MIN(1*1*200/1, 2500) = 200、RAND 200 は < 200 でない
-        (1, 0, [199], "暴走"),  # :47
-        (1, 49, [], "共生取得"),  # :19–20 で 50 → :37–42
+        (0, 0, []),  # :28–29 昼は暴走判定をしない（RAND なし）
+        (1, 0, [200]),  # :46 MIN(1*1*200/1, 2500) = 200、RAND 200 は < 200 でない
     ],
 )
-def test_parasite_after_rescue(ctx, data, time, cflag82, rng, stop):
-    """`強制発生イベント/FORCE_深夜の寄生触手暴走.ERB@PARASITE`:3–66：PRISON_COM301 で寄生された救出後のキャラ。"""
+def test_parasite_after_rescue(ctx, data, time, cflag82, rng):
+    """`強制発生イベント/FORCE_深夜の寄生触手暴走.ERB@PARASITE`:3–68：PRISON_COM301 で寄生された救出後のキャラ。
+    暴走・共生取得の本体は S17（tests/test_parasite.py）。"""
+    from eragvt.game.parasite import parasite
+
     st = ctx.state
     c = st.charas[2]
     c.talent[ti(data, "寄生")] = 1
     c.cflag[82] = cflag82
     st.time = time
     st.rng = FixedRng(rng)
-    if stop:
-        with pytest.raises(NotImplementedError, match=stop):
-            turnend.parasite(ctx)
-    else:
-        turnend.parasite(ctx)
-    assert c.exp[ei(data, "寄生経験")] == 1  # :16
-    assert c.cflag[82] == cflag82 + 1  # :19–20
+    assert list(parasite(ctx)) == []
+    assert c.exp[ei(data, "寄生経験")] == 1  # :17
+    assert c.cflag[82] == cflag82 + 1  # :20–21
 
 
 def test_session_halts_on_eventshop_stop(data, monkeypatch):
-    """@EVENTSHOP 内の未移植イベント（寄生触手の暴走など）は例外で落とさず「停止」にする。"""
+    """@EVENTSHOP 内の未移植イベントは例外で落とさず「停止」にする。"""
     s = GameSession(data, Path(tempfile.mkdtemp()), rng=GameRng(1))
     s.input(0)
     s.input(1)  # 初期セット『特装戦隊』で開始
@@ -744,7 +741,7 @@ def test_session_halts_on_eventshop_stop(data, monkeypatch):
     def boom(*a, **k):
         raise NotImplementedError("テスト用")
 
-    monkeypatch.setattr(shop, "event_shop", boom)
+    monkeypatch.setattr(shop, "event_shop_gen", boom)
     s.begin_shop(called_when_normal=True)
     assert s.phase == Phase.HALTED
     assert "（未實作のため停止しました：テスト用）" in texts(s.out)

@@ -343,7 +343,7 @@ def test_event_shop_income_and_news(ctx, monkeypatch, gameover, income):
     st.flag[60] = 0
     if gameover:
         shop.change_gameover_mode(st)
-    turnend.event_shop_normal(ctx)
+    list(turnend.event_shop_normal(ctx))
     assert st.day[0] == 2
     assert bool(rec) is income  # :186–188
     assert st.flag[60] == (10001 if gameover else 0)  # :199–200（FLAG:101 = 0）

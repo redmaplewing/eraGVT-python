@@ -194,3 +194,11 @@ ERB 路徑相對 `source/earGVP/ERB/`。
   `COM_ATTACK_COMMON.ERB`:218–221 秘められし力的「隠し補正」加在 RESULT 上，隨即被 `CALL DAMAGE` 覆寫 → 無效；
   [反撃]バーストの蓄積ダメージ TCVARn:205 只在 ＥＸ反撃（`HANGEKI_STYLE.ERB`:67，未移植）增加，限度 TCVARn:206 只在狀態列顯示
   （`STATUS_PRINT_CHARGE`）時計算；ＳＰフルバースト在変身能力ありのキャラ不看ゲージ（`COMABLE.ERB`:808–815 原作註解自承）。
+- S17 寄生系統照原作的怪處（`強制発生イベント/FORCE_深夜の寄生触手暴走.ERB`，Python：`eragvt.game.parasite`）：
+  PARASITE_ACTION／SYNBIOSIS_ABL_UP 的「精液経験 10／フェラ経験 2」兩行都寫 `LOCAL:123`（:232–234、:1076–1078）→ 只有精液経験 +2、
+  フェラ経験不增加；快B 表只有第一個條件看 Ｂ感覚，`ELSEIF` 以下看 Ｃ感覚（:173–185、:1022–1034）；処女喪失直接寫 `TALENT:処女 = -1`・
+  `CFLAG:206 = 4`，不呼叫 LOSTVIRGIN（無喪失地の文、心境變化）；`PARASITE` 的 `LOCAL:2`（:50–52）靜態不歸 0 → 只有讀檔／開局後第一次
+  暴走・慰み者前出 DRAWLINE；`SYNBIOSIS_GET_EVENT` 的 INPUT 不檢查值（0／9 以外都當「いいえ」，1 以外走「永久」文面但 CFLAG:84 只在 9 設定）；
+  夜這い的對象輸入接受 `0 < RESULT < CHARANUM` 的任何角色番號（:655，含名單外、實行者自己）；`PRINT_CHARA_LIST` 的年上判定
+  `TOSHIUE_F(TARGET, …)` 用 TARGET 而非實行者（:834／:851／:868），只有「いとこ」時括號不閉合（:931）；
+  `SYNBIOSIS_OUT_OF_CONTROL_EVENT`（:542–565）的兩個呼叫處（:411／:420）原作已註解掉 → 無呼叫者，不移植。

@@ -204,12 +204,19 @@ def lb(out: TextOutput) -> None:
 
 
 def event_shop(state: GameState, data: GameData, out: TextOutput, narration: NarrationService) -> None:
-    """`インターミッション画面/SHOP_TURNEND.ERB@EVENTSHOP`:141–。通常ターン（DAY != 0）は `turnend.event_shop_normal`。"""
+    """`event_shop_gen` を入力なしで最後まで実行する（INPUT を要求されたら RuntimeError：その経路は session が駆動する）。"""
+    for _ in event_shop_gen(state, data, out, narration):
+        raise RuntimeError("@EVENTSHOP が INPUT を要求した（GameSession.begin_shop で駆動すること）")
+
+
+def event_shop_gen(state: GameState, data: GameData, out: TextOutput, narration: NarrationService):
+    """`インターミッション画面/SHOP_TURNEND.ERB@EVENTSHOP`:141–。通常ターン（DAY != 0）は `turnend.event_shop_normal`
+    （S17：寄生触手のイベントが INPUT を使うのでジェネレータ）。"""
     if state.day[0] != 0:
         from .action import Ctx
         from .turnend import event_shop_normal
 
-        event_shop_normal(Ctx(state, data, out, narration))
+        yield from event_shop_normal(Ctx(state, data, out, narration))
         return
     state.day[0] = 1
     state.time = 0

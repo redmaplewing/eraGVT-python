@@ -31,7 +31,7 @@ class Phase(str, Enum):
     NEW_GAME = "new_game"  # 開局経路の選択（モード選択・キャラメイク画面の代わり）
     SHOP = "shop"
     ACTION_CONFIRM = "action_confirm"
-    TURN = "turn"  # ACTION_MAIN〜TURNEND 中の INPUT 待ち
+    TURN = "turn"  # ACTION_MAIN〜TURNEND・@EVENTSHOP 中の INPUT 待ち
     HALTED = "halted"  # 未移植の処理に到達して停止（タイトルに戻るしかない）
     SAVE_SELECT = "save_select"
     SAVE_OVERWRITE = "save_overwrite"
@@ -60,6 +60,7 @@ class GameSession:
         self._save_target = -1
         self._load_from_title = False
         self._turn: Generator[None, int, None] | None = None
+        self._turn_done: Callable[[], None] = lambda: None
         self.begin_title()
 
     # --- 画面 -------------------------------------------------------------------
@@ -149,12 +150,16 @@ class GameSession:
     # --- SHOP（SystemProc@beginShop:614–628、@endCallEventShop:630–640、@endAutoSave:670–680）
 
     def begin_shop(self, called_when_normal: bool) -> None:
+        """@EVENTSHOP はジェネレータ（S17：寄生触手のイベントが INPUT を使う）。INPUT 待ちの間は Phase.TURN。"""
         assert self.state is not None
         try:
-            shop.event_shop(self.state, self.data, self.out, self.narration)
-        except NotImplementedError as exc:  # @EVENTSHOP 内の未移植イベント（寄生触手の暴走など）
+            gen = shop.event_shop_gen(self.state, self.data, self.out, self.narration)
+        except NotImplementedError as exc:  # @EVENTSHOP 内の未移植イベント
             self._halt(exc)
             return
+        self._run_gen(gen, lambda: self._after_event_shop(called_when_normal))
+
+    def _after_event_shop(self, called_when_normal: bool) -> None:
         if AUTOSAVE and called_when_normal:
             self._autosave()
         self._show_shop()
@@ -224,7 +229,15 @@ class GameSession:
     def _begin_action_main(self) -> None:
         """JUMP ACTION_MAIN（SHOP.ERB:557）→ 各キャラの行動 → @EVENTTURNEND → BEGIN SHOP。"""
         assert self.state is not None
-        self._turn = run_turn(Ctx(self.state, self.data, self.out, self.narration))
+        # BEGIN SHOP（EVENTTURNEND 実行中の SystemState は Normal：SystemProc@beginTurnend:609–611）
+        # → calledWhenNormal = true（Process.State.cs@Begin:271–273）→ オートセーブあり（SystemProc:633）
+        self._run_gen(run_turn(Ctx(self.state, self.data, self.out, self.narration)),
+                      lambda: self.begin_shop(called_when_normal=True))
+
+    def _run_gen(self, gen: Generator[None, int, None], done: Callable[[], None]) -> None:
+        """INPUT を yield するジェネレータを駆動する。終了したら `done`。"""
+        self._turn = gen
+        self._turn_done = done
         self._advance_turn(None)
 
     def _turn_input(self, value: int) -> None:
@@ -238,10 +251,8 @@ class GameSession:
             else:
                 self._turn.send(value)
         except StopIteration:
-            # BEGIN SHOP（EVENTTURNEND 実行中の SystemState は Normal：SystemProc@beginTurnend:609–611）
-            # → calledWhenNormal = true（Process.State.cs@Begin:271–273）→ オートセーブあり（SystemProc:633）
             self._turn = None
-            self.begin_shop(called_when_normal=True)
+            self._turn_done()
             return
         except NotImplementedError as exc:
             self._turn = None

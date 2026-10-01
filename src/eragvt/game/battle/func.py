@@ -22,6 +22,7 @@ from .core import (
     P_HANGEKI,
     percent_cal,
     print_distance,
+    run_chinobun,
     seikaku_hosei_palam,
     t,
     tc,
@@ -189,8 +190,16 @@ def act_limit(ctx: Ctx) -> int:
             kojo_root(ctx, "BATTLE_DISACTION_TORIKO")
             ctx.out.printw()
             return 1
-    if t(ctx, c, "寄生") == 1:
-        raise NotImplementedError("ACT_LIMIT：寄生による行動制限は未移植")
+    if t(ctx, c, "寄生") == 1:  # COMMON_BATTLE_FUNC.ERB:226–255
+        local = st.rng.rand(200) if t(ctx, c, "共生") == 1 else st.rng.rand(100)  # :228–233 共生なら確率半減
+        if local < 6:
+            _land_and_print(ctx)  # :237–245
+            # :247 MESSAGE_BATTLE_DISACTION_PARASITE（地の文/MESSAGE_BATTLE.ERB:2023–2029）
+            run_chinobun(ctx, "MESSAGE_BATTLE_DISACTION_PARASITE",
+                         fallback=lambda: (kojo_root(ctx, "BATTLE_DISACTION_PARASITE"), ctx.out.printw()))
+            if enemy_type_check(st, "AKUOTI") == 1:  # :249–250（MESSAGE_OTHER.ERB:687–692：口上のみ）
+                run_chinobun(ctx, "MESSAGE_OTHER_BATTLE_DISACTION_PARASITE")
+            return 1
     if t(ctx, c, "妊娠") in (4, 5) and c.cflag[222] >= 56:  # COMMON_BATTLE_FUNC.ERB:256–272 妊娠後期
         if st.rng.rand(100) < 3 + isqrt(div(c.cflag[222], 4)):
             _land_and_print(ctx)

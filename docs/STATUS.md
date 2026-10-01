@@ -1,6 +1,6 @@
 # 現況（唯一真相，≤150 行）
 
-更新：2026-10-01（S16）
+更新：2026-10-01（S17）
 
 ## 已完成
 
@@ -62,23 +62,30 @@
   （CHARA_SHINKYOU／CHARA_STATE_CHANGE／HANTEI／CORRECTION_TRANS／EVENTCOMEND 的 SP ゲージと解除／PALAM_UP／ENEMY_ACTION）逐一對照，
   皆已照原文。怪處見 deviations「原作行為」S16。測試共 970 個（新增 `tests/test_sp_burst.py` 94）。
 
-## S16 模擬（`tools/sim.py` 的 `run_one`，seed 0–249，`--max-shop 200`；4 行程並列；seed 0–2 與逐次執行一致）
+- **S17** 寄生系統。新模組 `game.parasite`：`FORCE_深夜の寄生触手暴走.ERB` 的 PARASITE／PARASITE_EVENT／PARASITE_ACTION／
+  SYNBIOSIS_GET_EVENT（INPUT）／SYNBIOSIS_EVENT（INPUT）／SOLO／YOBAI_EVENT（INPUT）／YOBAI_ACTION／CHECK_SYNBIOSIS_YOBAI_TARGET／
+  PRINT_CHARA_LIST／SYNBIOSIS_ABL_UP（本文 Python 移植，同 S15；OUT_OF_CONTROL 原作無呼叫者不移植）。`@EVENTSHOP` 改為 generator
+  （`shop.event_shop_gen`，session 以 Phase.TURN 收 INPUT，結束後オートセーブ → SHOW_SHOP；`shop.event_shop` 為無輸入包裝）。
+  ACT_LIMIT 寄生分岐（共生は RAND:200）＋地の文 `MESSAGE_(OTHER_)BATTLE_DISACTION_PARASITE`（catalog）；`_ABLUP` 寄生ふたなり的定着／
+  消失（`MESSAGE_GETTALENT_HUTANARI4`／`MESSAGE_LOSETALENT_HUTANARI`，catalog）。已移植檔案中 TALENT:寄生／共生 的其他讀取逐一對照
+  （hantei 直擊率、COM_ATTACK_COMMON CRT、COMF0／5／7 回復、NINSIN、ISTENTACLER…皆已照原文；其餘在悪堕ちキャラ戰／PASTIME／
+  SUCCESSION／DRUG_PREPARATION／狀態畫面等未移植處）。怪處見 deviations「原作行為」S17。測試共 1011 個（新增 `tests/test_parasite.py` 43）。
 
-ＳＰ変身・ＳＰバースト・ＳＰフルバースト・COM17 的停止全部消失。
+## S17 模擬（`tools/sim.py` 的 `run_one`，seed 0–249，`--max-shop 200`；4 行程並列）
 
-| 指標 | 預設 S15 | 預設 S16 | 初期セット S15 | 初期セット S16 |
+| 指標 | 預設 S16 | 預設 S17 | 初期セット S16 | 初期セット S17 |
 |---|---:|---:|---:|---:|
-| 停止前 SHOP 次數（平均／最多） | 175.74／201 | 201.00／201 | 150.64／201 | 200.29／201 |
-| ゲームオーバーモード進入局／進入後 SHOP 平均（最多） | 217／186.44（197） | 250／186.46（197） | 184／187.74（197） | 249／187.39（197） |
-| 敗北局／敗北後 SHOP 平均 | 239／175.30 | 250／192.81 | 220／162.14 | 250／192.26 |
+| 停止前 SHOP 次數（平均／最多） | 201.00／201 | 201.00／201 | 200.29／201 | 201.00／201 |
+| ゲームオーバーモード進入局／進入後 SHOP 平均（最多） | 250／186.46（197） | 250／186.46（197） | 249／187.39（197） | 250／187.35（197） |
+| 敗北局／敗北後 SHOP 平均 | 250／192.81 | 250／192.81 | 250／192.26 | 250／192.97 |
 
-- 停止原因：預設 上限 250（全局）；初期セット 上限 249、`ACT_LIMIT：寄生による行動制限は未移植` 1（seed 101，S16 後才走到的既存停止點）。
-- 新路徑實際執行次數（計數用包裝，次數／局數）：預設 COM70 14／14、COM73 12／12、COM74 3／3、バースト攻撃 7／5；
-  初期セット COM70 29／29、COM73 36／35、COM74 9／9、バースト攻撃 8／7。
+- 停止原因：兩者皆上限 250（全局），停止點歸零（seed 101 的 ACT_LIMIT 寄生已通過，`test_tokusou_seed101_no_longer_halts`）。
+- 寄生事件實際觸發：ACT_LIMIT 寄生 初期セット 1 次／1 局（seed 101）、預設 0；夜間的暴走・共生取得・慰み者・夜這い・寄生ふたなり 0 次
+  （已移植路徑中寄生只來自幽閉 PRISON_COM301，救出後且 CFLAG:0 = 0 的夜才判定；ゲームオーバーモード中全員幽閉）。這些路徑以單元測試＋session 測試覆蓋。
 
 ## 下一步
 
-- **S17：寄生系統**（`docs/sessions/S17-parasite.md`）。之後候選：[反撃]スタイル（ＥＸ反撃・HANGEKI_TO_TENTACLE；S16 已接バースト側）、悪堕ちキャラ（AKUOTI_EVENT）、
+- 下一階段候選：[反撃]スタイル（ＥＸ反撃・HANGEKI_TO_TENTACLE；S16 已接バースト側）、悪堕ちキャラ（AKUOTI_EVENT）、
   クズ市民の脅迫（INTIMIDATION_EVENT：S15 起 CFLAG:286 會增加，但需設定「クズ市民による幽閉」ON 才觸發）、狀態畫面、FLASHNEWS、
   ランダム命名畫面。
 - 已裁決（2026-09-30）：拡張度初期值照原作不設定；初期セット身體資料問題因 S10 改回預設開局而不再需要偏離；
@@ -88,12 +95,12 @@
 
 ## 仍會停止的分岐（`NotImplementedError` → Web 停止）
 
-頻度見上方 S16 模擬。其餘登記但罕見：
+頻度見上方 S17 模擬（隨機模擬中已無停止）。其餘登記但罕見：
 - 幽閉：ラスボス／悪堕ちキャラ 的幽閉、容貌變化（設定 ON）、RECOVER_CORRUPTION、TS 性別變化、ラスボス出現後的淫紋陥落。
 - 妊娠・子供（S13）：TS 変身キャラ妊娠時的女體化（TS_MtoF）、子供名字／変身後名／かけ声／名乗り的手入力（INPUTS）與ランダム命名畫面、
   デバッグモード的妊娠確率輸入。
-- TURNEND：AKUOTI_EVENT（悪堕ちキャラが抽選に當選）、ENDING_1 的エンドレス分岐、寄生触手的暴走／共生取得、INTIMIDATION／KIDNAPPING。
-- 指令：47 説得する、反擊（[反撃]スタイル、`HANGEKI_TO_TENTACLE`）、ACT_LIMIT 的寄生行動制限。
+- TURNEND：AKUOTI_EVENT（悪堕ちキャラが抽選に當選）、ENDING_1 的エンドレス分岐、INTIMIDATION／KIDNAPPING。
+- 指令：47 説得する、反擊（[反撃]スタイル、`HANGEKI_TO_TENTACLE`）。
 - ステータス PALAM 表示（FLAG:801 bit 5）、素股焦らし失敗的處女喪失、觸手服／觸手拘束具、
   悪堕ち／雜魚／クズ市民／ラスボス／事件戰／エンドレス、デバッグ模式、`HATUJOU_TO_HAIRAN` 地の文。
 

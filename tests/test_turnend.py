@@ -358,7 +358,9 @@ def test_small_tentacle(ctx):
 
 
 def test_parasite_overwrites_flag799(ctx):
-    turnend.parasite(ctx)
+    from eragvt.game.parasite import parasite
+
+    list(parasite(ctx))
     assert ctx.state.flag[799] == 3  # FORCE_深夜の寄生触手暴走.ERB:8–9
 
 

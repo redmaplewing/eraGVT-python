@@ -5,11 +5,11 @@
 
 from __future__ import annotations
 
-from ..action import Ctx, config_check_other, print_callname, print_transcallname
+from ..action import Ctx, config_check_other, kojo_root, print_callname, print_transcallname
 from ..chara_common import is_female, is_male
 from ..era import div
 from ...state.character import Character
-from .core import exp, mark, t, tc
+from .core import exp, mark, run_chinobun, t, tc
 
 # 各 @ABL_UP_n の段階表：レベル L→L+1 に必要な (JUEL 名, 量) と (EXP 名, 最低値)、Lv3→4／4→5 で異常経験が要るか。
 # 値は ABL_UP_CHECK.ERB の各行（コメントに行番号）。
@@ -382,10 +382,20 @@ def _talents(ctx: Ctx, c: Character) -> None:
         _talent_message(ctx, ("快楽を知った{n}の心は貞操観念を見失い", "かつての清純さは見る影もなくなってしまった・・・"),
                         301, "を失った", "LOSETALENT_SEIJUNHA")
     # :408–422 ふたなり
-    if (tl("ふたなり") == 2 or tl("変身時ふたなり") == 2) and (
-        a("射精中毒") >= 5 or exp(ctx, c, "射精経験") - c.cflag[39] >= 10
-    ):
-        raise NotImplementedError("寄生ふたなりの定着／消失は未移植")
+    # :408–414 ふたなりの定着（地の文は代入の前：MESSAGE_SEX.ERB:1768–1780 は TALENT:ふたなり == 1 かで文が変わる）
+    if (tl("ふたなり") == 2 or tl("変身時ふたなり") == 2) and a("射精中毒") >= 5:
+        run_chinobun(ctx, "MESSAGE_GETTALENT_HUTANARI4", fallback=lambda: kojo_root(ctx, "GETTALENT_HUTANARI4"))
+        if tl("ふたなり") == 2:
+            set_t("ふたなり", 4)
+        if tl("変身時ふたなり") == 2:
+            set_t("変身時ふたなり", 4)
+    # :416–422 寄生ふたなりの消失（CFLAG:39 = 寄生ふたなり射精値。定着した直後は 4 なので不成立）
+    if (tl("ふたなり") == 2 or tl("変身時ふたなり") == 2) and exp(ctx, c, "射精経験") - c.cflag[39] >= 10:
+        if tl("ふたなり") == 2:
+            set_t("ふたなり", 0)
+        if tl("変身時ふたなり") == 2:
+            set_t("変身時ふたなり", 0)
+        run_chinobun(ctx, "MESSAGE_LOSETALENT_HUTANARI", fallback=lambda: kojo_root(ctx, "LOSETALENT_HUTANARI2"))
     # :425–440 感度
     for part in ("Ｖ", "Ａ", "Ｂ", "Ｃ"):
         if tl(f"{part}鈍感") == 1 and a(f"{part}感覚") >= 3:
