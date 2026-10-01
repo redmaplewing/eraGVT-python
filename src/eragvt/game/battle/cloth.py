@@ -356,12 +356,11 @@ def _attacker_prefix(ctx: Ctx) -> None:
     """MESSAGE_BATTLE_CLOTH_*:1544–1550 の「敵名 の攻撃により、」。"""
     from .core import tentacle_access
 
+    from .core import print_enemy_prefix
+
     st = ctx.state
     if st.tflag[0] >= 0:
-        if enemy_type_check(st, "AKUOTI") == 0:
-            tentacle_access(ctx, "NAME")
-        else:
-            raise NotImplementedError("悪堕ちキャラ戦の地の文は未移植")
+        print_enemy_prefix(ctx)
         ctx.out.print("の攻撃により、")
 
 
@@ -402,6 +401,10 @@ def cloth_battle_damage(ctx: Ctx, arg: int, arg1: int = 0) -> None:
         out.printl("アウターの機能が完全に失われた！")
         kojo_root(ctx, "BATTLE_CLOTH_OUTERBREAK")
         out.printl()
+        if enemy_type_check(st, "AKUOTI") == 1:
+            from .core import msg_other
+
+            msg_other(ctx, "BATTLE_CLOTH_OUTERBREAK")
     elif l0 >= cl[OUTER_DEF] and percent_cal(v[outer], v[outer_max]) < cl[OUTER_DEF] and v[outer_max] > 0:
         _attacker_prefix(ctx)  # MESSAGE_BATTLE_CLOTH_OUTERDAMAGE:1543–1560
         out.printl(f"{name}の{costume_name(ctx, st.target)}の端々が破れ始めた・・・")
@@ -411,8 +414,16 @@ def cloth_battle_damage(ctx: Ctx, arg: int, arg1: int = 0) -> None:
             out.printl("アウターの下着防護機能が失われた！")
         kojo_root(ctx, "BATTLE_CLOTH_OUTERDAMAGE")
         out.printl()
+        if enemy_type_check(st, "AKUOTI") == 1:
+            from .core import msg_other
+
+            msg_other(ctx, "BATTLE_CLOTH_OUTERDAMAGE")
     if l1 and v[25] <= 0 and v[24] > 0:
         _inner_break_message(ctx)
+        if enemy_type_check(st, "AKUOTI") == 1:
+            from .core import msg_other
+
+            msg_other(ctx, "BATTLE_CLOTH_INNERBREAK")
     elif l1 >= cl[INNER_DEF] and percent_cal(v[25], v[24]) < cl[INNER_DEF] and v[24] > 0:
         _attacker_prefix(ctx)  # MESSAGE_BATTLE_CLOTH_INNERDAMAGE:1579–1597
         out.print(f"{name}の{inner_name(ctx, st.target)}")
@@ -423,6 +434,10 @@ def cloth_battle_damage(ctx: Ctx, arg: int, arg1: int = 0) -> None:
         out.printl("インナーの挿入抵抗機能が失われた！")
         kojo_root(ctx, "BATTLE_CLOTH_INNERDAMAGE")
         out.printl()
+        if enemy_type_check(st, "AKUOTI") == 1:
+            from .core import msg_other
+
+            msg_other(ctx, "BATTLE_CLOTH_INNERDAMAGE")
 
 
 def _inner_break_message(ctx: Ctx) -> None:
@@ -435,10 +450,9 @@ def _inner_break_message(ctx: Ctx) -> None:
     name = print_transcallname(st, st.target)
     items = ctx.data.items
     if st.tflag[0] >= 0:
-        if enemy_type_check(st, "AKUOTI") == 0:
-            tentacle_access(ctx, "NAME")
-        else:
-            raise NotImplementedError("悪堕ちキャラ戦の地の文は未移植")
+        from .core import print_enemy_prefix
+
+        print_enemy_prefix(ctx)
         out.print("の攻撃により、")
         if c.cflag[42] == 398:
             iname = items[398].name if 398 in items else ""

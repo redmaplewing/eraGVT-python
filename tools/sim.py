@@ -14,11 +14,16 @@
 S18：各強制發生事件的實際觸發次數（`install_event_counters`：包裝模組函式計數，不改變遊戲行為）。
 `--enable-intimidation` 在開局後把 FLAG:804 bit10（`CONFIG_CHECK_PRISON_F(10)`「クズ市民による幽閉」）打開
 （基本セットは OFF：脅迫イベントは起きない）。
+
+S19：`--enable-akuoti` は開局後に FLAG:804 bit1（`CONFIG_CHECK_PRISON_F(1)`：陥落時に洗脳／悪堕ち）と bit9
+（`CONFIG_CHECK_PRISON_F(9)`：洗脳ではなく悪堕ち）を打開（PRISON.ERB:335–357；基本セットは FLAG:804 = 1 で両方 OFF、
+陥落しても悪堕ちキャラは生まれない）。悪堕ちキャラの淫謀・洗脳／悪堕ちキャラ戦の次数も数える。
 """
 
 from __future__ import annotations
 
 import argparse
+import json
 import random
 import sys
 import tempfile
@@ -87,11 +92,54 @@ def install_event_counters() -> Counter:
     wrap(small_tentacle, "small_tentacle_attack", after=lambda ctx, snap: counts.update(["子触手襲来（ATTACK）"]))
     wrap(small_tentacle, "small_prison_event", after=lambda ctx, snap: counts.update(["子触手襲来（成功）"]))
     wrap(small_tentacle, "small_prison_com", after=lambda ctx, snap, arg: counts.update([f"子触手 SMALL_PRISON_COM {arg}"]))
+
+    # S19：悪堕ちキャラ関連（いずれも通常の関数）
+    from eragvt.game import akuoti
+    from eragvt.game.battle import encount, source_check
+
+    def wrap_plain(mod, name, after):
+        orig = getattr(mod, name)
+
+        def w(ctx, *a, **k):
+            r = orig(ctx, *a, **k)
+            after(ctx, r)
+            return r
+
+        setattr(mod, name, w)
+
+    def enc_after(ctx, r):
+        if r:
+            kind = {2: "洗脳", 3: "悪堕ち"}.get(ctx.state.charas[ctx.state.flag[111]].cflag[0], "?")
+            counts[f"{kind}キャラ戦（ENCOUNT_ENEMY）"] += 1
+
+    wrap_plain(akuoti, "akuoti_event", lambda ctx, r: counts.update(["悪堕ちキャラの淫謀（AKUOTI_EVENT）"]))
+    wrap_plain(encount, "encount_enemy", enc_after)
+    wrap_plain(source_check, "_victory_akuoti", lambda ctx, r: counts.update(["洗脳／悪堕ちキャラ戦 勝利"]))
+    orig_lose = source_check._battle_lose
+
+    def lose(ctx, *a, **k):
+        if ctx.state.flag[110] > 0:  # 敗北処理は BEGIN AFTERTRAIN（例外）で抜けるので先に数える
+            counts["洗脳／悪堕ちキャラ戦 敗北"] += 1
+        return orig_lose(ctx, *a, **k)
+
+    source_check._battle_lose = lose
     return counts
 
 
+def _corrupt(state, data, who: int) -> None:
+    """`--corrupt N`（テスト用の初期状態）：キャラ N を開局時点で悪堕ち（CFLAG:0 = 3）にする。支配者はボス 1
+    （CFLAG:20 = 0〔ボス〕、CFLAG:21 = 1：PRISON.ERB:335–388 の陥落と同じ持ち方）、陥落経験 +1、CFLAG:23 = 0。
+    口上・容姿変更・経験値付与などの陥落時演出は通さない（原作の途中経過ではない人工的な状態）。"""
+    c = state.charas[who]
+    c.cflag[0] = 3
+    c.cflag[20] = 0
+    c.cflag[21] = 1
+    c.cflag[23] = 0
+    c.exp[data.index_of("EXP", "陥落経験")] += 1
+
+
 def run_one(data, narration, seed: int, preset: str, max_shop: int, max_steps: int, save_dir: Path,
-            enable_intimidation: bool = False, setup=None) -> dict:
+            enable_intimidation: bool = False, setup=None, enable_akuoti: bool = False, corrupt: int = 0) -> dict:
     """`setup(state)`：開局直後に状態を変える（テスト用）。"""
     policy = random.Random(seed)
     s = GameSession(data, save_dir, rng=GameRng(seed), narration=narration)
@@ -99,6 +147,10 @@ def run_one(data, narration, seed: int, preset: str, max_shop: int, max_steps: i
     s.input(0 if preset == "default" else 1)
     if enable_intimidation:
         s.state.flag[804] |= 1 << 10
+    if enable_akuoti:
+        s.state.flag[804] |= (1 << 1) | (1 << 9)
+    if corrupt:
+        _corrupt(s.state, data, corrupt)
     if setup is not None:
         setup(s.state)
     shops = 0
@@ -144,6 +196,35 @@ def run_one(data, narration, seed: int, preset: str, max_shop: int, max_steps: i
     return {"seed": seed, "reason": reason, "shops": shops, "defeated_at": defeated_at, "gameover_at": gameover_at}
 
 
+def summarize(results: list[dict], preset: str, key_len: int = 40) -> None:
+    """停止原因・SHOP 次數・事件次數の集計を表示（`--load` で分割実行の結果を合算するときも使う）。"""
+    counts: Counter = Counter()
+    games_with: Counter = Counter()
+    for r in results:
+        counts.update(r.get("events", {}))
+        games_with.update(r.get("events", {}).keys())
+    n = len(results)
+    shops = [r["shops"] for r in results]
+    lost = [r for r in results if r["defeated_at"] is not None]
+    print(f"preset={preset} games={n}")
+    print(f"SHOP 次數：平均 {sum(shops) / n:.2f}／最多 {max(shops)}")
+    after = [r["shops"] - r["defeated_at"] for r in lost]
+    print(f"敗北局 {len(lost)}" + (f"／敗北後 SHOP 平均 {sum(after) / len(after):.2f}" if after else ""))
+    go = [r for r in results if r["gameover_at"] is not None]
+    go_after = [r["shops"] - r["gameover_at"] for r in go]
+    print(f"ゲームオーバーモード進入 {len(go)}" + (f"／進入後 SHOP 平均 {sum(go_after) / len(go_after):.2f}／最多 {max(go_after)}" if go else ""))
+    print("停止原因：")
+    for k, v in Counter(r["reason"][: key_len] for r in results).most_common():
+        print(f"  {v:4d}  {k}")
+    print("強制發生事件（總次數／發生局數）：" if counts else "強制發生事件：なし")
+    for k in sorted(counts):
+        print(f"  {counts[k]:5d}／{games_with[k]:3d}  {k}")
+    if go:
+        print("停止原因（ゲームオーバーモード進入局）：")
+        for k, v in Counter(r["reason"][: key_len] for r in go).most_common():
+            print(f"  {v:4d}  {k}")
+
+
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser()
     p.add_argument("--preset", choices=("default", "tokusou"), default="default")
@@ -153,7 +234,18 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--key-len", type=int, default=40)
     p.add_argument("--verbose", action="store_true")
     p.add_argument("--enable-intimidation", action="store_true")
+    p.add_argument("--enable-akuoti", action="store_true")
+    p.add_argument("--dump", help="各局の結果を JSON Lines で書き出す（分割実行用）")
+    p.add_argument("--load", nargs="+", help="--dump の出力を読んで合算表示だけする")
+    p.add_argument("--corrupt", type=int, default=0, help="開局時に悪堕ちにするキャラ番号（テスト用）")
     a = p.parse_args(argv)
+    if a.load:
+        results = []
+        for path in a.load:
+            with open(path, encoding="utf-8") as fp:
+                results.extend(json.loads(line) for line in fp if line.strip())
+        summarize(results, a.preset, a.key_len)
+        return 0
     counts = install_event_counters()
     games_with: Counter = Counter()
     data = load_game_data(default_csv_dir())
@@ -162,32 +254,18 @@ def main(argv: list[str] | None = None) -> int:
     with tempfile.TemporaryDirectory() as tmp:
         for seed in _parse_seeds(a.seeds):
             before = Counter(counts)
-            r = run_one(data, narration, seed, a.preset, a.max_shop, a.max_steps, Path(tmp), a.enable_intimidation)
+            r = run_one(data, narration, seed, a.preset, a.max_shop, a.max_steps, Path(tmp), a.enable_intimidation,
+                        enable_akuoti=a.enable_akuoti, corrupt=a.corrupt)
             r["events"] = dict(counts - before)
             games_with.update(r["events"].keys())
             results.append(r)
             if a.verbose:
                 print(r, flush=True)
-    n = len(results)
-    shops = [r["shops"] for r in results]
-    lost = [r for r in results if r["defeated_at"] is not None]
-    print(f"preset={a.preset} games={n}")
-    print(f"SHOP 次數：平均 {sum(shops) / n:.2f}／最多 {max(shops)}")
-    after = [r["shops"] - r["defeated_at"] for r in lost]
-    print(f"敗北局 {len(lost)}" + (f"／敗北後 SHOP 平均 {sum(after) / len(after):.2f}" if after else ""))
-    go = [r for r in results if r["gameover_at"] is not None]
-    go_after = [r["shops"] - r["gameover_at"] for r in go]
-    print(f"ゲームオーバーモード進入 {len(go)}" + (f"／進入後 SHOP 平均 {sum(go_after) / len(go_after):.2f}／最多 {max(go_after)}" if go else ""))
-    print("停止原因：")
-    for k, v in Counter(r["reason"][: a.key_len] for r in results).most_common():
-        print(f"  {v:4d}  {k}")
-    print("強制發生事件（總次數／發生局數）：" if counts else "強制發生事件：なし")
-    for k in sorted(counts):
-        print(f"  {counts[k]:5d}／{games_with[k]:3d}  {k}")
-    if go:
-        print("停止原因（ゲームオーバーモード進入局）：")
-        for k, v in Counter(r["reason"][: a.key_len] for r in go).most_common():
-            print(f"  {v:4d}  {k}")
+    if a.dump:
+        with open(a.dump, "w", encoding="utf-8", newline="\n") as fp:
+            for r in results:
+                fp.write(json.dumps(r, ensure_ascii=False) + "\n")
+    summarize(results, a.preset, a.key_len)
     return 0
 
 

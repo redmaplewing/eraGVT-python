@@ -1,6 +1,7 @@
 """命中・回避・撤退の判定とダメージ計算：`ゲーム内_戦闘処理/COMMON_BATTLE_HANTEI.ERB`。
 
-路徑相對 `source/earGVP/ERB/`。敵が触手（FLAG:111 == 0）の分岐のみ移植（悪堕ちキャラ戦は未移植）。
+路徑相對 `source/earGVP/ERB/`。敵が触手（FLAG:111 == 0）と洗脳／悪堕ちキャラ（FLAG:111 != 0、S19）の分岐。
+悪堕ちキャラ戦で `TENTACLE_ACCESS` を呼ばない（:115–131 等の `IF FLAG:111 == 0`）。
 """
 
 from __future__ import annotations
@@ -39,9 +40,30 @@ from .func import get_air_strike, get_brave_hit, get_chain_hit, get_counter_atta
 _RANGE_DIST = {"ATTACK_RANGE_SHORT": 0, "ATTACK_RANGE_MIDDLE": 1, "ATTACK_RANGE_LONG": 2}
 
 
-def _need_tentacle(ctx: Ctx) -> None:
-    if ctx.state.flag[111] != 0:
-        raise NotImplementedError("洗脳／悪堕ちキャラとの戦闘の判定は未移植")
+def _enemy_binsyou(ctx: Ctx, sengi: str) -> int:
+    """LOCAL:3（敵の敏捷）。`IF FLAG:111 == 0` → TENTACLE_ACCESS "BINSYOU"、それ以外は敵キャラの MAXBASE:敏捷に
+    小柄 ×1.05・長身 ×0.90 と戦技補正。sengi：
+    "AVOID" = CORRECTION_SENGI_AVOID(…, 0, FLAG:111)（ACT_HANTEI_CHARA_TO_TENTACLE:115–131、_GUARD:453–469）、
+    "DIST" = TCVARn:0 に応じた CORRECTION_SENGI（ACT_HANTEI_TENTACLE_TO_CHARA:654–676）、
+    "TETTAI" = 小柄のみ（ACT_HANTEI_TETTAI_TENTACLE:1115–1126）。"""
+    st = ctx.state
+    f111 = st.flag[111]
+    if f111 == 0:
+        return int(tentacle_access(ctx, "BINSYOU"))
+    e = st.charas[f111]
+    l3 = e.maxbase[12]
+    if t(ctx, e, "小柄") == 1:
+        l3 = times(l3, "1.05")
+    if sengi == "TETTAI":
+        return l3
+    if t(ctx, e, "長身") == 1:
+        l3 = times(l3, "0.90")
+    if sengi == "AVOID":
+        return correction_sengi_avoid(ctx, l3, 0, f111)
+    dist = tc(ctx).tcvarn[0]
+    if dist in (1, 2, 3):
+        l3 = correction_sengi(ctx, l3, dist - 1, f111)
+    return l3
 
 
 def _stamina(ctx: Ctx, extra: int = 0) -> int:
@@ -90,7 +112,6 @@ def act_hantei_chara_to_tentacle(ctx: Ctx, kind: str) -> tuple[int, int]:
     v = c.tcvarn
     if kind == "HURIHODOKU":
         return _hurihodoku(ctx)
-    _need_tentacle(ctx)
     l0 = _stamina(ctx)
     if v[12] & MAHI:
         l0 = div(l0, 2)
@@ -107,7 +128,7 @@ def act_hantei_chara_to_tentacle(ctx: Ctx, kind: str) -> tuple[int, int]:
     l2 = correction_trans(ctx, l2)
     l2 = div(l2 * cloth_battle_hosei(ctx, "BINSYOU"), 100)
     l2 = shinkyou_check(ctx, "BINSYOU", l2)
-    l3 = int(tentacle_access(ctx, "BINSYOU"))
+    l3 = _enemy_binsyou(ctx, "AVOID")  # :115–131
     if st.tflag[2] >= 1 and st.flag[73] == 0:
         l3 = times(l3, "0.25")
     l4 = correction_binsyou(percent_cal(l2, l3))
@@ -205,7 +226,6 @@ def _hurihodoku(ctx: Ctx) -> tuple[int, int]:
     st = ctx.state
     c = tc(ctx)
     v = c.tcvarn
-    _need_tentacle(ctx)
     l0 = _stamina(ctx)
     if v[12] & MAHI:
         l0 = div(l0, 2)
@@ -232,7 +252,7 @@ def _hurihodoku(ctx: Ctx) -> tuple[int, int]:
     chisei = div(chisei * 2 * (100 - l0), 100)
     if st.flag[73] > 0:
         raise NotImplementedError("クズ市民戦の振り解く判定は未移植")
-    l3 = int(tentacle_access(ctx, "BINSYOU"))
+    l3 = _enemy_binsyou(ctx, "AVOID")  # :115–131
     if st.tflag[2] >= 1 and st.flag[73] == 0:
         l3 = times(l3, "0.25")
     if st.flag[999] == 1:
@@ -250,7 +270,8 @@ def _hurihodoku(ctx: Ctx) -> tuple[int, int]:
         l5 = 45
     if l5 <= 60 and l0 > 74:
         l5 = 60
-    l5 = div(l5 * 100, int(tentacle_access(ctx, "HOLD")))  # :249–252
+    if st.flag[111] == 0:  # :249–252 `IF FLAG:111 == 0 && ARGS == "HURIHODOKU"`
+        l5 = div(l5 * 100, int(tentacle_access(ctx, "HOLD")))
     if v[2] in (3, 200):  # 体勢：耐える／暴れる防御
         l5 += 20
     if v[2] == 6:  # 睨みつける
@@ -307,7 +328,6 @@ def act_hantei_chara_to_tentacle_guard(ctx: Ctx, kind: str) -> int:
     st = ctx.state
     c = tc(ctx)
     v = c.tcvarn
-    _need_tentacle(ctx)
     l0 = _stamina(ctx)
     if c.cflag[1] == 2:
         l0 = 100
@@ -317,7 +337,7 @@ def act_hantei_chara_to_tentacle_guard(ctx: Ctx, kind: str) -> int:
         l2 = times(l2, "1.05")
     if t(ctx, c, "長身") == 1:
         l2 = times(l2, "0.90")
-    l3 = int(tentacle_access(ctx, "BINSYOU"))
+    l3 = _enemy_binsyou(ctx, "AVOID")  # :453–469
     l4 = div(correction_binsyou(percent_cal(l2, l3)), 2) + 50
     l5 = div(l0 * l1 * l4, 10000)
     if kind == "ATTACK_RANGE_SHORT":
@@ -384,7 +404,6 @@ def act_hantei_tentacle_to_chara(ctx: Ctx, kind: str) -> int:
     st = ctx.state
     c = tc(ctx)
     v = c.tcvarn
-    _need_tentacle(ctx)
     l0 = _stamina(ctx)
     if v[12] & MAHI:
         l0 = div(l0, 2)
@@ -410,7 +429,7 @@ def act_hantei_tentacle_to_chara(ctx: Ctx, kind: str) -> int:
         l2 = times(l2, "1.50")
     l2 = correction_sengi_avoid(ctx, l2, 0, st.target)
     l6 = correction_sengi_avoid(ctx, l6, 0, st.target)
-    l3 = int(tentacle_access(ctx, "BINSYOU"))
+    l3 = _enemy_binsyou(ctx, "DIST")  # :654–676
     if st.tflag[2] >= 1:
         l3 = times(l3, "0.50")
     if st.tflag[12] == 1:
@@ -421,7 +440,7 @@ def act_hantei_tentacle_to_chara(ctx: Ctx, kind: str) -> int:
         l3 = times(l3, "1.5")
     l4 = correction_binsyou(percent_cal(l2, l3))
     dist_key = {1: "SHORT", 2: "MIDDLE", 3: "LONG"}.get(v[0])
-    if dist_key:
+    if dist_key and st.flag[111] == 0:  # :697–709
         l4 = div(l4 * 100, int(tentacle_access(ctx, dist_key)))
     l5 = div(l0 * l1 * l4, 10000)
     l5 += cloth_battle_hosei(ctx, "AVOID")
@@ -489,7 +508,6 @@ def act_hantei_tettai_tentacle(ctx: Ctx) -> int:
     st = ctx.state
     c = tc(ctx)
     v = c.tcvarn
-    _need_tentacle(ctx)
     l0 = _stamina(ctx, 20)
     if (v[12] & BETOBETO) or (v[12] & KOSHIKUDAKE):
         l0 = div(l0, 2)
@@ -505,7 +523,7 @@ def act_hantei_tettai_tentacle(ctx: Ctx) -> int:
     l2 -= breast_weight_term(ctx, c, l2)  # :1097–1105 胸部重量ペナルティ
     l2 = div(l2 * cloth_battle_hosei(ctx, "BINSYOU"), 100)
     l2 = shinkyou_check(ctx, "BINSYOU", l2)
-    l3 = int(tentacle_access(ctx, "BINSYOU"))
+    l3 = _enemy_binsyou(ctx, "TETTAI")  # :1115–1126
     if st.tflag[2] >= 1:
         l3 = times(l3, "0.50")
     l4 = correction_binsyou(percent_cal(l2, l3))
@@ -565,11 +583,13 @@ def fstyle_attack(ctx: Ctx, who: int, dist: int) -> int:
 
 
 def damage(ctx: Ctx, kind: str) -> int:
-    """`@DAMAGE, ARGS`:1175–1546。LOCAL:7 は呼び出し間で保持される（:1500–1510 で代入されない場合がある）。"""
+    """`@DAMAGE, ARGS`:1175–1546。LOCAL:7 は呼び出し間で保持される（:1500–1510 で代入されない場合がある）。
+    LOCAL:1 も同様：悪堕ちキャラ戦の "ABARERU"（:1365–1373 は FLAG:111 == 0 のときだけ代入）では前回の値のまま
+    （関数の LOCAL は呼び出し間で保持：reference/emuera-1824/Emuera/GameData/Variable/VariableData.cs@SetDefaultLocalValue:514–520）。"""
     st = ctx.state
     c = tc(ctx)
     v = c.tcvarn
-    _need_tentacle(ctx)
+    f111 = st.flag[111]
     l5 = fstyle_attack(ctx, st.target, v[0])
     if v.get_bit(3, 0):
         l5 = div(l5 * (150 if c.cflag[1] == 2 else 200), 100)
@@ -595,7 +615,8 @@ def damage(ctx: Ctx, kind: str) -> int:
         l0 = shinkyou_check(ctx, "KOUGEKI", l5)
         l0 = times(l0, ("2.50", "2.25", "2.00")[dist])
         l0 = correction_sengi_damage(ctx, l0, dist, st.target)
-        l1 = int(tentacle_access(ctx, "BOUGYO"))
+        # :1248–1255 等 `IF FLAG:111 == 0` 触手の防御力 / 敵キャラの MAXBASE:防御
+        l1 = int(tentacle_access(ctx, "BOUGYO")) if f111 == 0 else st.charas[f111].maxbase[11]
         if st.tflag[2] >= 1:
             l1 = times(l1, "0.50")
         # 得意・苦手による補正（:1261–1351）
@@ -613,15 +634,25 @@ def damage(ctx: Ctx, kind: str) -> int:
         l0 = shinkyou_check(ctx, "KOUGEKI", l5)
         if enemy_type_check(st, "MOB") == 1:
             l0 = times(l0, "0.125")
+        elif f111 == 0:
+            l0 = times(l0, "1.00")
         else:
-            l0 = times(l0, "1.00")  # FLAG:111 == 0
-        l1 = div(int(tentacle_access(ctx, "BOUGYO")), 2)
-        if st.tflag[2] >= 1:
-            l1 = times(l1, "0.50")
+            l0 = times(l0, "2.00")
+        if f111 == 0:
+            l1 = div(int(tentacle_access(ctx, "BOUGYO")), 2)
+            if st.tflag[2] >= 1:
+                l1 = times(l1, "0.50")
+        else:
+            l1 = get_local(st, "DAMAGE", 1)  # 前回の DAMAGE の LOCAL:1（原作どおり）
         if v.get_bit(3, 0):
             l1 *= 2
     elif kind == "CHARA":
-        l0 = int(tentacle_access(ctx, "KOUGEKI"))
+        if f111 == 0:  # :1380–1396
+            l0 = int(tentacle_access(ctx, "KOUGEKI"))
+        else:
+            l0 = st.charas[f111].maxbase[10]
+            if v[0] in (1, 2, 3):
+                l0 = correction_sengi_damage(ctx, l0, v[0] - 1, f111)
         if st.tflag[2] >= 1:
             l0 = times(l0, "0.75")
         lv = tentacle_level(st)
@@ -646,6 +677,7 @@ def damage(ctx: Ctx, kind: str) -> int:
             v[6] += max(0, min(isqrt(max(c.base[11] - 100, 0)), 20)) + 5
     else:
         raise NotImplementedError(f"DAMAGE, {kind!r} は未移植")
+    set_local(st, "DAMAGE", 1, l1)
     l6b = 100
     l3 = max(div(div(500000 * (l0 + l6b), l1 + l6b), 1000), 80)
     if kind == "CHARA":

@@ -15,6 +15,8 @@ from ...state.constants import GameOption
 from ..tentacle import enemy_type_check
 from .cloth import INNER_PER, NO_INNER, OUTER_PER, cloth_battle_hosei, figure_split
 from .core import (
+    msg_other,
+    run_chinobun,
     DARAKU,
     HAIRAN,
     P_NASUGAMAMA,
@@ -393,7 +395,9 @@ def _mark_message(ctx: Ctx, code: str, level: int) -> None:
     st = ctx.state
     out = ctx.out
     if enemy_type_check(st, "AKUOTI") == 1:
-        raise NotImplementedError("悪堕ちキャラ戦の刻印地の文は未移植")
+        # 悪堕ちキャラ側の分岐（敵名が PRINT_TRANSCALLNAME(FLAG:111)）は catalog で本文を出す（状態変化なし）
+        run_chinobun(ctx, f"MESSAGE_SEX_MARK_{code}_{level}", fallback=lambda: kojo_root(ctx, f"SEX_MARK_{code}_{level}"))
+        return
     name = print_transcallname(st, st.target)
     subjective = t(ctx, tc(ctx), "主観視点") > 0
     if st.flag[700] == 1 or st.target_chara.cflag[0] == 1:
@@ -438,6 +442,8 @@ def got_sex_mark_check(ctx: Ctx, mark_id: int, upvalue: int) -> None:
     if upvalue >= need:
         c.mark[mark_id] += 1
         _mark_message(ctx, code, c.mark[mark_id])
+        if enemy_type_check(st, "AKUOTI") == 1:  # :1792–1794
+            msg_other(ctx, f"SEX_MARK_{code}_{c.mark[mark_id]}")
         out = ctx.out
         out.print(f"{print_transcallname(st, st.target)}は")
         out.set_bold(True)
@@ -547,8 +553,8 @@ def palam_up_enemy_reaction(ctx: Ctx) -> None:
             if st.flag[110] == 0:
                 tentacle_access(ctx, "NAME")
                 ctx.out.printl("は油断から立ち直った")
-            else:
-                raise NotImplementedError("悪堕ちキャラ戦は未移植")
+            elif st.flag[110] == 1:  # :1872–1873
+                ctx.out.printl(f"{print_transcallname(st, st.flag[111])}は油断から立ち直った")
     if c.tcvarn[0] == 0 and st.flag[700] == 1:  # :1879–1880
         from .cheers import perform_cheers_tentacle_sex_hantei
 
@@ -558,8 +564,8 @@ def palam_up_enemy_reaction(ctx: Ctx) -> None:
         if st.flag[110] == 0:
             tentacle_access(ctx, "NAME")
             ctx.out.printl("は油断しているようだ")
-        else:
-            raise NotImplementedError("悪堕ちキャラ戦は未移植")
+        elif st.flag[110] == 1:  # :1887–1888
+            ctx.out.printl(f"{print_transcallname(st, st.flag[111])}は油断しているようだ")
 
 
 # --- 絶頂・射精・噴乳（PALAM_UP.ERB:670–985）----------------------------------------------
@@ -675,6 +681,8 @@ def calc_ejac(ctx: Ctx) -> None:
         out.set_bold(False)
         kojo_root(ctx, "SEX_CHARA_SYASEI_HI" if num == 2 else "SEX_CHARA_SYASEI")
         out.printl()
+        if enemy_type_check(st, "AKUOTI") == 1:  # :903–904
+            msg_other(ctx, "SEX_CHARA_SYASEI_HI" if num == 2 else "SEX_CHARA_SYASEI")
         if c.cflag[200] == 0 and (is_female(ctx.data, c) or charatalent(ctx.data, c, 0, "オトコ") == 0):
             c.cflag[200] = 1
             add_exp(ctx, c, "異常経験", 1)
@@ -721,6 +729,8 @@ def calc_milk_sqirt(ctx: Ctx) -> None:
         out.set_bold(False)
         kojo_root(ctx, "SEX_CHARA_HUNNYU_HI" if num == 2 else "SEX_CHARA_HUNNYU")
         out.printl()
+        if enemy_type_check(st, "AKUOTI") == 1:  # :969–970
+            msg_other(ctx, "SEX_CHARA_HUNNYU_HI" if num == 2 else "SEX_CHARA_HUNNYU")
         if c.cflag[201] == 0:
             c.cflag[201] = 1
             add_exp(ctx, c, "異常経験", 1)
@@ -757,8 +767,10 @@ def message_sex_ecstasy_single(ctx: Ctx, i: int, n: int) -> None:
 
 
 def message_sex_ecstasy(ctx: Ctx, ex: tuple[int, int, int, int]) -> None:
-    """`@MESSAGE_SEX_ECSTASY, EX_C, EX_V, EX_A, EX_B`（地の文/MESSAGE_SEX.ERB:53–100、221–316）。"""
+    """`@MESSAGE_SEX_ECSTASY, EX_C, EX_V, EX_A, EX_B`（地の文/MESSAGE_SEX.ERB:53–100、221–316）。
+    悪堕ちキャラ戦（FLAG:110 > 0）では MESSAGE_OTHER_SEX_(MULTI)ECSTASY_* も呼ぶ（:84–86／:97–99）。"""
     out = ctx.out
+    akuoti = enemy_type_check(ctx.state, "AKUOTI") == 1
     part = "".join(p for p, n in zip("CVAB", ex) if n > 0)
     if len(part) > 1:
         out.set_bold(True)
@@ -766,9 +778,13 @@ def message_sex_ecstasy(ctx: Ctx, ex: tuple[int, int, int, int]) -> None:
         out.set_bold(False)
         kojo_root(ctx, f"SEX_MULTIECSTASY_{part}")
         out.printl()
+        if akuoti:
+            msg_other(ctx, f"SEX_MULTIECSTASY_{part}")
     elif len(part) == 1:
         i = "CVAB".index(part)
         message_sex_ecstasy_single(ctx, i, max(ex) if max(ex) > 1 else 1)
+        if akuoti:
+            msg_other(ctx, f"SEX_ECSTASY_{part}")
 
 
 def _message_ecstasy_control(ctx: Ctx, ecs_flag: int) -> None:
@@ -1092,15 +1108,16 @@ def palam_up(ctx: Ctx) -> None:
     if ecs_num > 0:  # :120–121
         up[14] += min(ecs_num * 5000, 20000)
     # :123–133 二次計算（原作は PALAM_HOSEI に PCOUNT（0〜3）を渡しており、快部位用の補正が掛かる：原作どおり）
+    last_hosei = 0  # 最後の PALAM_HOSEI の RESULT（:145 TENTACLE_SYASEI_CHECK 呼び出し時点の RESULT）
     for pc, pid in enumerate(NIJI_PALAM):
-        up[pid] = palam_hosei(ctx, pc, up[pid])
+        up[pid] = last_hosei = palam_hosei(ctx, pc, up[pid])
         up[pid] += cp[pid]
         cp[pid] = 0
     if v[2] == P_HOUSHI:
         up[12] += 150 + 15 * (abl(ctx, c, "従順") + abl(ctx, c, "奉仕精神") * 2)
     # :144–152 触手の射精チェック
     if st.flag[700] == 1:
-        r = list(tentacle_syasei_check(ctx))
+        r = list(tentacle_syasei_check(ctx, last_hosei))
         if (v[12] & HAIRAN) and (st.tflag[4] & 2):
             r[1] *= 4
         up[10] += r[0]

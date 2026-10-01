@@ -28,8 +28,10 @@ from .core import (
     add_battle_situation,
     fstyle_name,
     get_battle_situation,
+    msg_other,
     percent_cal,
     print_distance,
+    print_enemy_prefix,
     run_chinobun,
     shinkyou_change,
     shinkyou_check,
@@ -553,10 +555,8 @@ def _msg_attack_range(ctx: Ctx, dist: int) -> None:
     word, with_enemy, air, texts = _RANGE_TEXTS[dist]
     out.printl(f"{name}の{word}！")
     if with_enemy:
-        if enemy_type_check(st, "AKUOTI") == 1:
-            raise NotImplementedError("悪堕ちキャラ戦の地の文は未移植")
         out.print(f"{name}は")
-        tentacle_access(ctx, "NAME")
+        print_enemy_prefix(ctx)  # :410–415（悪堕ちキャラは PRINT_TRANSCALLNAME(FLAG:111)）
     else:
         out.print(name)
     if tc(ctx).tcvarn.get_bit(216, 1):
@@ -632,6 +632,8 @@ def com_attack_common(ctx: Ctx) -> int:
                 out.printl(f"{name}の攻撃は直撃しなかったようだ・・・")
                 if attack_num == 0:
                     kojo_root(ctx, "BATTLE_CHARA_ATTACK_FALSE")
+                if enemy_type_check(st, "AKUOTI") == 1:  # :117–118
+                    msg_other(ctx, "BATTLE_CHARA_ATTACK_GUARD", (attack_num,))
                 out.set_bold(True)
                 out.printl(f"{l1}のダメージを与えた！")
                 out.set_bold(False)
@@ -650,6 +652,8 @@ def com_attack_common(ctx: Ctx) -> int:
                 if attack_num == 0:
                     kojo_root(ctx, "BATTLE_CHARA_ATTACK_FALSE")
                 out.printw()
+                if enemy_type_check(st, "AKUOTI") == 1:  # :135–136
+                    msg_other(ctx, "BATTLE_CHARA_ATTACK_FALSE", (attack_num,))
             if v[1] == 0 and attack_num == 0:
                 shinkyou_change(ctx, "KOUYOU_SYOUTIN")
             l3 = 0
@@ -711,6 +715,8 @@ def com_attack_common(ctx: Ctx) -> int:
                 out.reset_color()
                 if attack_num == 0:
                     kojo_root(ctx, "BATTLE_CHARA_ATTACK_CRITICAL_HIT")
+                if enemy_type_check(st, "AKUOTI") == 1:  # :251–252
+                    msg_other(ctx, "BATTLE_CHARA_ATTACK_CRITICAL_HIT", (attack_num,))
             else:
                 hit_flag = 1
                 out.set_color((255, 255, 0))
@@ -718,6 +724,8 @@ def com_attack_common(ctx: Ctx) -> int:
                 out.reset_color()
                 if attack_num == 0:
                     kojo_root(ctx, "BATTLE_CHARA_ATTACK_HIT")
+                if enemy_type_check(st, "AKUOTI") == 1:  # :259–260
+                    msg_other(ctx, "BATTLE_CHARA_ATTACK_HIT", (attack_num,))
             # :264 `FLAG:13 <= 0 && RESULT == 999`：地の文関数は RETURN 999 しない限り RESULT = 0
             if st.flag[13] <= 0 and result == 999:
                 l1 *= 16
@@ -792,7 +800,7 @@ def _burst_recoil(ctx: Ctx, style: str, hit_flag: int) -> None:
                 # :346 MESSAGE_BATTLE_TENTACLE_ATTACK_OVERCHARGE（地の文/MESSAGE_BATTLE.ERB:1226–1240）
                 run_chinobun(ctx, "MESSAGE_BATTLE_TENTACLE_ATTACK_OVERCHARGE")
                 if enemy_type_check(st, "AKUOTI"):  # :348–349
-                    raise NotImplementedError("悪堕ちキャラの地の文（MESSAGE_OTHER_BATTLE_TENTACLE_ATTACK_OVERCHARGE）は未移植")
+                    msg_other(ctx, "BATTLE_TENTACLE_ATTACK_OVERCHARGE")
                 result = min(percent_cal(v[205], v[206]), 70)  # :353–355
                 l2 = div(c.maxbase[0] * result, 100)
                 out.set_bold(True)
@@ -848,6 +856,8 @@ def com4(ctx: Ctx) -> ComGen:
     out.printl(f"{print_transcallname(st, st.target)}は集中して身を固めた！")
     kojo_root(ctx, "BATTLE_CHARA_DEFENSE")
     out.printw()
+    if enemy_type_check(st, "AKUOTI") == 1:  # :36–37
+        msg_other(ctx, "BATTLE_CHARA_DEFENSE")
     v[2] = P_GUARD
     c.ex[99] += 1
     return 1
@@ -923,6 +933,8 @@ def com5(ctx: Ctx) -> ComGen:
     out.printl(f"{print_transcallname(st, st.target)}は一度距離をとって体勢を立て直し、心を落ち着けた・・・")
     kojo_root(ctx, "BATTLE_CHARA_TAKEAWAY")
     out.printw()
+    if enemy_type_check(st, "AKUOTI") == 1:  # :123–124
+        msg_other(ctx, "BATTLE_CHARA_TAKEAWAY")
     names = data.names["BASE"]
     if c.base[0]:
         out.printl(f"{names.get(0, '')}が{l0}回復した")
@@ -992,10 +1004,13 @@ def com6(ctx: Ctx) -> ComGen:
     kojo_root(ctx, "BATTLE_CHARA_STEPIN")
     out.printw()
     if enemy_type_check(st, "AKUOTI") == 1:  # :50–51
-        raise NotImplementedError("悪堕ちキャラの地の文（MESSAGE_OTHER_BATTLE_CHARA_STEPIN）は未移植")
+        msg_other(ctx, "BATTLE_CHARA_STEPIN")
     l0 = div(c.maxbase[ctx.data.index_of("BASE", "知性")] * cloth_battle_hosei(ctx, "CHISEI"), 100)  # :54–58
     l0 = shinkyou_check(ctx, "CHISEI", l0)  # :61–62
-    l1 = int(tentacle_access(ctx, "CHISEI"))  # :65–70（悪堕ちキャラは上で停止済み）
+    if enemy_type_check(st, "AKUOTI"):  # :64–70
+        l1 = st.charas[st.flag[111]].maxbase[13]
+    else:
+        l1 = int(tentacle_access(ctx, "CHISEI"))
     result = percent_cal(l0, l1)  # :72
     # `RAND:RESULT / 2` は (RAND:RESULT) / 2：変数の `:` 引数は単項だけを読む
     # （reference/emuera-1824/Emuera/GameData/Expression/ExpressionParser.cs@ReduceVariableArgument:192–198）
@@ -1093,7 +1108,7 @@ def com7(ctx: Ctx) -> ComGen:
     kojo_root(ctx, "BATTLE_CHARA_SEETHROUGH")
     out.printw()
     if enemy_type_check(st, "AKUOTI") == 1:  # :141–142
-        raise NotImplementedError("悪堕ちキャラの地の文（MESSAGE_OTHER_BATTLE_CHARA_SEETHROUGH）は未移植")
+        msg_other(ctx, "BATTLE_CHARA_SEETHROUGH")
     names = data.names["BASE"]
     if c.base[0]:  # :144–149
         out.printl(f"{names.get(0, '')}が{l0}回復した")
@@ -1125,6 +1140,8 @@ def com99(ctx: Ctx) -> ComGen:
     out.printl(f"{print_transcallname(st, st.target)}は何もしなかった")
     kojo_root(ctx, "BATTLE_CHARA_NOACTION")
     out.printw()
+    if enemy_type_check(st, "AKUOTI") == 1:  # :18–19
+        msg_other(ctx, "BATTLE_CHARA_NOACTION")
     return 1
     yield  # pragma: no cover
 
@@ -1151,7 +1168,7 @@ def com69(ctx: Ctx) -> ComGen:
         kojo_root(ctx, "BATTLE_CHARA_NOACTION")
         out.printw()
         if enemy_type_check(st, "AKUOTI") == 1:  # :24–25
-            raise NotImplementedError("悪堕ちキャラの地の文（MESSAGE_OTHER_BATTLE_CHARA_NOACTION）は未移植")
+            msg_other(ctx, "BATTLE_CHARA_NOACTION")
     return 1
     yield  # pragma: no cover
 

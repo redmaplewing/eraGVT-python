@@ -1,5 +1,8 @@
-"""敵（触手）の行動：`ゲーム内_戦闘処理/ENEMY_ACTION.ERB`（非拘束分岐・SELECT_TENTACLE_ACTION）と
-`FORECAST.ERB@ATTACK_PLACE_DECISION`。
+"""敵（触手／洗脳・悪堕ちキャラ）の行動：`ゲーム内_戦闘処理/ENEMY_ACTION.ERB`（非拘束分岐・SELECT_TENTACLE_ACTION・
+SELECT_ENEMY_ACTION）と `FORECAST.ERB@ATTACK_PLACE_DECISION`。
+
+悪堕ちキャラ戦（S19）：各地の文の後に `MESSAGE_OTHER_BATTLE_TENTACLE_*`（敵キャラ側の口上、`core.msg_other`）、
+押し倒す（TFLAG:10 = 5）・邪悪な波動（6）、拘束中は ENEMY_ACTION_SEX_ROUTINE の悪堕ち分岐（:947–964、再行動なし）。
 
 路徑相對 `source/earGVP/ERB/`。拘束中の性攻撃（SEX_ROUTINE／SEX_COM）と反撃（HANGEKI_TO_TENTACLE）は S06。
 地の文は `地の文/MESSAGE_BATTLE.ERB`（行番号は各関数の docstring）。
@@ -27,7 +30,9 @@ from .core import (
     abl,
     config_check_balance,
     fstyle_name,
+    msg_other,
     percent_cal,
+    print_enemy_prefix,
     shinkyou_change,
     shinkyou_check,
     t,
@@ -46,13 +51,17 @@ from .func import (
 )
 from .hantei import act_hantei_tentacle_to_chara, damage
 from .palam import palam_cal
+from .sexmsg import istentacler
 
 
 def _enemy_prefix(ctx: Ctx) -> None:
-    if enemy_type_check(ctx.state, "AKUOTI") == 0:
-        tentacle_access(ctx, "NAME")
-    else:
-        raise NotImplementedError("洗脳／悪堕ちキャラとの戦闘は未移植")
+    print_enemy_prefix(ctx)
+
+
+def _other(ctx: Ctx, name: str) -> None:
+    """`SIF ENEMY_TYPE_CHECK_F("AKUOTI") / CALL MESSAGE_OTHER_BATTLE_TENTACLE_{name}`。"""
+    if enemy_type_check(ctx.state, "AKUOTI"):
+        msg_other(ctx, f"BATTLE_TENTACLE_{name}")
 
 
 def _range_marks(ctx: Ctx) -> None:
@@ -231,6 +240,54 @@ def msg_takeaway(ctx: Ctx) -> None:
     ctx.out.printl()
 
 
+def msg_oshitaosu(ctx: Ctx) -> None:
+    """`@MESSAGE_BATTLE_TENTACLE_OSHITAOSU`:1439–1444。"""
+    st = ctx.state
+    ctx.out.print(print_transcallname(st, st.flag[111]))
+    ctx.out.printl(f"は怪しげな足取りで{print_transcallname(st, st.target)}ににじり寄る！")
+    kojo_root(ctx, "BATTLE_TENTACLE_OSHITAOSU")
+    ctx.out.printl()
+
+
+def msg_oshitaosu_success(ctx: Ctx) -> None:
+    """`@MESSAGE_BATTLE_TENTACLE_OSHITAOSU_SUCCESS`:1447–1451。"""
+    st = ctx.state
+    ctx.out.printl(f"{print_transcallname(st, st.target)}は{print_transcallname(st, st.flag[111])}に勢い良く押し倒されてしまった！")
+    kojo_root(ctx, "BATTLE_TENTACLE_OSHITAOSU_SUCCESS")
+    ctx.out.printl()
+
+
+def msg_oshitaosu_false(ctx: Ctx) -> None:
+    """`@MESSAGE_BATTLE_TENTACLE_OSHITAOSU_FALSE`:1454–1461。"""
+    st = ctx.state
+    _colored(ctx, (255, 0, 255), "MISS!")
+    ctx.out.printl(f"危機を感じた{print_transcallname(st, st.target)}はなんとか{print_transcallname(st, st.flag[111])}から距離をとった！")
+    kojo_root(ctx, "BATTLE_TENTACLE_OSHITAOSU_FALSE")
+    ctx.out.printl()
+
+
+def msg_hadou(ctx: Ctx) -> None:
+    """`@MESSAGE_BATTLE_TENTACLE_HADOU`:1468–1510（TRYCCALLFORM MESSAGE_BATTLE_MOB_{FLAG:11}_TENTACLE_HADOU は
+    901／902／803 のみ存在：触手データ/雑魚敵/。雑魚敵は未移植なので停止）。"""
+    st = ctx.state
+    if st.flag[11] in (803, 901, 902):
+        raise NotImplementedError("雑魚敵専用の邪悪な波動地の文は未移植")
+    if enemy_type_check(st, "AKUOTI") == 0:
+        tentacle_access(ctx, "NAME")
+        ctx.out.print("は邪悪な波動を")
+    else:
+        ctx.out.print(f"{print_transcallname(st, st.flag[111])}は邪悪な波動を")
+    ctx.out.print({1: "直線状に放ってきた！", 2: "放ってきた！"}.get(st.tflag[12], "広範囲に放ってきた！"))
+    _range_marks(ctx)
+    kojo_root(ctx, "BATTLE_TENTACLE_HADOU")
+    ctx.out.printl()
+
+
+def msg_hadou_false(ctx: Ctx) -> None:
+    """`@MESSAGE_BATTLE_TENTACLE_HADOU_FALSE`:1529–1536。"""
+    msg_miss(ctx, "は波動を回避した！", "BATTLE_TENTACLE_HADOU_FALSE")
+
+
 # --- @ENEMY_ACTION（ENEMY_ACTION.ERB:4–1015）--------------------------------------------
 
 
@@ -243,8 +300,26 @@ def enemy_action(ctx: Ctx) -> Generator[None, int, None]:
             break
     # :1011–1015
     if enemy_type_check(ctx.state, "AKUOTI"):
-        raise NotImplementedError("悪堕ちキャラの行動選択（SELECT_ENEMY_ACTION）は未移植")
-    select_tentacle_action(ctx)
+        select_enemy_action(ctx)
+    else:
+        select_tentacle_action(ctx)
+
+
+def _restraint_sex_akuoti(ctx: Ctx) -> Generator[None, int, None]:
+    """:947–964 悪堕ちキャラの拘束中性コマンド（再行動判定なし）。"""
+    from .sexcom import enemy_action_sex_routine, sex_comable
+
+    st = ctx.state
+    c = tc(ctx)
+    while True:  # $ROUTINE_LOOP_0（:949）
+        select = enemy_action_sex_routine(ctx)
+        r = yield from sex_comable(ctx, select)
+        if r == 0:  # :956–959
+            st.tflag[17] = -1
+            continue
+        break
+    c.exp[ctx.data.index_of("EXP", "被姦経験")] += 1  # :962
+    shinkyou_change(ctx, "TOUSAKU")  # :964
 
 
 def _restraint_sex(ctx: Ctx) -> Generator[None, int, None]:
@@ -296,13 +371,15 @@ def _enemy_action_once(ctx: Ctx) -> Generator[None, int, bool]:
             pass
         else:
             st.tflag[10] = 2
-            if enemy_type_check(st, "AKUOTI"):
-                raise NotImplementedError("悪堕ちキャラの押し倒す")
+            # :16–17 絡みつく場合、寄生なし悪堕ちキャラなら押し倒す
+            if enemy_type_check(st, "AKUOTI") and st.tflag[10] == 2 and istentacler(ctx, st.flag[111]) == 0:
+                st.tflag[10] = 5
             attack_place_decision(ctx)
     if v[0] <= 0:
-        if enemy_type_check(st, "AKUOTI"):  # :947–967
-            raise NotImplementedError("悪堕ちキャラの拘束中性コマンド（ENEMY_ACTION:947–967）は未移植")
-        yield from _restraint_sex(ctx)
+        if enemy_type_check(st, "AKUOTI"):  # :947–964
+            yield from _restraint_sex_akuoti(ctx)
+        else:
+            yield from _restraint_sex(ctx)
         return False
     if st.tflag[16] >= 0:  # :25–26
         st.tflag[10] = st.tflag[16]
@@ -310,6 +387,7 @@ def _enemy_action_once(ctx: Ctx) -> Generator[None, int, bool]:
     name = print_transcallname(st, st.target)
     if action == 1:  # :29–264 攻撃
         msg_tentacle_attack(ctx)
+        _other(ctx, "ATTACK")
         r = act_hantei_tentacle_to_chara(ctx, "AVOID_KOUGEKI")
         loc[0] = r
         if r == 1:
@@ -317,9 +395,11 @@ def _enemy_action_once(ctx: Ctx) -> Generator[None, int, bool]:
             r2 = act_hantei_tentacle_to_chara(ctx, "AVOID_KOUGEKI")
             if r2 == 0 and st.temp.cloth[OUTER_PER] + st.temp.cloth[INNER_PER] > 0:
                 msg_graze(ctx)
+                _other(ctx, "ATTACK_GRAZE")
                 cloth_battle_damage(ctx, 8)
             else:
                 msg_miss(ctx, "は攻撃を回避した！", "BATTLE_TENTACLE_ATTACK_FALSE")
+                _other(ctx, "ATTACK_FALSE")
             if cheers_enabled(ctx):
                 perform_cheers_tentacle_miss_hantei(ctx)
         elif r == 2:
@@ -336,18 +416,22 @@ def _enemy_action_once(ctx: Ctx) -> Generator[None, int, bool]:
                 loc[1] = 10
                 v[200] = 1
                 msg_perfect_guard(ctx)
+                _other(ctx, "ATTACK_PERFECT_GUARD")
             # :100 `生粋の戦士 == 0 && (RAND < 5 && 装甲以外) || (RAND < 10 && 反撃)`（左結合）
             elif (t(ctx, c, "生粋の戦士") == 0 and (
                 st.rng.rand(100) < 5 and fstyle_name(ctx, st.target, v[0]) != "装甲"
             )) or (st.rng.rand(100) < 10 and v[2] == P_HANGEKI):
                 loc[1] = 15
                 msg_simple_hit(ctx, "BATTLE_TENTACLE_ATTACK_CRITICAL_HIT", critical=True)
+                _other(ctx, "ATTACK_CRITICAL_HIT")
             elif v[2] in (P_GUARD, P_HANGEKI):
                 loc[1] = 10
                 msg_guard(ctx)
+                _other(ctx, "ATTACK_GUARD")
             else:
                 loc[1] = 10
                 msg_simple_hit(ctx, "BATTLE_TENTACLE_ATTACK_HIT")
+                _other(ctx, "ATTACK_HIT")
             l2 = div(damage(ctx, "CHARA") * loc[1], 10)
             l2 = div(l2 * cloth_battle_hosei(ctx, "TAIRYOKU"), 100)
             out.set_bold(True)
@@ -388,11 +472,13 @@ def _enemy_action_once(ctx: Ctx) -> Generator[None, int, bool]:
                 shinkyou_change(ctx, "IKARI_TEIKAN")
     elif action == 2:  # :265–382 絡みつく
         msg_karamituku(ctx)
+        _other(ctx, "KARAMITUKU")
         r = act_hantei_tentacle_to_chara(ctx, "AVOID_KARAMITUKU")
         loc[0] = r
         if r == 1:
             st.tflag[33] += 1
             msg_miss(ctx, "は拘束攻撃を回避した！", "BATTLE_TENTACLE_KARAMITUKU_FALSE")
+            _other(ctx, "KARAMITUKU_FALSE")
             if cheers_enabled(ctx):
                 perform_cheers_tentacle_miss_hantei(ctx)
         elif r == 2:
@@ -406,6 +492,7 @@ def _enemy_action_once(ctx: Ctx) -> Generator[None, int, bool]:
             v[0] = 0
             v[8] = 2
             msg_karamituku_success(ctx)
+            _other(ctx, "KARAMITUKU_SUCCESS")
             l2 = div(dmg * cloth_battle_hosei(ctx, "TAIRYOKU"), 100)
             out.set_bold(True)
             out.printl(f"{l2}のダメージを受けた！")
@@ -437,11 +524,13 @@ def _enemy_action_once(ctx: Ctx) -> Generator[None, int, bool]:
             return True  # :380 GOTO LOOP_TOP → 拘束中の性攻撃
     elif action == 3:  # :383–572 体液を吐く
         msg_taieki(ctx)
+        _other(ctx, "TAIEKI")
         r = act_hantei_tentacle_to_chara(ctx, "AVOID_TAIEKI")
         loc[0] = r
         if r == 1:
             st.tflag[33] += 1
             msg_miss(ctx, "は体液を回避した！", "BATTLE_TENTACLE_TAIEKI_FALSE")
+            _other(ctx, "TAIEKI_FALSE")
             if cheers_enabled(ctx):
                 perform_cheers_tentacle_miss_hantei(ctx)
         elif r == 2:
@@ -456,8 +545,10 @@ def _enemy_action_once(ctx: Ctx) -> Generator[None, int, bool]:
             ):
                 v[200] = 1
                 msg_perfect_guard(ctx)
+                _other(ctx, "ATTACK_PERFECT_GUARD")
             else:
                 msg_simple_hit(ctx, "BATTLE_TENTACLE_TAIEKI_HIT")
+                _other(ctx, "TAIEKI_HIT")
             lv = tentacle_level(st)
             l2 = 120 + lv * 20
             l3 = l2
@@ -467,6 +558,8 @@ def _enemy_action_once(ctx: Ctx) -> Generator[None, int, bool]:
             if st.tflag[32] > 0:
                 l2 = div(l2 * (100 - get_counter_attack(ctx, 2)), 100)
                 l3 = div(l3 * (100 - get_counter_attack(ctx, 2)), 100)
+            # :460–461 `CALL TENTACLE_ACCESS, "GETNAME"` は悪堕ちキャラ戦でも呼ばれるが、FLAG:11 = 0（ACTION.ERB:38）で
+            # TRYCALLFORM が不発になるだけ（RESULTS のみ変化）で結果は使われないので呼ばない
             if enemy_type_check(st, "AKUOTI") == 0 and tentacle_access(ctx, "GETNAME") == "Ｐ触手":
                 l2 *= 2
                 l3 *= 2
@@ -528,10 +621,9 @@ def _enemy_action_once(ctx: Ctx) -> Generator[None, int, bool]:
                 v[6] += limit(isqrt(max(c.base[11] - 100, 0)), 0, 20) + 5
     elif action == 4:  # :574–628 距離をとる（敵の体力回復）
         l3 = times(st.flag[12], "0.08")
-        if enemy_type_check(st, "AKUOTI"):
-            raise NotImplementedError("悪堕ちキャラの距離をとる")
-        # LASTBOSS_REST（LASTBOSS_POWERUP.ERB:16–22）：ボス戦は 0
-        l3 = div(l3, 2 + 0)
+        if not enemy_type_check(st, "AKUOTI"):
+            # LASTBOSS_REST（LASTBOSS_POWERUP.ERB:16–22）：ボス戦は 0（悪堕ちキャラは割らない：:578–579）
+            l3 = div(l3, 2 + 0)
         if st.flag[13] + l3 > st.flag[12]:
             l3 = st.flag[12] - st.flag[13]
         st.flag[13] += l3
@@ -548,8 +640,153 @@ def _enemy_action_once(ctx: Ctx) -> Generator[None, int, bool]:
             out.printl("は油断から立ち直った")
             out.printl()
         msg_takeaway(ctx)
-    elif action in (5, 6):
-        raise NotImplementedError(f"敵の行動 {action}（押し倒す／邪悪な波動）は未移植")
+        _other(ctx, "TAKEAWAY")
+    elif action == 5:  # :630–747 押し倒す
+        msg_oshitaosu(ctx)
+        _other(ctx, "OSHITAOSU")
+        r = act_hantei_tentacle_to_chara(ctx, "AVOID_OSHITAOSU")
+        loc[0] = r
+        if r == 1:
+            st.tflag[33] += 1
+            msg_oshitaosu_false(ctx)
+            _other(ctx, "OSHITAOSU_FALSE")
+            if cheers_enabled(ctx):
+                perform_cheers_tentacle_miss_hantei(ctx)
+        elif r == 2:
+            if v[2] != P_EX_HANGEKI:
+                st.tflag[33] += 1
+            msg_absence(ctx)
+            if cheers_enabled(ctx):
+                perform_cheers_tentacle_miss_hantei(ctx)
+        else:
+            dmg = times(damage(ctx, "CHARA"), "0.25")
+            v[0] = 0
+            v[8] = 2
+            msg_oshitaosu_success(ctx)
+            _other(ctx, "OSHITAOSU_SUCCESS")
+            l2 = div(dmg * cloth_battle_hosei(ctx, "TAIRYOKU"), 100)
+            out.set_bold(True)
+            out.printl(f"{l2}のダメージを受けた！")
+            out.set_bold(False)
+            if c.base[0] - l2 <= 0:
+                l2 = c.base[0]
+            c.base[0] -= l2
+            l3 = 25 if v[2] == P_GUARD else 50
+            l3 = div(l3 * cloth_battle_hosei(ctx, "KIRYOKU"), 100)
+            out.set_bold(True)
+            out.printl(f"{ctx.data.names['BASE'].get(1, '')}が{l3}減った！")
+            out.set_bold(False)
+            out.printl()
+            if c.base[1] < l3:
+                l3 = c.base[1]
+            c.base[1] -= l3
+            out.set_bold(True)
+            out.set_color((250, 0, 0))
+            out.printl(f"{name}は押し倒されてしまった！")
+            out.reset_color()
+            out.set_bold(False)
+            cloth_battle_damage(ctx, 4)
+            if v[14] > 0:
+                state_change_extraeffect(ctx)
+            shinkyou_change(ctx, "REISEI_DOUYOU")
+            out.printl()
+            if abl(ctx, c, "欲望") < 3 and is_female(ctx.data, c):  # :743–744（体力の条件なし）
+                v[2] = P_V_GUARD
+            return True  # :745 GOTO LOOP_TOP
+    elif action == 6:  # :748–928 邪悪な波動
+        msg_hadou(ctx)
+        _other(ctx, "HADOU")
+        r = act_hantei_tentacle_to_chara(ctx, "AVOID_HADOU")
+        loc[0] = r
+        if r == 1:
+            st.tflag[33] += 1
+            msg_hadou_false(ctx)
+            _other(ctx, "HADOU_FALSE")
+            if cheers_enabled(ctx):
+                perform_cheers_tentacle_miss_hantei(ctx)
+        elif r == 2:
+            if v[2] != P_EX_HANGEKI:
+                st.tflag[33] += 1
+            msg_absence(ctx)
+            if cheers_enabled(ctx):
+                perform_cheers_tentacle_miss_hantei(ctx)
+        else:
+            # :794 完全防御（短絡：防御中でなければ最初の RAND を引かない）
+            if (v[2] == P_GUARD and st.rng.rand(100) < 15) or (v[2] == P_EX_HANGEKI and st.rng.rand(100) < 10):
+                v[200] = 1
+                msg_perfect_guard(ctx)
+                _other(ctx, "ATTACK_PERFECT_GUARD")
+            else:
+                msg_simple_hit(ctx, "BATTLE_TENTACLE_HADOU_HIT")  # :1513–1526（ATTACK_HIT と同形）
+                _other(ctx, "HADOU_HIT")
+            lv = tentacle_level(st)
+            l2 = 60 + lv * 10
+            l3 = 180 + lv * 25
+            if enemy_type_check(st, "AKUOTI"):  # :813–822
+                e = st.charas[st.flag[111]]
+                l2 += st.rng.rand(max(div(e.maxbase[10], 2), 1))
+                l3 += st.rng.rand(max(e.maxbase[10], 1))
+            else:
+                kg = int(tentacle_access(ctx, "KOUGEKI"))
+                l2 += st.rng.rand(div(kg, 8))
+                l3 += st.rng.rand(div(kg, 4))
+            if v[2] == P_GUARD:
+                l2 = div(l2, 2)
+                l3 = div(l3, 2)
+            if st.tflag[32] > 0:
+                l2 = div(l2 * (100 - get_counter_attack(ctx, 2)), 100)
+                l3 = div(l3 * (100 - get_counter_attack(ctx, 2)), 100)
+            if t(ctx, c, "祝福") > 0:
+                l2 = div(l2 * 125, 100)
+                l3 = div(l3 * 125, 100)
+            if st.tflag[12] == 2:
+                l2 = times(l2, "0.90")
+                l3 = times(l3, "0.90")
+            elif st.tflag[12] == 3:
+                l2 = times(l2, "0.80")
+                l3 = times(l3, "0.80")
+            l2 = div(l2 * cloth_battle_hosei(ctx, "TAIRYOKU"), 100)
+            l3 = div(l3 * cloth_battle_hosei(ctx, "KIRYOKU"), 100)
+            wave = cloth_battle_hosei(ctx, "WAVE")
+            l2 = div(l2 * wave, 100)
+            l3 = div(l3 * wave, 100)
+            if v[200] == 0:  # :859–863
+                loc[8] = loc.get(8, 0) + div(l2, 4)
+                loc[10] = loc.get(10, 0) + l2 * 2
+                loc[11] = loc.get(11, 0) + div(l2, 2)
+            style = fstyle_name(ctx, st.target, v[0])
+            if style == "撹乱":
+                l2, l3 = times(l2, "1.15"), times(l3, "1.15")
+            elif style == "装甲":
+                l2, l3 = times(l2, "0.85"), times(l3, "0.85")
+            elif v.get_bit(217, 0) and style == "全力":
+                l2, l3 = times(l2, "1.25"), times(l3, "1.25")
+            out.set_bold(True)
+            if v[200] > 0:
+                out.printl(f"{l2}のダメージが無効化された！")
+            else:
+                out.printl(f"{l2}のダメージを受けた！")
+                if c.base[0] - l2 <= 0:
+                    l2 = c.base[0]
+                c.base[0] -= l2
+                out.printl(f"{ctx.data.names['BASE'].get(1, '')}が{l3}減った！")
+                out.printl()
+                if c.base[1] - l3 <= 0:
+                    l3 = c.base[1]
+                c.base[1] -= l3
+            out.set_bold(False)
+            loc[2] = l2
+            cloth_battle_damage(ctx, 6)
+            if cheers_enabled(ctx):
+                perform_cheers_tentacle_hit_hantei(ctx)
+            if v[14] > 0:
+                state_change_extraeffect(ctx)
+            if v[200] > 0:
+                shinkyou_change(ctx, "KOUYOU")
+            else:
+                shinkyou_change(ctx, "IKARI_TEIKAN")
+            if c.cflag[1] != 2:
+                v[6] += limit(isqrt(max(c.base[11] - 100, 0)), 0, 20) + 5
     else:
         raise NotImplementedError(f"敵の行動 TFLAG:10 = {action}")
     # :933–934 反撃判定（`!(気絶) && 反撃 || ＥＸ反撃`）
@@ -588,6 +825,47 @@ def select_tentacle_action(ctx: Ctx) -> None:
         st.tflag[10] = st.rng.rand(2) + 2
         if c.base[1] <= 0:
             st.tflag[10] = 2
+    attack_place_decision(ctx)
+
+
+def select_enemy_action(ctx: Ctx) -> None:
+    """`@SELECT_ENEMY_ACTION`（ENEMY_ACTION.ERB:1073–1156）：悪堕ちキャラの行動選択。
+    1=攻撃 2=絡みつく 3=体液を吐く 4=距離を取る 5=押し倒す 6=邪悪な波動。専用ルーチンは無く（:1079 は註解）TFLAG:10 = 0。"""
+    st = ctx.state
+    c = tc(ctx)
+    e = st.charas[st.flag[111]]
+    rand = st.rng.rand
+    st.tflag[11] = 0
+    st.tflag[12] = 0
+    st.tflag[10] = 0  # :1080–1081
+    lo = rand(100)  # :1084–1102
+    st.tflag[10] = 1 if lo < 55 else 6 if lo < 70 else 2 if lo < 85 else 3 if lo < 95 else 4
+    if st.flag[902] and st.tflag[10] == 2:  # :1104–1114
+        lo = rand(100)
+        if lo < 15:
+            st.tflag[10] = 1
+        elif lo < 30:
+            st.tflag[10] = 3
+        elif lo < 35:
+            st.tflag[10] = 4
+        elif lo < 40:
+            st.tflag[10] = 6
+    elif st.flag[907] and rand(100) < 20:  # :1116–1117
+        st.tflag[10] = 2
+    if st.tflag[10] == 4 and percent_cal(st.flag[13], st.flag[12]) >= 90:  # :1121–1122
+        st.tflag[10] = 1
+    if c.base[0] <= 0 and c.base[1] > 0:  # :1125–1133
+        lo = rand(100)
+        st.tflag[10] = 6 if lo < 40 else 2 if lo < 80 else 3
+    elif c.base[1] <= 0 and c.base[0] > 0:  # :1135–1143
+        lo = rand(100)
+        st.tflag[10] = 1 if lo < 40 else 2 if lo < 80 else 3
+    elif c.base[0] <= 0 and c.base[1] <= 0:  # :1145–1146
+        st.tflag[10] = 2
+    if st.tflag[10] == 2 and t(ctx, e, "寄生") == 0:  # :1149–1150
+        st.tflag[10] = 5
+    if st.tflag[10] == 3 and t(ctx, e, "寄生") == 0:  # :1153–1154
+        st.tflag[10] = 1
     attack_place_decision(ctx)
 
 
@@ -690,9 +968,10 @@ def attack_place_decision(ctx: Ctx) -> None:
     l0 = div(l0 * cloth_battle_hosei(ctx, "CHISEI"), 100)
     l0 = shinkyou_check(ctx, "CHISEI", l0)
     l0 += calc_chisei_shien(ctx, 0)
-    if enemy_type_check(st, "AKUOTI"):
-        raise NotImplementedError("悪堕ちキャラの知性")
-    l1 = int(tentacle_access(ctx, "CHISEI"))
+    if enemy_type_check(st, "AKUOTI"):  # :162–168
+        l1 = st.charas[st.flag[111]].maxbase[13]
+    else:
+        l1 = int(tentacle_access(ctx, "CHISEI"))
     l2 = l0 + l1
     l3 = div(160 * l0, l2) + 96
     if st.flag[999] == 1:

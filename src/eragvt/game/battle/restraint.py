@@ -2,8 +2,9 @@
 70、100〜104）と COMF8〜15.ERB、COMF40.ERB、COMF44〜46.ERB、COMF100〜104.ERB、地の文
 `地の文/MESSAGE_BATTLE.ERB`:634–990（振り解く〜反抗する）。
 
-路徑相對 `source/earGVP/ERB/`。ボス触手戦（FLAG:110 == 0、雑魚・市民でない）の分岐のみ移植。
-ヒロイン側の性攻撃（100〜104）の地の文（`地の文/MESSAGE_SEX.ERB`:1932–2200）は本文を `core.chinobun` に置き換える。
+路徑相對 `source/earGVP/ERB/`。ボス触手戦と洗脳／悪堕ちキャラ戦（FLAG:110 == 1、S19：敵名・MESSAGE_OTHER_*・
+COM47 説得する）の分岐を移植（雑魚・市民は停止）。
+ヒロイン側の性攻撃（100〜104）の地の文（`地の文/MESSAGE_SEX.ERB`:1932–2200）は catalog（無ければ chinobun）。
 """
 
 from __future__ import annotations
@@ -36,6 +37,8 @@ from .core import (
     SEI_TEIKOU,
     ZETSUBOU,
     abl,
+    msg_other,
+    print_enemy_prefix,
     run_chinobun,
     correction_trans,
     exp,
@@ -57,6 +60,7 @@ ComGen = Generator[None, int, int]
 # 体勢（DIM.ERH:187–205）
 P_BATOU = 7  # 罵倒する
 P_HANKOU = 8  # 反抗する
+P_SETTOKU = 9  # 説得する（DIM.ERH:197）
 MOUTH, HAND, WAREME, BOUHATSU = 16, 32, 64, 128
 
 
@@ -70,8 +74,31 @@ def _mob(ctx: Ctx) -> bool:
 
 
 def _need_boss(ctx: Ctx) -> None:
-    if enemy_type_check(ctx.state, "AKUOTI") == 1 or _mob(ctx):
-        raise NotImplementedError("悪堕ちキャラ／雑魚敵戦の拘束中コマンドは未移植")
+    if _mob(ctx):
+        raise NotImplementedError("雑魚敵戦の拘束中コマンドは未移植")
+
+
+def _akuoti(ctx: Ctx) -> bool:
+    return enemy_type_check(ctx.state, "AKUOTI") == 1
+
+
+def _other(ctx: Ctx, name: str) -> None:
+    """`SIF ENEMY_TYPE_CHECK_F("AKUOTI") == 1 / CALL MESSAGE_OTHER_BATTLE_CHARA_{name}`。"""
+    if _akuoti(ctx):
+        msg_other(ctx, f"BATTLE_CHARA_{name}")
+
+
+def _enemy_locals(ctx: Ctx) -> tuple[str, str]:
+    """MESSAGE_BATTLE.ERB の HIKIHAGASU／BATOU／PERSUADE 冒頭（:797–808 等）：(LOCALS, LOCALS:1)。
+    FLAG:110 == 1 なら寄生なしでふたなり・オトコの敵は "ペニス"、それ以外 "触手"、LOCALS:1 は敵の呼び名。"""
+    st = ctx.state
+    if st.flag[110] == 0:
+        return "触手", str(tentacle_access(ctx, "GETNAME"))
+    from .sexmsg import istentacler
+
+    e = st.charas[st.flag[111]]
+    penis = istentacler(ctx, st.flag[111]) == 0 and (t(ctx, e, "ふたなり") > 0 or is_male(ctx.data, e))
+    return ("ペニス" if penis else "触手"), print_transcallname(st, st.flag[111])
 
 
 # --- COM_ABLE（COMABLE.ERB）-------------------------------------------------------------
@@ -213,20 +240,29 @@ def com_able_restraint(ctx: Ctx, n: int) -> tuple[int, tuple[int, int, int] | No
             return 0, None
         if percent_cal(c.base[1], c.maxbase[1]) > 75 or (_mb(ctx) & DARAKU):
             return 0, None
-        if enemy_type_check(st, "AKUOTI") > 0:
-            raise NotImplementedError("悪堕ちキャラ戦の罵倒／反抗判定は未移植")
-        timid = tt("臆病") or tt("恥ずかしがり屋") or tt("悲観的")
-        if n == 45 and timid:
+        if enemy_type_check(st, "AKUOTI") > 0:  # :555–558／:602–605 相手が悪堕ちキャラなら強気な性格かどうか
+            strong = tt("勝気") or tt("古風") or tt("乱暴者")
+            if n == 45 and not strong:
+                return 0, None
+            if n == 46 and strong:
+                return 0, None
+        else:
+            timid = tt("臆病") or tt("恥ずかしがり屋") or tt("悲観的")
+            if n == 45 and timid:
+                return 0, None
+            if n == 46 and not timid and tt("感情乏しい") == 0:
+                return 0, None
+        if (s12 & KOUKOTSU) or (s12 & KIZETU) or not guard:
             return 0, None
-        if n == 46 and not timid and tt("感情乏しい") == 0:
+        return 1, None
+    if n == 47:  # :621–652（拘束中でなくても使える）
+        if enemy_type_check(st, "AKUOTI") == 0:
+            return 0, None
+        if st.temp.prevcom in (1, 2, 3, 9) or st.tflag[20] in (11, 12, 16, 1006) or st.temp.prevcom == 47:
             return 0, None
         if (s12 & KOUKOTSU) or (s12 & KIZETU) or not guard:
             return 0, None
         return 1, None
-    if n == 47:  # :621–652
-        if enemy_type_check(st, "AKUOTI") == 0:
-            return 0, None
-        raise NotImplementedError("説得する（悪堕ちキャラ戦）は未移植")
     if n == 70:  # :676–698
         from .commands import _no_attack
         from .core import get_battle_situation
@@ -291,6 +327,8 @@ def _com_able_sex(ctx: Ctx, n: int, guard: bool, pink: tuple[int, int, int]) -> 
         if n == 103:  # :991–1020
             if _mob(ctx) or enemy_type_check(st, "LASTBOSS") >= 1:
                 raise NotImplementedError("雑魚敵／ラスボスの REACTION_REF は未移植")
+            if st.flag[11] not in range(1, 8):  # TENTACLE_BOSS_{FLAG:11}_REACTION_REF が無い（悪堕ちキャラ戦は 0）→ CATCH
+                return 0, None
             r = boss_reaction_ref(ctx, st.flag[11], 2)
             typ = SEX_TYPE.get(r)
             if typ is None:
@@ -327,7 +365,10 @@ def msg_hurihodoku(ctx: Ctx) -> None:
     """`@MESSAGE_BATTLE_CHARA_HURIHODOKU`:634–648。"""
     st = ctx.state
     _need_boss(ctx)
-    ctx.out.printl(f"{print_transcallname(st, st.target)}は手足に絡みついた触手を振り解こうと全力で暴れた・・・")
+    if _akuoti(ctx):
+        ctx.out.printl(f"{print_transcallname(st, st.target)}は{print_transcallname(st, st.flag[111])}の拘束を振り解こうと全力で暴れた・・・")
+    else:
+        ctx.out.printl(f"{print_transcallname(st, st.target)}は手足に絡みついた触手を振り解こうと全力で暴れた・・・")
     kojo_root(ctx, "BATTLE_CHARA_HURIHODOKU")
     ctx.out.printw()
 
@@ -338,7 +379,7 @@ def msg_hurihodoku_success(ctx: Ctx) -> None:
     out = ctx.out
     _need_boss(ctx)
     out.print("すると一瞬")
-    out.print("触手")
+    out.print(print_transcallname(st, st.flag[111]) if _akuoti(ctx) else "触手")
     out.printl("の拘束が緩み、")
     out.printl(f"その隙を突いた{print_transcallname(st, st.target)}は辛くも窮地を脱することに成功した！")
     kojo_root(ctx, "BATTLE_CHARA_HURIHODOKU_SUCCESS")
@@ -353,7 +394,7 @@ def msg_hurihodoku_false(ctx: Ctx) -> None:
     name = print_transcallname(st, st.target)
     _need_boss(ctx)
     out.print("しかし")
-    out.print("触手")
+    out.print(print_transcallname(st, st.flag[111]) if _akuoti(ctx) else "触手")
     if t(ctx, c, "感情乏しい") > 0:
         out.printl("の拘束はびくともしなかった・・・")
     elif t(ctx, c, "主観視点") > 0:
@@ -397,10 +438,12 @@ def com8(ctx: Ctx) -> ComGen:
         st.tflag[16] = -1
         st.tflag[17] = -1
         msg_hurihodoku_success(ctx)
+        _other(ctx, "HURIHODOKU_SUCCESS")  # :29–30
         st.tflag[1] = 1
         c.tcvarn[8] = 1
     else:
         msg_hurihodoku_false(ctx)
+        _other(ctx, "HURIHODOKU_FALSE")  # :41–42
     c.ex[99] += 1
     if t(ctx, c, "剛腕") > 0:
         st.tflag[99] += 1
@@ -423,9 +466,16 @@ def com9(ctx: Ctx) -> ComGen:
     out.printl()
     _need_boss(ctx)
     # MESSAGE_BATTLE_CHARA_ABARERU（MESSAGE_BATTLE.ERB:697–713）
-    out.printl(f"{print_transcallname(st, st.target)}は触手に絡まれた状態からでも")
+    if _akuoti(ctx) and t(ctx, st.charas[st.flag[111]], "寄生") == 0:
+        out.printl(f"{print_transcallname(st, st.target)}は{print_transcallname(st, st.flag[111])}に拘束された状態からでも")
+    else:
+        out.printl(f"{print_transcallname(st, st.target)}は触手に絡まれた状態からでも")
     _simple_msg(ctx, "BATTLE_CHARA_ABARERU", ["なんとかダメージを与えようと苦し紛れにもがいた！"])
-    l0 = int(tentacle_access(ctx, "KOUGEKI"))  # :24–31（FLAG:111 == 0）
+    _other(ctx, "ABARERU")  # :18–19
+    if st.flag[111] == 0:  # :24–31
+        l0 = int(tentacle_access(ctx, "KOUGEKI"))
+    else:
+        l0 = st.charas[st.flag[111]].maxbase[10]
     if st.tflag[2] >= 1:
         l0 = 1
     l1 = shinkyou_check(ctx, "BOUGYO", correction_trans(ctx, c.maxbase[11]))
@@ -443,11 +493,13 @@ def com9(ctx: Ctx) -> ComGen:
         hit_flag = 2
         _colored(ctx, (255, 0, 0), "CRITICAL HIT!", bold=True)  # MESSAGE_BATTLE_CHARA_ATTACK_CRITICAL_HIT:522–532
         kojo_root(ctx, "BATTLE_CHARA_ATTACK_CRITICAL_HIT")
+        _other(ctx, "ATTACK_CRITICAL_HIT")  # :65–66
         v[2] = P_ABARE_CRIT
     else:
         l0 = 10
         _colored(ctx, (255, 255, 0), "HIT!")  # MESSAGE_BATTLE_CHARA_ATTACK_HIT:535–543
         kojo_root(ctx, "BATTLE_CHARA_ATTACK_HIT")
+        _other(ctx, "ATTACK_HIT")  # :74–75
     r = damage(ctx, "ABARERU")  # :80–86
     st.flag[13] -= div(r * l0, 10)
     out.set_bold(True)
@@ -481,9 +533,10 @@ def com10(ctx: Ctx) -> ComGen:
     _need_boss(ctx)
     out.print(f"{print_transcallname(st, st.target)}は")  # MESSAGE_BATTLE_CHARA_TAERU:716–729
     out.print("ぐっと唇を噛んで")
-    tentacle_access(ctx, "NAME")
+    print_enemy_prefix(ctx)
     out.printl("の陵辱に耐えている・・・")
     _simple_msg(ctx, "BATTLE_CHARA_TAERU", [], extra_blank=True)
+    _other(ctx, "TAERU")  # :19–20
     c.ex[99] += 1
     return 1
     yield  # pragma: no cover
@@ -505,10 +558,11 @@ def com11(ctx: Ctx) -> ComGen:
     else:
         _need_boss(ctx)
         out.print(f"{name}は身を竦ませ、")  # MESSAGE_BATTLE_CHARA_NASUGAMAMA:734–745
-        tentacle_access(ctx, "NAME")
+        print_enemy_prefix(ctx)
         out.printl("の陵辱になすがままにされている・・・")
         kojo_root(ctx, "BATTLE_CHARA_NASUGAMAMA")
         out.printw()
+        _other(ctx, "NASUGAMAMA")  # :22–23
     return 1
     yield  # pragma: no cover
 
@@ -524,10 +578,11 @@ def com12(ctx: Ctx) -> ComGen:
     st.tflag[3] += 50
     _need_boss(ctx)
     out.print(f"{print_transcallname(st, st.target)}は")  # MESSAGE_BATTLE_CHARA_UKEIRERU:750–761
-    tentacle_access(ctx, "NAME")
+    print_enemy_prefix(ctx)
     out.printl("の与える快楽をすすんで受け入れた・・・")
     kojo_root(ctx, "BATTLE_CHARA_UKEIRERU")
     out.printw()
+    _other(ctx, "UKEIRERU")  # :17–18
     return 1
     yield  # pragma: no cover
 
@@ -553,9 +608,13 @@ def com13(ctx: Ctx) -> ComGen:
     tentacle_syasei_up(ctx, local)
     _need_boss(ctx)
     # MESSAGE_BATTLE_CHARA_HOUSI:766–781
-    out.printl(f"{print_transcallname(st, st.target)}は近くにあった触手を手に取り熱心な奉仕を始めた・・・")
+    if _akuoti(ctx):
+        out.printl(f"{print_transcallname(st, st.target)}は自分から{print_transcallname(st, st.flag[111])}への熱心な奉仕を始めた・・・")
+    else:
+        out.printl(f"{print_transcallname(st, st.target)}は近くにあった触手を手に取り熱心な奉仕を始めた・・・")
     kojo_root(ctx, "BATTLE_CHARA_HOUSI")
     out.printw()
+    _other(ctx, "HOUSI")  # :40–41
     c.ex[99] += 1
     return 1
     yield  # pragma: no cover
@@ -577,6 +636,7 @@ def com14(ctx: Ctx) -> ComGen:
     out.printl(f"{print_transcallname(st, st.target)}はせめて膣への挿入だけでも防ごうと身構えた・・・")
     kojo_root(ctx, "BATTLE_CHARA_ANTI_V")
     out.printw()
+    _other(ctx, "ANTI_V")  # :22–23
     c.ex[99] += 1
     return 1
     yield  # pragma: no cover
@@ -730,7 +790,7 @@ def com40(ctx: Ctx) -> ComGen:
     print_distance(ctx)
     out.printl()
     _need_boss(ctx)
-    ename = str(tentacle_access(ctx, "GETNAME"))
+    lkind, ename = _enemy_locals(ctx)
     name = print_transcallname(st, st.target)
     # MESSAGE_BATTLE_CHARA_HIKIHAGASU:796–811
     out.printl(f"{name}は{ename}に犯されながらも激しく抵抗した・・・")
@@ -744,16 +804,19 @@ def com40(ctx: Ctx) -> ComGen:
         if c.tcvarn[12] & KYOUKOUSOKU:
             c.tcvarn[12] -= KYOUKOUSOKU
     if st.tflag[1] == 1:  # MESSAGE_BATTLE_CHARA_HIKIHAGASU_SUCCESS:815–836（:829 は括弧あり）
-        if ename == "Ｃ触手" or (ename == "Ｂ触手" and st.tflag[20] == 1011):
+        _lk, ename = _enemy_locals(ctx)
+        if lkind == "ペニス" or ename == "Ｃ触手" or (ename == "Ｂ触手" and st.tflag[20] == 1011):
             out.print(f"何とか{ename}を突き飛ばすことに成功した！")
         else:
             out.printl("触手を両手で掴んで抑え込み、力尽くで引き抜くことに成功した！")
         kojo_root(ctx, "BATTLE_CHARA_HIKIHAGASU_SUCCESS")
         out.printw()
+        _other(ctx, "HIKIHAGASU_SUCCESS")  # COMF40.ERB:35–36
     else:  # MESSAGE_BATTLE_CHARA_HIKIHAGASU_FALSE:839–871
         # :852 は括弧なし：`&&` と `||` は同順位・左結合（reference/emuera-1824/Emuera/GameData/Expression/
         # OperatorCode.cs:33–34、ExpressionParser.cs:502–506）なので ((ペニス || Ｃ触手 || Ｂ触手) && TFLAG:20 == 1011)
-        if ename in ("Ｃ触手", "Ｂ触手") and st.tflag[20] == 1011:
+        _lk, ename = _enemy_locals(ctx)
+        if (lkind == "ペニス" or ename in ("Ｃ触手", "Ｂ触手")) and st.tflag[20] == 1011:
             out.printl(f"{name}は何とかして{ename}を跳ね除けようとするが、")
             out.printl("激しいピストンで姿勢を崩されて思うように抵抗できない・・・")
         elif ename == "Ａ触手":
@@ -770,6 +833,7 @@ def com40(ctx: Ctx) -> ComGen:
                 out.printl("ぬるぬるした粘液で滑る触手を上手く掴むことができなかった・・・")
         kojo_root(ctx, "BATTLE_CHARA_HIKIHAGASU_FALSE")
         out.printw()
+        _other(ctx, "HIKIHAGASU_FALSE")  # COMF40.ERB:41–42
     c.ex[99] += 1
     return 1
     yield  # pragma: no cover
@@ -880,6 +944,7 @@ def com44(ctx: Ctx) -> ComGen:
     out.printl()
     kojo_root(ctx, "BATTLE_CHARA_NIRAMI")
     out.printw()
+    _other(ctx, "NIRAMI")  # :49–50
     c.ex[99] += 1
     _print_kiryoku(ctx, l1)
     out.printl("ＥＸゲージが少し溜まった！")
@@ -902,7 +967,7 @@ def com45(ctx: Ctx) -> ComGen:
     c.base[1] += l1
     st.tflag[99] += 1
     _need_boss(ctx)
-    ename = str(tentacle_access(ctx, "GETNAME"))
+    _lk, ename = _enemy_locals(ctx)
     name = print_transcallname(st, st.target)
     mb = _mb(ctx)  # MESSAGE_BATTLE_CHARA_BATOU:926–957
     if mb & ZETSUBOU:
@@ -921,6 +986,7 @@ def com45(ctx: Ctx) -> ComGen:
     out.printl()
     kojo_root(ctx, "BATTLE_CHARA_BATOU")
     out.printw()
+    _other(ctx, "BATOU")  # :56–57
     c.ex[99] += 1
     _print_kiryoku(ctx, l1)
     _shinkyou_after(ctx, "DOUYOU", "IKARI")
@@ -942,7 +1008,7 @@ def com46(ctx: Ctx) -> ComGen:
     st.tflag[99] += 1
     _need_boss(ctx)
     name = print_transcallname(st, st.target)
-    mb = _mb(ctx)  # MESSAGE_BATTLE_CHARA_RESISTANCE:962–989
+    mb = _mb(ctx)  # MESSAGE_BATTLE_CHARA_RESISTANCE:962–989（:963–974 の LOCALS は表示に使われない）
     if mb & ZETSUBOU:
         out.printl(f"心を折られた{name}はもはや形だけの抵抗をしている・・・")
     elif mb & KAIRAKU_TOROKE:
@@ -954,9 +1020,73 @@ def com46(ctx: Ctx) -> ComGen:
     out.printl()
     kojo_root(ctx, "BATTLE_CHARA_RESISTANCE")
     out.printw()
+    _other(ctx, "RESISTANCE")  # :53–54
     c.ex[99] += 1
     _print_kiryoku(ctx, l1)
     _shinkyou_after(ctx, "TEIKAN", "REISEI")
+    return 1
+    yield  # pragma: no cover
+
+
+def com47(ctx: Ctx) -> ComGen:
+    """`COMF47.ERB@COM47`:2–78（説得する）。地の文は MESSAGE_BATTLE_CHARA_PERSUADE（MESSAGE_BATTLE.ERB:992–1016）。
+    `RAND:RESULT / 2` は (RAND:RESULT) / 2（ExpressionParser.cs@ReduceVariableArgument:192–198）。"""
+    from .commands import _tofull
+    from ..action import print_callname
+
+    st = ctx.state
+    c = tc(ctx)
+    v = c.tcvarn
+    out = ctx.out
+    rand = st.rng.rand
+    print_distance(ctx)  # :5–6
+    out.printl()
+    st.tflag[3] += 5  # :9
+    v[2] = P_SETTOKU  # :12
+    name = print_transcallname(st, st.target)  # :15 MESSAGE_BATTLE_CHARA_PERSUADE（:993–1004 の LOCALS は表示に使わない）
+    if t(ctx, c, "主観視点") > 0:
+        out.printl(f"{name}はなんとか言葉で説得しようとした・・・")
+    else:
+        out.printl(f"{name}はこんなことを止めるように説得しようとしている・・・")
+    out.printl()
+    kojo_root(ctx, "BATTLE_CHARA_PERSUADE")
+    out.printw()
+    _other(ctx, "PERSUADE")  # :17–18
+    l0 = div(c.maxbase[ctx.data.index_of("BASE", "知性")] * cloth_battle_hosei(ctx, "CHISEI"), 100)  # :21–25
+    l0 = shinkyou_check(ctx, "CHISEI", l0)  # :28–29
+    if enemy_type_check(st, "AKUOTI"):  # :32–37
+        l1 = st.charas[st.flag[111]].maxbase[13]
+    else:
+        l1 = int(tentacle_access(ctx, "CHISEI"))
+    result = percent_cal(l0, l1)  # :39
+    if rand(360) + 90 < result:  # :40–46
+        local = 650 + div(rand(result), 2)
+        st.tflag[3] += local
+        out.printl("迫真の言葉に相手は動揺している！")
+        out.printl(f"油断度＋（{_tofull(local)}）")
+    elif rand(240) + 60 < result:  # :47–53
+        local = 400 + div(rand(result), 2)
+        st.tflag[3] += local
+        out.printl("相手を少し動揺させることができたようだ・・・")
+        out.printl(f"油断度＋（{_tofull(local)}）")
+    elif rand(180) + 30 < result:  # :54–60
+        local = 250 + div(rand(result), 4)
+        st.tflag[3] += local
+        out.printl("相手の瞳の奥に微かな変化があったようにも見える・・・")
+        out.printl(f"油断度＋（{_tofull(local)}）")
+    else:
+        out.printl("相手は聞く耳を持たない様子だ・・・")
+    out.printl()  # :64
+    c.ex[99] += 1  # :67
+    # :69 `TCVARn:1 > 0 && RAND:100 < (TCVARn:11 * 10)`（短絡：TCVARn:1 が 0 なら RAND を引かない）
+    if v[1] > 0 and rand(100) < v[11] * 10:
+        v[1] = 6
+        out.print(f"{print_callname(st, st.target)}の心境が")
+        shinkyou_check(ctx, "PRINT", 0)
+        out.printl("に変化した")
+    else:
+        v[11] += 1
+    out.printl()
     return 1
     yield  # pragma: no cover
 
@@ -965,12 +1095,14 @@ def com46(ctx: Ctx) -> ComGen:
 
 
 def _sex_attack_msg(ctx: Ctx, n: int) -> None:
-    """`MESSAGE_BATTLE_CHARA_SEX_ATTACK{n}`（地の文/MESSAGE_SEX.ERB:1932–2200、本文は chinobun）。"""
+    """`MESSAGE_BATTLE_CHARA_SEX_ATTACK{n}`（地の文/MESSAGE_SEX.ERB:1932–2200、本文は chinobun）と
+    悪堕ちキャラ戦の `MESSAGE_OTHER_BATTLE_CHARA_SEX_ATTACK{n}`（COMF100.ERB:24–25 等）。"""
     _need_boss(ctx)
     # 本文の末尾で TRYCALLFORM KOJO_ROOT(CFLAG:6, "BATTLE_CHARA_SEX_ATTACK{n}")（100〜104 すべて：:2001／:2063／:2101／
     # :2146／:2213）。S06 は 104 の KOJO_ROOT を落としていたので fallback でも呼ぶ。
     run_chinobun(ctx, f"MESSAGE_BATTLE_CHARA_SEX_ATTACK{n}",
                  fallback=lambda: kojo_root(ctx, f"BATTLE_CHARA_SEX_ATTACK{n}"))
+    _other(ctx, f"SEX_ATTACK{n}")
 
 
 def _pleasure_given(ctx: Ctx, before: int, wait_split: bool = False) -> None:
@@ -978,7 +1110,10 @@ def _pleasure_given(ctx: Ctx, before: int, wait_split: bool = False) -> None:
     st = ctx.state
     out = ctx.out
     out.printl()
-    tentacle_access(ctx, "NAME")
+    if st.flag[110] == 0:  # COMF100.ERB:35–39 等
+        tentacle_access(ctx, "NAME")
+    elif st.flag[110] == 1:
+        out.print(print_transcallname(st, st.flag[111]))
     out.print("に")
     out.set_bold(True)
     out.print(f"{st.flag[15] - before}の快楽")
@@ -1016,10 +1151,17 @@ def com100(ctx: Ctx) -> ComGen:
     before = st.flag[15]
     tentacle_syasei_up(ctx, min(div(c.maxbase[2], 5), 75) + 100 + g * 25)
     _pleasure_given(ctx, before)
-    tentacle_syasei_check(ctx)
+    r0 = tentacle_syasei_check(ctx)[0]  # RESULT = RESULT:0
     out.printl()
     if g >= 3 and st.rng.rand(100) < 10:  # :52–62
-        r = boss_reaction_ref(ctx, st.flag[11], 3)
+        if _mob(ctx) or enemy_type_check(st, "LASTBOSS") >= 1:
+            raise NotImplementedError("雑魚敵／ラスボスの REACTION_REF は未移植")
+        if st.flag[11] in range(1, 8):
+            r = boss_reaction_ref(ctx, st.flag[11], 3)
+        else:
+            # TENTACLE_BOSS_{FLAG:11}_REACTION_REF が無い（悪堕ちキャラ戦は FLAG:11 = 0）→ TRYCALLFORM 不発で RESULT は
+            # 直前の TENTACLE_SYASEI_CHECK の RESULT（＝RESULT:0）のまま
+            r = r0
         if r >= 0:
             st.tflag[17] = r
     _houshi_juel(ctx, 450, 25)
@@ -1223,4 +1365,4 @@ def com104(ctx: Ctx) -> ComGen:
 
 
 RESTRAINT_COMS = {8: com8, 9: com9, 10: com10, 11: com11, 12: com12, 13: com13, 14: com14, 15: com15, 40: com40,
-                  44: com44, 45: com45, 46: com46, 100: com100, 101: com101, 102: com102, 103: com103, 104: com104}
+                  44: com44, 45: com45, 46: com46, 47: com47, 100: com100, 101: com101, 102: com102, 103: com103, 104: com104}

@@ -239,12 +239,70 @@ def perform_cheers_first(ctx: Ctx) -> None:
 
 
 def perform_cheers_hate(ctx: Ctx) -> None:
-    """`@PERFORM_CHEERS_HATE`:309–387（悪堕ち経験がある場合のみ）。"""
+    """`@PERFORM_CHEERS_HATE`:309–387（悪堕ち経験がある場合のみ）。罵声は 1〜10 を候補にして観戦人数（最大 5）回、
+    RANDCHOOSE_F → CLEARSPECIFICCHOOSE で重複なく選ぶ。"""
     st = ctx.state
     if st.flag[70] + st.flag[71] == 0:
         return
-    if exp(ctx, tc(ctx), "陥落経験") > 0:
-        raise NotImplementedError("悪堕ち経験者への罵声（PERFORM_CHEERS_HATE）は未移植")
+    c = tc(ctx)
+    if exp(ctx, c, "陥落経験") <= 0:
+        return
+    out = ctx.out
+    n70 = st.flag[70] + st.flag[71]
+    name = print_transcallname(st, st.target)
+    out.printl()  # :317–332
+    out.printl("不意に、後ろの方から声がした・・・！")
+    out.print("見れば")
+    out.print("多くの人々が" if n70 >= 5 else "数名の一般人が" if n70 > 1 else "ひとりの一般市民が")
+    out.print("自分")
+    if n70 > 1:
+        out.print("たち")
+    out.printl("の身の安全も顧みずに")
+    out.printl(f"{name}に怨嗟の声を張り上げている！")
+    out.printw()
+    theme = print_theme(ctx)  # :333–341
+    if theme != "":
+        ls = theme
+    elif (
+        is_male(ctx.data, c)
+        and t(ctx, c, "変身時ＴＳ") == 0
+        and t(ctx, c, "男の娘") <= 0
+        and t(ctx, c, "変身時男の娘") <= 0
+    ):
+        ls = "魔装少年"
+    else:
+        ls = "魔法少女"
+    clear_randchoose(st)  # :342–345
+    for i in range(10):
+        add_randchoose(st, i + 1)
+    lines = {
+        10: f"「{ls}だ・・・裏切り者の{ls}だ！！」",
+        9: "「お前なんか、やられちゃえ！」",
+        8: "「何しに来たんだ！！」",
+        7: "「あなたなんて負けて犯されればいいのよ！」",
+        6: "「みんなをよくも騙したな！」",
+        5: "「お前に助けてなんて頼んでない！」",
+        4: "「あの子が・・・お前のせいであの子が！！」",
+        3: "「応援してるぞ！　触手さま！！」",
+        2: f"「{ls}、負けてしまえ！！」",
+        1: "「正義の味方のフリかよ！」",
+    }
+    for _ in range(min(n70, 5)):  # :346–373（FOR の終端は開始時に 1 回だけ評価）
+        if choicecount(st) == 0:
+            break
+        r = randchoose_f(st)
+        out.print(lines.get(r, ""))
+        clear_specific_choose(st, r)
+        out.printl()
+    out.printw()
+    out.printl(f"心の奥が重くなるのを感じながら、{name}は市民からの罵声に耐えた・・・")  # :375–386
+    out.printl("己の犯した罪はそれほどのことなのだと受け止め")
+    out.printl(f"気合を入れなおした{name}は避難を呼びかけながら、")
+    out.printl("敵の注意を引き付けるべく前に進み出た・・・")
+    out.printl()
+    c.tcvarn[1] = 7
+    _shinkyou_line(ctx)
+    out.printw()
 
 
 def _suit_state(ctx: Ctx) -> int:
@@ -376,8 +434,26 @@ def perform_cheers_tentacle_miss_hantei(ctx: Ctx) -> None:
         _filming(ctx, miss=True)
     elif st.rng.rand(100) < 35:
         local = 0
-        if exp(ctx, c, "陥落経験") > 0:
-            raise NotImplementedError("悪堕ち経験者への観衆の反応は未移植")
+        if exp(ctx, c, "陥落経験") > 0:  # :520–551 悪堕ち経験有り（人気度は下降）
+            if st.rng.rand(3) == 0:
+                out.printl(f"{name}は襲われそうになっていた一般人を寸でのところで助け出したが")
+                out.printl("一般人は悲鳴を上げながら飛び退いた・・・")
+                st.rng.rand(100)  # :524 `RAND:100 < 20 && LOCAL > 0`（LOCAL は VARSET で 0：常に不成立）
+            elif st.rng.rand(2) == 0:
+                out.print("避難中の一般人")
+                if st.flag[70] + st.flag[71] > 1:
+                    out.print("たち")
+                out.printl(f"が{name}の背後から石を投げつけてくる・・・")
+                st.rng.rand(100)  # :535（同上）
+            else:
+                out.printl(f"咄嗟に{name}が身を躱すと、敵の攻撃が鼻先を掠めていった。")
+                out.printl("観衆の落胆の声が聞こえる・・・")
+                local = st.rng.rand(st.flag[70] + st.flag[71])
+                if st.rng.rand(100) < 10 and local > 0:
+                    out.printl()
+                    st.flag[853] -= 1
+                    out.printl("人気度が1下降した！")
+            return
         if st.rng.rand(3) == 0:
             out.printl(f"{name}は襲われそうになっていた一般人を寸でのところで助け出した・・・")
             if st.rng.rand(100) < 20 and local > 0:  # LOCAL は VARSET で 0（原作では常に不成立）
@@ -411,8 +487,24 @@ def perform_cheers_tentacle_hit_hantei(ctx: Ctx) -> None:
     if st.flag[72]:
         _filming(ctx, miss=False)
     elif st.rng.rand(100) < 35:
-        if exp(ctx, c, "陥落経験") > 0:
-            raise NotImplementedError("悪堕ち経験者への観衆の反応は未移植")
+        if exp(ctx, c, "陥落経験") > 0:  # :716–735 悪堕ち経験有り
+            if st.rng.rand(3) == 0:
+                out.printl(f"{name}は逃げ遅れた一般人を庇って避けきれなかったようだ・・・")
+                out.printl("一般人から歓声が上がった。")
+                local = st.rng.rand(st.flag[70] + st.flag[71])
+                if st.rng.rand(100) < 20 and local > 0:
+                    out.printl()
+                    st.flag[853] -= 1
+                    out.printl("人気度が1下降した！")
+            elif st.rng.rand(2) == 0:
+                out.print("避難中の一般人")
+                if st.flag[70] + st.flag[71] > 1:
+                    out.print("たち")
+                out.printl(f"が{name}に罵声を浴びせている・・・")
+            else:
+                out.printl(f"{name}が攻撃を避けきれずに食らう様を目の当たりにして")
+                out.printl("観衆から歓声が上がった・・・")
+            return
         if st.rng.rand(3) == 0:
             out.printl(f"{name}は逃げ遅れた一般人を庇って避けきれなかったようだ・・・")
             local = st.rng.rand(st.flag[70] + st.flag[71])

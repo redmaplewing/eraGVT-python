@@ -383,7 +383,7 @@ def test_ending_checks_skip_in_gameover(ctx):
 
 
 @pytest.mark.parametrize(
-    ("time", "flag852", "states", "rng", "stops"),
+    ("time", "flag852", "states", "rng", "fires"),
     [
         # FORCE_悪堕ちキャラの淫謀.ERB@AKUOTI_ATTACK:5–29
         (0, 0, (3, 1, 1), [19], True),  # 昼 LOCAL 40：MIN(RAND:(SQRT(0)/2+20), 100) = 19 < 40
@@ -393,18 +393,20 @@ def test_ending_checks_skip_in_gameover(ctx):
         (0, 3600, (3, 3, 0), [45, 45], False),  # 2 人とも 45 ≥ 40
     ],
 )
-def test_akuoti_attack_candidates(ctx, time, flag852, states, rng, stops):
+def test_akuoti_attack_candidates(ctx, monkeypatch, time, flag852, states, rng, fires):
+    """候補が 1 人なら RANDCHOOSE_F は RAND:1（= 0）を 1 回引いてその 1 人（:28）→ AKUOTI_EVENT（:29）。"""
+    from eragvt.game import akuoti
+
     st = ctx.state
     st.time = time
     st.flag[852] = flag852
     for i, s in zip((1, 2, 3), states):
         st.charas[i].cflag[0] = s
-    st.rng = FixedRng(rng)
-    if stops:
-        with pytest.raises(NotImplementedError, match="AKUOTI_EVENT"):
-            turnend.akuoti_attack(ctx)
-    else:
-        turnend.akuoti_attack(ctx)
+    called = []
+    monkeypatch.setattr(akuoti, "akuoti_event", lambda c: called.append(c.state.flag[111]))
+    st.rng = FixedRng(rng + ([0] if fires else []))
+    turnend.akuoti_attack(ctx)
+    assert called == ([1] if fires else [])
     assert st.rng.snapshot() == []  # 与えた乱数をちょうど使い切る
 
 

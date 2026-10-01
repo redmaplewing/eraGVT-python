@@ -14,7 +14,7 @@ from __future__ import annotations
 
 from ..action import Ctx, config_check_maniac
 from ..era import div, format_curly, format_percent, isqrt, limit, mod, power, times
-from .core import t, tc, tentacle_level
+from .core import is_penis, t, tc, tentacle_level
 
 # DIM.ERH:94–105
 C_BIT, V_BIT, A_BIT, B_BIT = 1, 2, 4, 8
@@ -529,9 +529,10 @@ def set_tentacle_size(ctx: Ctx, arg0: int, arg1: int, arg2: int, arg3: int, arg4
     st = ctx.state
     rand = st.rng.rand
     sz, num = _sz(st), _num(st)
-    if arg2 > 0:
-        raise NotImplementedError("悪堕ちキャラの触手サイズ（SET_TENTACLE_SIZE ARG:2 > 0）は未移植")
-    result = tentacle_level(st)  # :1074
+    if arg2 > 0:  # :1071–1075
+        result = st.charas[arg3].abl[ctx.data.index_of("ABL", "レベル")]
+    else:
+        result = tentacle_level(st)
     if config_check_maniac(st, 20) == 1:  # :1077–1078
         result *= 10
     if arg4 == 1006 and st.flag[700] == 1:  # :1082–1089 強制自慰
@@ -539,7 +540,28 @@ def set_tentacle_size(ctx: Ctx, arg0: int, arg1: int, arg2: int, arg3: int, arg4
             sz[(0, i)] = _gs(ctx, 2, tc(ctx).cflag[1], st.target)
             num[(0, i)] = 2 + rand(4)
         return
-    if arg0 == 0:  # :1123–1128 ボス
+    if arg2 > 0:  # :1091–1121 洗脳／悪堕ちキャラが相手
+        e = st.charas[arg3]
+        ea = lambda n: e.abl[ctx.data.index_of("ABL", n)]  # noqa: E731
+        if t(ctx, e, "寄生") > 0:  # :1093–1101 寄生による触手（RESULT:0〜3 を ABL:0〜3 から、RESULT:4〜7 = 1）
+            local = isqrt((result * 4 + 15 + ea("欲望")) * (20 + t(ctx, e, "触手の虜") * 15))
+            if config_check_maniac(st, 20) == 0:
+                local = isqrt(local * 55)
+            r = tuple(e.abl[i] * 10 + 50 for i in range(4)) + (1, 1, 1, 1)
+        else:  # :1102–1120 指サイズ（ペニスがあればＶＡはそのサイズ）、RETURN 0
+            local = gaping_size(ctx, 10, 0, arg3)
+            for i in range(4):
+                sz[(0, i)] = local
+                num[(0, i)] = 1
+            if is_penis(ctx, arg3):
+                local = div((ea("欲望") * 3 + ea("射精中毒") * 6 + ea("Ｃ感覚") + t(ctx, e, "淫乱") * 9) * 18, 74) + 32
+                local = gaping_size(ctx, local, 0, arg3)
+                sz[(0, 1)] = local
+                sz[(0, 2)] = local
+                num[(0, 1)] = 1
+                num[(0, 2)] = 1
+            return
+    elif arg0 == 0:  # :1123–1128 ボス
         local = isqrt((result * 2 + 30) * 50)
         if config_check_maniac(st, 20) == 0:
             local = isqrt(local * 40)

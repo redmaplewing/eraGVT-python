@@ -1,17 +1,27 @@
 """触手の射精：`ゲーム内_戦闘処理/TENTACLE_SYASEI.ERB`（TENTACLE_SYASEI_UP／_CHECK／_POINT、TENTACLE_SAKUSEI）。
 
 路徑相對 `source/earGVP/ERB/`。射精の地の文（`地の文/MESSAGE_SEX.ERB`:764–1060、状態変化なし）は
-`core.chinobun` の 1 行に置き換える。悪堕ちキャラ・雑魚敵（901 妖精）の分岐は未移植で停止する。
+`core.chinobun` の 1 行に置き換える。雑魚敵（901 妖精）の分岐は未移植で停止する。
+
+悪堕ちキャラ戦（S19）：TENTACLE_SAKUSEI:585 の `CALL TENTACLE_ACCESS, "SAKUSEI"` は無条件に呼ばれるが、悪堕ちキャラ戦では
+FLAG:11 = 0（ACTION.ERB:38）なので TRYCALLFORM TENTACLE_BOSS_0_SAKUSEI が見つからず、TENTACLE_ACCESS は `RETURN RESULT`
+（COMMON_TENTACLE_DATA.ERB:209–211）で呼び出し時の RESULT をそのまま返す。よって補正率は TENTACLE_SAKUSEI 呼び出し時点の
+RESULT（＝直前の TENTACLE_SYASEI_POINT の RETURN 値 LOCAL:0、敵絶頂の分岐では TENTACLE_SYASEI_CHECK 呼び出し時点の RESULT）。
+TRYCALLFORM の不発で RESULT が変わらないこと：reference/emuera-1824/Emuera/GameProc/Function/Instraction.Child.cs@CALL_Instruction
+（TRYCALL 系は関数が無ければ何もしない）。呼び出し元はその値を `result` で渡す（`tentacle_syasei_check(ctx, result)`）。
 """
 
 from __future__ import annotations
 
 from ..action import Ctx, get_syuren, kojo_root, print_transcallname
+from ..chara_common import is_female
 from ..era import div, times
 from ..tentacle import enemy_type_check
 from .core import (
     KYOUKOUSOKU,
     P_HOUSHI,
+    is_penis,
+    msg_other,
     P_NASUGAMAMA,
     abl,
     run_chinobun,
@@ -75,14 +85,37 @@ def _clear_kyoukousoku(ctx: Ctx) -> None:
         v[12] -= KYOUKOUSOKU
 
 
-def tentacle_syasei_check(ctx: Ctx) -> tuple[int, int, int, int]:
-    """`@TENTACLE_SYASEI_CHECK`:88–216。戻り値 (潤滑, 屈服, 恭順, 欲情) の UP 加算値。"""
+def enemy_no_penis(ctx: Ctx) -> bool:
+    """`ENEMY_TYPE_CHECK_F("AKUOTI") == 1 && (ISFEMALE(FLAG:111) && TALENT:(FLAG:111):ふたなり < 1 &&
+    TALENT:(FLAG:111):寄生 == 0)`（ペニスを持たない悪堕ちキャラ）。"""
+    st = ctx.state
+    if enemy_type_check(st, "AKUOTI") != 1:
+        return False
+    e = st.charas[st.flag[111]]
+    return is_female(ctx.data, e) and t(ctx, e, "ふたなり") < 1 and t(ctx, e, "寄生") == 0
+
+
+def tentacle_syasei_check(ctx: Ctx, result: int = 0) -> tuple[int, int, int, int]:
+    """`@TENTACLE_SYASEI_CHECK`:88–216。戻り値 (潤滑, 屈服, 恭順, 欲情) の UP 加算値（RESULT:0〜3）。
+    `result` は呼び出し時点の RESULT（悪堕ちキャラの敵絶頂で TENTACLE_SAKUSEI の補正率になる：モジュール docstring）。"""
     st = ctx.state
     f = st.flag
+    out = ctx.out
     if enemy_type_check(st, "AKUOTI") == 0 and f[11] == 901 and f[15] >= f[14]:
         raise NotImplementedError("雑魚敵（妖精）の敵絶頂（TENTACLE_SYASEI_CHECK:90–119）は未移植")
-    if enemy_type_check(st, "AKUOTI") == 1 and f[15] >= f[14]:
-        raise NotImplementedError("悪堕ちキャラの敵絶頂（TENTACLE_SYASEI_CHECK:120–149）は未移植")
+    if enemy_no_penis(ctx) and f[15] >= f[14]:  # :120–149 悪堕ちキャラ（ペニスなし）の敵絶頂
+        out.set_bold(True)
+        out.printl("敵絶頂")
+        out.set_bold(False)
+        out.print(print_transcallname(st, st.flag[111]))
+        out.printl("は耐え切れずに絶頂に達した！")
+        out.printl()
+        st.tflag[3] += 100
+        # :131 搾精強化機能の `LOCAL:2` は TENTACLE_SYASEI_CHECK の LOCAL（どこでも代入されない：常に 0）
+        tentacle_sakusei(ctx, f[15], 0, 0, 0, 0, result=result)
+        f[15] = f[15] - f[14]
+        _clear_kyoukousoku(ctx)
+        return (0, 0, 0, 0)
     tf4 = st.tflag[4]
     if (tf4 == 0 or (tf4 & BOUHATSU)) and f[15] >= f[14]:  # :151–176
         if (f[15] >= f[14] * 2 and st.tflag[20] not in (15, 17, 19)) or (tf4 & BOUHATSU):
@@ -125,8 +158,13 @@ _POINTS = {
 
 
 def tentacle_syasei_point(ctx: Ctx, arg: int) -> tuple[int, int, int, int]:
-    """`@TENTACLE_SYASEI_POINT, ARG`:220–568。悪堕ちキャラ分岐（LOCAL:3 = 0）は到達しない（呼び出し前に停止）。"""
+    """`@TENTACLE_SYASEI_POINT, ARG`:220–568。悪堕ちキャラ（ペニスあり・寄生なし）は TFLAG:18（ペニス位置）以外の部位に
+    射精しない（各部位の `LOCAL:3`）。悪堕ちキャラ戦では各部位の地の文の後に MESSAGE_OTHER_SEX_TENTACLE_SYASEI_*。"""
+    from .sexmsg import istentacler
+
     st = ctx.state
+    akuoti = enemy_type_check(st, "AKUOTI") == 1
+    penis_only = akuoti and is_penis(ctx, st.flag[111]) and istentacler(ctx, st.flag[111]) == 0
     c = tc(ctx)
     out = ctx.out
     loc = [0] * 6  # VARSET LOCAL（:221）。LOCAL:0,1,4,5 を返す。LOCAL:2 は精液量の合計
@@ -142,6 +180,8 @@ def tentacle_syasei_point(ctx: Ctx, arg: int) -> tuple[int, int, int, int]:
     ju = abl(ctx, c, "従順")
     yo = abl(ctx, c, "欲望")
     for part in (WAREME, V_BIT, A_BIT, HAND, MOUTH, B_BIT):  # :236–559（記述順）
+        if penis_only and st.tflag[18] != part:  # `LOCAL:3 = 0`
+            continue
         if not (st.tflag[4] & part):
             continue
         stain_no, p1, p2, code = _POINTS[part]
@@ -160,6 +200,8 @@ def tentacle_syasei_point(ctx: Ctx, arg: int) -> tuple[int, int, int, int]:
                      fallback=None if code == "WAREME" else (lambda s=sub: kojo_root(ctx, f"SEX_TENTACLE_SYASEI_{s}")))
         if part == V_BIT:  # :306／:326 受精判定
             ninsin_hantei(ctx, arg, 3 if arg == 1 else 15)
+        if akuoti:  # 洗脳／悪堕ちキャラ側の地の文（ワレメは VAGINA を呼ぶ：:251–253／:269–271）
+            msg_other(ctx, f"SEX_TENTACLE_SYASEI_{'VAGINA' if code == 'WAREME' else code}{'_HI' if arg == 2 else ''}")
         loc[0] += p[0]
         loc[1] += p[1]
         loc[4] += p[2] * ju
@@ -183,8 +225,10 @@ def tentacle_syasei_point(ctx: Ctx, arg: int) -> tuple[int, int, int, int]:
     return (loc[0], loc[1], loc[4], loc[5])
 
 
-def tentacle_sakusei(ctx: Ctx, arg: int, r1: int, r2: int, r3: int, r4: int) -> tuple[int, int, int, int]:
-    """`@TENTACLE_SAKUSEI, ARG, ARG:1〜4`:572–607：射精による敵の体力消耗。ARG:1〜4 はそのまま返す。"""
+def tentacle_sakusei(ctx: Ctx, arg: int, r1: int, r2: int, r3: int, r4: int,
+                     result: int | None = None) -> tuple[int, int, int, int]:
+    """`@TENTACLE_SAKUSEI, ARG, ARG:1〜4`:572–607：射精による敵の体力消耗。ARG:1〜4 はそのまま返す。
+    `result` は呼び出し時点の RESULT（省略時は ARG:1：TENTACLE_SYASEI_POINT の直後に呼ばれる場合、RESULT = RESULT:0 = ARG:1）。"""
     st = ctx.state
     c = tc(ctx)
     out = ctx.out
@@ -195,17 +239,20 @@ def tentacle_sakusei(ctx: Ctx, arg: int, r1: int, r2: int, r3: int, r4: int) -> 
         arg = 500
     if t(ctx, c, "背徳の烙印") > 0:
         arg *= div(135, 100)  # :581 `ARG *= 135 / 100`（整数除算で ×1：原作どおり）
-    arg = div(arg * int(tentacle_access(ctx, "SAKUSEI")), 100)
+    if enemy_type_check(st, "AKUOTI") == 1:  # :585–586 TRYCALLFORM 不発 → RESULT のまま（モジュール docstring）
+        arg = div(arg * (r1 if result is None else result), 100)
+    else:
+        arg = div(arg * int(tentacle_access(ctx, "SAKUSEI")), 100)
     if st.flag[73] > 0:
         arg = 0
     st.flag[13] -= arg
     if st.flag[13] < 0:
         st.flag[13] = 0
-    if st.flag[110] == 0:
+    if st.flag[110] == 0:  # :592–596
         tentacle_access(ctx, "NAME")
-    else:
-        raise NotImplementedError("悪堕ちキャラの搾精表示は未移植")
-    if st.flag[110] == 0 and st.flag[11] == 901:
+    elif st.flag[110] == 1:
+        out.print(print_transcallname(st, st.flag[111]))
+    if (st.flag[110] == 1 and enemy_no_penis(ctx)) or (st.flag[110] == 0 and st.flag[11] == 901):  # :598
         out.printw(f"は絶頂によって体力を{arg}消耗した！！")
     else:
         out.printw(f"は射精によって体力を{arg}消耗した！！")

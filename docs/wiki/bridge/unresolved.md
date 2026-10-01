@@ -49,6 +49,13 @@
 - [ ] `GAME_MODE_CHECK_F`／`GAME_MODE_CHECK`（GAMEMODE.ERB:124–137）以全域 `COUNT` 當 FOR 變數（S12）。呼叫端若在 `FOR COUNT`
   迴圈中呼叫 `CHECK_GAMEOVER_F()` 會被改寫；已移植的呼叫端（SHOP／SHOP_TURNEND／SET_PARTYMEMBER（CCOUNT）／PRISON（LOCAL:999））
   都不是用 COUNT 迴圈，Python 未模型化 COUNT。之後移植新呼叫端時需確認。
-- [ ] 悪堕ちキャラ戰（FLAG:110 > 0）中受精時 `NINSIN_HANTEI`:150–151 的 `TENTACLE_ACCESS "GETNAME"`（S13）— TENTACLE_ACCESS
-  （`COMMON_TENTACLE_DATA.ERB`:198–）沒有悪堕ち分岐，名字取決於當時的 SAVESTR:13／FLAG:11；悪堕ちキャラ戰本身未移植，
-  Python 目前沿用 `battle.core.tentacle_access`（非 BOSS 時停止）。移植悪堕ち戰時需確認 SAVESTR:13／FLAG:11 的值。
+- [x] 悪堕ちキャラ戰（FLAG:110 > 0）中受精時 `NINSIN_HANTEI`:150–151 的 `TENTACLE_ACCESS "GETNAME"`（S13）— S19 確認：
+  ENCOUNT_ENEMY:22 SAVESTR:13 = "BOSS"、ACTION.ERB:37–38 FLAG:10 = FLAG:11 = 0 → `TENTACLE_BOSS_0_GETNAME` 不存在，TRYCALLFORM 不發，
+  RESULTS 為錯誤字串（`battle.core.tentacle_access`；deviations「原作行為」S19）。
+- [ ] 悪堕ちキャラによる幽閉（CFLAG:20 = 2）的 `EVENT_PALAM_HOSEI`（`EVENT_PALAM_UP.ERB`:134–140，S19）— `TENTACLE_ACCESS_PRISON`
+  （`COMMON_TENTACLE_DATA.ERB`:314–343）對 CFLAG:20 = 2 無分岐，不 RETURN → RESULT:0 = 0（`Process.ScriptProc.cs`:61–67），
+  RESULT:1〜11 是程式中最後一次多值 RETURN 留下的值（呼叫鏈任意處），Python 未模型化全域 RESULT 陣列 → 停止。已查：TENTACLE_ACCESS_PRISON、
+  EVENT_PALAM_HOSEI 呼叫鏈（COMMON_PRISON → EVENT_PALAM_UP）；未能確定在各 PRISON_COM 路徑上最後一次多值 RETURN 是哪個函式。
+- [ ] 悪堕ち容姿（`ヒロイン関連/悪堕ち/CORRPUTION.ERB`、`CORRUPTION_RECOVER.ERB`，S19 未移植）— CORRUPT_CHANGE_LOOKS_MAIN:20–21 在
+  `CONFIG_CHECK_PRISON_F(4) == 0`（基本セット）時直接 RETURN；CFLAG:80 bit2（AFTER_RESCUED:29 的 RECOVER_CORRUPTION 條件）只在 :65 設定
+  → 預設設定下兩者都到不了。設定 ON 時仍停止。

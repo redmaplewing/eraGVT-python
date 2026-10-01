@@ -8,7 +8,9 @@ SEX_COMEX.ERB、AUTO_V_DEFENCE.ERB）と `ENEMY_ACTION.ERB@ENEMY_ACTION_SEX_ROUT
   PALAM_CAL の 13 番目の引数 = LOSEBASE:体力）は初期化されず `LOCAL:12 += n` で**呼び出しのたびに累積**する
   （関数の LOCAL は呼び出し間で保持：reference/emuera-1824/Emuera/GameData/Variable/VariableData.cs@SetDefaultLocalValue:514–520）。
   原作どおり `st.temp.locals[("SEX_COMn", 12)]` に保持する。
-- 雑魚敵・クズ市民（TRYCALLFORM MESSAGE_MOB_…）と悪堕ちキャラ（MESSAGE_OTHER_…）の分岐は未移植で停止する。
+- 雑魚敵・クズ市民（TRYCALLFORM MESSAGE_MOB_…）の分岐は未移植で停止する。
+- 悪堕ちキャラ戦（S19）：本文の地の文の直前に `MESSAGE_OTHER_SEX_COMn`／`SPCOMn`（`core.msg_other`）、ペニス位置 TFLAG:18
+  （`_penis_pos`）、近親交配は `INCEST_F(TARGET, FLAG:111)`（RELATION）、追加責めは SEX_COMEX_RANDOM:66–74。
 - AUTO_V_DEFENCE は INPUT を含むので、SEX_COMABLE と一部の SEX_COM はジェネレータ（`yield` で入力待ち）。
 """
 
@@ -22,6 +24,8 @@ from ..era import div, times
 from ..tentacle import enemy_type_check
 from .cloth import INNER_DEF, INNER_PER, NO_INNER, OUTER_PER, cloth_battle_damage
 from .core import (
+    is_penis,
+    msg_other,
     run_chinobun,
     DARAKU,
     KIZETU,
@@ -100,8 +104,19 @@ def _akuoti(ctx: Ctx) -> bool:
 def _no_mob(ctx: Ctx, n: int | str) -> None:
     if _mob(ctx):
         raise NotImplementedError(f"雑魚敵／クズ市民の性攻撃地の文（MESSAGE_MOB_*_COM{n}）は未移植")
+
+
+def _other(ctx: Ctx, name: str) -> None:
+    """`SIF ENEMY_TYPE_CHECK_F("AKUOTI") == 1 / CALL MESSAGE_OTHER_SEX_{name}`（本文の地の文の直前）。"""
     if _akuoti(ctx):
-        raise NotImplementedError("悪堕ちキャラの性攻撃（MESSAGE_OTHER_SEX_*）は未移植")
+        msg_other(ctx, f"SEX_{name}")
+
+
+def _penis_pos(ctx: Ctx, part: int) -> None:
+    """`SIF ENEMY_TYPE_CHECK_F("AKUOTI") == 1 && (ISPENIS(FLAG:111)) / TFLAG:18 = 部位`（悪堕ちキャラのペニス位置）。"""
+    st = ctx.state
+    if _akuoti(ctx) and is_penis(ctx, st.flag[111]):
+        st.tflag[18] = part
 
 
 def _begin(ctx: Ctx) -> list[int]:
@@ -184,9 +199,13 @@ def incest(ctx: Ctx, who: int, other: int, arg2: int = 0) -> int:
 
 def _incest_exp(ctx: Ctx, amount: int = 1, guard_akuoti: bool = True) -> None:
     """`SIF ENEMY_TYPE_CHECK_F("AKUOTI") == 0 && INCEST_F(TARGET, FLAG:10 * 100 + FLAG:11, 1) > 0 / EXP:近親交配経験 += n`
-    （悪堕ち側の SIF は到達しない）。SEX_COM5:129 のみ AKUOTI 判定なし（guard_akuoti=False）。"""
+    `SIF ENEMY_TYPE_CHECK_F("AKUOTI") == 1 && INCEST_F(TARGET, FLAG:111) > 0 / EXP:近親交配経験 += n`。
+    SEX_COM5:129 のみ前者に AKUOTI 判定なし（guard_akuoti=False：悪堕ちキャラ戦では FLAG:10 = FLAG:11 = 0 の
+    INCEST_F(TARGET, 0, 1) ＝ CFLAG:9 == 0 との比較になる：原作どおり）。"""
     st = ctx.state
     if (not guard_akuoti or not _akuoti(ctx)) and incest(ctx, st.target, st.flag[10] * 100 + st.flag[11], 1) > 0:
+        add_exp(ctx, tc(ctx), "近親交配経験", amount)
+    if _akuoti(ctx) and incest(ctx, st.target, st.flag[111]) > 0:
         add_exp(ctx, tc(ctx), "近親交配経験", amount)
 
 
@@ -316,8 +335,13 @@ def sex_comex_random(ctx: Ctx, arg: int, arg1: int = 0) -> tuple[int, int]:
     if (at & V) and is_male(ctx.data, c):  # :56–63
         at -= V
         at |= 1 if rand(2) == 0 else 4
-    if _akuoti(ctx):
-        raise NotImplementedError("悪堕ちキャラの追加責め（SEX_COMEX_RANDOM:66–74）は未移植")
+    if _akuoti(ctx) and sexmsg.istentacler(ctx, st.flag[111]) == 0:  # :66–74
+        at = 0
+        # :69 `SETBIT AT_FLAG, (Ｖ - 1)`：Ｖ = 2 → ビット 1（＝Ｖ）。:72 `(Ａ - 1)`：Ａ = 4 → ビット 3（＝Ｂ：原作どおり）
+        if arg == C and is_female(ctx.data, c) and rand(2) == 0:
+            at |= 1 << (V - 1)
+        if st.tflag[10] == 1001 and rand(2) == 0:
+            at |= 1 << (A - 1)
     if arg & C:  # :77–84
         at |= C
     if (arg & V) and is_female(ctx.data, c):
@@ -461,8 +485,9 @@ def _maybe_auto_v(ctx: Ctx, need_v: bool) -> SexGen:
 
 
 def _mob_or_msg(ctx: Ctx, n: int, msg) -> None:
-    """`IF 雑魚／市民 / TRYCALLFORM MESSAGE_MOB_… / ELSE / (悪堕ち) / CALL MESSAGE_SEX_COMn`。"""
+    """`IF 雑魚／市民 / TRYCALLFORM MESSAGE_MOB_… / ELSE / (悪堕ち) MESSAGE_OTHER_SEX_COMn / CALL MESSAGE_SEX_COMn`。"""
     _no_mob(ctx, n)
+    _other(ctx, f"COM{n}")
     msg()
 
 
@@ -588,6 +613,7 @@ def sex_com3(ctx: Ctx, arg: int = 0, arg1: int = 0) -> SexGen:
     if st.temp.ex_com & A:  # :30–33
         st.tflag[4] |= A
         st.temp.insert |= A
+    _penis_pos(ctx, V)  # :36–37
     L = _begin(ctx)
     st.tflag[3] += 50
     tentacle_syasei_up(ctx, 250)
@@ -602,6 +628,7 @@ def sex_com3(ctx: Ctx, arg: int = 0, arg1: int = 0) -> SexGen:
         lostvirgin(ctx)
     else:
         L[10] = 0
+    _other(ctx, "COM3")  # :95–96
     sexmsg.msg_com3(ctx, st.temp.ex_com, st.temp.sh_com)
     set_tentacle_pool(ctx)
     cloth_battle_damage(ctx, 8)
@@ -695,6 +722,7 @@ def sex_com5(ctx: Ctx, arg: int = 0, arg1: int = 0) -> SexGen:
         st.temp.insert |= V
     if (ex & V) and vg and c.base[31] <= 0:
         st.tflag[4] |= WAREME
+    _penis_pos(ctx, A)  # :41–42
     L = _begin(ctx)
     st.tflag[3] += 50
     tentacle_syasei_up(ctx, 300)
@@ -707,6 +735,7 @@ def sex_com5(ctx: Ctx, arg: int = 0, arg1: int = 0) -> SexGen:
         lostvirgin(ctx)
     else:
         L[10] = 0
+    _other(ctx, "COM5")  # :115–116
     sexmsg.msg_com5(ctx, st.temp.ex_com, st.temp.sh_com)
     set_tentacle_pool(ctx)
     cloth_battle_damage(ctx, 8)
@@ -747,6 +776,7 @@ def sex_com6(ctx: Ctx, arg: int = 0, arg1: int = 0) -> None:
     st.tflag[4] |= B
     if st.rng.rand(100) < 75:
         st.tflag[4] = 0
+    _penis_pos(ctx, B)  # :23–24
     L = _begin(ctx)
     st.tflag[3] += 25
     tentacle_syasei_up(ctx, 100)
@@ -866,6 +896,7 @@ def sex_com10(ctx: Ctx, arg: int = 0, arg1: int = 0) -> None:
     st.tflag[4] |= HAND
     if st.rng.rand(100) < 75:
         st.tflag[4] = 0
+    _penis_pos(ctx, HAND)  # :22–23
     L = _begin(ctx)
     st.tflag[3] += 25
     tentacle_syasei_up(ctx, 150)
@@ -896,6 +927,7 @@ def sex_com11(ctx: Ctx, arg: int = 0, arg1: int = 0) -> None:
     st.tflag[4] |= MOUTH
     if st.rng.rand(100) < 40:
         st.tflag[4] = 0
+    _penis_pos(ctx, MOUTH)  # :23–24
     L = _begin(ctx)
     st.tflag[3] += 50
     tentacle_syasei_up(ctx, 200)
@@ -934,6 +966,7 @@ def sex_com12(ctx: Ctx, arg: int = 0, arg1: int = 0) -> None:
     st.tflag[4] |= B
     if st.rng.rand(100) < 25:
         st.tflag[4] = 0
+    _penis_pos(ctx, MOUTH)  # :20–21
     L = _begin(ctx)
     st.tflag[3] += 50
     tentacle_syasei_up(ctx, 350)
@@ -976,8 +1009,7 @@ def sex_com13(ctx: Ctx, arg: int = 0, arg1: int = 0) -> None:
     tentacle_syasei_up(ctx, 10)
     _size(ctx, 13)
     palam_vabc_estimate(ctx, L, -1)
-    if _akuoti(ctx):
-        raise NotImplementedError("悪堕ちキャラの性攻撃（MESSAGE_OTHER_SEX_COM13）は未移植")
+    _other(ctx, "COM13")  # :37–38
     sexmsg.msg_com13(ctx, st.temp.ex_com, st.temp.sh_com)
     set_tentacle_pool(ctx)
     m = c.abl[15]  # :48 ABL:15 = マゾっ気
@@ -1058,6 +1090,7 @@ def sex_com15(ctx: Ctx, arg: int = 0, arg1: int = 0) -> None:
     _random(ctx, V, arg1)
     st.temp.insert |= V
     _com15_20_head(ctx)
+    _penis_pos(ctx, V)  # :21–22
     L = _begin(ctx)
     st.tflag[3] += 5
     tentacle_syasei_up(ctx, 450)
@@ -1115,6 +1148,7 @@ def sex_com16(ctx: Ctx, arg: int = 0, arg1: int = 0) -> None:
     _finish_tflag4_hand_mouth(ctx)
     if st.temp.ex_com & B:
         st.tflag[4] |= B
+    _penis_pos(ctx, V)  # :29–30
     L = _begin(ctx)
     st.tflag[3] += 200
     tentacle_syasei_up(ctx, 1000)
@@ -1158,6 +1192,7 @@ def sex_com17(ctx: Ctx, arg: int = 0, arg1: int = 0) -> SexGen:
     if config_check_other(st, 4) > 0 and (st.temp.ex_com & V):
         st.temp.ex_com -= V
     yield from _maybe_auto_v(ctx, need_v=True)  # :28–29
+    _penis_pos(ctx, A)  # :32–33
     L = _begin(ctx)
     st.tflag[3] += 5
     tentacle_syasei_up(ctx, 550)
@@ -1210,6 +1245,7 @@ def sex_com18(ctx: Ctx, arg: int = 0, arg1: int = 0) -> None:
         st.tflag[4] |= B
     if st.temp.ex_com & V:
         st.tflag[4] |= WAREME
+    _penis_pos(ctx, A)  # :32–33
     L = _begin(ctx)
     st.tflag[3] += 200
     tentacle_syasei_up(ctx, 1150)
@@ -1256,6 +1292,8 @@ def sex_com19(ctx: Ctx, arg: int = 0, arg1: int = 0) -> None:
     st.temp.insert |= V
     st.temp.insert |= A
     _com15_20_head(ctx)
+    if _akuoti(ctx) and is_penis(ctx, st.flag[111]):  # :22–28（RAND は短絡：先に引く）
+        st.tflag[18] = V if (st.rng.rand(2) == 0 or c.tcvarn[2] == P_V_GUARD) else A
     L = _begin(ctx)
     st.tflag[3] += 8
     tentacle_syasei_up(ctx, 600)
@@ -1270,6 +1308,7 @@ def sex_com19(ctx: Ctx, arg: int = 0, arg1: int = 0) -> None:
         lostvirgin(ctx)
     else:
         L[10] = 0
+    _other(ctx, "COM19")  # :118–119
     sexmsg.msg_plain(ctx, 19)
     set_tentacle_pool(ctx)
     cloth_battle_damage(ctx, 3)
@@ -1309,6 +1348,8 @@ def sex_com20(ctx: Ctx, arg: int = 0, arg1: int = 0) -> None:
     _finish_tflag4_hand_mouth(ctx)
     if st.temp.ex_com & B:
         st.tflag[4] |= B
+    if _akuoti(ctx) and is_penis(ctx, st.flag[111]):  # :31–37
+        st.tflag[18] = V if st.rng.rand(2) == 0 else A
     L = _begin(ctx)
     st.tflag[3] += 300
     tentacle_syasei_up(ctx, 1200)
@@ -1361,7 +1402,7 @@ def sex_spcom0(ctx: Ctx) -> None:
         L[0] += 1500
     _comex(ctx, L, C, 2)
     palam_vabc_estimate(ctx, L, 0, -1)
-    _no_mob_sp(ctx)
+    _no_mob_sp(ctx, 0)
     sexmsg.msg_spcom0(ctx, st.temp.ex_com, st.temp.sh_com)
     set_tentacle_pool(ctx)
     cloth_battle_damage(ctx, 8)
@@ -1378,10 +1419,9 @@ def sex_spcom0(ctx: Ctx) -> None:
     _finish(ctx, "SEX_SPCOM0", L, 200)
 
 
-def _no_mob_sp(ctx: Ctx) -> None:
-    """SPCOM は雑魚分岐を持たず、悪堕ちのときだけ MESSAGE_OTHER_SEX_SPCOMn を先に呼ぶ。"""
-    if _akuoti(ctx):
-        raise NotImplementedError("悪堕ちキャラの性攻撃（MESSAGE_OTHER_SEX_SPCOM*）は未移植")
+def _no_mob_sp(ctx: Ctx, n: int) -> None:
+    """SPCOM は雑魚分岐を持たず、悪堕ちのときだけ MESSAGE_OTHER_SEX_SPCOMn を先に呼ぶ（SPCOM0〜7）。"""
+    _other(ctx, f"SPCOM{n}")
 
 
 def sex_spcom1(ctx: Ctx) -> SexGen:
@@ -1399,6 +1439,7 @@ def sex_spcom1(ctx: Ctx) -> SexGen:
     if (st.temp.ex_com & 4) and c.base[32] <= 0 and (st.flag[110] == 0 or sexmsg.istentacler(ctx, st.flag[111]) == 1):
         st.tflag[4] |= A
         st.temp.insert |= A
+    _penis_pos(ctx, V)  # :34–35
     L = _begin(ctx)
     st.tflag[3] += 100
     tentacle_syasei_up(ctx, 600)
@@ -1412,7 +1453,7 @@ def sex_spcom1(ctx: Ctx) -> SexGen:
     if c.tcvarn[2] == P_V_GUARD:
         L[1] = div(L[1], 4)
     palam_vabc_estimate(ctx, L, 1, -1)
-    _no_mob_sp(ctx)
+    _no_mob_sp(ctx, 1)
     sexmsg.msg_spcom1(ctx, st.temp.ex_com, st.temp.sh_com)
     set_tentacle_pool(ctx)
     cloth_battle_damage(ctx, 8)
@@ -1464,6 +1505,7 @@ def sex_spcom2(ctx: Ctx) -> SexGen:
     if (ex & V) and not vg and c.base[31] <= 0:
         st.tflag[4] |= V
         st.temp.insert |= V
+    _penis_pos(ctx, A)  # :38–39
     L = _begin(ctx)
     st.tflag[3] += 100
     tentacle_syasei_up(ctx, 450)
@@ -1475,7 +1517,7 @@ def sex_spcom2(ctx: Ctx) -> SexGen:
         L[10] = 0
     _set(L, 2, _tbl(_a(ctx, "Ａ感覚"), (1000, 2000, 4000, 10000, 20000, 40000)))
     palam_vabc_estimate(ctx, L, 2, -1)
-    _no_mob_sp(ctx)
+    _no_mob_sp(ctx, 2)
     sexmsg.msg_spcom2(ctx, st.temp.ex_com, st.temp.sh_com)
     set_tentacle_pool(ctx)
     cloth_battle_damage(ctx, 8)
@@ -1521,6 +1563,7 @@ def sex_spcom3(ctx: Ctx) -> None:
     st.tflag[4] |= B
     if st.rng.rand(100) < 75:
         st.tflag[4] = 0
+    _penis_pos(ctx, B)  # :22–23
     L = _begin(ctx)
     st.tflag[3] += 100
     tentacle_syasei_up(ctx, 250)
@@ -1528,7 +1571,7 @@ def sex_spcom3(ctx: Ctx) -> None:
     _set(L, 3, _tbl(_a(ctx, "Ｂ感覚"), (1000, 2000, 4000, 10000, 20000, 40000)))
     _comex(ctx, L, B, 2)
     palam_vabc_estimate(ctx, L, 3, -1)
-    _no_mob_sp(ctx)
+    _no_mob_sp(ctx, 3)
     sexmsg.msg_spcom3(ctx, st.temp.ex_com, st.temp.sh_com)
     set_tentacle_pool(ctx)
     cloth_battle_damage(ctx, 8)
@@ -1549,7 +1592,7 @@ def sex_spcom4(ctx: Ctx) -> None:
     tentacle_syasei_up(ctx, 10)
     _size(ctx, 1004)
     palam_vabc_estimate(ctx, L, -1)
-    _no_mob_sp(ctx)
+    _no_mob_sp(ctx, 4)
     sexmsg.msg_spcom4(ctx)
     set_tentacle_pool(ctx)
     cloth_battle_damage(ctx, 20)
@@ -1577,13 +1620,14 @@ def sex_spcom5(ctx: Ctx) -> None:
     st.tflag[4] |= B
     if st.rng.rand(100) < 50:
         st.tflag[4] = 0
+    _penis_pos(ctx, MOUTH)  # :24–25
     L = _begin(ctx)
     st.tflag[3] += 100
     tentacle_syasei_up(ctx, 450)
     _size(ctx, 1005)
     _set(L, 3, _tbl(_a(ctx, "Ｂ感覚"), (200, 1000, 2000, 4000, 10000, 20000)))
     palam_vabc_estimate(ctx, L, 3, -1)
-    _no_mob_sp(ctx)
+    _no_mob_sp(ctx, 5)
     sexmsg.msg_spcom5(ctx, st.temp.ex_com, st.temp.sh_com)
     set_tentacle_pool(ctx)
     cloth_battle_damage(ctx, 4)
@@ -1611,7 +1655,7 @@ def sex_spcom6(ctx: Ctx) -> None:
     tentacle_syasei_up(ctx, 50)
     _size(ctx, 1006)
     palam_vabc_estimate(ctx, L, -1)
-    _no_mob_sp(ctx)
+    _no_mob_sp(ctx, 6)
     sexmsg.msg_spcom6(ctx)
     set_tentacle_pool(ctx)
     st.tflag[17] = -1
@@ -1630,7 +1674,7 @@ def sex_spcom7(ctx: Ctx) -> SexGen:
     tentacle_syasei_up(ctx, 100)
     _size(ctx, 1007)
     palam_vabc_estimate(ctx, L, -1)
-    _no_mob_sp(ctx)
+    _no_mob_sp(ctx, 7)
     yield from sexmsg.msg_spcom7(ctx)
     set_tentacle_pool(ctx)
     cloth_battle_damage(ctx, 4)
@@ -2401,8 +2445,103 @@ def boss_reaction_ref(ctx: Ctx, boss: int, arg: int = 0) -> int:
     return -1
 
 
+def _akuoti_sex_routine(ctx: Ctx, select: int) -> int:
+    """`@ENEMY_ACTION_SEX_ROUTINE`:1172–1343 悪堕ちキャラの性コマンド選択：敵キャラの ABL を重みにした区間
+    （LOCAL:10〜16 が下限、LOCAL:0〜6 が上限。下限は累積の上限を足しこむため区間が重なり・広がる：原作どおり）で RAND:100 を
+    振り、該当しなければ `GOTO SELECTED_SEXCOM_LOOP`。条件式の `&&` は短絡（reference/emuera-1824/Emuera/GameData/
+    Expression/OperatorMethod.cs:524–555）なので RAND は左の条件が真のときだけ引く。"""
+    st = ctx.state
+    e = st.charas[st.flag[111]]
+    rand = st.rng.rand
+    ea = lambda n: abl(ctx, e, n)  # noqa: E731
+    ek = lambda n: t(ctx, e, n)  # noqa: E731
+    l10 = 0  # :1178–1182 C
+    l0 = ea("Ｃ感覚") + 5
+    if ea("欲望") >= 3 and ek("処女") < 1 and is_female(ctx.data, e) and is_penis(ctx):
+        l0 += 25
+    l11 = l10 + l0  # :1185–1187 V
+    l1 = ea("Ｖ感覚") + 15 + l11
+    l12 = l11 + l1  # :1190–1192 A
+    l2 = ea("Ａ感覚") + 10 + l12
+    l13 = l12 + l2  # :1195–1197 B
+    l3 = ea("Ｂ感覚") + 10 + l13
+    l14 = l13 + l3  # :1201–1203 苦痛系
+    l4 = ea("マゾっ気") + 5 + l14
+    l15 = l14 + l4  # :1206–1209 奉仕系
+    l5 = max(0, min(ea("従順") + ea("奉仕精神"), 5)) + 10 + l15
+    l16 = l15 + l5  # :1212–1215 羞恥系
+    l6 = ea("露出癖") + 5 + l16
+    tentacler = sexmsg.istentacler(ctx, st.flag[111]) == 1
+    l101 = 1 if (tentacler or ek("ふたなり") > 0 or is_male(ctx.data, e)) else 0  # :1218–1220
+    c_sp = lambda: (tentacler or (ek("処女") < 1 and is_female(ctx.data, e) and is_penis(ctx)))  # noqa: E731
+    while True:  # $SELECTED_SEXCOM_LOOP（:1223）
+        l99 = rand(100)
+        if (select == -1 and l10 <= l99 <= l0) or select in (0, 1, 1000):  # :1227–1240 C
+            if ea("欲望") >= 3 and c_sp() and rand(100) < 40 and l101:
+                select = 1000
+            elif rand(100) < 40 and l101:
+                select = 1
+            else:
+                select = 0
+        elif (select == -1 and l11 <= l99 <= l1) or select in (2, 3, 1001):  # :1241–1270 V
+            if is_male(ctx.data, tc(ctx)):
+                if ea("欲望") >= 3 and c_sp() and rand(100) < 40 and l101:
+                    select = 1000
+                elif rand(100) < 40 and l101:
+                    select = 1
+                else:
+                    select = 0
+            elif check_holyvirgin(ctx) == 1:
+                select = 2
+            elif rand(100) < 40 and l101 and ea("欲望") >= 3:
+                select = 1001
+            elif rand(100) < 40 and l101:
+                select = 3
+            else:
+                select = 2
+        elif (select == -1 and l12 <= l99 <= l2) or select in (4, 5, 1002):  # :1271–1284 A
+            if rand(100) < 40 and l101 and ea("欲望") >= 3 and tentacler:
+                select = 1002
+            elif rand(100) < 40 and l101:
+                select = 5
+            else:
+                select = 4
+        elif (select == -1 and l13 <= l99 <= l3) or select in (6, 7, 1003):  # :1285–1298 B
+            if rand(100) < 40 and l101 and ea("欲望") >= 3:
+                select = 1003
+            elif rand(100) < 40 and l101:
+                select = 7
+            else:
+                select = 6
+        elif (select == -1 and l14 <= l99 <= l4) or select in (8, 9, 1004):  # :1299–1312 苦痛系
+            if rand(100) < 40 and tentacler and ea("マゾっ気") >= 3:
+                select = 1004
+            elif rand(100) < 40 and tentacler:
+                select = 9
+            else:
+                select = 8
+        elif ((select == -1 and l15 <= l99 <= l5) or select in (10, 11, 12, 1005)) and l101:  # :1313–1329 奉仕系
+            if rand(100) < 40 and l101 and ea("従順") + ea("奉仕精神") >= 3:
+                select = 1005
+            elif rand(100) < 20:
+                select = 12
+            elif rand(100) < 40:
+                select = 11
+            else:
+                select = 10
+        elif (select == -1 and l16 <= l99 <= l6) or select in (1006, 1007):  # :1330–1339 羞恥系
+            if rand(100) < 40 and ea("露出癖") >= 3:
+                select = 1007
+            else:
+                select = 1006
+        else:  # :1340–1342
+            select = -1
+            continue
+        return select
+
+
 def enemy_action_sex_routine(ctx: Ctx) -> int:
-    """`@ENEMY_ACTION_SEX_ROUTINE`:1162–1430（触手による性コマンドの選択。悪堕ち分岐は未移植）。"""
+    """`@ENEMY_ACTION_SEX_ROUTINE`:1162–1430（触手と悪堕ちキャラ（:1172–1343）による性コマンドの選択）。"""
     st = ctx.state
     c = tc(ctx)
     rand = st.rng.rand
@@ -2412,7 +2551,7 @@ def enemy_action_sex_routine(ctx: Ctx) -> int:
     if st.tflag[10] < 15 or st.tflag[10] > 20:  # :1170–1171 VARSET INSERT
         st.temp.insert = 0
     if _akuoti(ctx) and c.tcvarn[0] == 0:
-        raise NotImplementedError("悪堕ちキャラの性コマンド選択（ENEMY_ACTION_SEX_ROUTINE:1173–1344）は未移植")
+        return _akuoti_sex_routine(ctx, select)
     if c.tcvarn[0] != 0:
         return select
     if c.tcvarn[40] == 1 and select < 0:  # :1349–1350

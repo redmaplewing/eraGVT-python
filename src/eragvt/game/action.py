@@ -131,6 +131,14 @@ def kojo_root_full(ctx: Ctx, c_no: int, code: str, force_print: int = 0) -> int:
     return ctx.narration.call_kojo(ctx, c_no, code)
 
 
+def print_transname(state: GameState, index: int) -> str:
+    """`汎用関数/コモン関数.ERB@PRINT_TRANSNAME`:240–247：変身中なら変身後名（CSTR:0）、違えば NAME。"""
+    c = state.charas[index]
+    if c.cflag[3] == 1 and c.cflag[1] != 0:
+        return c.cstr[0]
+    return c.name
+
+
 def print_transcallname(state: GameState, index: int) -> str:
     """`汎用関数/コモン関数.ERB@PRINT_TRANSCALLNAME`:251–262。"""
     c = state.charas[index]

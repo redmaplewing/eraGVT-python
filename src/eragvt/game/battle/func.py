@@ -189,6 +189,10 @@ def act_limit(ctx: Ctx) -> int:
             ctx.out.printl("体が竦んでしまった・・・")
             kojo_root(ctx, "BATTLE_DISACTION_TORIKO")
             ctx.out.printw()
+            if enemy_type_check(st, "AKUOTI") == 1:  # COMMON_BATTLE_FUNC.ERB:220–221
+                from .core import msg_other
+
+                msg_other(ctx, "BATTLE_DISACTION_TORIKO")
             return 1
     if t(ctx, c, "寄生") == 1:  # COMMON_BATTLE_FUNC.ERB:226–255
         local = st.rng.rand(200) if t(ctx, c, "共生") == 1 else st.rng.rand(100)  # :228–233 共生なら確率半減
@@ -225,6 +229,10 @@ def act_limit(ctx: Ctx) -> int:
                 _land_and_print(ctx)
                 # MESSAGE_BATTLE_DISACTION_*（地の文/MESSAGE_BATTLE.ERB:1983–2021）
                 _disaction_message(ctx, count)
+                if enemy_type_check(st, "AKUOTI") == 1:  # COMMON_BATTLE_FUNC.ERB:354–383
+                    from .core import msg_other
+
+                    msg_other(ctx, f"BATTLE_DISACTION_{_DISACTION[count][0]}")
                 return 1
     return 0
 

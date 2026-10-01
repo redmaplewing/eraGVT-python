@@ -32,6 +32,8 @@ from .cheers import perform_cheers_first_hantei
 from .cloth import cloth_battle_hosei, cloth_battle_sethp, refresh_cloth_data
 from .commands import com_able, print_comname, run_com
 from .core import (
+    is_penis,
+    msg_other,
     BETOBETO,
     DARAKU,
     HAIRAN,
@@ -64,7 +66,7 @@ from .core import (
     tentacle_level,
     unlock_achievement,
 )
-from .enemy import select_tentacle_action
+from .enemy import select_enemy_action, select_tentacle_action
 from .func import calc_chisei_shien, check_can_retreat, kojo, transform
 from .hantei import act_hantei_tettai_tentacle
 from .source_check import source_check
@@ -176,8 +178,9 @@ def event_train(ctx: Ctx) -> None:
         out.printw(f"{name}がっちりと巻き上げられ、強引に戦闘に引きずり込まれていく…。")
     # :132–136
     if enemy_type_check(st, "AKUOTI") == 1:
-        raise NotImplementedError("洗脳／悪堕ちキャラとの戦闘（SELECT_ENEMY_ACTION）は未移植")
-    select_tentacle_action(ctx)
+        select_enemy_action(ctx)
+    else:
+        select_tentacle_action(ctx)
     # :139
     st.flag[700] = 1
     # :142–148 解析度
@@ -189,7 +192,10 @@ def event_train(ctx: Ctx) -> None:
         st.flag[20] = 100
     # :151–166
     chisei_sum = calc_chisei_shien(ctx, 0)
-    chisei_enemy = int(tentacle_access(ctx, "CHISEI"))
+    if enemy_type_check(st, "AKUOTI") == 1:  # :156–162
+        chisei_enemy = max(st.charas[st.flag[111]].maxbase[13], 100)
+    else:
+        chisei_enemy = int(tentacle_access(ctx, "CHISEI"))
     if percent_cal(chisei_sum, chisei_enemy) >= 200:
         unlock_achievement(ctx, 268, "タクティカルオーダー")
     # :169–207 先制攻撃
@@ -335,15 +341,32 @@ def show_status(ctx: Ctx) -> None:
     shinkyou_check(ctx, "PRINT", 0)
     out.printl()
     out.printl()
-    # :146–156
-    tentacle_access(ctx, "NAME")
-    if enemy_type_check(st, "BOSS") == 1:
-        out.print("(ＢＯＳＳ)")
-    elif enemy_type_check(st, "LASTBOSS") >= 1:
-        out.print("(ＬＡＳＴ)")
-    elif enemy_type_check(st, "MOB") == 1:
-        out.print("(ＭＯＢ)")
-    out.printl(f" Lv.{tentacle_level(st)} ")
+    akuoti = enemy_type_check(st, "AKUOTI") == 1
+    if not akuoti:  # :145–156
+        tentacle_access(ctx, "NAME")
+        if enemy_type_check(st, "BOSS") == 1:
+            out.print("(ＢＯＳＳ)")
+        elif enemy_type_check(st, "LASTBOSS") >= 1:
+            out.print("(ＬＡＳＴ)")
+        elif enemy_type_check(st, "MOB") == 1:
+            out.print("(ＭＯＢ)")
+        out.printl(f" Lv.{tentacle_level(st)} ")
+    else:  # :157–174 対キャラ
+        e = st.charas[st.flag[111]]
+        if e.cflag[0] == 2:  # 状態_洗脳
+            out.print(f"洗脳された{print_transcallname(st, st.flag[111])}[")
+            from ..prison.event import tentacle_access_prison
+
+            tentacle_access_prison(ctx, st.flag[111], "NAME")
+            out.print("]")
+        elif e.cflag[0] == 3:  # 状態_悪堕ち
+            if e.cstr[55] != "":
+                from ..action import print_transname
+
+                out.print(f"《{print_transname(st, st.flag[111])}》{e.name}")
+            else:
+                out.print(f"悪堕ちした{print_transcallname(st, st.flag[111])}")
+        out.printl(f" Lv.{e.abl[ctx.data.index_of('ABL', 'レベル')]} ")
     # 距離（SHOW_DISTANCE_WINDOW の代わりに PRINT_DISTANCE）
     out.print("距離　　　")
     print_distance(ctx)
@@ -363,16 +386,26 @@ def show_status(ctx: Ctx) -> None:
     # :258–265
     if st.tflag[2] >= 1:
         out.print("　<<油断中>> ")
-    elif st.flag[20] >= 100:
+    elif st.flag[20] >= 100 or akuoti:
         out.print(f"　(油断度：{div(st.flag[17] * 100, st.flag[16])}％) ")
     elif st.tflag[24] > 0:
         out.print(f"先制攻撃可能！(残り{st.tflag[24]}ターン)")
     out.printl()
     # :274–276
-    out.printl(f"{ctx.data.str_defaults.get(2500, '')}射精（{format_curly(st.flag[15], 5) if known_cur else '？？？'}/"
+    # :269–284 射精ゲージの見出し（悪堕ちキャラはペニスか寄生があれば「敵射精」、無ければ「敵絶頂」）
+    if akuoti:
+        e = st.charas[st.flag[111]]
+        head = "敵射精" if (is_penis(ctx, st.flag[111]) or t(ctx, e, "寄生") > 0) else "敵絶頂"
+    else:
+        head = f"{ctx.data.str_defaults.get(2500, '')}射精"
+    out.printl(f"{head}（{format_curly(st.flag[15], 5) if known_cur else '？？？'}/"
                f"{format_curly(st.flag[14], 5) if known_max else '？？？'}）")
+    if akuoti:  # :319–328
+        e = st.charas[st.flag[111]]
+        out.printl(f"攻：{e.maxbase[10]:>3} 防：{e.maxbase[11]:>3} 敏：{e.maxbase[12]:>3} 知：{e.maxbase[13]:>3} ")
+        out.printl(f"近：{e.abl[30]:>3} 中：{e.abl[31]:>3} 遠：{e.abl[32]:>3} ")
     # :286–331
-    if st.flag[999] == 1 or st.flag[20] >= 75:
+    elif st.flag[999] == 1 or st.flag[20] >= 75:
         vals = [max(int(tentacle_access(ctx, k)), 0) for k in ("KOUGEKI", "BOUGYO", "BINSYOU", "CHISEI")]
         out.printl(f"攻：{vals[0]:>3} 防：{vals[1]:>3} 敏：{vals[2]:>3} 知：{vals[3]:>3} ")
         if st.flag[20] >= 100:
@@ -580,8 +613,10 @@ def _msg_tettai_false(ctx: Ctx) -> None:
     st, out = ctx.state, ctx.out
     if st.flag[70] + st.flag[71] > 0:
         out.printl("周りの一般人の避難が完了していないため、撤退できませんでした")
-    else:
+    elif enemy_type_check(st, "AKUOTI") == 0:
         out.printl(f"複数の{ctx.data.str_defaults.get(2500, '')}に回り込まれて逃げられない！！")
+    else:
+        out.printl(f"しかし一足先に動いた{print_transcallname(st, st.flag[111])}に素早く回り込まれてしまった！！")
     if st.flag[70] + st.flag[71] == 0:
         kojo(ctx, "BATTLE_CHARA_TETTAI_FALSE")
     out.printw()
@@ -594,15 +629,19 @@ def usercom(ctx: Ctx, value: int) -> Generator[None, int, None]:
         if not check_can_retreat(ctx):
             return
         _my_action_header(ctx)
-        # :584 ENEMY_TYPE_CHECK_F("AKUOTI") == 0 側（悪堕ち戦は event_train で停止済み）
+        akuoti = enemy_type_check(st, "AKUOTI") == 1  # :584 / :605（悪堕ち側は KYUSHUTU_SUCCESS_HANTEI なし）
         if act_hantei_tettai_tentacle(ctx) == 1:
             _msg_tettai_success(ctx)
-            if st.tflag[19] == 1:  # :593 TRYCALL KYUSHUTU_SUCCESS_HANTEI（COMF15.ERB:70–73）
+            if akuoti:
+                msg_other(ctx, "BATTLE_CHARA_TETTAI_SUCCESS")
+            elif st.tflag[19] == 1:  # :593 TRYCALL KYUSHUTU_SUCCESS_HANTEI（COMF15.ERB:70–73）
                 from .restraint import kyushutu_success
 
                 kyushutu_success(ctx)
             raise BeginAfterTrain
         _msg_tettai_false(ctx)
+        if akuoti:
+            msg_other(ctx, "BATTLE_CHARA_TETTAI_FALSE")
         yield from source_check(ctx)  # JUMP SOURCE_CHECK
         return
     if value == 999:
@@ -697,11 +736,14 @@ def battle_report(ctx: Ctx) -> None:
 
 
 def _msg_transrelease(ctx: Ctx) -> None:
-    """`MESSAGE_BATTLE.ERB@MESSAGE_BATTLE_CHARA_TRANSRELEASE`:345–359（悪堕ち戦以外）。"""
+    """`MESSAGE_BATTLE.ERB@MESSAGE_BATTLE_CHARA_TRANSRELEASE`:345–359。"""
     st, out = ctx.state, ctx.out
     out.set_bold(True)
     out.set_color("#FFFF00")
-    who = ctx.data.str_defaults.get(2500, "") if st.flag[73] == 0 else "男たち"  # 触手市民(STR:2500,"男たち")
+    if enemy_type_check(st, "AKUOTI") == 1:
+        who = print_transcallname(st, st.flag[111])
+    else:
+        who = ctx.data.str_defaults.get(2500, "") if st.flag[73] == 0 else "男たち"  # 触手市民(STR:2500,"男たち")
     out.printl(f"{who}の猛攻によって、限界を越えた{print_transcallname(st, st.target)}の変身が解けてしまった！")
     out.set_bold(False)
     out.reset_color()
@@ -823,6 +865,8 @@ def event_comend(ctx: Ctx) -> None:
     elif config_check_balance(st, 6) == 0 and c.cflag[1] >= 1 and c.base[1] <= 0 and (v[12] & KYOUKOUSOKU) == 0:
         out.printl()
         _msg_transrelease(ctx)
+        if enemy_type_check(st, "AKUOTI") == 1:  # :845–846
+            msg_other(ctx, "BATTLE_CHARA_TRANSRELEASE")
         transform(ctx, 0)
         _shinkyou_random(ctx)
     elif (
@@ -835,6 +879,8 @@ def event_comend(ctx: Ctx) -> None:
     ):
         out.printl()
         _msg_transrelease_ecs(ctx)
+        if enemy_type_check(st, "AKUOTI") == 1:  # :863–864
+            msg_other(ctx, "BATTLE_CHARA_TRANSRELEASE_ECS")
         transform(ctx, 0)
         _shinkyou_random(ctx)
     elif c.cflag[1] == 1 and l2 > 0 and result < 50 and (v[12] & KIZETU) == 0:

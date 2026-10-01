@@ -218,3 +218,18 @@ ERB 路徑相對 `source/earGVP/ERB/`。
   不做 AFTER_PILL／NINSIN；實行者疲勞寝落ち（:949、:960）的 RETURN 連最後的 `_ABLUP, 1`（:2645）也跳過；YOBAI_ACTION 結束時 TARGET 留在對象。
   **子触手**：SMALL_TENTACLE_ATTACK 的 `ISHOLE()`（:105）看的是呼叫時的 TARGET 而非候補；成功襲來不減 FLAG:44（子触手留著）；
   Ｖ襲來的處女喪失直接寫 `TALENT:処女 = -1`・`CFLAG:206 = 1`（不呼叫 LOSTVIRGIN），之後 `処女 < 1` 成立 → 以精液 0 呼叫 AFTER_PILL／NINSIN_HANTEI。
+- S19 悪堕ちキャラ照原作的怪處（`強制発生イベント/FORCE_悪堕ちキャラの淫謀.ERB`、`ゲーム内_戦闘処理/`；Python：`eragvt.game.akuoti`、`battle.*`）：
+  **戰鬥**：ACTION.ERB:37–38 每次行動把 FLAG:10／11 設 0 → 悪堕ち戰中 `TENTACLE_ACCESS` 指向不存在的 `TENTACLE_BOSS_0_*`，TRYCALLFORM 不發、
+  NAME／GETNAME 印出／回傳原作的錯誤字串「【エラー：BOSS_0に対するTENTACLE_ACCESS('GETNAME')関数失敗】」（例：時間切れ文 `BATTLE_COM_AFTER.ERB`
+  的第二個 NAME 未分岐、受精時 NINSIN_HANTEI:150–151）；勝利時 :314 FLAG:110 = 0 → 之後 EVENTEND 以ボス（FLAG:11 = 0）處理報酬；
+  敗北／時間切れ後 FLAG:110 留 1 → 淫紋陥落（INMON_RECOVERY:873–877）走 GET_LASTBOSS_ERB_NUM（2）；TENTACLE_SAKUSEI 用前一次的 RESULT
+  （SYASEI_POINT 的 LOCAL:0 或 PALAM_UP 最後的 PALAM_HOSEI 值）；SEX_COMEX_RANDOM 的 SETBIT 把 A-1 寫成 B（:66–74）；
+  遭遇率アップ（ENCOUNT_ENEMY:81–86）會把 FLAG:111 換成幽閉中（CFLAG:0 = 1）的角色 → 該戰敗北時兩分岐都不符、不幽閉不受辱直接結束。
+  **淫謀**：女を攫う分岐（:1230–1316）`IF 1;RAND:3 == 0` 恆真、不設經驗／V_SEX，:1295「腰を振り続ける%LOCALS:3%%PRINT_TRANSCALLNAME%」照字面相連；
+  動画拡散（:934–992）的留言寫入 LOCALS:0〜4、顯示 LOCALS:1〜5 → 第 1 則永不顯示、第 5 行只有空白；被調教系（:1609–1710）FLAG:111 直接設
+  CFLAG:21（不經 CFLAG:240 對照）且不還原，沒有聖処女／ISHOLE／淫紋／陥落判定；`LOCAL:2`（:1700）恆 0 → 搾精強化不發生。
+  **防衛力為負**：BIRTH_AUTO_RANDOM（PREGNANT_SOURCE_NINSIN.ERB:737）扣防衛力不設下限，在 DAILY_DEFENCE_CHANGE（SHOP_TURNEND:122）之後
+  （:166）→ 次回合 AKUOTI_ATTACK（:110）的 `SQRT(FLAG:852)` 對負數 → 原作 CodeEE（`reference/emuera-1824/Emuera/GameData/Function/
+  Creator.Method.cs`:1078）錯誤停止；Python 照樣丟出 ValueError（Web 停止）。僅在有悪堕ちキャラ且苗床出産發生後的ゲームオーバーモード出現
+  （`--corrupt 3` 模擬 250 局中 151〜178 局）。是否改為不停止（例如 SQRT 前視為 0）需使用者裁決。
+- [ ] S19 顯示：`AKUOTI_EVENT` 動画拡散的 FONTITALIC（:810–815 等）不反映（`akuoti._robot_checkbox`，`# DEVIATION:`；同「口上 catalog 的顯示簡化」）。

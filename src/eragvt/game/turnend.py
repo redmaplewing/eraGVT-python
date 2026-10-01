@@ -257,12 +257,17 @@ def _inmon_fall(ctx: Ctx) -> None:
     c = st.target_chara
     tl = lambda n: talent(data, c, n)  # noqa: E731
     clear_randchoose(st)  # :872
-    if enemy_type_check(st, "BOSS") != 1:  # :873–877
-        raise NotImplementedError("ラスボス出現後の淫紋陥落（GET_LASTBOSS_ERB_NUM）は未移植")
-    for lc in range(BOSS_ERB_NUM):  # :878–886
+    # :873–877 ENEMY_TYPE_CHECK_F("BOSS") は直前の戦闘の FLAG:10／110／73 を見る（悪堕ちキャラ戦に勝てなかった後は
+    # FLAG:110 = 1 のまま：BATTLE_COM_AFTER.ERB:314 の勝利時以外は 0 に戻らない）。それ以外は GET_LASTBOSS_ERB_NUM
+    # （COMMON_TENTACLE_DATA.ERB:428–438：TENTACLE_LASTBOSS_1／_2 の 2 個）。
+    is_boss = enemy_type_check(st, "BOSS") == 1
+    num = BOSS_ERB_NUM if is_boss else 2
+    for lc in range(num):  # :878–886
         if lc == 1 and get_lastboss_phase(st) >= 2:
             continue
-        r = tentacle_survive_check(st, 2**lc)
+        # TENTACLE_BITVALUE（:128–176）：ボス／雑魚なら 2^(n-1)、それ以外（ラスボス）は 1→1、2→2
+        bit = 2**lc if (is_boss or enemy_type_check(st, "MOB") == 1) else lc + 1
+        r = tentacle_survive_check(st, bit)
         if r > 0:
             add_randchoose(st, r)
     c.cflag[20] = st.flag[10]  # :887–888
@@ -350,7 +355,7 @@ def akuoti_attack(ctx: Ctx) -> None:
     """`ゲーム内_イベント発生/強制発生イベント/FORCE_悪堕ちキャラの淫謀.ERB@AKUOTI_ATTACK`:5–29 の候補抽選。
     候補（CFLAG:0 == 3 かつ ISHOLE かつ `MIN(RAND:(SQRT(FLAG:852)/2+20), 100) < LOCAL`、`&&` は短絡なので RAND は前の条件が
     真のときだけ引く：reference/emuera-1824/Emuera/GameData/Expression/OperatorMethod.cs:524–555）が居れば
-    :27–29 AKUOTI_EVENT（未移植）→ 停止。ゲームオーバーモードでは防衛力 FLAG:852 = 0（DAILY_DEFENCE_CHANGE:380–383）なので
+    :27–29 DRAWLINE・FLAG:111 = RANDCHOOSE_F()・AKUOTI_EVENT（`akuoti.akuoti_event`）。ゲームオーバーモードでは防衛力 FLAG:852 = 0（DAILY_DEFENCE_CHANGE:380–383）なので
     RAND:20 は昼 40・夜 20 未満に必ずなり、悪堕ちキャラが居れば必ず発生する。"""
     from .battle.core import add_randchoose, choicecount, clear_randchoose
 
@@ -368,7 +373,12 @@ def akuoti_attack(ctx: Ctx) -> None:
             add_randchoose(st, i)
     if choicecount(st) == 0:  # :24–25
         return
-    raise NotImplementedError("悪堕ちキャラの淫謀（AKUOTI_EVENT）は未移植")
+    from .akuoti import akuoti_event
+    from .battle.core import randchoose_f
+
+    ctx.out.drawline()  # :27–29
+    st.flag[111] = randchoose_f(st)
+    akuoti_event(ctx)
 
 
 def self_night(ctx: Ctx) -> None:

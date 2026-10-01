@@ -1,6 +1,6 @@
 # 現況（唯一真相，≤150 行）
 
-更新：2026-10-01（S18）
+更新：2026-10-01（S19）
 
 ## 已完成
 
@@ -78,24 +78,35 @@
   `EVENTTURNEND` 的脅迫／監禁／夜這い與 `EVENTSHOP` 的子触手改為 generator 呼叫。怪處見 deviations「原作行為」S18。
   `tools/sim.py`：事件觸發計數、`--enable-intimidation`。測試共 1117 個（新增 `tests/test_forced_events.py` 107）。
 
-## S18 模擬（`tools/sim.py`，seed 0–249，`--max-shop 200`；4 行程並列）
+- **S19** 悪堕ちキャラ（`docs/wiki/era/akuoti.md`）。新模組 `game.akuoti`：`FORCE_悪堕ちキャラの淫謀.ERB@AKUOTI_EVENT` 全分岐
+  （市街地襲撃 5・暗躍 6・被調教系；TINPUTS 再生數動畫走預設（時間切れ）路徑），`turnend.akuoti_attack` 接通。洗脳／悪堕ちキャラ戰：
+  `encount.encount_enemy`、`enemy.select_enemy_action`／押し倒す／邪悪な波動、`sexcom` 悪堕ち性コマンド選択（:1172–1343）、
+  命中・DAMAGE・搾精（stale RESULT 照原作）・刻印・拘束中指令（COM45／46／47 説得）・勝利（救出＋連鎖救出）・敗北（洗脳／寄生 → 幽閉、
+  その他 → SUBEVENT_BATTLE_RAPED_ENEMY）・狀態表示，及 MESSAGE_OTHER_* 各呼叫。悪堕ち戰中 `TENTACLE_ACCESS` NAME／GETNAME 失敗時
+  為原作的錯誤字串。觀衆：PERFORM_CHEERS_HATE 與 MISS／HIT 的陥落経験分岐。`tools/sim.py`：`--enable-akuoti`、`--corrupt N`、
+  `--dump`／`--load`（分割實行）。怪處見 deviations「原作行為」S19。測試共 1192 個（新增 `tests/test_akuoti.py` 75）。
 
-| 指標 | 預設 S17 | 預設 S18 | 初期セット S17 | 初期セット S18 |
+## S19 模擬（`tools/sim.py`，seed 0–249，`--max-shop 200`；分割並列後 `--load` 合算）
+
+| 指標 | 預設 S18 | 預設 S19 | 初期セット S18 | 初期セット S19 |
 |---|---:|---:|---:|---:|
 | 停止前 SHOP 次數（平均／最多） | 201.00／201 | 201.00／201 | 201.00／201 | 201.00／201 |
-| ゲームオーバーモード進入局／進入後 SHOP 平均（最多） | 250／186.46（197） | 250／186.64（197） | 250／187.35（197） | 250／187.36（197） |
-| 敗北局／敗北後 SHOP 平均 | 250／192.81 | 250／192.82 | 250／192.97 | 250／192.97 |
+| ゲームオーバーモード進入局／進入後 SHOP 平均（最多） | 250／186.64（197） | 250／186.64（197） | 250／187.36（197） | 250／187.36（197） |
+| 敗北局／敗北後 SHOP 平均 | 250／192.82 | 250／192.82 | 250／192.97 | 250／192.97 |
 
-- 停止：兩者皆上限 250。事件實際觸發（總次數／局數）：子触手襲来 ATTACK 預設 136／87・初期セット 110／71，其中成功（SMALL_PRISON_EVENT）
-  107／75・86／59（COM 0〜6 皆有出現）；脅迫・夜這い 0（基本セット「クズ市民による幽閉」OFF；夜這いは感覺 ≥ 3 等の條件に達しない）。
-- `--enable-intimidation`（FLAG:804 bit10 ON）：脅迫發生 預設 18／7 局・初期セット 7／4，拉致監禁 5／2 局，KIDNAPPING 呼出 51／21，
-  救出／解放 5／2。停止：預設 2 局・初期セット 1 局 `ENDING_3（日数制限超過）は未移植`（監禁中キャラが幽閉扱いでないため
-  ゲームオーバーモードに入らず 11 日目夜に到達：既存の未移植停止）。夜這いは引き続き 0（單元＋session 測試で覆蓋）。
+- 預設路徑與 S18 完全相同（停止 0、上限 250；子触手襲来 136／87・110／71）。基本セット FLAG:804 = 1（陥落時の洗脳／悪堕ち OFF）
+  → 悪堕ちキャラは生まれず AKUOTI_EVENT・悪堕ちキャラ戰 0。
+- `--enable-akuoti`（FLAG:804 bit1＋bit9）：AKUOTI_EVENT 預設 43733／250 局・初期セット 43567／250（ほぼ全滅後のゲームオーバーモード中、
+  每回合）；悪堕ちキャラ戰 各 2 局（全て敗北）。停止：預設 2・初期セット 1 局「悪堕ちキャラによる幽閉のパラメータ補正」。
+- `--corrupt 3`（開局時に 3 番を悪堕ち：テスト用人工狀態）：預設／初期セット 悪堕ちキャラ戰 561／215・496／212、勝利 55・82、敗北 418・346、
+  AKUOTI_EVENT 6066・5190。停止：SQRT 負數例外 178・151（原作でも CodeEE：deviations S19）、上限 55・81、幽閉パラメータ補正 16・17、
+  `HATUJOU_TO_HAIRAN` 地の文 1、子供の名前手入力 1。
 
 ## 下一步
 
-- **S19：悪堕ちキャラの淫謀＋悪堕ちキャラ戰**（使用者指定，2026-10-01；`docs/sessions/S19-akuoti.md`）。之後候選：襲撃／救援戰鬥、[反撃]スタイル、
-  狀態畫面、FLASHNEWS、ランダム命名畫面。
+- S20 候選：悪堕ち容姿（CORRUPT_CHANGE_LOOKS_MAIN／RECOVER_CORRUPTION，設定 FLAG:804 bit4 ON 時のみ）、襲撃／救援戰鬥、
+  [反撃]スタイル、狀態畫面、FLASHNEWS、ランダム命名畫面。
+- 需裁決（S19）：AKUOTI_ATTACK 在防衛力為負時的 SQRT 錯誤（原作亦錯誤停止）、悪堕ちキャラ幽閉的 PALAM_HOSEI（stale RESULT:1–11）。
 - 已裁決（2026-09-30）：拡張度初期值照原作不設定；初期セット身體資料問題因 S10 改回預設開局而不再需要偏離；
   S13 苗床出産的 static LOSEDEF 等怪處全部照原作。
 - 口上 catalog 待擴充：改狀態的口上（hook 化）、入れ子內 $ラベル 的 GOTO（`KOJO_AEGI.ERB` $ＭＡＸ２，199 函式受影響）、SPLIT／STRDATA、未實作式中関数（覆蓋率報告）。
@@ -103,15 +114,18 @@
 
 ## 仍會停止的分岐（`NotImplementedError` → Web 停止）
 
-頻度見上方 S18 模擬（隨機模擬中已無停止）。其餘登記但罕見：
-- 幽閉：ラスボス／悪堕ちキャラ 的幽閉、容貌變化（設定 ON）、RECOVER_CORRUPTION、TS 性別變化、ラスボス出現後的淫紋陥落。
+頻度見上方 S19 模擬（預設路徑無停止）。其餘登記但罕見：
+- 悪堕ち（S19 殘留）：悪堕ちキャラによる幽閉（CFLAG:20 = 2）的 EVENT_PALAM_HOSEI（`TENTACLE_ACCESS_PRISON` 不 RETURN → RESULT:1–11
+  為前值，無法重現）、容貌變化 CORRUPT_CHANGE_LOOKS_MAIN（FLAG:804 bit4 ON）、RECOVER_CORRUPTION（容貌變化後的救出）、開局時の
+  デフォルト悪堕ち。防衛力為負時 AKUOTI_ATTACK 的 SQRT（ValueError：原作 CodeEE）。悪堕ち戰中 TENTACLE_ACCESS 的數值鍵（安全網）。
+- 幽閉：ラスボス 的幽閉、TS 性別變化、ラスボス出現後的淫紋陥落。
 - 妊娠・子供（S13）：TS 変身キャラ妊娠時的女體化（TS_MtoF）、子供名字／変身後名／かけ声／名乗り的手入力（INPUTS）與ランダム命名畫面、
   デバッグモード的妊娠確率輸入。
-- TURNEND：AKUOTI_EVENT（悪堕ちキャラが抽選に當選）、ENDING_1 的エンドレス分岐。拉致監禁的救出（CFLAG:71）只能經情報収集（未移植）。
+- TURNEND：ENDING_1 的エンドレス分岐。拉致監禁的救出（CFLAG:71）只能經情報収集（未移植）。
 - 夜這い：TS キャラ的 `_ABLUP` 女体受容取得（`ablup.py`，LOVER_F 分岐未接）、`%CALLNAME:ARG%` 指向不存在角色（原作也報錯）。
-- 指令：47 説得する、反擊（[反撃]スタイル、`HANGEKI_TO_TENTACLE`）。
+- 指令：反擊（[反撃]スタイル、`HANGEKI_TO_TENTACLE`）。
 - ステータス PALAM 表示（FLAG:801 bit 5）、素股焦らし失敗的處女喪失、觸手服／觸手拘束具、
-  悪堕ち／雜魚／クズ市民／ラスボス／事件戰／エンドレス、デバッグ模式、`HATUJOU_TO_HAIRAN` 地の文。
+  雜魚／クズ市民／ラスボス／事件戰／エンドレス、ボスの返り血（SUPART_BLOOD）、デバッグ模式、`HATUJOU_TO_HAIRAN` 地の文。
 
 ## 已知問題
 

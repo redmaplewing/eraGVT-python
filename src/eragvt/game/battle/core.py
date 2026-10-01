@@ -511,12 +511,34 @@ def boss_data(st: GameState) -> BossData:
     return BOSSES[st.flag[11]]
 
 
+def _tentacle_func_missing(st: GameState) -> bool:
+    """TENTACLE_ACCESS のボス分岐（:202 GET_LASTBOSS_PHASE_F() == 0）で `TENTACLE_{SAVESTR:13}_{FLAG:11}_*` が存在しない
+    （本作のボスは 1〜7：tentacle.BOSS_ERB_NUM）。数値を返すキーでは RESULT が前の値のままになり再現できないので
+    呼び出し側は停止する（boss_data）。"""
+    return (
+        get_lastboss_phase(st) == 0
+        and enemy_type_check(st, "MOB") == 0
+        and enemy_type_check(st, "CITIZEN") == 0
+        and st.savestr[13] == "BOSS"
+        and st.flag[11] not in BOSSES
+    )
+
+
 def tentacle_access(ctx: Ctx, key: str) -> int | str:
     """`COMMON_TENTACLE_DATA.ERB@TENTACLE_ACCESS, ARGS`:198–309（ボス触手分）。
 
     "NAME" は名前を PRINTFORM して "" を返す、"GETNAME" は名前（RESULTS）を返す。
     """
     st = ctx.state
+    if key in ("NAME", "GETNAME") and _tentacle_func_missing(st):
+        # :200 `RESULTS'="【エラー："+SAVESTR:13+"_"+TOSTR(FLAG:11)+"に対するTENTACLE_ACCESS('"+ARGS+"')関数失敗】"` の後
+        # TRYCALLFORM が不発なので RESULTS はそのまま（"NAME" は内部で "GETNAME" を呼ぶので 'GETNAME' の文になる）。
+        # 悪堕ちキャラ戦（FLAG:11 = 0：ACTION.ERB:38）で無条件に呼ばれる箇所（MESSAGE_BATTLE.ERB:1898 など）で起こる。
+        name = f"【エラー：{st.savestr[13]}_{st.flag[11]}に対するTENTACLE_ACCESS('GETNAME')関数失敗】"
+        if key == "NAME":
+            ctx.out.print(name)
+            return ""
+        return name
     b = boss_data(st)
     if key == "NAME":
         ctx.out.print(b.name)
@@ -564,11 +586,35 @@ def tentacle_palam_hosei(ctx: Ctx) -> tuple[int, ...]:
     return b.palam_hosei
 
 
-def enemy_name(ctx: Ctx) -> str:
-    """戦闘中の敵名（`CALL TENTACLE_ACCESS, "NAME"` 相当の文字列）。悪堕ちキャラは未移植。"""
-    if enemy_type_check(ctx.state, "AKUOTI") == 1:
-        raise NotImplementedError("洗脳／悪堕ちキャラとの戦闘は未移植")
-    return str(tentacle_access(ctx, "GETNAME"))
+def print_enemy_prefix(ctx: Ctx) -> None:
+    """`IF ENEMY_TYPE_CHECK_F("AKUOTI") == 0 / CALL TENTACLE_ACCESS, "NAME" / ELSEIF … == 1 /
+    PRINTFORM %PRINT_TRANSCALLNAME(FLAG:111)%`（地の文で多用される敵名の表示。例：MESSAGE_BATTLE.ERB:1083–1087）。"""
+    from ..action import print_transcallname
+
+    st = ctx.state
+    if enemy_type_check(st, "AKUOTI") == 0:
+        tentacle_access(ctx, "NAME")
+    else:
+        ctx.out.print(print_transcallname(st, st.flag[111]))
+
+
+def msg_other(ctx: Ctx, name: str, args: tuple = ()) -> None:
+    """`CALL MESSAGE_OTHER_{name}`（`地の文/MESSAGE_OTHER.ERB`：洗脳／悪堕ちキャラ側の口上
+    `TRYCALLFORM KOJO_ROOT(CFLAG:(FLAG:111):6, "OTHER_{name}")` を SETCOLOR 96,96,96〜RESETCOLOR で囲んだもの）。
+    catalog で実行できなければ口上呼び出しだけを行う。"""
+    from ..action import kojo_root_full
+
+    st = ctx.state
+    # MESSAGE_OTHER.ERB:56–97 の 4 関数は `ARG = 0` を取り `SIF ARG == 0` のときだけ口上、ATTACK_GUARD は
+    # "OTHER_BATTLE_CHARA_ATTACK_FALSE" を呼ぶ（原作どおり）。その他は本体が口上 1 行だけ（MESSAGE_OTHER.ERB 全関数を確認）。
+    code = "OTHER_BATTLE_CHARA_ATTACK_FALSE" if name == "BATTLE_CHARA_ATTACK_GUARD" else f"OTHER_{name}"
+
+    def fallback() -> None:
+        if not (args and args[0] != 0):
+            kojo_root_full(ctx, st.charas[st.flag[111]].cflag[6], code)
+        ctx.out.reset_color()
+
+    run_chinobun(ctx, f"MESSAGE_OTHER_{name}", args, fallback=fallback)
 
 
 # --- 心境（ヒロイン関連/CHARA_SHINKYOU.ERB）-----------------------------------------

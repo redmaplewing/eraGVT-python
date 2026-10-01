@@ -42,9 +42,12 @@ from .core import (
     t,
     tc,
     tentacle_access,
+    msg_other,
+    print_enemy_prefix,
+    run_chinobun,
     unlock_achievement,
 )
-from .enemy import enemy_action, select_tentacle_action
+from .enemy import enemy_action, select_enemy_action, select_tentacle_action
 from .palam import palam_cal
 
 
@@ -127,13 +130,13 @@ def source_check(ctx: Ctx) -> Generator[None, int, None]:
         st.tflag[16] = -1
         st.tflag[17] = -1
         st.tflag[20] = -1
-        if enemy_type_check(st, "AKUOTI") == 0:
-            tentacle_access(ctx, "NAME")
-        else:
-            raise NotImplementedError("悪堕ちキャラ戦は未移植")
+        print_enemy_prefix(ctx)  # :815–819
         out.printl("は体勢を立て直している・・・")
         out.printl()
-        select_tentacle_action(ctx)
+        if enemy_type_check(st, "AKUOTI"):  # :822–826
+            select_enemy_action(ctx)
+        else:
+            select_tentacle_action(ctx)
         palam_cal(ctx, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
     else:
         yield from enemy_action(ctx)
@@ -253,11 +256,84 @@ def _victory(ctx: Ctx) -> None:
         _rescue_captives(ctx)  # :203–262
         if st.flag[100] == 0 and st.flag[101] == 0:
             raise NotImplementedError("ボス全滅（ラスボス出現）は未移植")
-    elif enemy_type_check(st, "LASTBOSS") >= 1 or enemy_type_check(st, "AKUOTI") == 1:
-        raise NotImplementedError("ラスボス／悪堕ちキャラへの勝利は未移植")
+    elif enemy_type_check(st, "LASTBOSS") >= 1:
+        raise NotImplementedError("ラスボスへの勝利は未移植")
+    elif enemy_type_check(st, "AKUOTI") == 1:
+        _victory_akuoti(ctx)
     elif enemy_type_check(st, "MOB") == 1:
         raise NotImplementedError("雑魚戦の勝利は未移植（雑魚戦システムは基本セットで OFF）")
     raise BeginAfterTrain()
+
+
+def _victory_akuoti(ctx: Ctx) -> None:
+    """:312–405 悪堕ちキャラに勝利。:314 で FLAG:110 = 0 にするので、以降の ENEMY_TYPE_CHECK_F("AKUOTI") は 0
+    （MESSAGE_BATTLE_END_RESCUE_SENNOU は触手側の文になる：原作どおり。EVENTEND でもボス扱い：after.py）。
+    MESSAGE_OTHER_* は FLAG:111 を見るのでそのまま呼ぶ。実績（UNLOCK_ACHIEVEMENT）は GLOBAL のみ。"""
+    from ..action import config_check_prison, kojo_root_full
+
+    st = ctx.state
+    c = tc(ctx)
+    out = ctx.out
+    f111 = st.flag[111]
+    e = st.charas[f111]
+    st.flag[110] = 0  # :314
+    run_chinobun(ctx, "MESSAGE_BATTLE_END_WIN_ENEMY", fallback=lambda: (kojo_root(ctx, "BATTLE_END_WIN_ENEMY"), out.printw()))
+    msg_other(ctx, "BATTLE_END_WIN_ENEMY")  # :319
+    if c.base[0] == c.maxbase[0] and c.base[1] == c.maxbase[1] and st.tflag[0] >= 10:  # :321–323
+        unlock_achievement(ctx, 266, "パーフェクション")
+    run_chinobun(ctx, "MESSAGE_BATTLE_END_RESCUE_ENEMY",  # :326
+                 fallback=lambda: (kojo_root(ctx, "BATTLE_END_RESCUE_ENEMY"), out.printw()))
+    l3 = e.cflag[0]  # :330 2＝洗脳 3＝悪堕ち
+    if config_check_prison(st, 11) == 1 and l3 == 3:  # :333–334 悪堕ちキャラが正気に返らないオプション
+        if not ctx.narration.run_function(ctx, "MESSAGE_OTHER_BATTLE_END_AKUOTI_NO_RESCUE", []):
+            # MESSAGE_OTHER.ERB:714–721（SETCOLORBYNAME は catalog 外なので Python で同じ本文：Fuchsia = #FF00FF）
+            out.set_bold(True)
+            out.set_color("#FF00FF")
+            out.printl(f"しかし周囲の蠢く触手が{print_transcallname(st, f111)}を素早く包み込み、そのまま連れ去ってしまった…！")
+            out.set_bold(False)
+            out.reset_color()
+            out.printl()
+        return
+    e.cflag[0] = -1  # :336–344
+    for k in (20, 21, 30, 31):
+        e.cflag[k] = 0
+    e.base[0] = 1
+    e.base[1] = 1
+    e.base[2] = 1
+    unlock_achievement(ctx, 272, "正気に戻りなさい！")
+    run_chinobun(ctx, "MESSAGE_OTHER_BATTLE_END_RESCUED_ENEMY",  # :347（MESSAGE_OTHER.ERB:706–711）
+                 fallback=lambda: kojo_root_full(ctx, e.cflag[6], "OTHER_BATTLE_END_RESCUED_ENEMY"))
+    if l3 != 3:
+        return
+    # :350–404 悪堕ちキャラに洗脳／幽閉されていたキャラの連鎖救出（CFLAG:21 = 悪堕ちキャラの固有番号 CFLAG:240）
+    for state_no, msg, other, code, ach in (
+        (2, "MESSAGE_BATTLE_END_RESCUE_SENNOU", "MESSAGE_OTHER_BATTLE_END_RESCUED_SENNOU", "BATTLE_END_RESCUE_SENNOU",
+         (273, "わたくしは何を…？")),
+        (1, "MESSAGE_BATTLE_END_RESCUE_AKUOTI", "MESSAGE_OTHER_BATTLE_END_RESCUED", "BATTLE_END_RESCUE_AKUOTI",
+         (271, "いま助けるわ！")),
+    ):
+        shown = 0  # LOCAL:1
+        for i in range(st.charanum):
+            if i == 0:  # MASTER
+                continue
+            o = st.charas[i]
+            if o.cflag[20] == 2 and o.cflag[21] == e.cflag[240] and o.cflag[0] == state_no:
+                unlock_achievement(ctx, *ach)
+                if shown == 0:
+                    run_chinobun(ctx, msg, fallback=lambda cd=code: (kojo_root(ctx, cd), out.printw()))
+                o.cflag[0] = -1
+                for k in (20, 21, 30, 31):
+                    o.cflag[k] = 0
+                o.cflag[100] = 103  # :366／:398
+                o.base[0] = 1
+                o.base[1] = 1
+                o.base[2] = 1
+                o.cflag[220] = 0
+                saved = st.target
+                st.target = i
+                run_chinobun(ctx, other, fallback=lambda: kojo_root_full(ctx, e.cflag[6], other[len("MESSAGE_"):]))
+                st.target = saved
+                shown = 1
 
 
 def _rescue_captives(ctx: Ctx) -> None:
@@ -490,14 +566,16 @@ def _battle_lose(ctx: Ctx) -> None:
     c = tc(ctx)
     out = ctx.out
     name = print_transcallname(st, st.target)
-    if enemy_type_check(st, "AKUOTI") == 1:
-        raise NotImplementedError("悪堕ちキャラへの敗北（BATTLE_COM_AFTER.ERB:980–981、1044–1087）は未移植")
+    akuoti = enemy_type_check(st, "AKUOTI") == 1
     out.printw()  # :971
     st.tflag[98] = 2  # :973
     out.printl()
     out.print("戦闘結果：敗北 -")
-    tentacle_access(ctx, "NAME")
-    out.printl("の殲滅失敗")
+    if not akuoti:  # :977–982
+        tentacle_access(ctx, "NAME")
+        out.printl("の殲滅失敗")
+    else:
+        out.printl(f"{print_transcallname(st, st.flag[111])}の解放失敗")
     out.printl()
     if t(ctx, c, "主観視点") > 0:
         out.printl(f"{name}は力尽きてしまった・・・")
@@ -523,20 +601,77 @@ def _battle_lose(ctx: Ctx) -> None:
         out.printl(f"{ctx.data.str_defaults.get(2500, '')}に取り込まれていってしまった・・・")
         out.printw()
         out.printw(f"{name}はロストしました")
-    else:  # :1031–1043（FLAG:110 == 0）
+    elif st.flag[110] == 0:  # :1031–1043
         c.cflag[0] = 1
         c.cflag[20] = st.flag[10]
         c.cflag[21] = st.flag[11]
-        # MESSAGE_BATTLE_END_LOSS（地の文/MESSAGE_BATTLE.ERB:1815–1863、LOSE_SITUATION を含む。状態変化なし）
-        # MESSAGE_BATTLE_END_LOSS（本文＋:1860 KOJO_ROOT＋:1861 FORCEWAIT）
-        run_chinobun(ctx, "MESSAGE_BATTLE_END_LOSS",
-                     fallback=lambda: (kojo_root(ctx, "BATTLE_END_LOSS"), out.wait()))
+        _msg_end_loss(ctx)
+    elif st.flag[110] == 1:  # :1044–1087
+        e = st.charas[st.flag[111]]
+        if e.cflag[0] == 2:  # :1046–1062 洗脳キャラに敗北：ご主人様（洗脳した触手）が幽閉する
+            c.cflag[0] = 1
+            c.cflag[20] = e.cflag[20]
+            c.cflag[21] = e.cflag[21]
+            _msg_end_loss(ctx)
+            msg_other(ctx, "BATTLE_END_LOSS")
+        elif e.cflag[0] == 3:  # :1064–1086
+            if t(ctx, e, "寄生") == 1 and config_check_maniac(st, 13) == 1:  # 寄生持ち・悪堕ち触手アリなら幽閉
+                c.cflag[0] = 1
+                c.cflag[20] = 2
+                c.cflag[21] = e.cflag[240]
+                _msg_end_loss(ctx)
+                msg_other(ctx, "BATTLE_END_LOSS")
+            else:  # 犯される（幽閉されない）
+                _subevent_battle_raped_enemy(ctx)
+                raise_after(ctx)
+                return
+        else:
+            # どちらでもない（FLAG:111 が洗脳／悪堕ちでない：:82 の遭遇率アップで選ばれた幽閉中キャラ等）→ 何もしない
+            raise_after(ctx)
+            return
+    else:
+        raise_after(ctx)
+        return
     if c.exp[exp_idx] == 0:
         c.exp[abn_idx] += 1
     c.exp[exp_idx] += 1
     if c.cflag[0] in (1, 9, 4):  # :1091–1092
         st.flag[799] -= 1
     raise BeginAfterTrain()  # :1095
+
+
+def raise_after(ctx: Ctx) -> None:
+    """:1091–1095 `SIF CFLAG:0 == 1 || 9 || 4 / FLAG:799 -= 1` と `BEGIN AFTERTRAIN`。"""
+    st = ctx.state
+    if tc(ctx).cflag[0] in (1, 9, 4):
+        st.flag[799] -= 1
+    raise BeginAfterTrain()
+
+
+def _msg_end_loss(ctx: Ctx) -> None:
+    """MESSAGE_BATTLE_END_LOSS（地の文/MESSAGE_BATTLE.ERB:1815–1863、LOSE_SITUATION を含む。状態変化なし）。
+    本文＋:1860 KOJO_ROOT＋:1861 FORCEWAIT。悪堕ちキャラ戦は :1851–1855 の文。"""
+    out = ctx.out
+    run_chinobun(ctx, "MESSAGE_BATTLE_END_LOSS", fallback=lambda: (kojo_root(ctx, "BATTLE_END_LOSS"), out.wait()))
+
+
+def _subevent_battle_raped_enemy(ctx: Ctx) -> None:
+    """`SUBEVENT_BATTLEE.ERB@SUBEVENT_BATTLE_RAPED_ENEMY`:24–51：悪堕ちキャラに敗北して犯される（幽閉されない）。"""
+    from ..action import kojo_root_full
+
+    st = ctx.state
+    c = tc(ctx)
+    loc = [0] * 12
+    loc[8] = 2000  # 屈服
+    loc[9] = 2000  # 恥情
+    e = st.charas[st.flag[111]]
+    run_chinobun(ctx, "MESSAGE_OTHER_SUBEVENT_BATTLE_RAPE_ENEMY",  # MESSAGE_OTHER.ERB:1804–1809
+                 fallback=lambda: kojo_root_full(ctx, e.cflag[6], "OTHER_SUBEVENT_BATTLE_RAPE_ENEMY"))
+    run_chinobun(ctx, "MESSAGE_SUBEVENT_BATTLE_RAPED_ENEMY",  # MESSAGE_SUBEVENT.ERB:5–9
+                 fallback=lambda: kojo_root(ctx, "SUBEVENT_BATTLE_RAPED_ENEMY"))
+    c.exp[ctx.data.index_of("EXP", "被姦経験")] += 1
+    c.nowex.clear()  # SUBEVENT_BATTLE_PRECALCRESET:20 `VARSET NOWEX, 0`
+    palam_cal(ctx, *loc)
 
 
 def _check_contamination(ctx: Ctx) -> int:
@@ -558,7 +693,7 @@ def _abareru(ctx: Ctx) -> None:
         out.printl("暴れる抵抗判定：成功")
         out.set_bold(False)
         out.print("拘束を振り解けなかったものの、")
-        tentacle_access(ctx, "NAME")
+        print_enemy_prefix(ctx)  # :735–739
         out.printl(f"は{name}の抵抗に虚を突かれ、体勢を崩している！")
         out.printw()
         st.tflag[1] = 1
@@ -586,7 +721,7 @@ def _abareru(ctx: Ctx) -> None:
         out.set_bold(True)
         out.printl("暴れる抵抗判定：クリティカル")
         out.set_bold(False)
-        tentacle_access(ctx, "NAME")
+        print_enemy_prefix(ctx)  # :786–790
         out.printl(f"が思わぬ反撃に怯んだ隙に、{name}は拘束を抜け出した！")
         out.printw()
         v[0] = 2
@@ -624,21 +759,26 @@ def _timeup(ctx: Ctx) -> None:
         out.printl("何とか襲撃を耐えきったようだ・・・")
     else:
         out.printl("どうやら戦闘が長引き過ぎた様だ")
-    tentacle_access(ctx, "NAME")
+    print_enemy_prefix(ctx)  # :1879–1883
     out.print("は")
     if c.tcvarn[0] == 0:
         out.print(f"{print_transcallname(st, st.target)}を離し、")
-    if st.flag[45] == 0:
+    if enemy_type_check(st, "LASTBOSS") >= 1 and st.flag[11] == 2:  # :1887–1888
+        out.printl("地響きと共に姿を消してしまった・・・")
+    elif st.flag[45] == 0:
         out.printl("大きく後退してそのまま逃げ出してしまった・・・")
     else:
         out.printl("大きく後退してそのまま姿を消した・・・")
     out.printl()
     out.print("戦闘結果：タイムアップ - ")
+    # :1898 は無条件の TENTACLE_ACCESS "NAME"（悪堕ちキャラ戦では FLAG:11 = 0 のエラー文字列：core.tentacle_access）
     tentacle_access(ctx, "NAME")
     out.printl("の殲滅失敗")
     out.printl()
     kojo_root(ctx, "BATTLE_END_TIMEUP")
     out.printw()
+    if enemy_type_check(st, "AKUOTI") == 1:  # BATTLE_COM_AFTER.ERB:1122–1124
+        msg_other(ctx, "BATTLE_END_TIMEUP")
     if enemy_type_check(st, "MOB") == 0 and enemy_type_check(st, "CITIZEN") == 0:
         _settentaclecloth(ctx)
     raise BeginAfterTrain()
@@ -699,12 +839,14 @@ def _auto_untangle(ctx: Ctx) -> None:
             v[0] = 2
             st.tflag[4] = 0
             msg_hurihodoku_success(ctx)
+            if enemy_type_check(st, "AKUOTI") == 1:  # :276–277
+                msg_other(ctx, "BATTLE_CHARA_HURIHODOKU_SUCCESS")
             v[8] = 1
             st.tflag[1] = 0
             st.tflag[16] = -1
             st.tflag[17] = -1
             st.tflag[20] = -1
-            tentacle_access(ctx, "NAME")
+            print_enemy_prefix(ctx)  # :287–291
             out.printl("は体勢を立て直している・・・")
             out.printl()
         else:

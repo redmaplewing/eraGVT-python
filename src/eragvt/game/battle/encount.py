@@ -118,14 +118,23 @@ def encount(ctx: Ctx) -> int:
 
 
 def encount_enemy(ctx: Ctx) -> int:
-    """`@ENCOUNT_ENEMY`:19–131。"""
+    """`@ENCOUNT_ENEMY`:19–131（洗脳／悪堕ちキャラとの遭遇）。
+
+    - 候補（CFLAG:0 が 2／3）は LOCAL:100〜 に並べ、`RAND:(LOCAL:1)` で選ぶ（:77–79）。その後 :81–86 の「遭遇率アップ」で
+      CFLAG:23 が最大のキャラ（CFLAG:0 が 1／2／3：幽閉中も含む。MASTER も除外しない）に置き換わる（原作どおり）。
+    - FLAG:10／FLAG:11 は ACTION.ERB:37–38 で 0 のまま（悪堕ちキャラ戦では TENTACLE_ACCESS がボス 0 を指す：core.tentacle_access）。
+    - 遭遇しなかった場合 FLAG:110 は 1 のまま（ENCOUNT_BOSS:144 で 0 に戻る）。
+    """
+    from .core import msg_other, run_chinobun
+    from .func import transform
+
     st, data = ctx.state, ctx.data
     c = tc(ctx)
     st.savestr[13] = "BOSS"  # :22 文字列変数への `=` は右辺をそのまま文字列として代入
     st.flag[110] = 1
     encount_up = 0
     c.exp[data.index_of("EXP", "戦闘経験")] += 1  # :28
-    candidates = 0
+    cands: list[int] = []  # LOCAL:100〜（LOCAL:1 = 件数）
     for i in range(st.charanum):  # :31–51
         if i == 0:
             continue
@@ -137,8 +146,10 @@ def encount_enemy(ctx: Ctx) -> int:
             and t(ctx, ch, "妊娠") > 0
         ):
             continue
-        if ch.cflag[0] in (2, 3):
-            candidates += 1
+        if ch.cflag[0] == 2:
+            cands.append(i)
+        if ch.cflag[0] == 3:
+            cands.append(i)
         encount_up += ch.cflag[23]
     encount_up += t(ctx, c, "巻き込まれ体質") * 15  # :54
     per = 0
@@ -148,11 +159,44 @@ def encount_enemy(ctx: Ctx) -> int:
         per = 20
     per += encount_up - min(div(st.flag[852], 500), 40)
     per = min(per, 80)
-    if st.flag[999] == 1 and candidates > 0:  # :67–71
+    if st.flag[999] == 1 and cands:  # :67–71
         raise NotImplementedError("デバッグモードの遭遇率入力は未移植")
-    if st.rng.rand(100) < per:  # :74
-        if candidates >= 1:  # :76（ENEMY_TYPE_CHECK_F("AKUOTI") は FLAG:110 = 1 なので常に 1）
-            raise NotImplementedError("洗脳／悪堕ちキャラとの遭遇（ENCOUNT_ENEMY:76–129）は未移植")
+    if st.rng.rand(100) < per and cands:  # :74–76（ENEMY_TYPE_CHECK_F("AKUOTI") は FLAG:110 = 1 なので常に 1）
+        st.flag[111] = cands[st.rng.rand(len(cands))]  # :77–79
+        l3 = 0
+        for i in range(st.charanum):  # :81–86
+            o = st.charas[i]
+            if o.cflag[23] > 0 and o.cflag[23] > l3 and o.cflag[0] in (1, 2, 3):
+                l3 = o.cflag[23]
+                st.flag[111] = i
+        e = st.charas[st.flag[111]]
+        e.cflag[23] = div(e.cflag[23], 2)  # :87–89
+        if e.cflag[23] < 25:
+            e.cflag[23] = 0
+        if e.cflag[0] == 2:  # :91–109（CFLAG:300／301 は TARGET の初遭遇フラグ）
+            if c.cflag[300] == 0:
+                run_chinobun(ctx, "MESSAGE_ENCOUNT_SENNOU_FIRST", fallback=lambda: kojo_root(ctx, "ENCOUNT_SENNOU_FIRST"))
+                c.cflag[300] = 1
+            else:
+                run_chinobun(ctx, "MESSAGE_ENCOUNT_SENNOU", fallback=lambda: kojo_root(ctx, "ENCOUNT_SENNOU"))
+        elif e.cflag[0] == 3:
+            if c.cflag[301] == 0:
+                run_chinobun(ctx, "MESSAGE_ENCOUNT_AKUOTI_FIRST", fallback=lambda: kojo_root(ctx, "ENCOUNT_AKUOTI_FIRST"))
+                c.cflag[301] = 1
+            else:
+                run_chinobun(ctx, "MESSAGE_ENCOUNT_AKUOTI", fallback=lambda: kojo_root(ctx, "ENCOUNT_AKUOTI"))
+        msg_other(ctx, "ENTRY")  # :112
+        lv = e.abl[data.index_of("ABL", "レベル")]
+        st.flag[12] = e.maxbase[0] + div(e.maxbase[11] * (15 + lv), 2)  # :115（MAXBASE:体力・防御）
+        st.flag[13] = st.flag[12]
+        st.flag[14] = 1000  # :119–123
+        st.flag[15] = 0
+        st.flag[16] = 760 + lv * 10
+        st.flag[17] = 0
+        st.flag[22] = -1
+        if enemy_type_check(st, "AKUOTI") and t(ctx, e, "変身能力") > 0 and e.cflag[1] == 0:  # :126–127
+            transform(ctx, 1, st.flag[111])
+        return 1
     return 0
 
 
