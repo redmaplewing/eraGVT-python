@@ -35,3 +35,12 @@
 
 ## 完成條件
 pytest 全綠；STATUS（≤150 行，必要時壓縮舊階段敘述）、deviations、unresolved 更新。結束時務必送出三段報告。
+
+## Part C：使用者追加裁決（2026-10-01，S20 中途併入）
+1. **C1 夜這い HOUSHI_4 處女喪失原因**：原作把 CFLAG:206 寫在實行者 LCOUNT（`FORCE_夜這い.ERB`:3088–3092），改寫在失去處女的對象。
+   標 `# DEVIATION:`（使用者裁決），記入 deviations.md，補測試。（取代 Part B 第 6 項「暫不修改」。）
+2. **C2 斜體支援**：`TextOutput` 的 Segment 加斜體屬性（FONTITALIC／FONTREGULAR），Web 模板以 CSS 顯示；akuoti 動画拡散與 narration runtime
+   原本忽略 FONTITALIC 處改為實際套用，移除兩處 DEVIATION 與 deviations.md 的斜體部分。補測試（JSON 欄位增加時同步更新既有測試）。
+3. **C3 調查（不改程式）**：悪堕ちキャラ幽閉的 PALAM_HOSEI 殘值（`COMMON_TENTACLE_DATA.ERB`:314–343、`EVENT_PALAM_UP.ERB`:134–140）：
+   追查到達路徑與各路徑最後寫入 RESULT:1–11 的函式（附 ERB／reference 行號），結論寫入 unresolved.md 與最終報告；
+   若固定則提出照原作移植方案（不實作），若不固定則列出變動來源。

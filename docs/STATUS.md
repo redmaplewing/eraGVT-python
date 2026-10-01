@@ -1,6 +1,6 @@
 # 現況（唯一真相，≤150 行）
 
-更新：2026-10-01（S19）
+更新：2026-10-01（S20）
 
 ## 已完成
 
@@ -86,29 +86,33 @@
   為原作的錯誤字串。觀衆：PERFORM_CHEERS_HATE 與 MISS／HIT 的陥落経験分岐。`tools/sim.py`：`--enable-akuoti`、`--corrupt N`、
   `--dump`／`--load`（分割實行）。怪處見 deviations「原作行為」S19。測試共 1192 個（新增 `tests/test_akuoti.py` 75）。
 
-## S19 模擬（`tools/sim.py`，seed 0–249，`--max-shop 200`；分割並列後 `--load` 合算）
+- **S20** 襲撃／救援イベント戰（新模組 `game.raid`：RAID_RESCUE／RAID_ATTACK、救援 2〜5・襲撃 3001〜3004 的 SITUATION／RESCUE／ABANDON／
+  EXEC（INPUT）／MISSION_CHECKER／SUCCESS／FAILURE、3003／3004 的 EVENT_BATTLE_TURNEND、EVENT_BATTLE_SET_COSTUME、イベント専用装備 990〜992）。
+  `turnend.raid_hantei` 改 generator（JUMP 語意），`_skip_event` 移除；EVENTTRAIN／EVENTCOMEND:981／EVENTEND 的 FLAG:45 分岐、MESSAGE_RAID_BOSS 接通。
+  使用者裁決的 DEVIATION（deviations「使用者裁決 2026-10-01」）：SQRT 負→0（AKUOTI_ATTACK＋延伸到 AKUOTI_EVENT）、脅迫クールダウン −1、
+  夜這い淫乳→Ｂ感覚、HOUSHI_4／5 フェラ経験、HOUSHI_4 處女喪失原因寫在對象、子触手成功也 −1。斜體（FONTITALIC）支援。
+  C3 調查：悪堕ち幽閉 PALAM_HOSEI 的 RESULT 殘值**不固定**（unresolved）。測試共 1281 個（新增 `tests/test_raid.py` 83）。
 
-| 指標 | 預設 S18 | 預設 S19 | 初期セット S18 | 初期セット S19 |
+## S20 模擬（`tools/sim.py`，seed 0–249，`--max-shop 200`；分割並列後 `--load` 合算）
+
+| 指標 | 預設 S19 | 預設 S20 | 初期セット S19 | 初期セット S20 |
 |---|---:|---:|---:|---:|
-| 停止前 SHOP 次數（平均／最多） | 201.00／201 | 201.00／201 | 201.00／201 | 201.00／201 |
-| ゲームオーバーモード進入局／進入後 SHOP 平均（最多） | 250／186.64（197） | 250／186.64（197） | 250／187.36（197） | 250／187.36（197） |
-| 敗北局／敗北後 SHOP 平均 | 250／192.82 | 250／192.82 | 250／192.97 | 250／192.97 |
+| 停止前 SHOP 次數（平均／最多） | 201.00／201 | 201.00／201 | 201.00／201 | 199.47／201 |
+| ゲームオーバーモード進入局／進入後 SHOP 平均（最多） | 250／186.64（197） | 250／188.10（197） | 250／187.36（197） | 248／188.67（197） |
+| 敗北局／敗北後 SHOP 平均 | 250／192.82 | 250／192.87 | 250／192.97 | 250／191.47 |
+| 停止 | 0 | 0 | 0 | 2（触手拘束具の強制装着） |
 
-- 預設路徑與 S18 完全相同（停止 0、上限 250；子触手襲来 136／87・110／71）。基本セット FLAG:804 = 1（陥落時の洗脳／悪堕ち OFF）
-  → 悪堕ちキャラは生まれず AKUOTI_EVENT・悪堕ちキャラ戰 0。
-- `--enable-akuoti`（FLAG:804 bit1＋bit9）：AKUOTI_EVENT 預設 43733／250 局・初期セット 43567／250（ほぼ全滅後のゲームオーバーモード中、
-  每回合）；悪堕ちキャラ戰 各 2 局（全て敗北）。停止：預設 2・初期セット 1 局「悪堕ちキャラによる幽閉のパラメータ補正」。
-- `--corrupt 3`（開局時に 3 番を悪堕ち：テスト用人工狀態）：預設／初期セット 悪堕ちキャラ戰 561／215・496／212、勝利 55・82、敗北 418・346、
-  AKUOTI_EVENT 6066・5190。停止：SQRT 負數例外 178・151（原作でも CodeEE：deviations S19）、上限 55・81、幽閉パラメータ補正 16・17、
-  `HATUJOU_TO_HAIRAN` 地の文 1、子供の名前手入力 1。
+- 襲撃／救援の実際次數（預設／初期セット）：RAID_ATTACK 82／86（EXEC_3001 30・32、EXEC_3002 52・54、3003／3004 0）、
+  RAID_RESCUE 38／21（見送り 21／11、戦闘 救援2 5・3、救援3 6・2、救援4 1・3、救援5 5・2）。ミッション成功は預設 5・初期セット 2
+  （いずれも時間切れ TFLAG:98 = 0）、ほかは敗北。イベント戰の時間切れ後 SETTENTACLECLOTH（23%）で触手拘束具が付くと停止（初期セット 2 局）。
+- 悪堕ち系（`--enable-akuoti`／`--corrupt 3`）は S19 から未再測。SQRT 負數停止（S19 で 151〜178 局）は裁決により解消のはず。
 
 ## 下一步
 
-- **S20：襲撃／救援イベント戰＋使用者裁決的修正**（`docs/sessions/S20-raid-and-rulings.md`）。之後候選：悪堕ち容姿
-  （CORRUPT_CHANGE_LOOKS_MAIN／RECOVER_CORRUPTION，設定 FLAG:804 bit4 ON 時のみ）、[反撃]スタイル、狀態畫面、設定畫面／プリセット、FLASHNEWS、ランダム命名畫面。
-- 已裁決（2026-10-01）：S19 防衛力為負時 SQRT 當 0；S18 脅迫クールダウン每回合 −1、夜這い淫乳改看Ｂ感覚、奉仕補フェラ経験、
-  子触手襲擊成功時 −1（以上皆 DEVIATION，S20 實作）；S18／S19 其餘怪處照原作。
-- 待裁決：悪堕ちキャラ幽閉的 PALAM_HOSEI（stale RESULT:1–11）、夜這い HOUSHI_4 處女喪失原因寫在實行者、FONTITALIC 是否支援。
+- 次階段候選：触手拘束具（SUBEVENT_BATTLE_SETTENTACLECLOTH／ACTTENTACLECLOTH：イベント戰の時間切れで発生）、悪堕ち容姿
+  （FLAG:804 bit4 ON 時のみ）、[反撃]スタイル、狀態畫面、設定畫面／プリセット、FLASHNEWS、ランダム命名畫面、ラスボス。
+- 已裁決（2026-10-01）並於 S20 實作：上記 DEVIATION 6 項＋斜體。
+- 待裁決：悪堕ちキャラ幽閉的 PALAM_HOSEI（RESULT 殘值不固定：全域 RESULT 模型化或固定值 DEVIATION，unresolved.md）、SQRT 當 0 延伸到 AKUOTI_EVENT 的確認。
 - 已裁決（2026-09-30）：拡張度初期值照原作不設定；初期セット身體資料問題因 S10 改回預設開局而不再需要偏離；
   S13 苗床出産的 static LOSEDEF 等怪處全部照原作。
 - 口上 catalog 待擴充：改狀態的口上（hook 化）、入れ子內 $ラベル 的 GOTO（`KOJO_AEGI.ERB` $ＭＡＸ２，199 函式受影響）、SPLIT／STRDATA、未實作式中関数（覆蓋率報告）。
@@ -116,10 +120,12 @@
 
 ## 仍會停止的分岐（`NotImplementedError` → Web 停止）
 
-頻度見上方 S19 模擬（預設路徑無停止）。其餘登記但罕見：
+頻度見上方 S20 模擬（預設路徑無停止）。其餘登記但罕見：
 - 悪堕ち（S19 殘留）：悪堕ちキャラによる幽閉（CFLAG:20 = 2）的 EVENT_PALAM_HOSEI（`TENTACLE_ACCESS_PRISON` 不 RETURN → RESULT:1–11
   為前值，無法重現）、容貌變化 CORRUPT_CHANGE_LOOKS_MAIN（FLAG:804 bit4 ON）、RECOVER_CORRUPTION（容貌變化後的救出）、開局時の
-  デフォルト悪堕ち。防衛力為負時 AKUOTI_ATTACK 的 SQRT（ValueError：原作 CodeEE）。悪堕ち戰中 TENTACLE_ACCESS 的數值鍵（安全網）。
+  デフォルト悪堕ち。悪堕ち戰中 TENTACLE_ACCESS 的數值鍵（安全網）。防衛力 < −625 時戰鬥中 `SQRT(FLAG:852 + 625)`（cheers）。
+- 襲撃／救援（S20）：ラスボス出現後（FLAG:100 = 0）の襲来（ENCOUNT_BOSS ラスボス分岐）、RAID_HANTEI のデバッグ入力、
+  原作でも CodeEE になるエラー路（EVENTTURNEND が FLAG:45 を残して終了）。時間切れ後の触手拘束具（下記）。
 - 幽閉：ラスボス 的幽閉、TS 性別變化、ラスボス出現後的淫紋陥落。
 - 妊娠・子供（S13）：TS 変身キャラ妊娠時的女體化（TS_MtoF）、子供名字／変身後名／かけ声／名乗り的手入力（INPUTS）與ランダム命名畫面、
   デバッグモード的妊娠確率輸入。
@@ -138,4 +144,3 @@
   全滅後的ゲームオーバーモード。其他行動、11 日目夜的日數超過結局等會進入 Web「停止」畫面（deviations、上一節）。
 - 初期セット選項的角色身體資料為 0（原作同樣不生成），戰鬥中女性敏捷 0・攻擊 2 倍（原作行為，是否偏離待決定）。
   預設開局的汎用キャラ會生成（體重正常）。角色製作／狀態畫面的手動生成未移植。
-- 襲撃／救援（DAY ≥ 3）成立時只顯示「スキップ」訊息（deviations）。

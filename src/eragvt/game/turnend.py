@@ -1,8 +1,8 @@
 """ターン終了：`インターミッション画面/SHOP_TURNEND.ERB@EVENTTURNEND`:3–139 と `@EVENTSHOP` の通常分岐（:158–215）。
 
 路徑相對 `source/earGVP/ERB/`。夜間イベント等のうち未移植のものは「開始条件」だけを原作どおり判定し、
-条件が成立したら `NotImplementedError`（戦闘なしでは起こり得ない状態）か、
-DEVIATION として発生を見送る（通常プレイで起こる乱数イベント：襲撃・救援）。
+条件が成立したら `NotImplementedError`（戦闘なしでは起こり得ない状態）。
+S20：襲撃／救援イベント戦（`raid`）を接続（以前は DEVIATION として見送っていた）。
 S18：クズ市民の脅迫・拉致監禁（`intimidation`）、夜這い（`yobai`）、深夜の子触手襲来（`small_tentacle`）を接続。
 """
 
@@ -117,6 +117,12 @@ def event_turnend(ctx: Ctx) -> Generator[None, int, Step]:
             continue
         st.target = i
         kojo_root(ctx, "TURNEND")  # 地の文/MESSAGE.ERB@MESSAGE_TURNEND:8–10
+    # DEVIATION: 使用者裁決（2026-10-01）：脅迫クールダウン CFLAG:72 をターン（半日）ごとに 1 減らす。原作は
+    # FORCE_クズ市民の脅迫.ERB:520／:632 で 8 を代入するだけで、全 ERB に減算が無い（:13 で永久に脅迫されなくなる）。
+    # 減算位置は INTIMIDATION 判定（SHOP_TURNEND.ERB:90–101）の直前（deviations.md「使用者裁決 2026-10-01」）。
+    for i in range(1, st.charanum):
+        if st.charas[i].cflag[72] > 0:
+            st.charas[i].cflag[72] -= 1
     # :90–101 クズ市民による脅迫／誘拐監禁（FORCE_クズ市民の脅迫.ERB、S18）
     for i in range(1, st.charanum):
         c = st.charas[i]
@@ -142,12 +148,16 @@ def event_turnend(ctx: Ctx) -> Generator[None, int, Step]:
     daily_popularity_change(ctx)  # :122
     if config_check_screen(st, 3) == 0:  # :125–126
         out.wait()
-    if config_check_event(st, 0) > 0:  # :129–130
-        raid_hantei(ctx)
-    # :133–134（FLAG:45 は襲撃戦闘でのみ立つ。未移植のため常に 0）
+    if config_check_event(st, 0) > 0:  # :131–132（S20：JUMP RAID_RESCUE／RAID_ATTACK → BEGIN TRAIN／TURNEND）
+        step = yield from raid_hantei(ctx)
+        if step is not None:
+            return step
+    # :135–136
     if st.flag[45] == 0:
         return Step.SHOP
-    raise NotImplementedError("襲撃／救援イベントの戦闘（BEGIN TRAIN）は S05")
+    # FLAG:45 が残ったまま関数末尾 → Normal 状態でスクリプト終端 → 原作は CodeEE「予期しないスクリプト終端です」
+    # （reference/emuera-1824/Emuera/GameProc/Process.SystemProc.cs@endNormal:993–996）。RAID_* のエラー分岐でのみ到達。
+    raise NotImplementedError("EVENTTURNEND が FLAG:45 を残して終了（原作でも CodeEE：予期しないスクリプト終端）")
 
 
 def ending(ctx: Ctx) -> None:
@@ -362,13 +372,17 @@ def akuoti_attack(ctx: Ctx) -> None:
     st = ctx.state
     local = 40 if st.time == 0 else 20  # :7–13
     clear_randchoose(st)  # :15
+    # DEVIATION: 使用者裁決（2026-10-01）：FLAG:852 < 0 のとき SQRT を 0 として計算する。原作は SQRT 負數で CodeEE
+    # （reference/emuera-1824/Emuera/GameData/Function/Creator.Method.cs@SqrtMethod:1074–1080）。防衛力が負になるのは
+    # BIRTH_AUTO_RANDOM（PREGNANT_SOURCE_NINSIN.ERB:737）が下限なしで減らすため（deviations.md「使用者裁決 2026-10-01」）。
+    defence = max(st.flag[852], 0)
     for i in range(st.charanum):  # :16–22
         if i == GameState.MASTER:
             continue
         if (
             st.charas[i].cflag[0] == CharaState.CORRUPTED
             and _ishole(ctx, i)
-            and min(st.rng.rand(div(isqrt(st.flag[852]), 2) + 20), 100) < local
+            and min(st.rng.rand(div(isqrt(defence), 2) + 20), 100) < local
         ):
             add_randchoose(st, i)
     if choicecount(st) == 0:  # :24–25
@@ -432,19 +446,24 @@ def self_night(ctx: Ctx) -> None:
     st.target = saved  # :61
 
 
-def raid_hantei(ctx: Ctx) -> None:
-    """`ゲーム内_イベント発生/強制発生イベント/FORCE_襲撃or救援イベント発生.ERB@RAID_HANTEI`:9–106。"""
+def raid_hantei(ctx: Ctx) -> Generator[None, int, "Step | None"]:
+    """`ゲーム内_イベント発生/強制発生イベント/FORCE_襲撃or救援イベント発生.ERB@RAID_HANTEI`:9–105。
+    `JUMP RAID_RESCUE／RAID_ATTACK`（S20：`raid`）。JUMP 先が RETURN すると RAID_HANTEI も RETURN する
+    （reference/emuera-1824/Emuera/GameProc/Process.State.cs@Return:368–378）。戻り値は BEGIN 先（None = RETURN）。"""
+    from .battle.core import is_hole
+    from .raid import raid_attack, raid_rescue
+
     st = ctx.state
-    # :14–21 男女平等オプション（ISHOLE）：CONFIG_CHECK_MANIAC_F(5) == 1 なら全員 1（汎用関数/SEX_GENDER.ERB@ISHOLE:52–66）
-    if not any(st.charas[i].cflag[999] and _ishole(ctx, i) for i in range(1, st.charanum)):
-        return
-    if st.flag[21]:  # :24–25
-        return
-    if st.flag[41] >= st.charanum - 1:  # :27–28
-        return
-    if st.day[0] < 3:  # :30–31
-        return
-    # :35–45
+    # :14–22 男女平等オプション OFF 時の中断判定（ISHOLE(CCOUNT)：汎用関数/SEX_GENDER.ERB@ISHOLE:52–66）
+    if not any(st.charas[i].cflag[999] and is_hole(ctx, i) for i in range(1, st.charanum)):
+        return None
+    if st.flag[21]:  # :25–26
+        return None
+    if st.flag[41] >= st.charanum - 1:  # :28–29
+        return None
+    if st.day[0] < 3:  # :31–32
+        return None
+    # :36–47
     idle = sum(
         1
         for i in range(1, st.charanum)
@@ -453,8 +472,8 @@ def raid_hantei(ctx: Ctx) -> None:
         and st.charas[i].cflag[100] not in (ActionPlan.SORTIE, ActionPlan.DEFENSE)
     )
     if idle < 1:
-        return
-    # :49–73
+        return None
+    # :51–75
     d = st.flag[852]
     for bound, n in ((1000, 6), (1750, 12), (2500, 24), (3750, 36), (5000, 48), (7500, 60), (10000, 72),
                      (12500, 84), (15000, 96), (17500, 112), (20000, 128)):
@@ -463,21 +482,17 @@ def raid_hantei(ctx: Ctx) -> None:
             break
     else:
         l2 = st.rng.rand(256)
-    st.temp.battle_situation = ""  # :76 INITBATTLESITUATION（特殊シチュエーション.ERB:41–42）
-    if st.flag[999] == 1:  # :79–90
+    st.temp.battle_situation = ""  # :78 INITBATTLESITUATION（特殊シチュエーション.ERB:41–42）
+    if st.flag[999] == 1:  # :81–91
         raise NotImplementedError("RAID_HANTEI のデバッグ入力は未移植")
-    # :94–105
+    # :95–105（`&&` は短絡：RAND:2・RAND:(18 - FLAG:52 * 3) は LOCAL:2 == 0 のときだけ引く）
     if l2 == 0 and st.rng.rand(2) == 0 and st.time == 0:
-        _skip_event(ctx, "救援イベント（RAID_RESCUE）")
+        return (yield from raid_rescue(ctx))
     elif l2 == 0 and st.rng.rand(18 - st.flag[52] * 3) != 0:
-        _skip_event(ctx, "襲撃イベント（RAID_ATTACK）")
+        return (yield from raid_attack(ctx))
     elif st.rng.rand(100) == 0:
-        _skip_event(ctx, "襲撃イベント（RAID_ATTACK）")
-
-
-def _skip_event(ctx: Ctx, name: str) -> None:
-    """DEVIATION: 発生条件を満たしたが未移植のイベント（戦闘を伴う）。発生しなかったものとして進める。"""
-    ctx.out.printl(f"（未實作：{name}が発生しましたが、スキップします）")
+        return (yield from raid_attack(ctx))
+    return None
 
 
 def _ishole(ctx: Ctx, who: int) -> bool:

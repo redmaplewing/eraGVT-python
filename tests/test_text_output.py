@@ -51,6 +51,23 @@ def test_color_and_bold():
     assert segs == [Segment("撤退", "#00ff96", True), Segment("!", None, False)]
 
 
+def test_italic_and_regular():
+    """S20（使用者裁決 2026-10-01）：FONTITALIC は現在のスタイルに Italic を加え（太字は保つ）、FONTREGULAR は両方解除
+    （reference/emuera-1824/Emuera/GameProc/Function/Instraction.Child.cs:1084–1121）。
+    例：FORCE_悪堕ちキャラの淫謀.ERB:810–815 `FONTBOLD / PRINT □ / FONTITALIC / PRINTFORML 文 / FONTREGULAR`。"""
+    o = TextOutput()
+    o.set_bold(True)
+    o.print("□")
+    o.set_italic(True)
+    o.printl("私はロボットではありません")
+    o.set_bold(False)
+    o.printl("x")
+    segs = o.lines[0].parts[0].segments
+    assert segs == [Segment("□", None, True, False), Segment("私はロボットではありません", None, True, True)]
+    assert o.lines[1].parts[0].segments == [Segment("x", None, False, False)]
+    assert o.lines[0].to_json()["parts"][0]["segments"][1]["italic"] is True
+
+
 @pytest.mark.parametrize(
     ("text", "expected"),
     [
@@ -125,7 +142,7 @@ def test_line_to_json():
     o = TextOutput()
     o.printl("[1]はい")
     assert o.lines[0].to_json() == {
-        "parts": [{"segments": [{"text": "[1]はい", "color": None, "bold": False}], "button": 1, "title": None}],
+        "parts": [{"segments": [{"text": "[1]はい", "color": None, "bold": False, "italic": False}], "button": 1, "title": None}],
         "kind": "text",
         "wait": False,
         "align": "left",
@@ -148,3 +165,18 @@ def test_null_narration():
     assert NullNarrationService().call_kojo(ctx, 0, "OTHER_X") == -1
     assert st.flag[62] == 1
     assert NullNarrationService().run_function(ctx, "MESSAGE_FIRST") is False
+
+
+def test_narration_runtime_fontitalic():
+    """S20：口上 catalog の FONTITALIC／FONTREGULAR も TextOutput に反映（以前は FONTITALIC を無視していた）。"""
+    from eragvt.narration import nodes as N
+    from eragvt.narration.runtime import Env, Interp
+
+    o = TextOutput()
+    it = Interp(None, Env(state=None, data=None, out=o))
+    it._style(N.Style(1, "FONTBOLD"), None)
+    it._style(N.Style(1, "FONTITALIC"), None)
+    o.print("a")
+    it._style(N.Style(1, "FONTREGULAR"), None)
+    o.printl("b")
+    assert o.lines[0].parts[0].segments == [Segment("a", None, True, True), Segment("b", None, False, False)]

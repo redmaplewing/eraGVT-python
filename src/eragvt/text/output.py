@@ -3,7 +3,8 @@
 後端把遊戲輸出累積成 `Line` 列表，Web 端只負責渲染；遊戲邏輯不直接產生 HTML。
 對應關係：PRINT = `print`、PRINTL = `printl`、PRINTW = `printw`、PRINTPLAIN = `print_plain`、
 PRINTBUTTON = `button`、DRAWLINE = `drawline`、WAIT = `wait`、SETCOLOR／RESETCOLOR = `set_color`／`reset_color`、
-FONTBOLD／FONTREGULAR = `set_bold`、CLEARLINE = `clearline`。
+FONTBOLD = `set_bold(True)`、FONTITALIC = `set_italic(True)`、FONTREGULAR = `set_bold(False)`（太字・斜体とも解除）、
+CLEARLINE = `clearline`。
 
 按鈕的切法照 Emuera：一行裡「PRINT 累積、尚未變成按鈕」的文字，在換行或 PRINTBUTTON／PRINTPLAIN 時
 整段交給 `split_buttons` 判定（reference/emuera-1824/Emuera/GameView/PrintStringBuffer.cs@fromCssToButton:275、
@@ -29,6 +30,7 @@ class Segment:
     text: str
     color: str | None = None  # "#rrggbb"；None = 預設色
     bold: bool = False
+    italic: bool = False  # FONTITALIC（S20）
 
 
 @dataclass
@@ -229,8 +231,8 @@ def _divide(segments: list[Segment], pieces: list[tuple[str, int | None]]) -> li
                 got.append(seg)
                 need -= len(seg.text)
             else:
-                got.append(Segment(seg.text[:need], seg.color, seg.bold))
-                queue.insert(0, Segment(seg.text[need:], seg.color, seg.bold))
+                got.append(Segment(seg.text[:need], seg.color, seg.bold, seg.italic))
+                queue.insert(0, Segment(seg.text[need:], seg.color, seg.bold, seg.italic))
                 need = 0
         parts.append(Part(got, value))
     return parts
@@ -294,6 +296,7 @@ class TextOutput:
         self._pending: list[Segment] = []  # PRINT 累積、尚未判定按鈕的文字
         self._color: str | None = None
         self._bold = False
+        self._italic = False
         self._align: Literal["left", "center", "right"] = "left"
         # WAIT／PRINTW の累計回数（EVENTCOMEND 後の自動 WAIT 判定用：Process.SystemProc.cs:476、515–517）
         self.wait_count = 0
@@ -307,7 +310,15 @@ class TextOutput:
         self._color = None
 
     def set_bold(self, bold: bool = True) -> None:
+        """FONTBOLD（True）／FONTREGULAR（False）。FONTREGULAR は FontStyle.Regular にするので斜体も解除する
+        （reference/emuera-1824/Emuera/GameProc/Function/Instraction.Child.cs@FONTREGULAR_Instruction:1110–1121）。"""
         self._bold = bold
+        if not bold:
+            self._italic = False
+
+    def set_italic(self, italic: bool = True) -> None:
+        """FONTITALIC：現在のスタイルに Italic を加える（Instraction.Child.cs@FONTITALIC_Instruction:1097–1108、太字は保つ）。"""
+        self._italic = italic
 
     def set_align(self, align: Literal["left", "center", "right"]) -> None:
         """ALIGNMENT LEFT/CENTER/RIGHT（行単位）。"""
@@ -318,18 +329,18 @@ class TextOutput:
     def print(self, text: str) -> None:
         """PRINT：不換行；按鈕在換行時整段判定。"""
         if text:
-            self._pending.append(Segment(text, self._color, self._bold))
+            self._pending.append(Segment(text, self._color, self._bold, self._italic))
 
     def print_plain(self, text: str) -> None:
         """PRINTPLAIN：先結算前面的文字，再加入不可點的單位（PrintStringBuffer.cs@AppendPlainText:109）。"""
         self._resolve_pending()
         if text:
-            self._parts.append(Part([Segment(text, self._color, self._bold)]))
+            self._parts.append(Part([Segment(text, self._color, self._bold, self._italic)]))
 
     def button(self, label: str, value: int) -> None:
         """PRINTBUTTON：明確指定按鈕值（@AppendButton:100）。"""
         self._resolve_pending()
-        self._parts.append(Part([Segment(label, self._color, self._bold)], value))
+        self._parts.append(Part([Segment(label, self._color, self._bold, self._italic)], value))
 
     def print_lc(self, text: str) -> None:
         """PRINTLC：左寄せ列。`PRINTCの文字数:25`（emuera.config）に対し、cp932 バイト数で 26 まで空白を補う

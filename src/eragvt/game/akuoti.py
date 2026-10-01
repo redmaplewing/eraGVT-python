@@ -86,11 +86,15 @@ def akuoti_event(ctx: Ctx) -> None:
     loc: dict[int, int] = {}  # LOCAL（:40 VARSET）
     v_sex = 0  # :39
     f852 = st.flag[852]
+    # DEVIATION: 使用者裁決（2026-10-01）「防衛力が負なら SQRT を 0 として計算」を AKUOTI_ATTACK（turnend.akuoti_attack）と
+    # 同じく :42／:45／:58／:465 の SQRT(FLAG:852) にも適用（原作は負數で CodeEE：Creator.Method.cs@SqrtMethod:1074–1080）。
+    # AKUOTI_ATTACK だけを直すと直後のここで停止するため（deviations.md「使用者裁決 2026-10-01」）。
+    sq = isqrt(max(f852, 0))
     if st.time == 0:  # :41–47
-        sel_n0 = min(80 - min(isqrt(f852), 60), 40)
+        sel_n0 = min(80 - min(sq, 60), 40)
         sel_n1 = min(sel_n0 + 50, 80)
     else:
-        sel_n0 = div(min(80 - min(isqrt(f852), 60), 40), 2)
+        sel_n0 = div(min(80 - min(sq, 60), 40), 2)
         sel_n1 = min(sel_n0 + 30, 60)
     select = rand(100)  # :48
     damage = 0
@@ -99,7 +103,7 @@ def akuoti_event(ctx: Ctx) -> None:
     pl = out.printl
     pw = out.printw
     if select < sel_n0:  # :57–462 市街地襲撃系
-        damage = isqrt(f852) * 20 + div(f852 * 5, 100)  # :58
+        damage = sq * 20 + div(f852 * 5, 100)  # :58
         pl(f"妖しい霧が立ち込め、蠢く異形のシルエットが{locals_}の街に不穏な影を落とす。")
         if e.cstr[0] != e.cstr[1]:  # :60–61
             out.print(f"《{e.cstr[0]}》")
@@ -121,7 +125,7 @@ def akuoti_event(ctx: Ctx) -> None:
             _couple(ctx)
         _apply(ctx, loc, v_sex)  # :437–455
     elif select < sel_n1:  # :464–1607 暗躍系
-        damage = isqrt(f852) * 1 + div(f852 * 10, 100)  # :465
+        damage = sq * 1 + div(f852 * 10, 100)  # :465
         pl(f"妖しい霧が立ち込め、蠢く異形のシルエットが{locals_}の街に不穏な影を落とす。")
         if e.cstr[0] != e.cstr[1] and e.cstr[0] != e.callname and e.cstr[0] != e.name:  # :467–468
             out.print(f"《{e.cstr[0]}》")
@@ -691,11 +695,11 @@ _BARS = (" -■─────────────────────�
 def _robot_checkbox(ctx: Ctx, checked: bool) -> None:
     """:810–815 等：FONTBOLD「　　　□　」FONTITALIC「私はロボットではありません」FONTREGULAR、PRINTW。"""
     out = ctx.out
-    out.set_bold(True)
+    out.set_bold(True)  # FONTBOLD
     out.print("　　　■　" if checked else "　　　□　")
-    out.set_bold(False)
-    # DEVIATION: FONTITALIC（斜體）は表示に反映しない（deviations.md「口上 catalog 的顯示簡化」と同じ扱い）
+    out.set_italic(True)  # FONTITALIC（太字のまま斜体を加える）
     out.printl("私はロボットではありません")
+    out.set_bold(False)  # FONTREGULAR
     out.printw()
 
 

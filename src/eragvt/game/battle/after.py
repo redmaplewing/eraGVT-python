@@ -33,6 +33,13 @@ from .ninsin import ninsin_check_after  # ヒロイン関連/PREGNANT_SOURCE_NIN
 from .rape import after_train_rape  # 戦闘イベント.ERB@AFTER_TRAIN_RAPE:962–1334（S15）
 from .self_kind import self_battleend  # FORCE_夜間自慰.ERB（S15）
 
+
+def mission_check(ctx: Ctx, default: int) -> None:
+    """イベント戦の特殊ミッション判定（S20：`raid.mission_check`）。"""
+    from ..raid import mission_check as _mc
+
+    _mc(ctx, default)
+
 # :13–120 刻印：(PALAM 名, MARK 名, 防止 MARK 名, 1 段目の閾値, 防止 1 あたりの加算)
 _MARKS = (
     ("欲情", "快楽刻印", "快楽刻印防止", 40000, 1000),
@@ -285,8 +292,8 @@ def _event_end_lose(ctx: Ctx) -> None:
     out.printl()
     st.flag[853] -= 3  # :374–376（下限の補正なし：原作どおり）
     out.printl("人気度が3低下した")
-    if st.flag[45] > 0:  # :379–390
-        raise NotImplementedError("イベント戦の特殊ミッション判定は未移植")
+    if st.flag[45] > 0:  # :379–390（CATCH：無指定なら敗北時はミッション失敗）
+        mission_check(ctx, 0)
     ninsin_check_after(ctx)  # :393
     if c.cflag[0] > 0:  # :397–410
         if (t(ctx, c, "変身時ＴＳ") > 0 and config_check_prison(st, 0) > 0) or st.flag[73] > 0:
@@ -347,8 +354,8 @@ def event_end(ctx: Ctx) -> Generator[None, int, Step]:
             for i in range(1, st.charanum):
                 if st.charas[i].cflag[71] <= -1:
                     st.charas[i].cflag[71] = 1
-        if st.flag[45] > 0:  # :187–198
-            raise NotImplementedError("イベント戦の特殊ミッション判定は未移植")
+        if st.flag[45] > 0:  # :187–198（CATCH：無指定なら敗北時以外はミッション達成）
+            mission_check(ctx, 1)
         ninsin_check_after(ctx)  # :204
         transform(ctx, 0)  # :206
         _transform_enemy_off(ctx)
@@ -378,8 +385,8 @@ def event_end(ctx: Ctx) -> Generator[None, int, Step]:
         out.printl()
         st.flag[853] += 3  # :281–283
         out.printl("人気度が3上昇した！")
-        if st.flag[45] > 0:
-            raise NotImplementedError("イベント戦の特殊ミッション判定は未移植")
+        if st.flag[45] > 0:  # :286–297
+            mission_check(ctx, 1)
         ninsin_check_after(ctx)
         transform(ctx, 0)
         _transform_enemy_off(ctx)

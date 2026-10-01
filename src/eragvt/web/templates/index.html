@@ -16,11 +16,11 @@
     {%- for part in line.parts -%}
       {%- if part.button is not none -%}
       <form method="post" action="/input" class="btn"><button type="submit" name="value" value="{{ part.button }}">
-        {%- for seg in part.segments -%}<span style="{% if seg.color %}color: {{ seg.color }};{% endif %}{% if seg.bold %}font-weight: bold;{% endif %}">{{ seg.text }}</span>{%- endfor -%}
+        {%- for seg in part.segments -%}<span style="{% if seg.color %}color: {{ seg.color }};{% endif %}{% if seg.bold %}font-weight: bold;{% endif %}{% if seg.italic %}font-style: italic;{% endif %}">{{ seg.text }}</span>{%- endfor -%}
       </button></form>
       {%- else -%}
         {%- if part.title %}<span title="{{ part.title }}">{% endif -%}
-        {%- for seg in part.segments -%}<span style="{% if seg.color %}color: {{ seg.color }};{% endif %}{% if seg.bold %}font-weight: bold;{% endif %}">{{ seg.text }}</span>{%- endfor -%}
+        {%- for seg in part.segments -%}<span style="{% if seg.color %}color: {{ seg.color }};{% endif %}{% if seg.bold %}font-weight: bold;{% endif %}{% if seg.italic %}font-style: italic;{% endif %}">{{ seg.text }}</span>{%- endfor -%}
         {%- if part.title %}</span>{% endif -%}
       {%- endif -%}
     {%- endfor -%}&#8203;</div>

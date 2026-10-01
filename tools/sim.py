@@ -18,6 +18,8 @@ S18：各強制發生事件的實際觸發次數（`install_event_counters`：�
 S19：`--enable-akuoti` は開局後に FLAG:804 bit1（`CONFIG_CHECK_PRISON_F(1)`：陥落時に洗脳／悪堕ち）と bit9
 （`CONFIG_CHECK_PRISON_F(9)`：洗脳ではなく悪堕ち）を打開（PRISON.ERB:335–357；基本セットは FLAG:804 = 1 で両方 OFF、
 陥落しても悪堕ちキャラは生まれない）。悪堕ちキャラの淫謀・洗脳／悪堕ちキャラ戦の次数も数える。
+
+S20：襲撃／救援イベント戦の次数（RAID_RESCUE／RAID_ATTACK 呼出、EXEC_n、救援見送り、ミッション成否と TFLAG:98）。
 """
 
 from __future__ import annotations
@@ -123,6 +125,32 @@ def install_event_counters() -> Counter:
         return orig_lose(ctx, *a, **k)
 
     source_check._battle_lose = lose
+
+    # S20：襲撃／救援イベント戦（raid の関数はすべてモジュール大域名経由で呼ばれる）
+    from eragvt.game import raid
+
+    wrap(raid, "raid_rescue", after=lambda ctx, snap: counts.update(["救援（RAID_RESCUE 呼出）"]))
+    wrap(raid, "raid_attack", after=lambda ctx, snap: counts.update(["襲撃（RAID_ATTACK 呼出）"]))
+
+    def exec_after(ctx, snap):
+        counts[f"イベント戦 EXEC_{snap}"] += 1
+
+    wrap(raid, "_exec", before=lambda ctx: ctx.state.flag[45], after=exec_after)
+    orig_abandon = raid._abandon
+
+    def abandon(ctx):
+        counts[f"救援 見送り（ABANDON_{ctx.state.flag[45]}）"] += 1
+        return orig_abandon(ctx)
+
+    raid._abandon = abandon
+    for name, label in (("raid_mission_success", "成功"), ("raid_mission_failure", "失敗")):
+        orig_m = getattr(raid, name)
+
+        def m(ctx, _orig=orig_m, _label=label):
+            counts[f"イベント戦 {ctx.state.flag[45]} ミッション{_label}（TFLAG:98={ctx.state.tflag[98]}）"] += 1
+            return _orig(ctx)
+
+        setattr(raid, name, m)
     return counts
 
 

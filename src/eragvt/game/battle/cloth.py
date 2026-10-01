@@ -18,7 +18,7 @@ DEFAULT_OUTER_DEF = 75  # DIM.ERH:150
 DEFAULT_INNER_DEF = 50  # DIM.ERH:151
 
 # `@CLOTH_STATUS_{ID}` が SAVESTR:0 に入れる補正文字列（衣装関連/CLOTHDATA*.ERB から抽出）。
-# イベント専用装備（990–999、BATTLE_EVENT_CLOTH_STATUS_*）は未移植。
+# イベント専用装備（990–992）は `raid.battle_event_cloth_status`（S20）。
 CLOTH_STATUS: dict[int, str] = {
     0: 'SLOT-1,HP0,def0,',  # 武器と衣装/衣装関連/CLOTHDATAアウター_通常.ERB:73
     100: 'SLOT-1,HP100,',  # 武器と衣装/衣装関連/CLOTHDATAアウター_通常.ERB:84
@@ -138,10 +138,13 @@ def figure_split(value: int, n: int) -> int:
 def cloth_hosei(ctx: Ctx, who: int, cid: int, mode: str, shopr: int = 0) -> int:
     """`CLOTH_衣装カスタマイズ共通処理.ERB@CLOTH_HOSEI(ARG,ID,MODE,SHOPR)`:8–153。"""
     st = ctx.state
-    if cid not in CLOTH_STATUS:
-        # TRYCCALLFORM CLOTH_STATUS_{ID} → CATCH で SAVESTR:0 = ""（:23–26）。未定義番号か、未移植のイベント装備。
-        if 990 <= cid <= 999:
-            raise NotImplementedError(f"イベント専用装備 {cid} の補正は未移植")
+    if cid in (990, 991, 992):
+        # イベント専用装備（CLOTHDATA※イベント専用装備.ERB@CLOTH_STATUS_990〜992：S20 `raid.battle_event_cloth_status`）
+        from ..raid import battle_event_cloth_status
+
+        text = battle_event_cloth_status(ctx, cid)
+    elif cid not in CLOTH_STATUS:
+        # TRYCCALLFORM CLOTH_STATUS_{ID} → CATCH で SAVESTR:0 = ""（:23–26）。未定義番号。
         text = ""
     else:
         text = CLOTH_STATUS[cid]

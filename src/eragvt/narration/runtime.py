@@ -434,7 +434,7 @@ class Interp:
         elif w == "FONTREGULAR":
             self.out.set_bold(False)
         elif w == "FONTITALIC":
-            pass  # DEVIATION（表示のみ）：斜体は TextOutput に無い（deviations.md「口上 catalog の表示」）
+            self.out.set_italic(True)
         elif w == "SETFONT":
             if s.args and s.args[0] is not None:
                 self.eval(s.args[0], fr)

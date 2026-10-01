@@ -110,8 +110,8 @@ def event_train(ctx: Ctx) -> None:
         v.clear()  # VARSET TCVARn（CHARADATA 変数の VARSET は TARGET のみ：VariableEvaluator.cs:75–101）
         st.temp.turn_limit = 15 if st.flag[10] == 2 else 50
         v[0] = 0 if st.flag[73] > 0 else 3
-    else:
-        raise NotImplementedError("イベント戦闘（FLAG:45）は未移植")
+    # FLAG:45 > 0（襲撃／救援イベント戦、S20）：シチュエーション・TCVARn・ターン上限・衣装耐久は RAID_RESCUE／RAID_ATTACK と
+    # EVENT_BATTLE_EXEC_n で設定済み（`raid`）
     # :31–33
     for i in range(TCRLENGTH):
         st.temp.tcreport[i] = 0
@@ -966,7 +966,10 @@ def event_comend(ctx: Ctx) -> None:
         if st.flag[70] + st.flag[71] == 0:
             out.printl("どうやら周囲の避難が完了したようだ！")
         out.printw()
-    # :981 EVENT_BATTLE_TURNEND_{FLAG:45}（通常戦闘 FLAG:45 == 0 は event_train で保証）
+    # :981 TRYCALLFORM EVENT_BATTLE_TURNEND_{FLAG:45}（定義は 3003／3004 のみ：S20 `raid.event_battle_turnend`）
+    from ..raid import event_battle_turnend
+
+    event_battle_turnend(ctx)
     # :984–986
     if game_option(st, GameOption.STAT_DECLINE):
         raise NotImplementedError("インスタントモードの能力低下（INSTANT_ARG_DOWN）は未移植")

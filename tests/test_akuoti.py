@@ -9,7 +9,7 @@ from __future__ import annotations
 import pytest
 
 from eragvt.data import default_csv_dir, load_game_data
-from eragvt.game import akuoti, shop
+from eragvt.game import akuoti, shop, turnend
 from eragvt.game.action import Ctx, Step
 from eragvt.game.battle import cheers, encount, enemy, restraint, sexcom, source_check, train
 from eragvt.game.battle.core import BeginAfterTrain
@@ -673,3 +673,33 @@ def test_cheers_tentacle_corrupted(ctx, data, fn, rolls, line, pop):
     assert st.rng.snapshot() == []
     assert line in texts(ctx.out)
     assert st.flag[853] == 10 + pop
+
+
+# =====================================================================================================
+# S20 使用者裁決（2026-10-01）：防衛力が負のときの SQRT（DEVIATION）
+# =====================================================================================================
+
+
+def test_akuoti_attack_negative_defence_sqrt_as_zero(ctx, monkeypatch):
+    """原作 AKUOTI_ATTACK:20 `SQRT(FLAG:852)` は負數で CodeEE。裁決により 0 として RAND:(0 / 2 + 20) = RAND:20。"""
+    st = ctx.state
+    st.flag[852] = -100
+    st.time = 0  # LOCAL = 40（:7–13）
+    called: list = []
+    monkeypatch.setattr(akuoti, "akuoti_event", lambda ctx: called.append(ctx.state.flag[111]))
+    st.rng = FixedRng([19, 0])  # RAND:20 → 19 < 40、:28 RANDCHOOSE_F（候補 1 人）
+    turnend.akuoti_attack(ctx)
+    assert called == [ENEMY]
+    assert st.rng.snapshot() == []
+
+
+def test_akuoti_event_negative_defence_sqrt_as_zero(ctx, branches):
+    """同じ裁決を AKUOTI_EVENT の SQRT（:42／:58）にも適用：SELECT_N:0 = MIN(80 - 0, 40) = 40、
+    市街地 DAMAGE = 0 * 20 + (-100) * 5 / 100 = -5（C# の整数除算は 0 方向）。"""
+    st = ctx.state
+    st.flag[852] = -100
+    st.flag[111] = ENEMY
+    st.time = 0
+    st.rng = FixedRng([39, 0])  # :48 SELECT = 39 < 40 → 市街地、:66 RAND:6 = 0 → 幼稚園バス
+    akuoti.akuoti_event(ctx)
+    assert branches == ["_bus", "_apply"]

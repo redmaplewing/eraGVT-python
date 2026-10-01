@@ -98,6 +98,9 @@ def small_tentacle_attack(ctx: Ctx) -> Generator[None, int, None]:
             continue
         break
     st.target = local  # :108
+    # DEVIATION: 使用者裁決（2026-10-01）：襲来成功時も子触手を 1 減らす（失敗分岐 :88／:95 と同じ `FLAG:44 -= 1`）。
+    # 原作は成功時に減らさない（襲った子触手が残り続ける）（deviations.md「使用者裁決 2026-10-01」）。
+    st.flag[44] -= 1
     yield from small_prison_event(ctx)  # :109
 
 

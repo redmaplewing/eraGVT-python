@@ -150,6 +150,11 @@ MODE_SELECT（:297）沒有預設值，`[1] NORMAL` 是第一個選項（S03 起
    `LOVESEX_NIGHT`、`SELF_NIGHT`、`YOBAI`（config）、`DAILY_DEFENCE_CHANGE`、`DAILY_POPULARITY_CHANGE`。
 7. `CALL RAID_HANTEI`（`強制発生イベント/FORCE_襲撃or救援イベント発生.ERB`:9，config）——
    發生時設 `FLAG:45` 並經 `イベントから派生する特殊戦闘/●イベント戦闘_襲撃共通.ERB`:178 `BEGIN TRAIN`。
+   `JUMP RAID_RESCUE`（救援 FLAG:45 = 2〜5，昼・可選擇見送り）／`RAID_ATTACK`（襲撃 3001〜3004）；JUMP 先 RETURN 時 RAID_HANTEI 也 RETURN
+   （`reference/emuera-1824/Emuera/GameProc/Process.State.cs`:368–378）。各イベントの EXEC が シチュエーション・ターン上限・
+   TCVARn:0 を設定 → ENCOUNT_BOSS（FLAG:45 > 0 は遭遇率 100%、`MESSAGE_RAID_BOSS`）→ BEGIN TRAIN。戰後 EVENTEND で
+   `EVENT_BATTLE_MISSION_CHECKER_{FLAG:45}` → `RAID_MISSION_SUCCESS／FAILURE`，BEGIN TURNEND → 第 2・4 步。3002 的繁殖袋／四肢欠損
+   不戰鬥直接拉致（CFLAG:0 = 9）→ BEGIN TURNEND。Python：`eragvt.game.raid`（S20）。
 8. `FLAG:45 == 0` → `BEGIN SHOP`（回到第 3 節）。
 
 各行動對狀態的影響、開局狀態下各夜間事件是否觸發：見 `actions.md`（S04）。注意 `@EVENTSHOP` 的 `PARASITE`

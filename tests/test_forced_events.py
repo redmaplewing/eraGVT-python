@@ -183,6 +183,19 @@ def test_small_attack_target_selection(ctx, monkeypatch):
     assert st.target == 2  # :108（呼び出し元 HANTEI が :76 で戻す）
 
 
+def test_small_attack_success_decrements_ruling(ctx, monkeypatch):
+    """DEVIATION（使用者裁決 2026-10-01）：襲来成功（:108–109）でも FLAG:44 を 1 減らす（失敗 :88／:95 と同じ減法）。
+    原作は成功時に減らさない。"""
+    st = ctx.state
+    st.flag[44] = 3
+    st.rng = FixedRng([25, 1])  # :86 RAND:100 = 25（≥ 25）→ :99 RAND:3 + 1 = 2
+    called: list = []
+    monkeypatch.setattr(S, "small_prison_event", gen_recorder(called))
+    list(S.small_tentacle_attack(ctx))
+    assert called == [()]
+    assert st.flag[44] == 2
+
+
 def test_small_attack_lost_after_99_tries(ctx, monkeypatch):
     st = ctx.state
     st.flag[44] = 1
@@ -581,14 +594,17 @@ def test_yobai_skips_non_safe_and_day(ctx, data):
     list(Y.yobai(ctx))
 
 
-def test_yobai_event_breast_only_is_rejected(ctx, data):
-    """Ｂ感覚だけ 3 のキャラは YOBAI の候補になるが（:48）、YOBAI_EVENT の判定は淫乳に Ｃ感覚 を足しているので（:163／:174）
-    全組み合わせが 0 → RETURN -999（:225–226）。"""
+def test_yobai_event_breast_only_ruling(ctx, data):
+    """DEVIATION（使用者裁決 2026-10-01）：YOBAI_EVENT の淫乳条件（:160–177）を `TALENT:淫乳 * 3 + ABL:Ｂ感覚` にした。
+    Ｂ感覚だけ 3 のキャラは YOBAI の候補（:48）であり、YOBAI_EVENT も成立して対象選択の INPUT（:504）まで進む。
+    （原作の `+ ABL:Ｃ感覚` では全組み合わせが 0 → RETURN -999（:225–226）だった。）"""
     st = ctx.state
     st.target = 1
     st.charas[1].abl[A(data, "Ｂ感覚")] = 3
-    st.rng = FixedRng([])
-    assert drive(Y.yobai_event(ctx)) == -999
+    st.rng = ZeroTail([])
+    gen = Y.yobai_event(ctx)
+    next(gen)  # -999 で StopIteration にならない
+    assert "（夜這い対象選択）" in texts(ctx.out)
 
 
 def test_yobai_event_list_and_input(ctx, data, monkeypatch):
@@ -747,7 +763,8 @@ def test_yobai_houshi_4_virgin(ctx, data, act):
     drive(Y.yobai_houshi_4(ctx, 0, 0, 0))
     t2 = st.charas[2]
     assert t2.talent[T(data, "処女")] == -1  # :3086（TARGET = 対象）
-    assert st.charas[1].cflag[206] == 6 and t2.cflag[206] == 0  # :3088–3092 CFLAG:LCOUNT:206（原作どおり）
+    # DEVIATION（使用者裁決 2026-10-01）：処女を失った対象（FLAG:799 = 2）の CFLAG:206 に書く（原作 :3088–3092 は LCOUNT = 1）
+    assert t2.cflag[206] == 6 and st.charas[1].cflag[206] == 0
     assert act == [
         ("prison", 1, {0: 100, 122: 1, 153: 2}), ("ablup", 1),
         ("prison", 2, {1: 100, 10: 50, 120: 2, 122: 1, 123: 2}),
@@ -757,16 +774,30 @@ def test_yobai_houshi_4_virgin(ctx, data, act):
     ]
 
 
-def test_yobai_houshi_4_fellatio_l124_is_zero(ctx, data, act):
+def test_yobai_houshi_4_fellatio_ruling(ctx, data, act):
+    """DEVIATION（使用者裁決 2026-10-01）：:3177 で LOCAL:324 = 1（口内射精）。原作は :3226 VARSET LOCAL の後の
+    :3237 `LOCAL:124 = LOCAL:324` が 0 になるが、VARSET 前の値を保持してフェラ経験 +1（:1738／:2063 と同じ）。"""
     st = ctx.state
     st.target = 1
     st.flag[799] = 2
     st.charas[2].talent[T(data, "処女")] = -1
     st.rng = ByN()
     drive(Y.yobai_houshi_4(ctx, 0, 0, 0))
-    # :3177 LOCAL:324 = 1 だが :3226 VARSET LOCAL の後の :3237 LOCAL:124 = LOCAL:324 は 0
-    assert act[2] == ("prison", 2, {1: 100, 120: 2, 122: 1, 123: 2})
+    assert act[2] == ("prison", 2, {1: 100, 120: 2, 122: 1, 123: 2, 124: 1})
     assert ("pill", 2, 1) not in act
+
+
+def test_yobai_houshi_5_fellatio_ruling(ctx, data, act):
+    """DEVIATION（使用者裁決 2026-10-01）：HOUSHI_5 の Ａ感覚 2 以上・淫乱／恋人でない分岐（:3562 LOCAL:324 = 1）。
+    原作 :3622 `LOCAL:124 = LOCAL:324` は VARSET LOCAL 後で 0 → VARSET 前の値を使いフェラ経験 +1。"""
+    st = ctx.state
+    st.target = 1
+    st.flag[799] = 2
+    st.charas[2].talent[T(data, "男の娘")] = 1
+    st.charas[2].abl[A(data, "Ａ感覚")] = 2
+    st.rng = ByN()
+    Y.yobai_houshi_5(ctx, 0, 0, 0)
+    assert act[2] == ("prison", 2, {2: 100, 121: 2, 122: 1, 123: 2, 124: 1})
 
 
 def test_yobai_houshi_1_hand(ctx, data, act):

@@ -282,7 +282,7 @@ def encount_boss(ctx: Ctx) -> int:
         if f[45] == 0:
             message_encount_boss(ctx)
         else:
-            raise NotImplementedError("MESSAGE_RAID_BOSS は未移植")
+            message_encount_boss(ctx, "RAID_BOSS")  # MESSAGE_RAID_BOSS（S20）
         return 1
     # :309– ラスボス触手
     if f[45] == 0 and (f[47] < f[46] or f[49]):
@@ -310,15 +310,16 @@ def encount_boss(ctx: Ctx) -> int:
     raise NotImplementedError("ラスボス触手との戦闘（ENCOUNT_BOSS:365–421）は未移植")
 
 
-def message_encount_boss(ctx: Ctx) -> None:
-    """`地の文/MESSAGE_BATTLE.ERB@MESSAGE_ENCOUNT_BOSS`:27–35。"""
+def message_encount_boss(ctx: Ctx, code: str = "ENCOUNT_BOSS") -> None:
+    """`地の文/MESSAGE_BATTLE.ERB@MESSAGE_ENCOUNT_BOSS`:27–35。code = "RAID_BOSS" で `@MESSAGE_RAID_BOSS`:39–47
+    （本文は同じ、口上 KOJO_ROOT の code だけが違う）。"""
     st, out = ctx.state, ctx.out
     tentacle_access(ctx, "NAME")
     out.printl(f" Lv.{tentacle_level(st)} と遭遇した！")
     for line in BOSSES[st.flag[11]].definition:  # TENTACLE_BOSS_{n}_DEFENITION
         out.printl(line)
     out.printl("・・・・・・・・・・・・・・・")
-    kojo_root(ctx, "ENCOUNT_BOSS")
+    kojo_root(ctx, code)
     out.printw()
 
 

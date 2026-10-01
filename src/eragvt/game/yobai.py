@@ -24,9 +24,12 @@ YOBAI_EVENT 内のローカルなリストで表す。GFLAG:100+n／200+n／300+
 - YOBAI_SELECT_PLAY が `CALL CLEARRANDCHOOSE`（:545）で YOBAI の候補リスト（RANDCHOOSE_NUM）を上書きする。YOBAI_EVENT が
   SELECT_PLAY の後で -999 を返す（:275）と、REROLL はプレイ内容の候補（1／2／4／8／16／32）から TARGET を選ぶ。
   その番号のキャラが居なければ原作はエラー → ここでは停止（NotImplementedError）。
-- HOUSHI_4／5 の `LOCAL:124 = LOCAL:324`（:3237、:3622）は VARSET LOCAL の後なので常に 0。
-- HOUSHI_4 の処女喪失（:3088–3092）は相手（処女を失った側）ではなく実行者 LCOUNT の CFLAG:206 に書く。
 - `%CALLNAME:ARG%`（:1450、:1796）は ARG（2／4）番のキャラ名、`%CALLNAME:MASTER%` は MASTER の名前（原作の書き間違い）。
+
+使用者裁決（2026-10-01）で原作と変えたもの（`# DEVIATION:`、deviations.md「使用者裁決 2026-10-01」）：
+- YOBAI_EVENT の淫乳条件（:160–177）は `ABL:Ｃ感覚` ではなく `ABL:Ｂ感覚` を足す。
+- HOUSHI_4／5 の `LOCAL:124 = LOCAL:324`（:3237、:3622）は VARSET LOCAL 前の LOCAL:324 を使う（原作は常に 0）。
+- HOUSHI_4 の処女喪失（:3088–3092）の CFLAG:206 は処女を失った対象に書く（原作は実行者 LCOUNT）。
 """
 
 from __future__ import annotations
@@ -244,7 +247,9 @@ def yobai_event(ctx: Ctx) -> InputGen:
         tl("淫核") * 3 + a("Ｃ感覚") < 3
         and tl("淫壷") * 3 + a("Ｖ感覚") < 3
         and tl("淫尻") * 3 + a("Ａ感覚") < 3
-        and tl("淫乳") * 3 + a("Ｃ感覚") < 3  # :160 ほか：淫乳には Ｃ感覚 を足している（原作どおり）
+        # DEVIATION: 使用者裁決（2026-10-01）：原作 :160／:163／:170／:173 は `TALENT:淫乳 * 3 + ABL:Ｃ感覚` だが、
+        # YOBAI の候補条件（:37–73）と同じ `ABL:Ｂ感覚` を使う（deviations.md「使用者裁決 2026-10-01」）。
+        and tl("淫乳") * 3 + a("Ｂ感覚") < 3
     )
     for cc in range(st.charanum):  # :123–218
         if cc == GameState.MASTER or cc == me or st.charas[cc].cflag[999] == 0:
@@ -2227,7 +2232,10 @@ def yobai_houshi_4(ctx: Ctx, suimin: int, self_: int, ts: int) -> InputGen:
         y.inc_f_l()
         lc = st.charas[y.lcount]
         y.c.talent[data.index_of("TALENT", "処女")] = -1  # :3086（TARGET = 対象）
-        lc.cflag[206] = 5 if lover_f(st, y.lcount, st.flag[799]) > 0 else 6  # :3088–3092 実行者の CFLAG:206（原作どおり）
+        # DEVIATION: 使用者裁決（2026-10-01）：原作 :3088–3092 は CFLAG:LCOUNT:206（実行者）に書くが、処女を失った
+        # 対象（TARGET = FLAG:799）の CFLAG:206 に書く。値の条件 LOVER_F(LCOUNT, FLAG:799) は原作どおり
+        # （deviations.md「使用者裁決 2026-10-01」）。
+        y.c.cflag[206] = 5 if lover_f(st, y.lcount, st.flag[799]) > 0 else 6
         _prison(ctx, L)
         if (t(ctx, lc, "淫乱") > 0 or lover_f(st, y.lcount, st.target) > 0) and L[123] > 0 and t(ctx, lc, "未熟") == 0:
             _ninsin(ctx, L[123], y.lcount)  # :3100–3101
@@ -2298,13 +2306,17 @@ def yobai_houshi_4(ctx: Ctx, suimin: int, self_: int, ts: int) -> InputGen:
         _houshi_suimin_after(y, "膣口", always=False)
     out.printw()
     y.executor_houshi()
+    fellatio = y.L[324]  # VARSET LOCAL（y.switch）前の値（下の DEVIATION 参照）
     y.switch()
     L = y.L
     L[1] = 100
     L[120] = 2
     L[122] = 1
     y.semen_l()
-    L[124] = L[324]  # :3237（VARSET LOCAL の後なので常に 0：原作どおり）
+    # DEVIATION: 使用者裁決（2026-10-01）：原作 :3237 `LOCAL:124 = LOCAL:324` は VARSET LOCAL の後なので恆 0。
+    # VARSET 前の LOCAL:324（口内射精＝フェラあり）を保持し、:1738／:2063 と同じくフェラ経験に反映する
+    # （deviations.md「使用者裁決 2026-10-01」）。
+    L[124] = fellatio
     y.inc_f_l()
     _prison(ctx, L)
     lc = st.charas[y.lcount]
@@ -2477,13 +2489,17 @@ def yobai_houshi_5(ctx: Ctx, suimin: int, self_: int, ts: int) -> None:
         _houshi_suimin_after(y, "菊門", always=False)
     out.printw()
     y.executor_houshi()
+    fellatio = y.L[324]  # VARSET LOCAL（y.switch）前の値（下の DEVIATION 参照）
     y.switch()
     L = y.L
     L[2] = 100
     L[121] = 2
     L[122] = 1
     y.semen_l()
-    L[124] = L[324]  # :3622（VARSET LOCAL の後なので常に 0：原作どおり）
+    # DEVIATION: 使用者裁決（2026-10-01）：原作 :3622 `LOCAL:124 = LOCAL:324` は VARSET LOCAL の後なので恆 0。
+    # VARSET 前の LOCAL:324（口内射精＝フェラあり）を保持し、:1738／:2063 と同じくフェラ経験に反映する
+    # （deviations.md「使用者裁決 2026-10-01」）。
+    L[124] = fellatio
     y.inc_f_l()
     _prison(ctx, L)
     _ablup1(ctx)

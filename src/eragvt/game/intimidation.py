@@ -11,7 +11,8 @@
 
 フラグ（`●開発者向け資料/●GVTフラグ一覧.txt`:231–233、350–354、362–363）：CFLAG:70 誘拐監禁回数（CALC_GANGBANG "監禁" で +1）、
 71 監禁救出フラグ（救出までの必要ポイント。減るのは情報収集 `ACTION_GATHER_INFORMATION.ERB`:1004–1041 のみ：未移植）、
-72 監禁クールダウン（8 を代入するだけで**減らす処理は全 ERB に無い**：一度救出・解放されると以後脅迫は起きない）、
+72 監禁クールダウン（原作は 8 を代入するだけで減らす処理が全 ERB に無い。使用者裁決 2026-10-01 の DEVIATION により
+`turnend.event_turnend` でターンごとに 1 減らす）、
 290 脅迫イベント進行状態、291 脅迫イベントリセット回数（全 ERB で代入なし＝常に 0）。
 
 引擎語意：
@@ -469,7 +470,7 @@ def kidnapping(ctx: Ctx) -> InputGen:
         out.reset_color()
         c.cflag[0] = -1  # :518 状態_救出直後
         c.cflag[71] = 0
-        c.cflag[72] = 8  # :520 脅迫クールダウン（減らす処理は全 ERB に無い）
+        c.cflag[72] = 8  # :520 脅迫クールダウン（減算は turnend の DEVIATION）
         c.cflag[290] = 0
         after_rescued(ctx, st.target)  # :522
     elif c.cflag[70] > 6 and rand(10) < 2 + min(2, div(c.cflag[70] - 6, 2)):  # :523–635 低確率で解放

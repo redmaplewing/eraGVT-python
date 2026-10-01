@@ -305,15 +305,6 @@ def test_night_events_unported(ctx, data, setup, func):
         func(ctx)
 
 
-def test_raid_skipped_as_deviation(ctx):
-    st = ctx.state
-    st.day[0] = 3
-    st.flag[41] = 0
-    st.rng = FixedRng([0, 0])  # :57 RAND:60 = 0、:95 RAND:2 = 0、TIME == 0 → RAID_RESCUE
-    turnend.raid_hantei(ctx)
-    assert texts(ctx.out) == ["（未實作：救援イベント（RAID_RESCUE）が発生しましたが、スキップします）"]
-
-
 # --- EVENTSHOP の下位関数 --------------------------------------------------------------------
 
 
@@ -359,3 +350,28 @@ def test_set_partymember_pregnant_sortie(ctx, data):
     turnend.set_partymember(ctx)
     assert c.cflag[100] == 103  # SET_PARTYMEMBER.ERB:12–15
     assert "紅葉は妊娠しているため出撃できなくなりました" in texts(ctx.out)
+
+
+# --- S20 使用者裁決（2026-10-01）：脅迫クールダウン CFLAG:72 の減算（DEVIATION）-----------------------
+
+
+def test_intimidation_cooldown_decrements_before_hantei(ctx, monkeypatch):
+    """原作は CFLAG:72 = 8（FORCE_クズ市民の脅迫.ERB:520／:632）を減らさない。裁決により EVENTTURNEND の
+    INTIMIDATION 判定（SHOP_TURNEND.ERB:90–101）の直前で、> 0 なら 1 減らす（0 はそのまま）。"""
+    st = ctx.state
+    st.rng = MaxRng()
+    st.flag[804] |= 1 << 10  # CONFIG_CHECK_PRISON_F(10)：クズ市民による幽閉
+    c1, c2 = st.charas[1], st.charas[2]
+    c1.cflag[72], c1.cflag[286] = 2, 1
+    c2.cflag[72] = 0
+    seen: list = []
+
+    def fake(ctx):
+        seen.append((ctx.state.target, ctx.state.target_chara.cflag[72]))
+        return
+        yield  # pragma: no cover
+
+    monkeypatch.setattr(turnend, "intimidation_event", fake)
+    play_turn(ctx)
+    assert seen == [(1, 1)]  # 判定時点で既に 2 → 1
+    assert (c1.cflag[72], c2.cflag[72]) == (1, 0)

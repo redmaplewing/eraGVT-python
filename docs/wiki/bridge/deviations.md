@@ -34,7 +34,7 @@ ERB 路徑相對 `source/earGVP/ERB/`。
   開局 `MESSAGE_FIRST` 口上仍不輸出（見下「口上」）。
 
 - [ ] **S04 未翻的行動會停止遊戲**：（出撃已於 S05 接上，戰鬥內的停止見下一項）特別活動、拠点防衛、戦闘支援（本體）、情報収集、自由行動在 `action_main` 丟 `NotImplementedError`，Web session 捕捉後進入「停止」狀態（只能按「タイトルに戻る」）。同樣停止的還有：ENDING（全ボス撃破／**11 日目夜的日數超過**）、救出直後、妊娠・育兒・幽閉・悪堕ち等 S04 無法產生的狀態、鍛錬排程（CFLAG:110）、戦闘基礎 Lv5 的變身能力獲得。（原作：`ゲーム内_行動実行処理/ACTION.ERB`:74–175 等；Python：`eragvt.game.action`、`eragvt.game.turnend`、`eragvt.game.session._advance_turn`）— 各自屬 S05 以後；影響範圍見 `docs/wiki/era/actions.md`。
-- [ ] **襲撃／救援 會被跳過**：`RAID_HANTEI`（DAY ≥ 3 起依防衛力的亂數）判定成立時，原作會 `JUMP RAID_RESCUE／RAID_ATTACK`（戰鬥）；這裡只印「（未實作：…が発生しましたが、スキップします）」並當作沒發生。（原作：`ゲーム内_イベント発生/強制発生イベント/FORCE_襲撃or救援イベント発生.ERB`:94–105；Python：`eragvt.game.turnend.raid_hantei`／`_skip_event`）— 通常遊玩一定會遇到，若改成停止則無法連續遊玩。S18：子触手襲来（`SMALL_TENTACLE_HANTEI`）已照原作接上（`eragvt.game.small_tentacle`），不再跳過。
+- [x] ~~**襲撃／救援 會被跳過**~~（S20 解決）：`RAID_HANTEI` 成立時照原作 `JUMP RAID_RESCUE／RAID_ATTACK` → イベント戦（`eragvt.game.raid`）。ラスボス出現後（FLAG:100 = 0）の襲来は ENCOUNT_BOSS のラスボス分岐が未移植のため停止。
 - [ ] **未移植的戰鬥分岐會停止遊戲**（S05 新增、S06 更新）：戰鬥中下列情況丟 `NotImplementedError` → Web「停止」。
   S06 接上了拘束後的性攻擊、拘束中指令、絶頂／射精、敗北（→ 幽閉）與指令 6・7・16・17・69・71・72；
   S16 接上 ＳＰ変身（73）・ＳＰバースト（70）・ＳＰフルバースト（74）與バースト攻撃（TCVARn:217）的全部補正；
@@ -79,7 +79,7 @@ ERB 路徑相對 `source/earGVP/ERB/`。
   hook（狀態變化）已執行後才失敗者無法回復，改為停止（NotImplementedError）。（Python：`eragvt.narration.service._run`）
   S14：含 INPUTS 的函式以「重放」執行（`run_function_gen`，`docs/wiki/python/narration.md`），若 INPUTS 之前已有 hook／KOJO_ROOT 的
   狀態變化則無法重放 → 停止（本作現有的 INPUTS 函式 `MESSAGE_SEX_SPCOM7`／動画サイト在 INPUTS 前都沒有狀態變化）。
-- [ ] **口上 catalog 的顯示簡化**（S07 新增，只影響顯示）：`SETFONT`（字型名）與 `FONTITALIC`（斜體）不反映；`CLEARLINE` 只刪已完成的行；
+- [ ] **口上 catalog 的顯示簡化**（S07 新增，只影響顯示）：`SETFONT`（字型名）不反映（`FONTITALIC` 斜體 S20 起反映：`TextOutput.set_italic`）；`CLEARLINE` 只刪已完成的行；
   RESULT／RESULTS／COUNT 放在口上專用的暫存（`state.temp.narr`），與 Python 移植部分不共用（原作是全域變數；口上函式讀取呼叫前別處設定的
   RESULT 時會不同）。（Python：`eragvt.narration.runtime`）
   S14：`DRAWLINEFORM 文字列` 畫成與 DRAWLINE 相同的區切線（原作以該字串重複到畫面寬：`GameView/EmueraConsole.Print.cs@getStBar`:543–560；
@@ -203,20 +203,20 @@ ERB 路徑相對 `source/earGVP/ERB/`。
   `TOSHIUE_F(TARGET, …)` 用 TARGET 而非實行者（:834／:851／:868），只有「いとこ」時括號不閉合（:931）；
   `SYNBIOSIS_OUT_OF_CONTROL_EVENT`（:542–565）的兩個呼叫處（:411／:420）原作已註解掉 → 無呼叫者，不移植。
 - S18 強制發生事件照原作的怪處（`強制発生イベント/`，Python：`eragvt.game.intimidation`／`yobai`／`small_tentacle`）：
-  **クズ市民**：CFLAG:72（監禁クールダウン）只被設成 8、全 ERB 沒有遞減處 → 一旦救出／解放，該角色之後**永遠不再被脅迫**（:13）；
+  **クズ市民**：CFLAG:72（監禁クールダウン）只被設成 8、全 ERB 沒有遞減處 → 一旦救出／解放，該角色之後**永遠不再被脅迫**（:13）（**S20 起改為 DEVIATION**：每回合 −1）；
   CFLAG:291 全 ERB 無代入（恆 0）；CFLAG:71（救出所需點數）只在情報収集（`ACTION_GATHER_INFORMATION.ERB`:1004–1041，未移植→停止）減少，
   目前監禁只會以「廃棄」解放（CFLAG:70 > 6 後每回合 20〜40%，CFLAG:70 由 CALC_GANGBANG "監禁" 每回合 +1，晝夜都會 KIDNAPPING）；
   二次脅迫的 :166 分岐與 :123 同條件 → 到達不了；:290 `IF LOCAL == 1` 在未選パイズリ時看的是發生機率值（恰為 1 時出胸射文）；
   :248 `PRINT る痛みの中、` 不換行、與下一行相連；KIDNAPPING 的 `SELECTCASE RAND(35)` 各 CASE 全被註解 → 恆 INTIMIDATION_RAPE（RAND 仍消耗）。
   **夜這い**：YOBAI_SELECT_PLAY 的 `CALL CLEARRANDCHOOSE`（:545）覆寫 YOBAI 的候補清單 → YOBAI_EVENT 在 SELECT_PLAY 之後回 -999（:275）時
   REROLL 會從プレイ内容（1／2／4／8／16／32）抽 TARGET（原作照做；角色不存在時原作報錯 → 停止）；YOBAI_EVENT 的條件把淫乳寫成
-  `TALENT:淫乳 * 3 + ABL:Ｃ感覚`（:160–177）→ 只有 Ｂ感覚 ≥ 3 的角色會被 YOBAI 選中但必定 -999；CASE 1 的 `GOTO V_SEX／A_SEX…`（:1098–1213）
+  `TALENT:淫乳 * 3 + ABL:Ｃ感覚`（:160–177）→ 只有 Ｂ感覚 ≥ 3 的角色會被 YOBAI 選中但必定 -999（**S20 起改為 DEVIATION**：用 Ｂ感覚）；CASE 1 的 `GOTO V_SEX／A_SEX…`（:1098–1213）
   跳進 CASE 2／4 的標籤、執行到該 IF 分岐結束後經 ENDIF → 下一個 CASE 行 → ENDSELECT（`Instraction.Child.cs`:1805–1821）；
   `%CALLNAME:ARG%`／`%CALLNAME:MASTER%`（:1450、:1796）印的是 ARG（2／4）號角色與 MASTER 的名字（ARG 號不存在時原作報錯 → 停止）；
-  HOUSHI_4 的處女喪失把 `CFLAG:206` 寫在實行者 LCOUNT（:3088–3092），對象的 CFLAG:206 不變；HOUSHI_4／5 的 `LOCAL:124 = LOCAL:324`
-  在 VARSET LOCAL 之後（:3237、:3622）→ 恆 0；HOUSHI_4／5 的續柄用 `ISMALE()`＝實行者的性別；Ａ系（A_LOSTVERGIN・A_SEX・HOUSHI_5）中出し
+  HOUSHI_4 的處女喪失把 `CFLAG:206` 寫在實行者 LCOUNT（:3088–3092），對象的 CFLAG:206 不變（**S20 起改為 DEVIATION**）；HOUSHI_4／5 的 `LOCAL:124 = LOCAL:324`
+  在 VARSET LOCAL 之後（:3237、:3622）→ 恆 0（**S20 起改為 DEVIATION**，見「使用者裁決 2026-10-01」）；HOUSHI_4／5 的續柄用 `ISMALE()`＝實行者的性別；Ａ系（A_LOSTVERGIN・A_SEX・HOUSHI_5）中出し
   不做 AFTER_PILL／NINSIN；實行者疲勞寝落ち（:949、:960）的 RETURN 連最後的 `_ABLUP, 1`（:2645）也跳過；YOBAI_ACTION 結束時 TARGET 留在對象。
-  **子触手**：SMALL_TENTACLE_ATTACK 的 `ISHOLE()`（:105）看的是呼叫時的 TARGET 而非候補；成功襲來不減 FLAG:44（子触手留著）；
+  **子触手**：SMALL_TENTACLE_ATTACK 的 `ISHOLE()`（:105）看的是呼叫時的 TARGET 而非候補；成功襲來不減 FLAG:44（子触手留著）（**S20 起改為 DEVIATION**：成功也 −1）；
   Ｖ襲來的處女喪失直接寫 `TALENT:処女 = -1`・`CFLAG:206 = 1`（不呼叫 LOSTVIRGIN），之後 `処女 < 1` 成立 → 以精液 0 呼叫 AFTER_PILL／NINSIN_HANTEI。
 - S19 悪堕ちキャラ照原作的怪處（`強制発生イベント/FORCE_悪堕ちキャラの淫謀.ERB`、`ゲーム内_戦闘処理/`；Python：`eragvt.game.akuoti`、`battle.*`）：
   **戰鬥**：ACTION.ERB:37–38 每次行動把 FLAG:10／11 設 0 → 悪堕ち戰中 `TENTACLE_ACCESS` 指向不存在的 `TENTACLE_BOSS_0_*`，TRYCALLFORM 不發、
@@ -231,5 +231,31 @@ ERB 路徑相對 `source/earGVP/ERB/`。
   **防衛力為負**：BIRTH_AUTO_RANDOM（PREGNANT_SOURCE_NINSIN.ERB:737）扣防衛力不設下限，在 DAILY_DEFENCE_CHANGE（SHOP_TURNEND:122）之後
   （:166）→ 次回合 AKUOTI_ATTACK（:110）的 `SQRT(FLAG:852)` 對負數 → 原作 CodeEE（`reference/emuera-1824/Emuera/GameData/Function/
   Creator.Method.cs`:1078）錯誤停止；Python 照樣丟出 ValueError（Web 停止）。僅在有悪堕ちキャラ且苗床出産發生後的ゲームオーバーモード出現
-  （`--corrupt 3` 模擬 250 局中 151〜178 局）。是否改為不停止（例如 SQRT 前視為 0）需使用者裁決。
-- [ ] S19 顯示：`AKUOTI_EVENT` 動画拡散的 FONTITALIC（:810–815 等）不反映（`akuoti._robot_checkbox`，`# DEVIATION:`；同「口上 catalog 的顯示簡化」）。
+  （`--corrupt 3` 模擬 250 局中 151〜178 局）。**S20 起改為 DEVIATION**（使用者裁決：SQRT 當 0，見下）。
+- [x] ~~S19 顯示：`AKUOTI_EVENT` 動画拡散的 FONTITALIC 不反映~~（S20：使用者裁決 2026-10-01 支援斜體，`akuoti._robot_checkbox` 照 :810–815 以太字＋斜體顯示）。
+- S20 襲撃／救援イベント戰照原作的怪處（`イベントから派生する特殊戦闘/`；Python：`eragvt.game.raid`）：
+  `RAID_RESCUE` 的 LOCAL:1（:31 試行回數）是靜態 LOCAL，只有 :35「見つからない」路會留下 999 → 之後每次 RAID_RESCUE 都立刻「気のせい」結束；
+  `RAID_ATTACK`:15 `ISHOLE()` 看呼叫時的 TARGET 而非候補；救援 2（女子高）`RAND:7` 不會出 7 → 「自衛隊員らしき女性」不出現；
+  3003／3004 的 MISSION_CHECKER（:78／:378）`&&`／`||` 同優先度左結合 → 未受凌辱而敗北（TFLAG:98 = 2、TFLAG:21 & 7 = 0）判為「成功」；
+  3004 TURNEND 的白濁シャワー（:344–354）只 RESETCOLOR 不 FONTREGULAR → 其後文字保持太字；3002 繁殖袋路 :25 `PRINTFORM`（無換行）
+  與下一行相連；救援 5（触手洞窟）以 FLAG:111 == 0 為條件（同回合 AKUOTI_EVENT 留下的 FLAG:111 會讓 `5 触手洞窟.ERB`:146–302 的 CASE 0／1／2（知性 > 600）不加任何シチュエーション，ターン上限照設）；
+  `CLOTHDATA※イベント専用装備.ERB` 的 `@CLOTH_STATUS_991` 定義兩次（:73／:88），引擎用先定義的 :73（HP0）；3004 以外 FLAG:45 的 992 インナー
+  走 CATCH 既定值（HP80・SEITAISEI95）；FLAG:999 ≠ 0（デバッグ以外の値も）時 FLAG:45 不抽選 → EVENT_BATTLE_SITUATION_0 不存在的錯誤路。
+
+## 使用者裁決 2026-10-01（`# DEVIATION:`，S20 實作）
+
+- [x] **防衛力為負時 SQRT 當 0**：`AKUOTI_ATTACK`:20 的 `SQRT(FLAG:852)` 在 FLAG:852 < 0 時以 0 計算（原作 CodeEE：
+  `reference/emuera-1824/Emuera/GameData/Function/Creator.Method.cs@SqrtMethod`:1074–1080）。（Python：`turnend.akuoti_attack`）
+  **延伸（需使用者確認）**：只改 ATTACK 的話緊接的 `AKUOTI_EVENT`:42／:45／:58／:465 的 `SQRT(FLAG:852)` 仍會停止，故同樣當 0（`akuoti.akuoti_event`）。
+  其他 `SQRT(FLAG:852 ...)`（`戦闘イベント.ERB`:65 `SQRT(FLAG:852 + 625)`：`battle.cheers`）未改，防衛力 < −625 的戰鬥中仍會停止。
+- [x] **クズ市民脅迫クールダウン**：CFLAG:72（原作只設 8、無遞減）在 EVENTTURNEND 的 INTIMIDATION 判定（`SHOP_TURNEND.ERB`:90–101）之前
+  每回合（半日）> 0 則 −1。（Python：`turnend.event_turnend`）
+- [x] **夜這い淫乳條件**：`YOBAI_EVENT`:160–177 的 `TALENT:淫乳 * 3 + ABL:Ｃ感覚` 改用 `ABL:Ｂ感覚`。（Python：`yobai.yobai_event`）
+- [x] **夜這い奉仕的フェラ経験**：HOUSHI_4／5 的 `LOCAL:124 = LOCAL:324`（:3237、:3622）改用 VARSET LOCAL 之前的 LOCAL:324
+  （口內射精時フェラ経験 +1，與 :1738／:2063 一致）。（Python：`yobai.yobai_houshi_4／5`）
+- [x] **夜這い HOUSHI_4 處女喪失原因**（Part C1）：:3088–3092 的 CFLAG:206 改寫在失去處女的對象（TARGET = FLAG:799），值的條件
+  `LOVER_F(LCOUNT, FLAG:799)` 不變。（Python：`yobai.yobai_houshi_4`）
+- [x] **子触手襲来**：`SMALL_TENTACLE_ATTACK` 襲擊成功（:108–109）時也 `FLAG:44 -= 1`（同失敗分岐 :88／:95）。（Python：`small_tentacle.small_tentacle_attack`）
+- [x] **斜體**（Part C2）：FONTITALIC 反映到 `TextOutput`（`Segment.italic`、Web 以 CSS `font-style: italic`），FONTREGULAR 同時解除太字・斜體
+  （`GameProc/Function/Instraction.Child.cs`:1084–1121）。已不是偏離，記錄於此備查。
+
