@@ -67,6 +67,22 @@ def _enemy_hp_bonus(ctx: Ctx, table: tuple[int, int, int], yudan_div: int) -> in
     return l1
 
 
+def _burst_hit(ctx: Ctx, l5: int) -> int:
+    """:366–382 バースト攻撃による直撃率修正（HURIHODOKU を含む全 ARGS 共通）。"""
+    st = ctx.state
+    c = tc(ctx)
+    style = fstyle_name(ctx, st.target, c.tcvarn[0])
+    if style in ("装甲", "通常"):
+        return div(l5 * 125, 100) + 5
+    if style in ("重撃", "使役"):
+        return div(l5 * 90, 100) - 5
+    if style == "広範":
+        return 100
+    if style == "全力":
+        return l5 + 10 - c.cflag[99]
+    return l5
+
+
 def act_hantei_chara_to_tentacle(ctx: Ctx, kind: str) -> tuple[int, int]:
     """`@ACT_HANTEI_CHARA_TO_TENTACLE, ARGS, ARG`:6–415。戻り値 (RESULT, RESULT:1=成功値)。"""
     st = ctx.state
@@ -173,8 +189,8 @@ def act_hantei_chara_to_tentacle(ctx: Ctx, kind: str) -> tuple[int, int]:
         l5 += 10
     if v[2] == P_EX_HANGEKI:
         l5 += 20
-    if v.get_bit(217, 0):
-        raise NotImplementedError("バースト攻撃（COM17）の命中補正は未移植")
+    if v.get_bit(217, 0):  # :367–382
+        l5 = _burst_hit(ctx, l5)
     if l5 < 0:
         l5 = 0
     if st.rng.rand(100) < l5:
@@ -277,8 +293,8 @@ def _hurihodoku(ctx: Ctx) -> tuple[int, int]:
         l5 += 10
     if v[2] == P_EX_HANGEKI:
         l5 += 20
-    if v.get_bit(217, 0):
-        raise NotImplementedError("バースト攻撃（COM17）の命中補正は未移植")
+    if v.get_bit(217, 0):  # :367–382
+        l5 = _burst_hit(ctx, l5)
     if l5 < 0:
         l5 = 0
     if st.rng.rand(100) < l5:
@@ -333,8 +349,8 @@ def act_hantei_chara_to_tentacle_guard(ctx: Ctx, kind: str) -> int:
         l5 += 15
     if v[2] == P_EX_HANGEKI:
         l5 += 25
-    if v.get_bit(217, 0):
-        raise NotImplementedError("バースト攻撃（COM17）のカス当たり補正は未移植")
+    if v.get_bit(217, 0) and style == "全力":  # :545–550
+        l5 = 0
     return 1 if st.rng.rand(100) < l5 else 0
 
 
@@ -441,8 +457,8 @@ def act_hantei_tentacle_to_chara(ctx: Ctx, kind: str) -> int:
         l5 = 0
     if v.get_bit(216, 2) and t(ctx, c, "小さな体躯") == 0:
         l5 = 0
-    if v.get_bit(217, 0):
-        raise NotImplementedError("バースト攻撃（COM17）の回避補正は未移植")
+    if v.get_bit(217, 0) and fstyle_name(ctx, st.target, v[0]) in ("広範", "全力"):  # :1006–1013
+        l5 = 0
     tf11 = st.tflag[11]
     if (
         (v[0] == 1 and not (tf11 >> 0) & 1)
@@ -541,9 +557,9 @@ def fstyle_attack(ctx: Ctx, who: int, dist: int) -> int:
         "通常": lambda: div(l10 * 100, 100),
     }[style]()
     if fstyle_name(ctx, st.target, tgt.tcvarn[0]) == "反撃":  # :102–110
-        if tgt.tcvarn.get_bit(217, 0):
-            raise NotImplementedError("バースト攻撃（COM17）の[反撃]攻撃力は未移植")
-        if tgt.tcvarn[2] != P_HANGEKI_OK:
+        if tgt.tcvarn.get_bit(217, 0):  # :104–105 バーストの場合は半減
+            attack = div(l10 * 35, 100) + div(l11 * 25, 100)
+        elif tgt.tcvarn[2] != P_HANGEKI_OK:
             attack = div(l10 * 25, 100) + div(l11 * 15, 100)
     return attack
 
@@ -634,8 +650,14 @@ def damage(ctx: Ctx, kind: str) -> int:
     l3 = max(div(div(500000 * (l0 + l6b), l1 + l6b), 1000), 80)
     if kind == "CHARA":
         l3 = max(l3 + 100 - div((l1 - levelstatus_up(100, c.abl[50], 50, 9999)) * 175, 100), 80)
-    if v.get_bit(217, 0):
-        raise NotImplementedError("バースト攻撃（COM17）のダメージ補正は未移植")
+    if v.get_bit(217, 0) and kind != "CHARA":  # :1461–1479 与ダメージ修正
+        mul = {"連続": 40, "撹乱": 110, "重撃": 150, "全力": 150, "使役": 300, "通常": 110}.get(style)
+        if mul is not None:
+            l3 = div(l3 * mul, 100)
+        if tt("フルバースト") > 0:
+            l3 = div(l3 * 125, 100)
+    if v.get_bit(217, 0) and kind == "CHARA" and style == "全力":  # :1482–1487 被ダメージ修正
+        l3 = div(l3 * 125, 100)
     if st.tflag[31] > 1 and kind != "CHARA":
         l3 = div(l3 * get_chain_hit(ctx, st.tflag[31] - 1), 100)
     if st.tflag[32] > 0 and kind == "CHARA":

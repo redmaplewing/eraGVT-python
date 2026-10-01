@@ -12,7 +12,7 @@ from collections.abc import Generator
 
 from ..action import Ctx, config_check_other, kojo_root, print_transcallname, sengiup
 from ..chara_common import charatalent
-from ..era import div, format_percent, isqrt, times
+from ..era import div, format_percent, isqrt, limit, times
 from ..shop import check_pregnant
 from ..tentacle import enemy_type_check
 from .cheers import perform_cheers_hate
@@ -25,10 +25,12 @@ from .core import (
     P_GUARD,
     P_HANGEKI_OK,
     P_NOTHING,
+    add_battle_situation,
     fstyle_name,
     get_battle_situation,
     percent_cal,
     print_distance,
+    run_chinobun,
     shinkyou_change,
     shinkyou_check,
     t,
@@ -463,6 +465,22 @@ def com_attack(ctx: Ctx, n: int) -> ComGen:
     yield  # pragma: no cover  （ジェネレータにするため）
 
 
+# COMBO_ATTACK.ERB:155–189 バースト攻撃の説明（LOCALS:2）
+_BURST_DESC = {
+    "連続": "6回連続攻撃",
+    "装甲": "直撃率アップ＋攻撃後にオートガード",
+    "撹乱": "与ダメージアップ＋怯み効果",
+    "重撃": "直撃しにくい大ダメージ攻撃",
+    "広範": "必中攻撃＋反動で回避不能",
+    "全力": "捨て身の大ダメージ攻撃",
+    "知略": "クリティカル率アップ＋見切り効果",
+    "設置": "油断効果2倍",
+    "使役": "直撃しにくい大ダメージ攻撃",
+    "反撃": "戦闘中に反撃で蓄積させた被害を加算",
+    "通常": "与ダメージアップ＋直撃率アップ",
+}
+
+
 def print_combo(ctx: Ctx) -> None:
     """`COMBO_ATTACK.ERB@PRINT_COMBO`:119–246。"""
     st = ctx.state
@@ -495,8 +513,8 @@ def print_combo(ctx: Ctx) -> None:
         if t(ctx, c, "エアマスター") > 0:
             s2 += "（エアマスター）"
         row("　＋AIR STRIKE", "空中攻撃", s2)
-    if v.get_bit(217, 0):
-        raise NotImplementedError("バースト攻撃の表示は未移植")
+    if v.get_bit(217, 0):  # :152–194
+        row("　＋BURST STRIKE", f"バースト攻撃：{fstyle_name(ctx, st.target, v[0])}", _BURST_DESC[fstyle_name(ctx, st.target, v[0])])
     if st.tflag[30] > 1 and st.flag[73] == 0:
         a = "　＋ BRAVE COUNTER" if fstyle_name(ctx, st.target, v[0]) == "反撃" else "　＋BRAVE HIT"
         row(a, f"同一距離連続実行({st.tflag[30] - 1})",
@@ -565,11 +583,12 @@ def com_attack_common(ctx: Ctx) -> int:
     loc: dict[int, int] = {}  # VARSET LOCAL
     kojo_root(ctx, "BATTLE_CHARA_BATTLE_STYLE_CHANGE")
     style = fstyle_name(ctx, st.target, v[0])
-    if style == "連続":
+    burst = v.get_bit(217, 0)
+    if style == "連続":  # :15–16
         attack_num += 1
-    if v.get_bit(217, 0):
-        raise NotImplementedError("バースト攻撃（COM17）は未移植")
-    if style == "使役":
+    if burst and style == "連続":  # :18–19 [連続]バースト
+        attack_num += 4
+    if not burst and style == "使役":  # :21–22
         attack_num += 1
     print_distance(ctx)
     out.print("　")
@@ -600,6 +619,11 @@ def com_attack_common(ctx: Ctx) -> int:
                 else:
                     k, a, cap = {1: (25, 15, 30), 2: (100, 10, 20), 3: (300, 5, 10)}[v[0]]
                     l1 = min(div(dmg * k * min(hp + a, cap), 10000) + 50, dmg)
+                # :108–112 [反撃]バースト：蓄積ダメージ（TCVARn:205）の 1/4 を加算
+                if burst and v[2] != P_HANGEKI_OK and style == "反撃":
+                    l99 = div(v[205], 4)
+                    l1 += l99
+                    v[205] = v[205] - l99
                 st.flag[13] -= l1
                 # MESSAGE_BATTLE_CHARA_ATTACK_GUARD（MESSAGE_BATTLE.ERB:557–566）
                 out.set_color((0, 255, 255))
@@ -629,10 +653,16 @@ def com_attack_common(ctx: Ctx) -> int:
             if v[1] == 0 and attack_num == 0:
                 shinkyou_change(ctx, "KOUYOU_SYOUTIN")
             l3 = 0
-            if style == "設置" and loc.get(2, 0):
+            if style == "設置" and loc.get(2, 0):  # :147–152
                 l3 += 125
+                if burst:
+                    l3 += 125
             if l3 > 0:
-                raise NotImplementedError("[設置]スタイルの油断度上昇は未移植")
+                _yudan_up(ctx, l3)
+            # :166–169 [撹乱]バーストの怯み（RAND は左から：GETBIT・スタイルが真のときだけ引く）
+            if burst and style == "撹乱" and st.rng.rand(10) == 0 and hit_flag == -1:
+                st.tflag[1] = 1
+                out.printl("うまく相手の体勢を崩した！")
         else:
             st.tflag[31] += 1
             crit = cloth_battle_hosei(ctx, "CRITICAL")
@@ -647,6 +677,8 @@ def com_attack_common(ctx: Ctx) -> int:
                 crit += 2
             if style == "撹乱":
                 crit += 5
+            if burst and style == "知略":  # :191–192
+                crit += 5
             if st.tflag[33] > 1:
                 crit += get_evader_crt(st.tflag[33] - 1)
             l0 = max(c.base[11] - 100, 0)
@@ -657,10 +689,15 @@ def com_attack_common(ctx: Ctx) -> int:
                 crit += 1
             if st.rng.rand(100) < 5 + crit:
                 l0 = 15
+                if burst:  # :215–216
+                    l0 += 5
+                # :218–221 秘められし力の RESULT 加算は直後の CALL DAMAGE で上書きされるので無効
             else:
                 l0 = 10
             dmg = damage(ctx, _RANGE_ARGS[v[0]])
             l1 = div(dmg * l0, 10)
+            if burst and v[2] != P_HANGEKI_OK and style == "反撃":  # :240–241
+                l1 += v[205]
             st.flag[13] -= l1
             loc[2] = l1
             result = 0
@@ -692,14 +729,26 @@ def com_attack_common(ctx: Ctx) -> int:
             out.printw()
             if loc[2] >= 5000:
                 unlock_achievement(ctx, 263, "破壊神の一撃")
-            if style == "設置":
-                raise NotImplementedError("[設置]スタイルの油断度上昇は未移植")
+            l3 = 0
+            if style == "設置":  # :279–284
+                l3 += 300
+                if burst:
+                    l3 += 300
+            if l3 > 0:
+                _yudan_up(ctx, l3)
+            # :298–303 [撹乱]バーストの怯み（クリティカルなら RAND を引かない：|| の短絡評価）
+            if burst and style == "撹乱":
+                if hit_flag == 2 or st.rng.rand(2) == 0:
+                    st.tflag[1] = 1
+                    out.printl("うまく相手の体勢を崩した！")
         if attack_num:
             attack_num -= 1
             continue
         break
     if style == "全力":
         st.tflag[99] += 2
+    if burst:  # :317–402 バースト攻撃の反動
+        _burst_recoil(ctx, style, hit_flag)
     if t(ctx, c, "サド気質") > 0 and hit_flag > 0:
         l1 = st.rng.rand(max(div(c.maxbase[1] * hit_flag * 8, 100), 1)) + 10
         if c.base[1] + l1 >= c.maxbase[1]:
@@ -708,9 +757,70 @@ def com_attack_common(ctx: Ctx) -> int:
         st.temp.common_palam[7] += l1 * 10
         if l1 > 0:
             out.printl(f"サディスティックな快楽で{data.names['BASE'].get(1, '')}が{l1}回復した")
-    if style == "反撃" and v[2] != P_HANGEKI_OK and not v.get_bit(217, 0):
+    if style == "反撃" and v[2] != P_HANGEKI_OK and not burst:
         raise NotImplementedError("[反撃]スタイルの反撃準備は S06")
     return 1
+
+
+def _yudan_up(ctx: Ctx, amount: int) -> None:
+    """COM_ATTACK_COMMON.ERB:153–164／:285–296：油断度上昇の追加効果（FLAG:17 += LOCAL:3）。"""
+    st = ctx.state
+    out = ctx.out
+    if st.flag[110] == 0:
+        tentacle_access(ctx, "NAME")
+    elif st.flag[110] == 1:
+        out.print(print_transcallname(st, st.flag[111]))
+    out.printl(f"の油断度が少し上昇した……（＋{_tofull(amount)}）")
+    out.printw()
+    st.flag[17] += amount
+
+
+# :318–385 バースト攻撃の反動（TFLAG:99 加算量。反撃は別処理）
+_BURST_RECOIL = {"連続": 2, "装甲": 2, "撹乱": 2, "重撃": 3, "広範": 3, "全力": 4, "知略": 1, "設置": 1, "使役": 3, "通常": 1}
+
+
+def _burst_recoil(ctx: Ctx, style: str, hit_flag: int) -> None:
+    """COM_ATTACK_COMMON.ERB:317–402。"""
+    st = ctx.state
+    c = tc(ctx)
+    v = c.tcvarn
+    out = ctx.out
+    if style == "反撃":  # :337–382
+        if v[2] != P_HANGEKI_OK:
+            st.tflag[99] += 3
+            if v[205] > v[206] and hit_flag != -1:
+                # :346 MESSAGE_BATTLE_TENTACLE_ATTACK_OVERCHARGE（地の文/MESSAGE_BATTLE.ERB:1226–1240）
+                run_chinobun(ctx, "MESSAGE_BATTLE_TENTACLE_ATTACK_OVERCHARGE")
+                if enemy_type_check(st, "AKUOTI"):  # :348–349
+                    raise NotImplementedError("悪堕ちキャラの地の文（MESSAGE_OTHER_BATTLE_TENTACLE_ATTACK_OVERCHARGE）は未移植")
+                result = min(percent_cal(v[205], v[206]), 70)  # :353–355
+                l2 = div(c.maxbase[0] * result, 100)
+                out.set_bold(True)
+                out.printl(f"{l2}ダメージを受けた！")
+                out.set_bold(False)
+                if c.base[0] - l2 <= 0:
+                    l2 = c.base[0]
+                c.base[0] -= l2
+                # :375 `FOR RESULT, RESULT, 0, -5`：負の STEP は「終端 < カウンタ」の間くり返す
+                # （reference/emuera-1824/Emuera/GameProc/Function/Instraction.Child.cs:1739–1743、NEXT:2153–2158）
+                r = result
+                while r > 0:
+                    st.tflag[99] += 3
+                    r -= 5
+                v[205] = 0
+    else:
+        st.tflag[99] += _BURST_RECOIL[style]
+    if t(ctx, c, "ホットスタート") > 0:  # :387–390
+        st.tflag[99] += 1
+    if t(ctx, c, "フルバースト") > 0:
+        st.tflag[99] += 1
+    name = print_transcallname(st, st.target)
+    if style == "装甲":  # :393–396 オートガード
+        v[2] = P_GUARD
+        out.printl(f"{name}は防御態勢になった！")
+    if style == "知略":  # :398–401 見切り
+        st.tflag[25] = 1
+        out.printl(f"{name}は見切り状態になった！")
 
 
 # --- COM4 防御、COM5 距離をとる、COM99 ギブアップ ------------------------------------------
@@ -1079,6 +1189,206 @@ def com_ex_gauge(ctx: Ctx, n: int) -> ComGen:
     yield  # pragma: no cover
 
 
+# --- COM70 ＳＰバースト、COM73 ＳＰ変身、COM74 ＳＰフルバースト（COMF70／73／74.ERB）------------------
+
+
+def _print_enemy_name(ctx: Ctx) -> None:
+    """COMF70.ERB:48–52 等：`FLAG:110 == 0` なら TENTACLE_ACCESS "NAME"、1 なら PRINT_TRANSCALLNAME(FLAG:111)。"""
+    st = ctx.state
+    if st.flag[110] == 0:
+        tentacle_access(ctx, "NAME")
+    elif st.flag[110] == 1:
+        ctx.out.print(print_transcallname(st, st.flag[111]))
+
+
+def _fatigue_limit(ctx: Ctx, label: str) -> bool:
+    """COMF70.ERB:9–14／COMF74.ERB:9–14：CFLAG:99 >= 100 なら使えない（True＝RETURN 0）。"""
+    st = ctx.state
+    c = tc(ctx)
+    if c.cflag[99] < 100:
+        return False
+    from ..action import print_callname
+
+    ctx.out.printl(f"{print_callname(st, st.target)}に蓄積した疲労はもう限界に達している…！")
+    ctx.out.printl(f"{label}は使えない…！")
+    ctx.out.printw()
+    return True
+
+
+def sp_burst_damage(ctx: Ctx) -> int:
+    """COMF70.ERB:30–44 ＳＰバーストの固定ダメージ（RAND なし）。"""
+    st, data = ctx.state, ctx.data
+    c = tc(ctx)
+    v = c.tcvarn
+    b = lambda n: data.index_of("BASE", n)  # noqa: E731
+    ex = c.ex[99]  # EX:行動ポイント
+    local = div(
+        max((c.maxbase[b("体力")] + c.maxbase[b("気力")] - 2000) * 2 + (c.maxbase[b("防御")] - 100) * 3, 480)
+        * max(v[4] + v[5] - 200, 0) ** 2  # POWER(x, 2)：Math.Pow → long（Creator.Method.cs:1051–1062）
+        * (100 + ex * 2),
+        4800000,
+    ) + 2500 * (1 if c.cflag[1] == 2 else 0)
+    if st.temp.prevcom in (44, 45, 46, 47):  # :33–34
+        local = div(local * 115, 100)
+    if enemy_type_check(st, "AKUOTI") == 0 and enemy_type_check(st, "MOB") == 1:  # :36–37
+        local *= 2
+    rate = percent_cal(  # :39
+        c.base[b("体力")] + c.base[b("気力")] + c.base[b("性耐性")] * 40,
+        c.maxbase[b("体力")] + c.maxbase[b("気力")] + c.maxbase[b("性耐性")] * 40,
+    )
+    local = div(local * (125 - rate), 100)
+    if t(ctx, c, "変身能力") < 1:  # :41–42
+        local = div(local * 85, 100)
+    return limit(local, 500, 99999)  # :44
+
+
+def com70(ctx: Ctx) -> ComGen:
+    """`COMF70.ERB@COM70`:2–76 ＳＰバースト（拘束中のみ使用可：COMABLE.ERB:676–698）。"""
+    st = ctx.state
+    c = tc(ctx)
+    v = c.tcvarn
+    out = ctx.out
+    print_distance(ctx)
+    out.printl()
+    if _fatigue_limit(ctx, "ＳＰバースト"):
+        return 0
+    v[0] = 2  # :16 拘束を吹き飛ばして中距離へ
+    st.tflag[4] = 0
+    v[6] += -500  # :20
+    out.set_bold(True)
+    out.printl("SPバースト")
+    out.set_bold(False)
+    run_chinobun(ctx, "MESSAGE_BATTLE_CHARA_SP_BURST", fallback=lambda: kojo_root(ctx, "BATTLE_CHARA_SP_BURST"))
+    local = sp_burst_damage(ctx)
+    st.flag[13] -= local  # :46
+    out.set_bold(True)
+    _print_enemy_name(ctx)
+    out.printl(f"に{local}のダメージを与えた！")
+    l0 = div(c.base[0], 4)  # :56–60 反動
+    l1 = div(c.base[1], 4)
+    c.base[0] -= l0
+    c.base[1] -= l1
+    out.printl(f"体力を{l0}、気力を{l1}消費した！")
+    out.printw()
+    out.set_bold(False)
+    st.tflag[99] += 2 + div(max(v[4] + v[5] - 200, 0) * c.ex[99], 400)  # :65
+    if c.ex[99] > 0:  # :68–69
+        c.ex[99] = div(c.ex[99], 2) + 1
+    st.tflag[1] = 1  # :72
+    v[8] = 1  # :74
+    return 1
+    yield  # pragma: no cover
+
+
+# COMF73.ERB:30–42 性格（SEIKAKU_CHECK "GET_TALENT_VALUE" の素質番号）→ 心境
+_SP_SHINKYOU_IKARI = (15, 24, 27)  # 面倒くさがり, 古風, 乱暴者
+_SP_SHINKYOU_REISEI = (10, 11, 14, 17, 18, 22)  # 臆病, 恥ずかしがり屋, おっとり, 楽天家, 悲観的, 無口
+
+
+def com73(ctx: Ctx) -> ComGen:
+    """`COMF73.ERB@COM73`:2–61 ＳＰ変身。"""
+    from ..chara_common import seikaku_check
+
+    st = ctx.state
+    c = tc(ctx)
+    v = c.tcvarn
+    out = ctx.out
+    print_distance(ctx)
+    out.printl()
+    run_chinobun(  # :9（CFLAG:1 を 2 にする前に呼ぶ：「再び」の分岐は CFLAG:1 == 1）
+        ctx, "MESSAGE_BATTLE_CHARA_SP_TRANSFORMCALL", fallback=lambda: kojo_root(ctx, "BATTLE_CHARA_SP_TRANSFORMCALL")
+    )
+    c.cflag[1] = 2  # :12–14 SP モード：EX ゲージを SP ゲージに移す
+    v[5] = v[4]
+    v[4] = 0
+    name = print_transcallname(st, st.target)
+    if v[12] > 0:  # :17–21 状態異常が治る
+        out.printl(f"{name}の状態異常が治った！")
+        out.printl()
+        v[12] = 0
+    result = seikaku_check(ctx.data, c)  # :25
+    out.print(f"{name}は ")  # :28
+    if result in _SP_SHINKYOU_IKARI:
+        v[1] = 2
+        out.print("怒り")
+    elif result in _SP_SHINKYOU_REISEI:
+        v[1] = 4
+        out.print("冷静")
+    else:
+        v[1] = 6
+        out.print("高揚")
+    out.printl("状態 になった")
+    v[11] = 0  # :46
+    if c.cflag[41] != 0:  # :49–50 アウター（変身後）のダメージ全回復
+        v[23] = v[22]
+    st.tflag[1] = 1  # :53
+    st.tflag[99] += 3  # :56
+    v[8] = 1  # :59
+    return 1
+    yield  # pragma: no cover
+
+
+def sp_full_burst_damage(ctx: Ctx) -> int:
+    """COMF74.ERB:32–46 ＳＰフルバーストの固定ダメージ（RAND なし）。"""
+    st, data = ctx.state, ctx.data
+    c = tc(ctx)
+    v = c.tcvarn
+    b = lambda n: data.index_of("BASE", n)  # noqa: E731
+    local = div(
+        max((c.maxbase[b("体力")] + c.maxbase[b("気力")] - 2000) + c.maxbase[b("攻撃")] * 10, 800)
+        * (100 + c.ex[99] * 2)
+        * (5000 + v[5]),
+        500000,
+    )
+    if enemy_type_check(st, "AKUOTI") == 0 and enemy_type_check(st, "MOB") == 1:  # :38–39
+        local *= 2
+    rate = percent_cal(  # :41
+        c.base[b("体力")] + c.base[b("気力")] + c.base[b("性耐性")] * 10,
+        c.maxbase[b("体力")] + c.maxbase[b("気力")] + c.maxbase[b("性耐性")] * 10,
+    )
+    local = div(local * (300 - rate), 200)
+    return limit(local, 500, 99999)  # :46
+
+
+def com74(ctx: Ctx) -> ComGen:
+    """`COMF74.ERB@COM74`:2–85 ＳＰフルバースト。"""
+    st = ctx.state
+    c = tc(ctx)
+    v = c.tcvarn
+    out = ctx.out
+    print_distance(ctx)
+    out.printl()
+    if _fatigue_limit(ctx, "ＳＰフルバースト"):
+        return 0
+    v[0] = 2  # :16
+    st.tflag[4] = 0
+    v[6] = -500  # :20 全ゲージ消費
+    v[3] = 0  # :22 EX：攻防を解除
+    out.set_bold(True)
+    out.printl("SPフルバースト")
+    out.set_bold(False)
+    run_chinobun(ctx, "MESSAGE_BATTLE_CHARA_SP_FBURST")  # :29（口上呼び出しはコメントアウト：MESSAGE_BATTLE.ERB:1064–1068）
+    local = sp_full_burst_damage(ctx)
+    st.flag[13] -= local  # :48
+    out.set_bold(True)
+    _print_enemy_name(ctx)
+    out.printl(f"に{local}のダメージを与えた！")
+    if st.flag[13] <= 0:  # :58–59 トドメならデメリットなし
+        st.tflag[99] = 0
+    else:
+        st.tflag[99] += min(div((1000 + v[5]) * (100 + c.ex[99] * 2), 10000), 15) + st.rng.rand(2)  # :62
+        l0 = div(c.base[0], 3)  # :66–70
+        l1 = div(c.base[1], 3)
+        c.base[0] -= l0
+        c.base[1] -= l1
+        out.printl(f"体力を{l0}、気力を{l1}消費した！")
+    out.printw()
+    out.set_bold(False)
+    add_battle_situation(st, "EX不可")  # :76
+    return 1
+    yield  # pragma: no cover
+
+
 def run_com(ctx: Ctx, n: int) -> ComGen:
     """`@COM{n}`（Process.SystemProc.cs@endEventCom:414–420 が COM{SELECTCOM} を呼ぶ）。"""
     if n in (0, 201, 202, 203):
@@ -1103,11 +1413,17 @@ def run_com(ctx: Ctx, n: int) -> ComGen:
         return (yield from com17(ctx))
     if n in (71, 72):
         return (yield from com_ex_gauge(ctx, n))
+    if n == 70:
+        return (yield from com70(ctx))
+    if n == 73:
+        return (yield from com73(ctx))
+    if n == 74:
+        return (yield from com74(ctx))
     from .restraint import RESTRAINT_COMS
 
     if n in RESTRAINT_COMS:
         return (yield from RESTRAINT_COMS[n](ctx))
     name = ctx.data.names["TRAIN"].get(n, str(n))
-    # DEVIATION: 未移植のコマンド（S06 時点で 47 説得する・70 ＳＰバースト・73 ＳＰ変身・74 ＳＰフルバースト）は
+    # DEVIATION: 未移植のコマンド（S16 時点で 47 説得する〔悪堕ちキャラ戦〕のみ）は
     # 実行せずに停止する（deviations.md「未移植の戦闘分岐は停止」）
     raise NotImplementedError(f"戦闘コマンド「{name}」（COM{n}）は未移植")

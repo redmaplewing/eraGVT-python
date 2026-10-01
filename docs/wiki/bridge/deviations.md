@@ -37,7 +37,8 @@ ERB 路徑相對 `source/earGVP/ERB/`。
 - [ ] **襲撃／救援、子触手襲来 會被跳過**：`RAID_HANTEI`（DAY ≥ 3 起依防衛力的亂數）與 `SMALL_TENTACLE_HANTEI`（夜、FLAG:44 > 0）判定成立時，原作會 `JUMP RAID_RESCUE／RAID_ATTACK`（戰鬥）或 `CALL SMALL_TENTACLE_ATTACK`；這裡只印「（未實作：…が発生しましたが、スキップします）」並當作沒發生。（原作：`ゲーム内_イベント発生/強制発生イベント/FORCE_襲撃or救援イベント発生.ERB`:94–105、`FORCE_深夜の子触手襲来.ERB`:48–53；Python：`eragvt.game.turnend.raid_hantei`／`small_tentacle_hantei`／`_skip_event`）— 通常遊玩一定會遇到，若改成停止則無法連續遊玩；戰鬥在 S05／S06 接上。
 - [ ] **未移植的戰鬥分岐會停止遊戲**（S05 新增、S06 更新）：戰鬥中下列情況丟 `NotImplementedError` → Web「停止」。
   S06 接上了拘束後的性攻擊、拘束中指令、絶頂／射精、敗北（→ 幽閉）與指令 6・7・16・17・69・71・72；
-  仍停止的一覽見 `docs/STATUS.md`「S06 後仍會停止的分岐」（ＳＰ變身／ＳＰバースト、バースト攻擊的效果、反擊、受精成立、
+  S16 接上 ＳＰ変身（73）・ＳＰバースト（70）・ＳＰフルバースト（74）與バースト攻撃（TCVARn:217）的全部補正；
+  仍停止的一覽見 `docs/STATUS.md`「S06 後仍會停止的分岐」（反擊、受精成立、
   強制自慰、動画流出、幽閉後的 TURNEND、悪堕ち／雜魚／ラスボス等；拡張度 CFLAG:34 != 0 於 S11 接上，只剩羞恥プレイ的
   動画サイト視窗 `MESSAGE_SEX_VIDEO_SITE_Window`）。
   （Python：`eragvt.game.battle.*` 各處 `raise NotImplementedError`、`battle.commands.run_com` 的 `# DEVIATION:`）
@@ -99,7 +100,7 @@ ERB 路徑相對 `source/earGVP/ERB/`。
   `ヒロイン関連/CHARA_STATUS.ERB@SHOW_STATUS_BASE_DISPBATTLE`、`SHOW_TRAIN_PALAM_STATUS`、`CLOTH_BATTLE_DISPHP`、
   `SHOW_DISTANCE_WINDOW`）只顯示名稱・Lv・體力／氣力／性耐性條・EX 值・狀態・心境・敵名 Lv・距離・剩餘回合・
   敵體力／射精（解析度不足時 ？？？）・油斷・敵能力・解析度；距離適性、スタイル、衣裝耐久、PALAM 表、距離視窗未顯示。
-  這些函式內沒有代入與 RAND（grep 確認），不影響狀態。`[800]` ステータス畫面（`SHOW_STATUS_CHARA_SELECT`，5 頁）只顯示
+  這些函式內沒有 RAND；代入只有 `STATUS_PRINT_CHARGE`（CHARA_STATUS.ERB:1477–1489，每回合無條件）的 TCVARn:206（[反撃]バースト的蓄積限度），S16 起照原文計算（`train.status_charge_limit`），其餘不影響狀態。`[800]` ステータス畫面（`SHOW_STATUS_CHARA_SELECT`，5 頁）只顯示
   「未移植」一行。`SHOW_USERCOM` 只移植「不分類」版（`BATTLE_COM.ERB`:379–568，基本設定 FLAG:801 bit2 = 0），
   《危険度》的顏色照 `FORECAST_OUTPUT_SETCOLOR`。（Python：`eragvt.game.battle.train.show_status`／`show_usercom`／`usercom`）
 - [ ] **性攻擊的地の文**（S06 新增、S07 更新）：S07 起 `地の文/MESSAGE_SEX*.ERB`、敗北 `MESSAGE_BATTLE_END_LOSS`、射精・處女喪失・
@@ -185,3 +186,11 @@ ERB 路徑相對 `source/earGVP/ERB/`。
   **襲われた場合必定 RETURN 1**（:1334），「次も頼むわ」（沒錄影）的分岐也會接到 `DOUGA_RYUSUTU, 1` 動画流出；
   `SELF_KIND` 的 `#DIM Ｖ自慰可／Ａ自慰可` 是靜態且不歸 0（FORCE_夜間自慰.ERB:183–209），一旦有人 Ｖ感覚 ≥ 1 之後所有角色都走 Ｖ 分岐，
   :236 的「兩者皆可」分岐不可能到達；`SELF_NIGHT`:10 的初心判定只看 TURNEND 當下的 TARGET。
+- S16 ＳＰ変身・バースト照原作的怪處：**`ADDBATTLESITUATION` 是覆寫**（`特殊シチュエーション.ERB`:43–44 `'=`＝字串代入，
+  `reference/emuera-1824/Emuera/GameProc/Function/ArgumentBuilder.cs`:786–807、`Instraction.Child.cs`:466–468），ＳＰフルバースト後
+  「EX不可,」取代原本的特殊シチュエーション（例如事件戰的「撤退不可」「攻撃不可」會被解除）；ＳＰ変身（`COMF73.ERB`:12）直接寫
+  CFLAG:1 = 2 不經 TRANSFORM，而效果時間結束的 `TRANSFORM, 1`（`BATTLE_COM.ERB`:790–795）在 CFLAG:1 = 2 時再走一次「通常→変身」分岐
+  （`COMMON_BATTLE_FUNC.ERB`:458–：胸・體格再套用變動、男の娘／ふたなり 與変身時版本再交換一次 → 交換回去）；
+  `COM_ATTACK_COMMON.ERB`:218–221 秘められし力的「隠し補正」加在 RESULT 上，隨即被 `CALL DAMAGE` 覆寫 → 無效；
+  [反撃]バーストの蓄積ダメージ TCVARn:205 只在 ＥＸ反撃（`HANGEKI_STYLE.ERB`:67，未移植）增加，限度 TCVARn:206 只在狀態列顯示
+  （`STATUS_PRINT_CHARGE`）時計算；ＳＰフルバースト在変身能力ありのキャラ不看ゲージ（`COMABLE.ERB`:808–815 原作註解自承）。

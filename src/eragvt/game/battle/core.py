@@ -131,6 +131,16 @@ def get_battle_situation(st: GameState, name: str) -> int:
     return 1 if name in st.temp.battle_situation else 0
 
 
+def add_battle_situation(st: GameState, name: str) -> None:
+    """`特殊シチュエーション.ERB@ADDBATTLESITUATION(ARGS)`:43–44 `特殊戦闘シチュエーション'=ARGS+","`。
+
+    `'=` は文字列の代入（追加ではない）：`reference/emuera-1824/Emuera/GameProc/Function/ArgumentBuilder.cs:786–807`
+    （AssignmentStr → SpSetArgument）、`Instraction.Child.cs:466–468`（SetValue）。名前に反して既存の
+    シチュエーションは消える（原作どおり）。
+    """
+    st.temp.battle_situation = name + ","
+
+
 def unlock_achievement(ctx: Ctx, num: int, name: str) -> None:
     """`インターミッション画面/SHOP_TROPHY.ERB@UNLOCK_ACHIEVEMENT`:6–20。
 
