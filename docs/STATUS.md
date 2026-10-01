@@ -78,7 +78,7 @@
 
 ## 下一步
 
-- S17 候選：[反撃]スタイル（ＥＸ反撃・HANGEKI_TO_TENTACLE；S16 已接バースト側）、ACT_LIMIT の寄生、悪堕ちキャラ（AKUOTI_EVENT）、
+- **S17：寄生系統**（`docs/sessions/S17-parasite.md`）。之後候選：[反撃]スタイル（ＥＸ反撃・HANGEKI_TO_TENTACLE；S16 已接バースト側）、悪堕ちキャラ（AKUOTI_EVENT）、
   クズ市民の脅迫（INTIMIDATION_EVENT：S15 起 CFLAG:286 會增加，但需設定「クズ市民による幽閉」ON 才觸發）、狀態畫面、FLASHNEWS、
   ランダム命名畫面。
 - 已裁決（2026-09-30）：拡張度初期值照原作不設定；初期セット身體資料問題因 S10 改回預設開局而不再需要偏離；
