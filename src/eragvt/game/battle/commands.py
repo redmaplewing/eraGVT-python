@@ -22,7 +22,9 @@ from .core import (
     KIZETU,
     KOSHIKUDAKE,
     KOUKOTSU,
+    P_EX_HANGEKI,
     P_GUARD,
+    P_HANGEKI,
     P_HANGEKI_OK,
     P_NOTHING,
     add_battle_situation,
@@ -599,8 +601,8 @@ def com_attack_common(ctx: Ctx) -> int:
     out.set_bold(False)
     print_combo(ctx)
     out.printl()
-    if v[2] == P_HANGEKI_OK:
-        raise NotImplementedError("反撃成功時の攻撃（MESSAGE_BATTLE_CHARA_ATTACK_HANGEKI）は S06")
+    if v[2] == P_HANGEKI_OK:  # :38–39（体勢：反撃成功 は本作で代入されないので到達しない：hangeki.py docstring）
+        run_chinobun(ctx, "MESSAGE_BATTLE_CHARA_ATTACK_HANGEKI")  # MESSAGE_BATTLE.ERB:490–519（口上は SKIP 内）
     _msg_attack_range(ctx, v[0])
     while True:  # $ATTACK_AGAIN
         kind = _RANGE_ARGS[v[0]]
@@ -765,8 +767,13 @@ def com_attack_common(ctx: Ctx) -> int:
         st.temp.common_palam[7] += l1 * 10
         if l1 > 0:
             out.printl(f"サディスティックな快楽で{data.names['BASE'].get(1, '')}が{l1}回復した")
+    # :417–426 [反撃]スタイルの通常反撃準備（バースト攻撃では取らない）
     if style == "反撃" and v[2] != P_HANGEKI_OK and not burst:
-        raise NotImplementedError("[反撃]スタイルの反撃準備は S06")
+        # MESSAGE_BATTLE.ERB:577–582
+        run_chinobun(ctx, "MESSAGE_BATTLE_CHARA_HANGEKI", fallback=lambda: kojo_root(ctx, "BATTLE_CHARA_HANGEKI"))
+        if enemy_type_check(st, "AKUOTI"):  # :423–424
+            msg_other(ctx, "BATTLE_CHARA_HANGEKI")
+        v[2] = P_HANGEKI
     return 1
 
 
@@ -850,15 +857,20 @@ def com4(ctx: Ctx) -> ComGen:
         v[216] = 0
     print_distance(ctx)
     out.printl()
-    if fstyle_name(ctx, st.target, v[0]) == "反撃":
-        raise NotImplementedError("[反撃]スタイルのＥＸ反撃は S06")
-    # MESSAGE_BATTLE_CHARA_DEFENSE（MESSAGE_BATTLE.ERB:569–574）
-    out.printl(f"{print_transcallname(st, st.target)}は集中して身を固めた！")
-    kojo_root(ctx, "BATTLE_CHARA_DEFENSE")
-    out.printw()
-    if enemy_type_check(st, "AKUOTI") == 1:  # :36–37
-        msg_other(ctx, "BATTLE_CHARA_DEFENSE")
-    v[2] = P_GUARD
+    if fstyle_name(ctx, st.target, v[0]) == "反撃":  # :24–30 [反撃]スタイルはＥＸ反撃体勢
+        # MESSAGE_BATTLE_CHARA_HANGEKI_EX（MESSAGE_BATTLE.ERB:586–590）
+        run_chinobun(ctx, "MESSAGE_BATTLE_CHARA_HANGEKI_EX", fallback=lambda: kojo_root(ctx, "BATTLE_CHARA_HANGEKI_EX"))
+        if enemy_type_check(st, "AKUOTI") == 1:  # :28–29
+            msg_other(ctx, "BATTLE_CHARA_HANGEKI_EX")
+        v[2] = P_EX_HANGEKI
+    else:
+        # MESSAGE_BATTLE_CHARA_DEFENSE（MESSAGE_BATTLE.ERB:569–574）
+        out.printl(f"{print_transcallname(st, st.target)}は集中して身を固めた！")
+        kojo_root(ctx, "BATTLE_CHARA_DEFENSE")
+        out.printw()
+        if enemy_type_check(st, "AKUOTI") == 1:  # :36–37
+            msg_other(ctx, "BATTLE_CHARA_DEFENSE")
+        v[2] = P_GUARD
     c.ex[99] += 1
     return 1
     yield  # pragma: no cover

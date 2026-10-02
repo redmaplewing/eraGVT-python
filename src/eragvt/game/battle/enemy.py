@@ -4,7 +4,7 @@ SELECT_ENEMY_ACTION）と `FORECAST.ERB@ATTACK_PLACE_DECISION`。
 悪堕ちキャラ戦（S19）：各地の文の後に `MESSAGE_OTHER_BATTLE_TENTACLE_*`（敵キャラ側の口上、`core.msg_other`）、
 押し倒す（TFLAG:10 = 5）・邪悪な波動（6）、拘束中は ENEMY_ACTION_SEX_ROUTINE の悪堕ち分岐（:947–964、再行動なし）。
 
-路徑相對 `source/earGVP/ERB/`。拘束中の性攻撃（SEX_ROUTINE／SEX_COM）と反撃（HANGEKI_TO_TENTACLE）は S06。
+路徑相對 `source/earGVP/ERB/`。拘束中の性攻撃（SEX_ROUTINE／SEX_COM）は S06、反撃（HANGEKI_TO_TENTACLE）は S23（`hangeki.py`）。
 地の文は `地の文/MESSAGE_BATTLE.ERB`（行番号は各関数の docstring）。
 """
 
@@ -49,6 +49,7 @@ from .func import (
     state_change_hairan,
     state_change_kizetu_damage,
 )
+from .hangeki import hangeki_to_tentacle
 from .hantei import act_hantei_tentacle_to_chara, damage
 from .palam import palam_cal
 from .sexmsg import istentacler
@@ -163,10 +164,16 @@ def msg_perfect_guard(ctx: Ctx) -> None:
     name = print_transcallname(st, st.target)
     _colored(ctx, (255, 0, 255), "PERFECT GUARD!")
     if fstyle_name(ctx, st.target, tc(ctx).tcvarn[0]) == "反撃":
-        raise NotImplementedError("[反撃]スタイルの完全防御文（PRINTDATAL）は S06")
-    ctx.out.print(f"{name}は ")
-    _enemy_prefix(ctx)
-    ctx.out.printl("の攻撃を完全に防ぐことができた！")
+        # :1206–1209 PRINTDATAL：DATA 2 件から GetNextRand(2) で 1 件（reference/emuera-1824/Emuera/GameProc/Function/
+        # Instraction.Child.cs:202–203）、行末で改行（:225–226）
+        if st.rng.rand(2) == 0:
+            ctx.out.printl(f"{name}は攻撃を完全に封じ込めた後, すぐに敵のすき間に向かって進んだ！")
+        else:
+            ctx.out.printl(f"{name}はすべての攻撃をかわし, その勢いで反撃に乗り出した！")
+    else:
+        ctx.out.print(f"{name}は ")
+        _enemy_prefix(ctx)
+        ctx.out.printl("の攻撃を完全に防ぐことができた！")
     kojo_root(ctx, "BATTLE_TENTACLE_ATTACK_PERFECT_GUARD")
 
 
@@ -602,6 +609,7 @@ def _enemy_action_once(ctx: Ctx) -> Generator[None, int, bool]:
                 if c.base[1] - l3 <= 0:
                     l3 = c.base[1]
                 c.base[1] -= l3
+            loc[2] = l2  # :446–525 LOCAL:2（:934 HANGEKI_TO_TENTACLE の ARG:2）
             if game_option(st, GameOption.STAT_DECLINE):
                 raise NotImplementedError("ステ低下有りオプションは未移植")
             out.set_bold(False)
@@ -790,8 +798,9 @@ def _enemy_action_once(ctx: Ctx) -> Generator[None, int, bool]:
     else:
         raise NotImplementedError(f"敵の行動 TFLAG:10 = {action}")
     # :933–934 反撃判定（`!(気絶) && 反撃 || ＥＸ反撃`）
+    # （`&&`／`||` は同優先度 0x40・左結合：reference/emuera-1824/Emuera/GameData/Expression/OperatorCode.cs:33–34）
     if ((v[12] & KIZETU) == 0 and v[2] == P_HANGEKI) or v[2] == P_EX_HANGEKI:
-        raise NotImplementedError("反撃（HANGEKI_TO_TENTACLE）は S06")
+        hangeki_to_tentacle(ctx, st.tflag[10], loc.get(0, 0), loc.get(2, 0))
     v[200] = 0
     if st.tflag[10] != 4 and loc.get(0, 0) == 0:
         st.tflag[33] = 0

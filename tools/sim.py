@@ -20,6 +20,10 @@ S19：`--enable-akuoti` は開局後に FLAG:804 bit1（`CONFIG_CHECK_PRISON_F(1
 陥落しても悪堕ちキャラは生まれない）。悪堕ちキャラの淫謀・洗脳／悪堕ちキャラ戦の次数も数える。
 
 S20：襲撃／救援イベント戦の次数（RAID_RESCUE／RAID_ATTACK 呼出、EXEC_n、救援見送り、ミッション成否と TFLAG:98）。
+
+S23：[反撃]スタイルの路徑次数（HANGEKI_TO_TENTACLE 呼出・成功、COM4 のＥＸ反撃、反撃準備、[反撃]の完全防御文、過剰蓄積）。
+`--style 反撃` は開局直後に全キャラ・全距離の CDFLAG:戦闘スタイル を 10（[反撃]）にする**人工的な状態**
+（原作では初期セット 0／汎用キャラとも 通常：武器カスタマイズ〔未移植〕か一部固有キャラの CSV／口上でしか [反撃] にならない）。
 """
 
 from __future__ import annotations
@@ -151,7 +155,53 @@ def install_event_counters() -> Counter:
             return _orig(ctx)
 
         setattr(raid, name, m)
+
+    # S23：[反撃]スタイル（enemy／commands のモジュール大域名を包む：呼び出しは大域名経由）
+    from eragvt.game.battle import commands, enemy
+
+    orig_hangeki = enemy.hangeki_to_tentacle
+
+    def hangeki(ctx, a, b, d):
+        ex0 = ctx.state.target_chara.ex[99]
+        r = orig_hangeki(ctx, a, b, d)
+        counts["反撃 HANGEKI_TO_TENTACLE 呼出"] += 1
+        if ctx.state.target_chara.ex[99] >= ex0 + 2:  # 成功時のみ EX:行動ポイント += 2（HANGEKI_STYLE.ERB:91）
+            counts[f"反撃 成功（敵行動 {a}・判定 {b}）"] += 1
+        return r
+
+    enemy.hangeki_to_tentacle = hangeki
+    orig_chinobun = commands.run_chinobun
+    labels = {"MESSAGE_BATTLE_CHARA_HANGEKI_EX": "反撃 COM4 ＥＸ反撃体勢", "MESSAGE_BATTLE_CHARA_HANGEKI": "反撃 反撃準備（攻撃後）",
+              "MESSAGE_BATTLE_TENTACLE_ATTACK_OVERCHARGE": "反撃 バースト過剰蓄積"}
+
+    def chinobun(ctx, func, *a, **k):
+        if func in labels:
+            counts[labels[func]] += 1
+        return orig_chinobun(ctx, func, *a, **k)
+
+    commands.run_chinobun = chinobun
+    orig_pg = enemy.msg_perfect_guard
+
+    def perfect_guard(ctx):
+        from eragvt.game.battle.core import fstyle_name, tc
+
+        if fstyle_name(ctx, ctx.state.target, tc(ctx).tcvarn[0]) == "反撃":
+            counts["反撃 完全防御文（PRINTDATAL）"] += 1
+        return orig_pg(ctx)
+
+    enemy.msg_perfect_guard = perfect_guard
     return counts
+
+
+_STYLES = {"連続": 1, "装甲": 2, "撹乱": 3, "重撃": 4, "広範": 5, "全力": 6, "知略": 7, "設置": 8, "使役": 9, "反撃": 10}
+
+
+def _set_style(state, data, style: str) -> None:
+    """`--style`（テスト用の人工的な初期状態）：全キャラの CDFLAG:i:距離:戦闘スタイル（距離 1〜3）を設定する。"""
+    idx = data.index_of("CDFLAG2", "戦闘スタイル")
+    for i in range(1, state.charanum):
+        for dist in (1, 2, 3):
+            state.charas[i].cdflag[(dist, idx)] = _STYLES[style]
 
 
 def _corrupt(state, data, who: int) -> None:
@@ -167,7 +217,8 @@ def _corrupt(state, data, who: int) -> None:
 
 
 def run_one(data, narration, seed: int, preset: str, max_shop: int, max_steps: int, save_dir: Path,
-            enable_intimidation: bool = False, setup=None, enable_akuoti: bool = False, corrupt: int = 0) -> dict:
+            enable_intimidation: bool = False, setup=None, enable_akuoti: bool = False, corrupt: int = 0,
+            style: str = "") -> dict:
     """`setup(state)`：開局直後に状態を変える（テスト用）。"""
     policy = random.Random(seed)
     s = GameSession(data, save_dir, rng=GameRng(seed), narration=narration)
@@ -179,6 +230,8 @@ def run_one(data, narration, seed: int, preset: str, max_shop: int, max_steps: i
         s.state.flag[804] |= (1 << 1) | (1 << 9)
     if corrupt:
         _corrupt(s.state, data, corrupt)
+    if style:
+        _set_style(s.state, data, style)
     if setup is not None:
         setup(s.state)
     shops = 0
@@ -266,6 +319,7 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--dump", help="各局の結果を JSON Lines で書き出す（分割実行用）")
     p.add_argument("--load", nargs="+", help="--dump の出力を読んで合算表示だけする")
     p.add_argument("--corrupt", type=int, default=0, help="開局時に悪堕ちにするキャラ番号（テスト用）")
+    p.add_argument("--style", choices=tuple(_STYLES), default="", help="開局時に全キャラ・全距離の戦闘スタイルを設定（テスト用）")
     a = p.parse_args(argv)
     if a.load:
         results = []
@@ -283,7 +337,7 @@ def main(argv: list[str] | None = None) -> int:
         for seed in _parse_seeds(a.seeds):
             before = Counter(counts)
             r = run_one(data, narration, seed, a.preset, a.max_shop, a.max_steps, Path(tmp), a.enable_intimidation,
-                        enable_akuoti=a.enable_akuoti, corrupt=a.corrupt)
+                        enable_akuoti=a.enable_akuoti, corrupt=a.corrupt, style=a.style)
             r["events"] = dict(counts - before)
             games_with.update(r["events"].keys())
             results.append(r)

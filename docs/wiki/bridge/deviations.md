@@ -195,8 +195,13 @@ ERB 路徑相對 `source/earGVP/ERB/`。
   CFLAG:1 = 2 不經 TRANSFORM，而效果時間結束的 `TRANSFORM, 1`（`BATTLE_COM.ERB`:790–795）在 CFLAG:1 = 2 時再走一次「通常→変身」分岐
   （`COMMON_BATTLE_FUNC.ERB`:458–：胸・體格再套用變動、男の娘／ふたなり 與変身時版本再交換一次 → 交換回去）；
   `COM_ATTACK_COMMON.ERB`:218–221 秘められし力的「隠し補正」加在 RESULT 上，隨即被 `CALL DAMAGE` 覆寫 → 無效；
-  [反撃]バーストの蓄積ダメージ TCVARn:205 只在 ＥＸ反撃（`HANGEKI_STYLE.ERB`:67，未移植）增加，限度 TCVARn:206 只在狀態列顯示
+  [反撃]バーストの蓄積ダメージ TCVARn:205 只在反撃成功（`HANGEKI_STYLE.ERB`:67，S23 移植）增加，限度 TCVARn:206 只在狀態列顯示
   （`STATUS_PRINT_CHARGE`）時計算；ＳＰフルバースト在変身能力ありのキャラ不看ゲージ（`COMABLE.ERB`:808–815 原作註解自承）。
+- S23 [反撃]スタイル照原作的怪處（`eragvt.game.battle.hangeki`）：反撃成功時寫入的是 `体勢：ＥＸ反撃`（301，`HANGEKI_STYLE.ERB`:56），
+  `体勢：反撃成功`（302，`DIM.ERH`:205）全作沒有任何代入（`TCVARn:2` 代入 口上以外 201 行＋口上 99 行全查）→ `COM_ATTACK_COMMON.ERB`:38 的
+  `MESSAGE_BATTLE_CHARA_ATTACK_HANGEKI` 不會出現、`FIGHT_STYLE.ERB`:102–108 的「一次攻撃 1/3」在反撃攻擊時也適用（說明文「反撃成功時に強力な速攻」
+  實際不成立）、反撃攻擊後 `COM_ATTACK_COMMON`:419–425 又回到 `体勢：反撃`；HANGEKI 的 ARG:2 是 ENEMY_ACTION 的 LOCAL:2＝被弾量（非完全防御時
+  也照樣受傷並蓄積）；攻擊（TFLAG:10 = 1）被直擊也算反擊成功（:27–30）。不屬於偏離，僅記錄。
 - S17 寄生系統照原作的怪處（`強制発生イベント/FORCE_深夜の寄生触手暴走.ERB`，Python：`eragvt.game.parasite`）：
   PARASITE_ACTION／SYNBIOSIS_ABL_UP 的「精液経験 10／フェラ経験 2」兩行都寫 `LOCAL:123`（:232–234、:1076–1078）→ 只有精液経験 +2、
   フェラ経験不增加；快B 表只有第一個條件看 Ｂ感覚，`ELSEIF` 以下看 Ｃ感覚（:173–185、:1022–1034）；処女喪失直接寫 `TALENT:処女 = -1`・
