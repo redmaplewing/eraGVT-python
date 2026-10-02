@@ -114,15 +114,19 @@ def tentacle_access_prison(ctx: Ctx, who: int, key: str):
             return _boss_prison_routine(ctx, n)
         if key == "PALAM_HOSEI":
             # TENTACLE_BOSS_6_Ｐ触手.ERB:124–127 `IF TFLAG:23` なら全て /4（TFLAG は前回戦闘の値のまま）
-            if n == 6 and st.tflag[23]:
-                return tuple(div(v, 4) for v in b.palam_hosei)
-            return b.palam_hosei
+            r = tuple(div(v, 4) for v in b.palam_hosei) if n == 6 and st.tflag[23] else b.palam_hosei
+            # ボスの PALAM_HOSEI（例 TENTACLE_BOSS_1_Ｃ触手.ERB:125）と :327 の 12 値 RETURN → 共用 RESULT:0〜11
+            st.set_result_x(*r)
+            return r
         raise KeyError(key)
     if c.cflag[20] == 1:
         raise NotImplementedError("ラスボス触手による幽閉（TENTACLE_ACCESS_PRISON の LASTBOSS 分岐）は未移植")
+    # CFLAG:20 == 2（悪堕ちキャラによる幽閉）：:314–343 にこの分岐は無い → 関数終端で RESULT:0 = 0 だけ
+    # （reference/emuera-1824/Emuera/GameProc/Process.ScriptProc.cs:61–67）。RESULT:1〜11 は直前までの値のまま
+    # （共用 RESULT＝GameState.result の殘值、照原作：使用者裁決 2026-10-02）。
+    st.result[0] = 0
     if key == "PALAM_HOSEI":
-        # RESULT:0 は関数終端で 0、RESULT:1〜11 は前の値のまま（RETURN しない）→ 再現できないので停止
-        raise NotImplementedError("悪堕ちキャラによる幽閉のパラメータ補正（TENTACLE_ACCESS_PRISON）は未移植")
+        return tuple(st.result[i] for i in range(12))
     return 0 if key == "PRISON_ROUTINE" else ""
 
 
@@ -473,8 +477,8 @@ def _inmon(ctx: Ctx, fall: int, l1: int) -> None:
 
 
 def corrupt_change_looks_main(ctx: Ctx, who: int) -> None:
-    """`ヒロイン関連/悪堕ち/CORRPUTION.ERB@CORRUPT_CHANGE_LOOKS_MAIN, ARG`:17–100。
-    :20–21 コンフィグ（CONFIG_CHECK_PRISON_F(4)）が 0 なら何もしない（基本セットは 0）。以降は未移植。"""
-    if config_check_prison(ctx.state, 4) == 0:
-        return
-    raise NotImplementedError("悪堕ち時の容姿変更（CORRUPT_CHANGE_LOOKS_MAIN:24–）は未移植")
+    """`ヒロイン関連/悪堕ち/CORRPUTION.ERB@CORRUPT_CHANGE_LOOKS_MAIN, ARG`:17–100（S21：`eragvt.game.corruption`）。
+    :20–21 コンフィグ（CONFIG_CHECK_PRISON_F(4)）が 0 なら何もしない（基本セットは 0）。"""
+    from ..corruption import corrupt_change_looks_main as _main
+
+    _main(ctx, who)

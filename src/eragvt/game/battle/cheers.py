@@ -69,7 +69,9 @@ def perform_cheers_first_hantei(ctx: Ctx) -> None:
         return
     if st.flag[70] == 0:
         return
-    local = isqrt(st.flag[852] + 625)
+    # :65 `LOCAL = SQRT(FLAG:852 + 625)`。DEVIATION: 使用者裁決（2026-10-02、D3）：括號內が負（防衛力 < −625）なら 0 として計算
+    # （原作は SQRT 負數で CodeEE：reference/emuera-1824/Emuera/GameData/Function/Creator.Method.cs@SqrtMethod:1074–1080）。
+    local = isqrt(max(st.flag[852] + 625, 0))
     local = local - (div(c.cflag[284], 4) + c.cflag[285]) * 5 - min(div(exp(ctx, c, "被姦経験"), 5), 20)
     if t(ctx, c, "人外の美貌") > 0:
         local -= 5

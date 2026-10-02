@@ -581,9 +581,10 @@ def tentacle_palam_hosei(ctx: Ctx) -> tuple[int, ...]:
     """TENTACLE_ACCESS "PALAM_HOSEI"（Ｐ触手は TFLAG:23 が非 0 なら全て /4：TENTACLE_BOSS_6_Ｐ触手.ERB:125–129）。"""
     st = ctx.state
     b = boss_data(st)
-    if st.flag[11] == 6 and st.tflag[23]:
-        return tuple(div(v, 4) for v in b.palam_hosei)
-    return b.palam_hosei
+    r = tuple(div(v, 4) for v in b.palam_hosei) if st.flag[11] == 6 and st.tflag[23] else b.palam_hosei
+    # ボスの PALAM_HOSEI の 12 値 RETURN（例 TENTACLE_BOSS_1_Ｃ触手.ERB:125）→ TENTACLE_ACCESS:253 も同じ 12 値（共用 RESULT）
+    st.set_result_x(*r)
+    return r
 
 
 def print_enemy_prefix(ctx: Ctx) -> None:
@@ -888,6 +889,7 @@ def print_distance(ctx: Ctx) -> None:
     out.print(s1)
     out.reset_color()
     out.print("]")
+    ctx.state.result[0] = 0  # 関数終端（RETURN なし：Process.ScriptProc.cs:61–67）。COMF103:197 の不発 TRYCALLFORM が読む
 
 
 def printw_or_l(ctx: Ctx) -> None:

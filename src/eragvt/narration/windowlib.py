@@ -367,7 +367,12 @@ def _trunc_div(a: int, b: int) -> int:
 
 
 def py_functions(wm: WindowManager, out: Any) -> dict:
-    """catalog の py_functions に登録する `CALL WINDOW_*`（RETURN → RESULT:0 = 0）。"""
+    """catalog の py_functions に登録する `CALL WINDOW_*`。
+
+    RESULT：どの WINDOW_* も内部で `WINDOW_MGR` の `VARSET RESULT, 0`（WindowDrawer.ERB:330）を通り、最後に呼ぶ
+    `SHAPE_TAGSET_TEXT`／`CUT_TAGSET_TEXT`（TagSetText.ERB:218／:100 も `VARSET RESULT, 0`）・RETURN でも RESULT:1 以降は
+    書かれないので、終了時は RESULT 全体が 0（WINDOW_MGR "GETINFO" の RESULT:1〜4（:397–400）は DISPLAY_EX 内で後続の
+    VARSET に消される）。共用 RESULT（GameState.result）を全消去する。"""
 
     def _int(args: list, i: int) -> int:
         v = args[i] if i < len(args) and args[i] is not None else 0
@@ -377,24 +382,24 @@ def py_functions(wm: WindowManager, out: Any) -> dict:
 
     def create(it, args):
         wm.create(*(_int(args, i) for i in range(6)))
-        it._set_result([0])
+        it.st.result.clear()
         return 0
 
     def settext(it, args):
         s = args[2] if len(args) > 2 and args[2] is not None else ""
         wm.settext(_int(args, 0), _int(args, 1), s)
-        it._set_result([0])
+        it.st.result.clear()
         return 0
 
     def destroy(it, args):
         wm.destroy(_int(args, 0))
-        it._set_result([0])
+        it.st.result.clear()
         return 0
 
     def display(it, args):
         # @WINDOW_DISPLAY:129–134：nWindowCnt = 10、優先度 0..9
         wm.display_ex(out, list(range(_MAX_WINDOWS)))
-        it._set_result([0])
+        it.st.result.clear()
         return 0
 
     def display_ex(it, args):

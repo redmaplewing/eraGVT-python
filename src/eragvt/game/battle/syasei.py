@@ -6,9 +6,11 @@
 悪堕ちキャラ戦（S19）：TENTACLE_SAKUSEI:585 の `CALL TENTACLE_ACCESS, "SAKUSEI"` は無条件に呼ばれるが、悪堕ちキャラ戦では
 FLAG:11 = 0（ACTION.ERB:38）なので TRYCALLFORM TENTACLE_BOSS_0_SAKUSEI が見つからず、TENTACLE_ACCESS は `RETURN RESULT`
 （COMMON_TENTACLE_DATA.ERB:209–211）で呼び出し時の RESULT をそのまま返す。よって補正率は TENTACLE_SAKUSEI 呼び出し時点の
-RESULT（＝直前の TENTACLE_SYASEI_POINT の RETURN 値 LOCAL:0、敵絶頂の分岐では TENTACLE_SYASEI_CHECK 呼び出し時点の RESULT）。
+RESULT:0（＝直前の TENTACLE_SYASEI_POINT の RETURN 値 LOCAL:0、敵絶頂の分岐では TENTACLE_SYASEI_CHECK 呼び出し時点の RESULT：
+PALAM_UP 経由なら最後の PALAM_HOSEI の RETURN 値、COMF100〜104 経由なら TENTACLE_SYASEI_UP の関数終端の 0）。
 TRYCALLFORM の不発で RESULT が変わらないこと：reference/emuera-1824/Emuera/GameProc/Function/Instraction.Child.cs@CALL_Instruction
-（TRYCALL 系は関数が無ければ何もしない）。呼び出し元はその値を `result` で渡す（`tentacle_syasei_check(ctx, result)`）。
+（TRYCALL 系は関数が無ければ何もしない）。S21 から共用 RESULT（`GameState.result`）を読む：上記の書き込み元（POINT・PALAM_HOSEI・
+SYASEI_UP）は Python 側でも RESULT:0 を書く。
 """
 
 from __future__ import annotations
@@ -77,6 +79,7 @@ def tentacle_syasei_up(ctx: Ctx, arg: int) -> None:
     if c.tcvarn[2] == P_HOUSHI:
         arg = times(arg, "1.20")
     st.flag[15] += arg  # :84 FLAG:15（射精値）
+    st.result[0] = 0  # 関数終端（Process.ScriptProc.cs:61–67）
 
 
 def _clear_kyoukousoku(ctx: Ctx) -> None:
@@ -95,9 +98,15 @@ def enemy_no_penis(ctx: Ctx) -> bool:
     return is_female(ctx.data, e) and t(ctx, e, "ふたなり") < 1 and t(ctx, e, "寄生") == 0
 
 
-def tentacle_syasei_check(ctx: Ctx, result: int = 0) -> tuple[int, int, int, int]:
+def tentacle_syasei_check(ctx: Ctx) -> tuple[int, int, int, int]:
     """`@TENTACLE_SYASEI_CHECK`:88–216。戻り値 (潤滑, 屈服, 恭順, 欲情) の UP 加算値（RESULT:0〜3）。
-    `result` は呼び出し時点の RESULT（悪堕ちキャラの敵絶頂で TENTACLE_SAKUSEI の補正率になる：モジュール docstring）。"""
+    どの分岐も 4 値 RETURN（:119／:149／:169／:175／:194／:212／:215）→ 共用 RESULT:0〜3 に書く。"""
+    r = _tentacle_syasei_check(ctx)
+    ctx.state.set_result_x(*r)
+    return r
+
+
+def _tentacle_syasei_check(ctx: Ctx) -> tuple[int, int, int, int]:
     st = ctx.state
     f = st.flag
     out = ctx.out
@@ -112,7 +121,7 @@ def tentacle_syasei_check(ctx: Ctx, result: int = 0) -> tuple[int, int, int, int
         out.printl()
         st.tflag[3] += 100
         # :131 搾精強化機能の `LOCAL:2` は TENTACLE_SYASEI_CHECK の LOCAL（どこでも代入されない：常に 0）
-        tentacle_sakusei(ctx, f[15], 0, 0, 0, 0, result=result)
+        tentacle_sakusei(ctx, f[15], 0, 0, 0, 0)
         f[15] = f[15] - f[14]
         _clear_kyoukousoku(ctx)
         return (0, 0, 0, 0)
@@ -222,17 +231,18 @@ def tentacle_syasei_point(ctx: Ctx, arg: int) -> tuple[int, int, int, int]:
         rand = st.rng.rand
         get_syuren(ctx, div(rand(10) + rand(loc[2] * 3) + loc[2] * 3 + 2, 2))
         out.printl()
+    st.set_result_x(loc[0], loc[1], loc[4], loc[5])  # :568 RETURN LOCAL:0, 1, 4, 5（共用 RESULT）
     return (loc[0], loc[1], loc[4], loc[5])
 
 
-def tentacle_sakusei(ctx: Ctx, arg: int, r1: int, r2: int, r3: int, r4: int,
-                     result: int | None = None) -> tuple[int, int, int, int]:
-    """`@TENTACLE_SAKUSEI, ARG, ARG:1〜4`:572–607：射精による敵の体力消耗。ARG:1〜4 はそのまま返す。
-    `result` は呼び出し時点の RESULT（省略時は ARG:1：TENTACLE_SYASEI_POINT の直後に呼ばれる場合、RESULT = RESULT:0 = ARG:1）。"""
+def tentacle_sakusei(ctx: Ctx, arg: int, r1: int, r2: int, r3: int, r4: int) -> tuple[int, int, int, int]:
+    """`@TENTACLE_SAKUSEI, ARG, ARG:1〜4`:572–607：射精による敵の体力消耗。ARG:1〜4 はそのまま返す（:575／:607 の 4 値 RETURN、
+    共用 RESULT:0〜3）。悪堕ちキャラ戦の補正率は呼び出し時点の共用 RESULT:0（モジュール docstring）。"""
     st = ctx.state
     c = tc(ctx)
     out = ctx.out
     if c.base[0] == 0 and c.base[1] == 0 and c.base[2] == 0:
+        st.set_result_x(r1, r2, r3, r4)
         return (r1, r2, r3, r4)
     arg = div(arg - div(st.flag[14], 2), 10) + 500 + abl(ctx, c, "技巧") * 150
     if arg < 500:
@@ -240,7 +250,7 @@ def tentacle_sakusei(ctx: Ctx, arg: int, r1: int, r2: int, r3: int, r4: int,
     if t(ctx, c, "背徳の烙印") > 0:
         arg *= div(135, 100)  # :581 `ARG *= 135 / 100`（整数除算で ×1：原作どおり）
     if enemy_type_check(st, "AKUOTI") == 1:  # :585–586 TRYCALLFORM 不発 → RESULT のまま（モジュール docstring）
-        arg = div(arg * (r1 if result is None else result), 100)
+        arg = div(arg * st.result[0], 100)
     else:
         arg = div(arg * int(tentacle_access(ctx, "SAKUSEI")), 100)
     if st.flag[73] > 0:
@@ -259,4 +269,5 @@ def tentacle_sakusei(ctx: Ctx, arg: int, r1: int, r2: int, r3: int, r4: int,
     out.printl()
     if st.flag[13] <= 0:
         unlock_achievement(ctx, 267, "奇跡の逆転勝利")
+    st.set_result_x(r1, r2, r3, r4)
     return (r1, r2, r3, r4)

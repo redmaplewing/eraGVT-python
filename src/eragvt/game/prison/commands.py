@@ -70,6 +70,7 @@ def common_prison_exp_sh(ctx: Ctx, a0: int, a1: int, a2: int, a3: int) -> tuple[
         a[3] = 0
     elif sh[1] > 0 and sh[2] > 0:  # :64–68
         a = [0, 0, 0, 0]
+    st.set_result_x(*a)  # :71 RETURN ARG:0〜3（共用 RESULT）
     return a[0], a[1], a[2], a[3]
 
 
@@ -125,6 +126,7 @@ def prison_gaping(ctx: Ctx, a0: int, a1: int, a2: int, a3: int, locs: tuple[int,
         r = a_gaping(ctx, gaping_size_to_point(ctx, "Ａ"))
         if r > 0 and config_check_maniac(st, 16) == 1:
             ctx.out.printl(f"肛径：＋{div(r, 10)}.{r % 10} cm")
+    st.set_result_x(a2, a3)  # :1336 RETURN ARG:2, ARG:3（共用 RESULT:0〜1）
     return a2, a3
 
 
@@ -606,7 +608,7 @@ def prison_com105(ctx: Ctx) -> None:
                 c.talent[ti("変身時胸サイズ変動")] -= 1
                 c.cflag[38] -= 1
             c.cflag[37] += 1
-        set_profile(data, c)  # :70 CALL SET_PROFILE, TARGET（FIRSTSETTING_CHARA_TALENT.ERB:4–19）
+        set_profile(data, c, st.result)  # :70 CALL SET_PROFILE, TARGET（FIRSTSETTING_CHARA_TALENT.ERB:4–19）
         L[11] = 800  # :73 恐怖　固定で
         _other(ctx, "MESSAGE_OTHER_PRISON_BOUNYU")  # :76–77
         _msg(ctx, "MESSAGE_PRISON_BOUNYU", "PRISON_BOUNYU")  # :79（地の文/MESSAGE_PRISON.ERB:594–、口上 :651）

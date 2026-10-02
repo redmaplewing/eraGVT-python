@@ -80,8 +80,9 @@ ERB 路徑相對 `source/earGVP/ERB/`。
   S14：含 INPUTS 的函式以「重放」執行（`run_function_gen`，`docs/wiki/python/narration.md`），若 INPUTS 之前已有 hook／KOJO_ROOT 的
   狀態變化則無法重放 → 停止（本作現有的 INPUTS 函式 `MESSAGE_SEX_SPCOM7`／動画サイト在 INPUTS 前都沒有狀態變化）。
 - [ ] **口上 catalog 的顯示簡化**（S07 新增，只影響顯示）：`SETFONT`（字型名）不反映（`FONTITALIC` 斜體 S20 起反映：`TextOutput.set_italic`）；`CLEARLINE` 只刪已完成的行；
-  RESULT／RESULTS／COUNT 放在口上專用的暫存（`state.temp.narr`），與 Python 移植部分不共用（原作是全域變數；口上函式讀取呼叫前別處設定的
-  RESULT 時會不同）。（Python：`eragvt.narration.runtime`）
+  RESULTS／COUNT 放在口上專用的暫存（`state.temp.narr`），與 Python 移植部分不共用（原作是全域變數）。RESULT 於 S21 改為共用
+  （`GameState.result`，`docs/wiki/python/result.md`）；但 Python 移植部分只寫 RESULT:1 以後的來源與少數 RESULT:0，口上讀「呼叫前的 RESULT:0」時
+  仍可能不同。（Python：`eragvt.narration.runtime`）
   S14：`DRAWLINEFORM 文字列` 畫成與 DRAWLINE 相同的區切線（原作以該字串重複到畫面寬：`GameView/EmueraConsole.Print.cs@getStBar`:543–560；
   動画サイト :1335 的 `―`）；動画サイトの `PRINT_TAGSET_TEXT` 的 `@F:` フォント指定不反映（本作未使用），既定色的 `SETCOLOR 0x{GETCOLOR}`
   以「回到呼叫前的顏色」表示（顯示相同）。（Python：`eragvt.narration.runtime`、`eragvt.narration.windowlib`）
@@ -246,8 +247,8 @@ ERB 路徑相對 `source/earGVP/ERB/`。
 
 - [x] **防衛力為負時 SQRT 當 0**：`AKUOTI_ATTACK`:20 的 `SQRT(FLAG:852)` 在 FLAG:852 < 0 時以 0 計算（原作 CodeEE：
   `reference/emuera-1824/Emuera/GameData/Function/Creator.Method.cs@SqrtMethod`:1074–1080）。（Python：`turnend.akuoti_attack`）
-  **延伸（需使用者確認）**：只改 ATTACK 的話緊接的 `AKUOTI_EVENT`:42／:45／:58／:465 的 `SQRT(FLAG:852)` 仍會停止，故同樣當 0（`akuoti.akuoti_event`）。
-  其他 `SQRT(FLAG:852 ...)`（`戦闘イベント.ERB`:65 `SQRT(FLAG:852 + 625)`：`battle.cheers`）未改，防衛力 < −625 的戰鬥中仍會停止。
+  **延伸**：緊接的 `AKUOTI_EVENT`:42／:45／:58／:465 的 `SQRT(FLAG:852)` 同樣當 0（`akuoti.akuoti_event`；2026-10-02 使用者確認，見下）。
+  `戦闘イベント.ERB`:65 `SQRT(FLAG:852 + 625)` 也於 S21 比照（D3，見「使用者裁決 2026-10-02」）。
 - [x] **クズ市民脅迫クールダウン**：CFLAG:72（原作只設 8、無遞減）在 EVENTTURNEND 的 INTIMIDATION 判定（`SHOP_TURNEND.ERB`:90–101）之前
   每回合（半日）> 0 則 −1。（Python：`turnend.event_turnend`）
 - [x] **夜這い淫乳條件**：`YOBAI_EVENT`:160–177 的 `TALENT:淫乳 * 3 + ABL:Ｃ感覚` 改用 `ABL:Ｂ感覚`。（Python：`yobai.yobai_event`）
@@ -259,3 +260,24 @@ ERB 路徑相對 `source/earGVP/ERB/`。
 - [x] **斜體**（Part C2）：FONTITALIC 反映到 `TextOutput`（`Segment.italic`、Web 以 CSS `font-style: italic`），FONTREGULAR 同時解除太字・斜體
   （`GameProc/Function/Instraction.Child.cs`:1084–1121）。已不是偏離，記錄於此備查。
 
+## 使用者裁決 2026-10-02（S21 實作）
+
+- [x] **悪堕ちキャラ幽閉的 PALAM_HOSEI 殘值照原作**：不是偏離。RESULT 改為共用陣列（`docs/wiki/python/result.md`）。
+- [x] **防衛力為負時「當 0」全面延伸**（`# DEVIATION:` 使用者裁決 2026-10-02）：
+  - D1：`AKUOTI_EVENT`:42／:45／:58／:465 的 `SQRT(FLAG:852)` 以 0 計算（S20 實作，此次確認）。（Python：`akuoti.akuoti_event`）
+  - D2：:58／:465 損失式中防衛力的項（`FLAG:852 * 5 / 100`、`* 10 / 100`）在 FLAG:852 < 0 時也代 0 → 損失 0（原作是負的損失，
+    :458／:1603 `FLAG:852 -= DAMAGE` 讓防衛力增加並印「防衛力が-n低下した！」）。（Python：同上）
+  - D3：`戦闘イベント.ERB`:65 `PERFORM_CHEERS_FIRST_HANTEI` 的 `SQRT(FLAG:852 + 625)` 括號內為負時以 0 計算（原作 CodeEE：
+    `reference/emuera-1824/Emuera/GameData/Function/Creator.Method.cs@SqrtMethod`:1074–1080）。（Python：`battle.cheers.perform_cheers_first_hantei`）
+  - D4：未移植的 `PASTIME_悪堕ち遭遇.ERB`:19、`ACTION_GATHER_INFORMATION.ERB`:142 的同類 SQRT，之後移植時比照（程式尚無）。
+- S21 照原作的怪處（`eragvt.game.corruption`、`battle.source_check`、`battle.restraint`）：
+  **悪堕ち容姿**：CORRUPT_CHANGE_LOOKS_MAIN 的 `SETBIT CFLAG:80, n`、CORRUPT_CHANGE_LOOKS 的 `CSTR:1 == CSTR:0`・`CFLAG:42 = 0`、
+  RECOVER_CORRUPTION 的 `CFLAG:81 == 0b1111`・`CLEARBIT CFLAG:80, 2` 都寫／讀 TARGET 而非 ARG；變身後名改竄不看 CFLAG:2（未登錄則 CSTR:0 變空）；
+  髮色候補 `232//200//0` 行尾有 TAB → SETCOLOR_BY_STR 不上色；NANORI_FINAL 的性格引數是未代入的靜態 LOCAL（恆 0 → 強気系）、
+  `REPLACE LOCALS:1,…` 結果進 RESULTS（LOCALS:1 不變）。完堕ち時 `CFLAG:42 = 0` 會順帶拆掉触手拘束具。
+  **触手拘束具**：SUBEVENT_BATTLE_ACTTENTACLECLOTH 以 LOCAL 的編號（0〜11）當 PALAM_HOSEI_TALENT／性格補正的 PALAM 番號與 COMMON_PALAM 的
+  添字（:130／:134／:155）→ LOCAL:4〜11 加到 PALAM 4〜11（潤滑〜恐怖 10〜17 只有 10／11 收到苦痛／恐怖的值）；FOR 到 12 但 LOCAL:12 恆 0。
+  素股焦らし失敗的處女喪失（COMF103:156–158）直接寫 `TALENT:処女 = -1`・`CFLAG:206 = 2`（不呼叫 LOSTVIRGIN）。
+  拆除只能經 SHOP [112] 衣裝設定的 `CLOTH_RESETTING_TENTACLECLOTH`（觸手の欠片 1 個，未移植 UI；預設路徑＝不操作）或完堕ち／イベント戦的衣裝還原。
+- [ ] **開局的デフォルト悪堕ち**（S21）：`オープニング処理.ERB`:241–250 的 CORRUPT_CHANGE_LOOKS_MAIN 已接上，但 `event_first` 無輸出／narration
+  （同「開局 MESSAGE_FIRST」），其畫面輸出丟棄。預設開局不會發生（無悪堕ちキャラ）。（Python：`opening.event_first`）

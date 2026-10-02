@@ -22,6 +22,7 @@ from __future__ import annotations
 
 from ..data.csv_loader import GameData
 from ..state import GameState
+from ..state.sparse import IntArray
 from ..state.character import Character
 from .chara_common import charatalent, talent
 from .era import div, isqrt, limit, mod, power
@@ -40,7 +41,9 @@ def _override(data: GameData, c: Character, base_value: int, modulo: int, name: 
     return v
 
 
-def generate_char_size(data: GameData, c: Character, henshin: int) -> tuple[int, int, int, int, int, int, int, int]:
+def generate_char_size(
+    data: GameData, c: Character, henshin: int, result: IntArray | None = None
+) -> tuple[int, int, int, int, int, int, int, int]:
     """`CHARA_SIZE.ERB@GENERATE_CHAR_SIZE, 対象キャラ, 変身値`:25–284。
 
     戻り値＝RESULT:0..7（乱数値, 成長曲線, 身長, 体重, 胸囲, 胴囲, 腰囲, 胸の重量）。状態は変更しない。
@@ -221,6 +224,9 @@ def generate_char_size(data: GameData, c: Character, henshin: int) -> tuple[int,
         if T(name) > 0 and henshin == is_h:
             breast = T(name)
     # :283 RETURN 乱数値（= 乱数値:0 = CFLAG:33）, 成長曲線, …
+    if result is not None:  # :283 の 8 値 RETURN（共用 RESULT＝GameState.result を渡されたとき。TOP_UNDER の 2 値は上書きされる）
+        for i, v in enumerate((r0, curve, h, weight, bust, waist, hip, breast)):
+            result[i] = v
     return r0, curve, h, weight, bust, waist, hip, breast
 
 
@@ -367,30 +373,36 @@ def generate_bodyline(state: GameState, data: GameData, c: Character) -> None:
     c.cflag[34] = curve
 
 
-def chara_size_default(data: GameData, c: Character) -> None:
-    """`CHARA_SIZE_UI.ERB@CHARA_SIZE_DEFAULT, C_ID`:2148–2175（BASE:年齢を先に設定してから呼ぶ）。"""
+def chara_size_default(data: GameData, c: Character, result: IntArray | None = None) -> None:
+    """`CHARA_SIZE_UI.ERB@CHARA_SIZE_DEFAULT, C_ID`:2148–2175（BASE:年齢を先に設定してから呼ぶ）。
+    `result`：共用 RESULT（GENERATE_CHAR_SIZE の 8 値 RETURN、関数終端で RESULT:0 = 0）。"""
     if talent(data, c, "変身能力") < 1:  # :2153–2154
         c.maxbase[AGE] = -1
-    r = generate_char_size(data, c, 0)  # :2156–2164
+    r = generate_char_size(data, c, 0, result)  # :2156–2164
     c.cflag[33] = r[0]
     c.cflag[34] = r[1]
     for slot, v in zip(_SIZE_SLOTS, r[2:]):
         c.base[slot] = v
     if talent(data, c, "変身能力") > 0:  # :2167–2175
-        r = generate_char_size(data, c, 1)
+        r = generate_char_size(data, c, 1, result)
         for slot, v in zip(_SIZE_SLOTS, r[2:]):
             c.maxbase[slot] = v
+    if result is not None:
+        result[0] = 0
 
 
-def set_profile(data: GameData, c: Character) -> None:
+def set_profile(data: GameData, c: Character, result: IntArray | None = None) -> None:
     """`FIRSTSETTING_CHARA_TALENT.ERB@SET_PROFILE, ARG`:4–19：通常時・変身時の身長〜胸の重量を再計算する
-    （CFLAG:33／34 と年齢はそのまま。プロフィール未設定（CFLAG:34 = 0）でも実行される）。"""
-    r = generate_char_size(data, c, 0)
+    （CFLAG:33／34 と年齢はそのまま。プロフィール未設定（CFLAG:34 = 0）でも実行される）。
+    `result`：共用 RESULT（GENERATE_CHAR_SIZE の 8 値 RETURN、関数終端で RESULT:0 = 0）。"""
+    r = generate_char_size(data, c, 0, result)
     for slot, v in zip(_SIZE_SLOTS, r[2:]):
         c.base[slot] = v
-    r = generate_char_size(data, c, 1)
+    r = generate_char_size(data, c, 1, result)
     for slot, v in zip(_SIZE_SLOTS, r[2:]):
         c.maxbase[slot] = v
+    if result is not None:
+        result[0] = 0
 
 
 def chara_make_age_setting(state: GameState, data: GameData, c: Character) -> None:

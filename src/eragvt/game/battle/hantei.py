@@ -106,7 +106,14 @@ def _burst_hit(ctx: Ctx, l5: int) -> int:
 
 
 def act_hantei_chara_to_tentacle(ctx: Ctx, kind: str) -> tuple[int, int]:
-    """`@ACT_HANTEI_CHARA_TO_TENTACLE, ARGS, ARG`:6–415。戻り値 (RESULT, RESULT:1=成功値)。"""
+    """`@ACT_HANTEI_CHARA_TO_TENTACLE, ARGS, ARG`:6–415。戻り値 (RESULT, RESULT:1=成功値)。
+    :410／:412 の 2 値 RETURN → 共用 RESULT:0〜1。"""
+    r = _act_hantei_chara_to_tentacle(ctx, kind)
+    ctx.state.set_result_x(*r)
+    return r
+
+
+def _act_hantei_chara_to_tentacle(ctx: Ctx, kind: str) -> tuple[int, int]:
     st = ctx.state
     c = tc(ctx)
     v = c.tcvarn

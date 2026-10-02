@@ -199,6 +199,7 @@ def _abl_up_ex(ctx: Ctx, c: Character) -> list[int]:
                 if c.juel[i] >= cal and lv[i] < 20:
                     c.juel[i] -= cal
                     lv[i] += 1
+    ctx.state.set_result_x(*lv)  # :1235 RETURN LV_VAR:0〜3（共用 RESULT）
     return lv
 
 

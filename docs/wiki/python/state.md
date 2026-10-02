@@ -20,6 +20,7 @@
 | `target` `assi` | TARGET ASSI | 角色列表的 index；MASTER 固定為 index 0。初始值 TARGET=1、ASSI=-1（`reference/emuera-1824/Emuera/GameData/Variable/VariableData.cs`:644–647） |
 | `flag` `tflag` `item` `savestr` | 同名 | ITEM = 衣裝持有 |
 | `shield` `mob_flag` | `#DIM SAVEDATA SHIELD`／`MOB_FLAG` | `ERB/DIM.ERH`:155、169 |
+| `result` | RESULT | S21：跨函式共用、存檔（SAVE_VERSION 2）。`set_result_x(*v)` = 多值 RETURN。寫入來源一覽：`docs/wiki/python/result.md` |
 | `charas` | 角色列表 | `list[Character]` |
 | `temp` | 非 SAVEDATA 的 `#DIM` | **不存檔**：`ターン上限`、`MAX_PALAM`、`COMMON_PALAM`、`特殊戦闘シチュエーション`，以及 `last_load_version`（LASTLOAD_VERSION：新遊戲 -1、讀檔後 = 存檔的遊戲版本） |
 | `rng` | RAND | **不存檔**；建構時注入 `GameRng(seed)`，測試用 `FixedRng` |

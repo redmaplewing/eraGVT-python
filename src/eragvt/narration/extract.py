@@ -225,7 +225,15 @@ class FuncParser:
                         self._unsup(sno, f"#DIM CONST {uv.name} の値を評価できません")
                     fd.consts[uv.name] = uv.values
                 private[uv.name] = uv.is_str
+                if uv.is_str and len(uv.dims) == 1 and isinstance(uv.dims[0], int):
+                    fd.sizes[uv.name] = uv.dims[0]
             elif word in ("LOCALSIZE", "LOCALSSIZE", "PRI", "LATER", "SINGLE", "ONLY"):
+                if word == "LOCALSSIZE":
+                    parts = text[1:].split(None, 1)
+                    if len(parts) == 2 and parts[1].strip().isdigit():
+                        fd.sizes["LOCALS"] = int(parts[1].strip())
+                    else:
+                        fd.sizes["LOCALS"] = None  # 評価できない → SPLIT は unsupported
                 if word in ("PRI", "LATER", "SINGLE", "ONLY"):
                     self._unsup(sno, f"イベント関数（#{word}）")
             else:
@@ -514,6 +522,16 @@ class FuncParser:
                 self._note_calls(f)
                 return N.StrLen(no, "form", f, name.endswith("U"))
             return N.StrLen(no, "raw", arg, name.endswith("U"))
+        if name == "SPLIT":
+            args = self._args_line(arg)
+            if len(args) < 3 or not isinstance(args[2], Var) or (len(args) >= 4 and not isinstance(args[3], Var)):
+                raise ErbSyntaxError("SPLIT の引数")
+            for a in args[:2]:
+                self._note_calls(a)
+            self._check_local_target(args[2])
+            if len(args) >= 4:
+                self._check_local_target(args[3])
+            return N.Split(no, args[0], args[1], args[2], args[3] if len(args) >= 4 else None)
         if name == "VARSET":
             args = self._args_line(arg)
             if not args or not isinstance(args[0], Var):

@@ -271,7 +271,7 @@ def com_stubs(monkeypatch):
     monkeypatch.setattr(ninsin, "after_pill", pill)
     monkeypatch.setattr(ninsin, "ninsin_hantei", lambda ctx, a, b, c=0: rec["ninsin"].append((a, b, c)))
 
-    def prof(data, c):
+    def prof(data, c, result=None):
         rec["profile"] += 1
 
     monkeypatch.setattr(body, "set_profile", prof)

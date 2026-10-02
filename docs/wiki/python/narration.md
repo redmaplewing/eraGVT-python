@@ -38,7 +38,7 @@ S14：`Label(name)`／`Goto(name)`、`Input`（INPUTS）、`DrawLine(form)`（DR
 
 - 命令：上表的文＋ TRYCALL／TRYCALLFORM／TRYCCALL(FORM)…CATCH…ENDCATCH（見つからない → CATCH 側：`Instraction.Child.cs`:2310–2317、
   呼べたら CATCH までの文を実行して ENDCATCH へ：:2034–2038）。
-- 代入先：LOCAL／LOCALS／ARG／ARGS／函式內 `#DIM`（靜態：`UserDefinedVariable.cs`:27）、RESULT／RESULTS／COUNT、
+- 代入先：LOCAL／LOCALS／ARG／ARGS／函式內 `#DIM`（靜態：`UserDefinedVariable.cs`:27）、RESULT（S21 起＝`GameState.result`，與 Python 共用：`result.md`）／RESULTS／COUNT、
   **口上專用的非 SAVEDATA `#DIM`**（口上／地の文的 ERH 宣告、且口上／地の文以外的 ERB 完全不參照者：例 `真面目_フラグ_シチュ`）。
   其他代入（CFLAG、TALENT、FLAG…）→ unsupported。
 - 讀取：狀態模型有對應的變數（BASE・TALENT・CFLAG…・FLAG・TFLAG・DAY・TCVARn・TENTACLE_SIZE・CLOTH_*・SHIELD・STR（Str.csv）…）。
@@ -53,8 +53,12 @@ S14：`Label(name)`／`Goto(name)`、`Input`（INPUTS）、`DrawLine(form)`（DR
   LOCAL 回到開始時，再以累積的輸入列從頭執行（同輸入列 → 同結果）。中斷前若已有狀態變化（hook、KOJO_ROOT）則無法重放 → 停止。
   輸入值 = `str(Web 的整數)`（deviations「INPUTS 只能輸入整數」）。
 - DRAWLINEFORM：評價字串（空字串 → 引擎錯誤），但畫面上與 DRAWLINE 同樣是區切線（線的字元不反映，deviations「口上 catalog 的表示」）。
+- S21 追加：`SPLIT`（`Process.ScriptProc.cs`:522–538；分割數→個數變數或 RESULT:0，超過配列長〔LOCALS／ARGS 100：`ConstantData.cs`:153–154，
+  `#DIMS`／`#LOCALSSIZE` 的宣告長〕截斷）、式中関数 STRFINDU・STRCOUNT・REPLACE（.NET Regex；只接受與 Python re 同義的字元類／字面，
+  其他 unsupported）・ISNUMERIC・TOINT（10 進；0x／0b／指數 unsupported）（`Creator.Method.cs`:2222–2302、2357–2387、2452–2474、2532–2569）。
+  `地の文/MESSAGE_AKUOTI.ERB`、`SETCOLOR_BY_STR` 等因此可執行（覆蓋率 12844／13384＝96.0%）。
 - 不支援：GOTOFORM／TRYGOTO 系、入れ子內的 $ラベル、INPUT（整數）・TINPUT・ONEINPUT 系與有既定值的 INPUTS、BEGIN、JUMP、PRINTV・
-  PRINT K 系・PRINTC 系、SPLIT、STRDATA、TIMES、SETCOLORBYNAME、`@` 付き変数、未實作的式中関数（`STRCOUNT`、`REPLACE` 等）。
+  PRINT K 系・PRINTC 系、STRDATA、TIMES、SETCOLORBYNAME、`@` 付き変数、未實作的式中関数（覆蓋率報告）。
 
 語意重點（皆有引擎行號，見 `runtime.py` docstring）：`&&`／`||` 短絡；`/`・`%` 先評價右辺；C# 的切り捨て除算；
 `PRINTDATA` 以 `RAND(件數)` 選 1 件；`%…,幅%` 以 cp932 位元組寬補空白；文字列中 `\n` 換行；函式末尾流れ落ち → RESULT = 0；

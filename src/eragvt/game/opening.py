@@ -116,9 +116,16 @@ def event_first(state: GameState, data: GameData, preset: int | None = None) -> 
     set_limit_day(state)
     # :173 HEROINE_PRESET → [1] 基本セット → CONFIG_INIT(1)（:787–790）
     config_init(state, 1)
-    # :177–238 プロローグ：表示のみ。:241–250 デフォルト悪堕ち：該当なし（CFLAG:0 はすべて 0）
-    if any(c.cflag[0] == CharaState.CORRUPTED for c in state.charas[1:]):
-        raise NotImplementedError("CORRUPT_CHANGE_LOOKS_MAIN は未移植")
+    # :177–238 プロローグ：表示のみ。:241–250 デフォルト悪堕ち（`GROUPMATCH(CFLAG:LOCAL:0, 状態_悪堕ち,)`：末尾の空引数は
+    # 引数にならない＝ExpressionParser.cs@ReduceArguments:63–117）。既定の開局では該当なし（CFLAG:0 はすべて 0）。
+    # event_first は出力を持たない（deviations「開局 MESSAGE_FIRST」）ので表示は捨てる。
+    for i in range(1, state.charanum):
+        if state.charas[i].cflag[0] == CharaState.CORRUPTED:
+            from ..text import NullNarrationService, TextOutput
+            from .action import Ctx
+            from .corruption import corrupt_change_looks_main
+
+            corrupt_change_looks_main(Ctx(state, data, TextOutput(), NullNarrationService()), i)
     # :254–267 口上の初期設定
     for i in range(state.charanum):
         if i == GameState.MASTER:
@@ -518,7 +525,7 @@ def chara_make_base_profile(state: GameState, data: GameData, sel: int) -> None:
         if c.cflag[34] == 0 and c.no == 0:  # :498–503
             generate_bodyline(state, data, c)
             chara_make_age_setting(state, data, c)
-            chara_size_default(data, c)
+            chara_size_default(data, c, state.result)
         return  # :505
     # :507–975 未初期化キャラ（汎用キャラ）のランダム生成（既定の開局はここを通る）
     base_profile_generic(state, data, sel)

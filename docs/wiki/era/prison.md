@@ -66,6 +66,7 @@ PRISON_COMABLE 依身體（男の娘・オトコ・聖処女・經驗不足）�
 
 ## 未移植而停止之處
 
-受精成立（幽閉中苗床化 ×4，常見）、ラスボス／悪堕ちキャラ 的幽閉、容貌變化（設定 ON 時）、
-RECOVER_CORRUPTION、RESCUE_CHILD、TS 性別變化。拡張度於 S11、ゲームオーバーモード於 S12 接上（`flow.md` §9）。
+ラスボス 的幽閉、TS 性別變化。拡張度於 S11、ゲームオーバーモード於 S12、受精／RESCUE_CHILD 於 S13 接上。
+S21：悪堕ちキャラによる幽閉（CFLAG:20 = 2）的 PALAM_HOSEI 讀共用 RESULT 殘值（`docs/wiki/python/result.md`）；容貌變化
+（CORRUPT_CHANGE_LOOKS_MAIN）與救出後的 RECOVER_CORRUPTION 移植於 `eragvt.game.corruption`（設定 F(4)〜F(8)；旗標見模組 docstring）。
 一覽見 `docs/STATUS.md`。

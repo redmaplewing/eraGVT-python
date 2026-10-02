@@ -18,11 +18,21 @@ from .rng import GameRng
 
 SAVE_FORMAT = "eragvt-save"
 GLOBAL_FORMAT = "eragvt-global"
-SAVE_VERSION = 1
+SAVE_VERSION = 2
 GLOBAL_VERSION = 1
 
-# 舊版 → 新版的轉換：`{舊版本: fn(payload) -> 下一版 payload}`。版本 1 之前沒有舊資料。
-SAVE_MIGRATIONS: dict[int, Callable[[dict[str, Any]], dict[str, Any]]] = {}
+
+def _migrate_1_to_2(obj: dict[str, Any]) -> dict[str, Any]:
+    """版本 2（S21）：存檔加入內建 RESULT（`GameState.result`）。舊存檔沒有 → 全 0。"""
+    obj = dict(obj)
+    obj["state"] = dict(obj["state"])
+    obj["state"].setdefault("result", {})
+    obj["version"] = 2
+    return obj
+
+
+# 舊版 → 新版的轉換：`{舊版本: fn(payload) -> 下一版 payload}`。
+SAVE_MIGRATIONS: dict[int, Callable[[dict[str, Any]], dict[str, Any]]] = {1: _migrate_1_to_2}
 
 
 class SaveFormatError(ValueError):

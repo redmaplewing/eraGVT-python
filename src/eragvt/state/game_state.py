@@ -78,6 +78,12 @@ class GameState:
     savestr: StrArray = field(default_factory=StrArray)
     shield: IntArray = field(default_factory=IntArray)
     mob_flag: IntArray = field(default_factory=IntArray)
+    # 內建 RESULT（整數 1 維、大小 1000：reference/emuera-1824/Emuera/GameData/Variable/VariableCode.cs:44 0x0A、
+    # GameData/ConstantData.cs@setDefaultArrayLength:147–148）。0x0A < __COUNT_SAVE_INTEGER_ARRAY__（0x3C）→ 存檔對象
+    # （GameData/Variable/VariableToken.cs:74–77、VariableData.cs@SaveToStream:663–674），讀檔時以存檔值覆寫；
+    # 新遊戲 ResetData 清零（VariableData.cs@SetDefaultValue:538–）；BEGIN TRAIN 不清（VariableEvaluator.cs@UpdateInBeginTrain:1422–）。
+    # 跨函式共用：原作有讀「前一次 RESULT」的地方（EVENT_PALAM_HOSEI 的悪堕ち分岐等）。寫入來源一覽：docs/wiki/python/result.md。
+    result: IntArray = field(default_factory=IntArray)
     charas: list[Character] = field(default_factory=list)
     temp: TempVars = field(default_factory=TempVars, compare=False)
     rng: GameRng = field(default_factory=GameRng, compare=False, repr=False)
@@ -139,6 +145,14 @@ class GameState:
             raise ValueError("不能刪除 MASTER")
         del self.charas[index]
 
+    def set_result_x(self, *values: int) -> None:
+        """多值 `RETURN a, b, …`：RESULT:0〜 依序寫入給定個數，其餘格子保留
+        （GameProc/Function/Instraction.Child.cs@RETURN_Instruction:2006–2023 → VariableEvaluator.cs@SetResultX:1732–1740）。"""
+        for i, v in enumerate(values):
+            if i >= 1000:
+                return
+            self.result[i] = int(v)
+
     def swap_chara(self, a: int, b: int) -> None:
         """era `SWAPCHARA a, b`。"""
         self.charas[a], self.charas[b] = self.charas[b], self.charas[a]
@@ -158,6 +172,7 @@ class GameState:
             "savestr": self.savestr.to_json(),
             "shield": self.shield.to_json(),
             "mob_flag": self.mob_flag.to_json(),
+            "result": self.result.to_json(),
             "charas": [c.to_json() for c in self.charas],
         }
 
@@ -175,6 +190,7 @@ class GameState:
             savestr=StrArray.from_json(obj["savestr"]),
             shield=IntArray.from_json(obj["shield"]),
             mob_flag=IntArray.from_json(obj["mob_flag"]),
+            result=IntArray.from_json(obj["result"]),
             charas=[Character.from_json(c) for c in obj["charas"]],
             rng=rng or GameRng(),
         )

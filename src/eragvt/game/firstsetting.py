@@ -273,7 +273,7 @@ def set_feat_default(ctx: Ctx, who: int, race: int) -> None:
             pick = randchoose_f(st)
             c.talent[pick] = 1
             clear_specific_choose(st, pick)
-    set_profile(data, c)  # :1774
+    set_profile(data, c, st.result)  # :1774
 
 
 def feat_select_ui(ctx: Ctx, who: int, race: int) -> InputGen:
@@ -342,7 +342,7 @@ def feat_select_ui(ctx: Ctx, who: int, race: int) -> InputGen:
             break
     for f in range(100, 300):  # :619–625
         c.talent[f + 1000] = 1 if sel[f] > 0 else 0
-    set_profile(data, c)  # :627
+    set_profile(data, c, ctx.state.result)  # :627
 
 
 # --- 変身後名・呼び名・かけ声・名乗り（FIRSTSETTING_CHARA_TRANSFORMATION.ERB）-------------------------
@@ -610,9 +610,9 @@ def size_setting_default(ctx: Ctx, who: int) -> None:
     c.base[AGE] = age0
     c.maxbase[AGE] = age1
     c.base[REAL_AGE] = real
-    v0 = list(generate_char_size(data, c, 0)[2:])  # :76–85
+    v0 = list(generate_char_size(data, c, 0, st.result)[2:])  # :76–85
     if age1 >= 0 and disp1:  # :87–95
-        v1 = list(generate_char_size(data, c, 1)[2:])
+        v1 = list(generate_char_size(data, c, 1, st.result)[2:])
     # :1731–1753 [99]
     while True:
         if c.cstr[40] == "" and (c.cstr[41] != "" or c.cstr[42] != ""):

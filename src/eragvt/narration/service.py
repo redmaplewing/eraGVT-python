@@ -44,6 +44,7 @@ class _Tx:
         self.rng = st.rng.snapshot()
         self.locals = dict(st.temp.locals)
         self.narr = dict(st.temp.narr)
+        self.result = st.result.copy()
         self.ctx = ctx
 
     def rollback(self) -> None:
@@ -54,6 +55,7 @@ class _Tx:
         st.rng.restore(self.rng)
         st.temp.locals = self.locals
         st.temp.narr = self.narr
+        st.result = self.result
 
 
 class CatalogNarrationService:
@@ -128,7 +130,7 @@ class CatalogNarrationService:
             out.reset_color()
             st.flag[900] = 0
             return -1
-        done, result = self._run(ctx, lambda it: (it.call(name, []), it._get_narr("RESULT", 0, 0))[1], name)
+        done, result = self._run(ctx, lambda it: (it.call(name, []), it._get_result(0))[1], name)
         if not done:
             out.reset_color()
             st.flag[900] = 0

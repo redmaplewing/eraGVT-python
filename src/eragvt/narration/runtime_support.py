@@ -41,6 +41,7 @@ NAME_TABLE_OF = {
 IMPLEMENTED_METHODS = {
     "GETBIT", "UNICODE", "STRFIND", "RAND", "MIN", "MAX", "ABS", "LIMIT", "GROUPMATCH", "POWER", "INRANGE",
     "STRLENS", "STRLENSU", "SUBSTRING", "SUBSTRINGU", "TOSTR", "SIGN",
+    "STRFINDU", "STRCOUNT", "REPLACE", "ISNUMERIC", "TOINT",  # S21
 }
 
 # Python 實作的使用者函式：名稱 → 說明（實體在 service.py 註冊）
@@ -138,6 +139,9 @@ def unsupported_reasons_static(fd: N.FuncDef, catalog) -> list[tuple[int, str]]:
         elif isinstance(s, N.StrLen):
             if not isinstance(s.arg, str):
                 check_expr(ln, s.arg)
+        elif isinstance(s, N.Split):
+            for a in (s.src, s.sep, s.target, s.num):
+                check_expr(ln, a)
         elif isinstance(s, N.VarSet):
             for a in (s.target, s.value, s.start, s.end):
                 check_expr(ln, a)

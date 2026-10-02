@@ -559,7 +559,7 @@ def add_child(ctx: Ctx, arg: int) -> InputGen:
             out.printw()
         elif r == 2:
             set_feat_default(ctx, me, race)
-            set_profile(data, c)  # :635
+            set_profile(data, c, st.result)  # :635
             out.printl("ランダムにフィートを設定しました")
             out.printw()
         else:
@@ -800,7 +800,7 @@ def add_child(ctx: Ctx, arg: int) -> InputGen:
         c.cstr[36] = c.cstr[37] = skin
     c.base[AGE] = rand(5) + 6  # :1042–1046
     c.maxbase[AGE] = c.base[AGE]
-    chara_size_default(data, c)
+    chara_size_default(data, c, st.result)
     c.base[REAL_AGE] = 0
     if rand(12) == 0:  # :1049–1073 パーソナリティ
         np = 1

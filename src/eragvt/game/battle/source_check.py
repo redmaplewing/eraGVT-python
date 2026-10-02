@@ -103,7 +103,7 @@ def source_check(ctx: Ctx) -> Generator[None, int, None]:
         out.printw()
     # :696 SUBEVENT_BATTLE_ACTTENTACLECLOTH（CFLAG:42 == 400 のときのみ）
     if c.cflag[42] == 400:
-        raise NotImplementedError("触手拘束具による被姦（SUBEVENT_BATTLE_ACTTENTACLECLOTH）は S06")
+        _acttentaclecloth(ctx)
     # :699 SUBEVENT_BATTLE_ACTTENTACLESUIT（触手服 199 のときのみ）
     if (c.cflag[1] == 0 and c.cflag[40] == 199) or (c.cflag[1] > 0 and c.cflag[41] == 199):
         raise NotImplementedError("触手服の処理（SUBEVENT_BATTLE_ACTTENTACLESUIT）は未移植")
@@ -801,8 +801,55 @@ def _settentaclecloth(ctx: Ctx) -> None:
     l1 = 35 - min((1 if st.flag[45] > 0 else 0) * 12, 12)
     # :85 `LOCAL == 1 && RAND(100) < LOCAL:1`（短絡：LOCAL が 1 のときだけ RAND を引く）
     if local == 1 and st.rng.rand(100) < l1:
-        c.cflag[42] = 400
-        raise NotImplementedError("触手拘束具の強制装着（MESSAGE_SUBEVENT_BATTLE_SETTENTACLECLOTH）は未移植")
+        c.cflag[42] = 400  # :86 インナーが触手拘束具（CLOTH400：CLOTHDATAインナー.ERB:41–50）になる
+        # :88 地の文（地の文/MESSAGE_SUBEVENT.ERB:22–48、末尾 :48 の KOJO_ROOT）
+        run_chinobun(ctx, "MESSAGE_SUBEVENT_BATTLE_SETTENTACLECLOTH",
+                     fallback=lambda: kojo_root(ctx, "SUBEVENT_BATTLE_SETTENTACLECLOTH"))
+
+
+def _acttentaclecloth(ctx: Ctx) -> None:
+    """`SUBEVENT_BATTLEE.ERB@SUBEVENT_BATTLE_ACTTENTACLECLOTH`:93–156（CFLAG:42 == 400 のとき毎ターン）。
+
+    原作どおりの点：LOCAL の添字 0〜11（快Ｃ〜快Ｂ、潤滑〜恐怖）をそのまま PALAM_HOSEI_TALENT／PALAM_HOSEI_SEIKAKU の
+    PALAM 番号と COMMON_PALAM の添字に使う（:130、:134、:155）→ LOCAL:4〜11 は PALAM 4〜11（潤滑〜恐怖の 10〜17 ではない）の
+    補正・加算になる。触手中毒補正の判定（:142 `LCOUNT + PALAM始点 - 感覚数`）だけは 恭順・欲情・屈服（LOCAL:5／7／8）に正しく当たる。
+    FOR は 0〜12（:119）だが LOCAL:12 はどこでも代入されない（静的 LOCAL、常に 0）。
+    """
+    from .palam import palam_hosei_pose, palam_hosei_poisoning, palam_hosei_random, palam_hosei_seitaisei, palam_hosei_talent
+    from .core import seikaku_hosei_palam
+    from .sexcom import sex_comex
+    from ..chara_common import seikaku_check
+
+    st, data = ctx.state, ctx.data
+    c = tc(ctx)
+    r = sex_comex(ctx, 0, 0, 15)  # :101 → RESULT:0〜11
+    local = [div(r[i], 2) for i in range(12)] + [0]  # :102–104（LOCAL:12 は常に 0）
+    if is_male(data, c):  # :105–106
+        local[1] = 0
+    # :109 地の文（地の文/MESSAGE_SUBEVENT.ERB:53–61、末尾 :60 KOJO_ROOT・:61 PRINTW）
+    def fallback() -> None:
+        kojo_root(ctx, "SUBEVENT_BATTLE_ACTTENTACLECLOTH")
+        ctx.out.printw()
+
+    run_chinobun(ctx, "MESSAGE_SUBEVENT_BATTLE_ACTTENTACLECLOTH", fallback=fallback)
+    c.exp[data.index_of("EXP", "被姦経験")] += 1  # :112
+    c.nowex.clear()  # :115 SUBEVENT_BATTLE_PRECALCRESET（:19–20 VARSET NOWEX, 0）
+    cp = st.temp.common_palam
+    for lc in range(13):  # :119–156
+        v = local[lc]
+        if v > 0:
+            v = palam_hosei_pose(ctx, v)
+            v = palam_hosei_seitaisei(ctx, v)
+            v = palam_hosei_talent(ctx, lc, v)
+            v = seikaku_hosei_palam(seikaku_check(data, c), lc, v)
+            if lc + 10 - 4 in (11, 13, 14):  # :142 恭順・欲情・屈服
+                v = palam_hosei_poisoning(ctx, v)
+            v = palam_hosei_random(ctx, v)
+            if v <= 0:
+                v = 1
+            if v > 999999 and lc >= 4:
+                v = 999999
+        cp[lc] += v  # :155
 
 
 def _auto_untangle(ctx: Ctx) -> None:

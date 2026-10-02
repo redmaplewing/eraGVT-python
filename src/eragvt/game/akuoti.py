@@ -86,10 +86,13 @@ def akuoti_event(ctx: Ctx) -> None:
     loc: dict[int, int] = {}  # LOCAL（:40 VARSET）
     v_sex = 0  # :39
     f852 = st.flag[852]
-    # DEVIATION: 使用者裁決（2026-10-01）「防衛力が負なら SQRT を 0 として計算」を AKUOTI_ATTACK（turnend.akuoti_attack）と
-    # 同じく :42／:45／:58／:465 の SQRT(FLAG:852) にも適用（原作は負數で CodeEE：Creator.Method.cs@SqrtMethod:1074–1080）。
-    # AKUOTI_ATTACK だけを直すと直後のここで停止するため（deviations.md「使用者裁決 2026-10-01」）。
+    # DEVIATION: 使用者裁決（2026-10-01、延伸は 2026-10-02 に使用者確認済み）「防衛力が負なら SQRT を 0 として計算」を
+    # AKUOTI_ATTACK（turnend.akuoti_attack）と同じく :42／:45／:58／:465 の SQRT(FLAG:852) にも適用（原作は負數で CodeEE：
+    # Creator.Method.cs@SqrtMethod:1074–1080）。deviations.md「使用者裁決 2026-10-01／2026-10-02」。
     sq = isqrt(max(f852, 0))
+    # DEVIATION: 使用者裁決（2026-10-02、D2）：:58／:465 の損失式は防衛力の項（`FLAG:852 * 5 / 100`・`* 10 / 100`）も
+    # FLAG:852 < 0 なら 0 を代入する（原作どおりだと損失が負 → :458／:1603 の `FLAG:852 -= DAMAGE` で防衛力が増える）。
+    f852_term = max(f852, 0)
     if st.time == 0:  # :41–47
         sel_n0 = min(80 - min(sq, 60), 40)
         sel_n1 = min(sel_n0 + 50, 80)
@@ -103,7 +106,7 @@ def akuoti_event(ctx: Ctx) -> None:
     pl = out.printl
     pw = out.printw
     if select < sel_n0:  # :57–462 市街地襲撃系
-        damage = sq * 20 + div(f852 * 5, 100)  # :58
+        damage = sq * 20 + div(f852_term * 5, 100)  # :58（DEVIATION：上記 D2）
         pl(f"妖しい霧が立ち込め、蠢く異形のシルエットが{locals_}の街に不穏な影を落とす。")
         if e.cstr[0] != e.cstr[1]:  # :60–61
             out.print(f"《{e.cstr[0]}》")
@@ -125,7 +128,7 @@ def akuoti_event(ctx: Ctx) -> None:
             _couple(ctx)
         _apply(ctx, loc, v_sex)  # :437–455
     elif select < sel_n1:  # :464–1607 暗躍系
-        damage = sq * 1 + div(f852 * 10, 100)  # :465
+        damage = sq * 1 + div(f852_term * 10, 100)  # :465（DEVIATION：上記 D2）
         pl(f"妖しい霧が立ち込め、蠢く異形のシルエットが{locals_}の街に不穏な影を落とす。")
         if e.cstr[0] != e.cstr[1] and e.cstr[0] != e.callname and e.cstr[0] != e.name:  # :467–468
             out.print(f"《{e.cstr[0]}》")
@@ -721,10 +724,12 @@ def _video(ctx: Ctx, loc: dict[int, int]) -> None:
             continue
         ex = o.exp[data.index_of("EXP", "被姦経験")]
         if ex:
+            st.result[1] = min(ex, 500)  # :706–708 RESULT:1 への直接代入（共用 RESULT）
             for _ in range(min(ex, 500)):
                 add_randchoose(st, i * 100 + 10)
         ex = o.exp[data.index_of("EXP", "幽閉経験")]
         if ex:
+            st.result[1] = min(ex, 100)  # :714–716
             for _ in range(min(ex, 100) * 5):
                 add_randchoose(st, i * 100 + 11)
     loc[0] = max(st.charanum, 1)  # FOR 終了後の LOCAL（= CHARANUM：開始値 1 以上の場合）

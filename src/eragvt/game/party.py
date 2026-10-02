@@ -123,7 +123,9 @@ def after_rescued(ctx: Ctx, who: int) -> None:
     else:
         save_tattoo(ctx, result)
     if (c.cflag[80] >> 2) & 1 == 1:  # :29–30
-        raise NotImplementedError("悪堕ち容姿の復帰（RECOVER_CORRUPTION）は未移植")
+        from .corruption import recover_corruption
+
+        recover_corruption(ctx, who)
     if check_pregnant(data, st, who):  # :32–36
         out.printl("妊娠していたため、大事を取って特別病棟に移りました・・・")
         out.printl()

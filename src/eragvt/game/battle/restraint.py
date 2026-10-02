@@ -1320,12 +1320,36 @@ def com103(ctx: Ctx) -> ComGen:
         out.printl("たちまち輝きを失っていく…")
         cp[1] *= 4
     elif t(ctx, c, "処女") > 0:  # :125–159
-        raise NotImplementedError("素股焦らし失敗による処女喪失（COMF103:125–159）の地の文は未移植")
+        out.printl(f"挑発するように素股していた{name}だったが")
+        if suit or c.cflag[42] == 400:  # :127–144
+            out.print(_cloth_tentacle_name(ctx, suit))
+            out.printl("の触手に強制開脚させられてしまう。")
+            out.printl()
+            _sumata_tentacle_line(ctx)
+            out.printl("なし崩し的にズブリと男根の侵入を許してしまった！")
+        else:  # :145–151
+            out.printl("まだ性交したことのないヴァギナに亀頭の先端がぐちゅっと挿入り込み、")
+            out.printl("未知の感覚に思わず「んッ・・・❤」と色付いた吐息を漏らしてしまう。")
+            out.printl()
+            out.printl(f"その拍子に{name}は膣圧の加減を間違えてしまい、")
+            out.printl("なし崩し的にズブリと男根の侵入を許してしまった！")
+        out.printw()  # :152
+        out.printl("処女喪失")
+        out.printl()
+        out.printl("不意に訪れた破瓜の痛みに驚き慌てて引き抜こうとするも時既に遅く、")
+        out.printl(f"{name}はそのまま強制交尾の体勢に持ち込まれてしまった・・・")
+        out.printw()
+        cp[10] = 10000  # :156 苦痛が大量に入る
+        c.talent[ctx.data.index_of("TALENT", "処女")] = -1  # :157（LOSTVIRGIN は呼ばない：原作どおり）
+        c.cflag[206] = 2  # :158
     else:
         out.printl(f"しかし{name}の行動は失敗した！")
-        if suit or c.cflag[42] == 400:
-            raise NotImplementedError("触手服／触手拘束具による素股焦らし失敗文（COMF103:160–175）は未移植")
-        if _mb(ctx) & KUSEN:
+        if suit or c.cflag[42] == 400:  # :160–175
+            out.print(_cloth_tentacle_name(ctx, suit))
+            out.print("の触手に")
+            _sumata_tentacle_line(ctx)
+            out.printl("なし崩し的に挿入を許してしまう・・・")
+        elif _mb(ctx) & KUSEN:
             out.printl("先走り汁に光る先端を淫裂に押し当てられたところで腰を浮かそうとするが、")
             out.printl("力で抑え込まれそのまま挿入されてしまう・・・")
         else:
@@ -1333,11 +1357,35 @@ def com103(ctx: Ctx) -> ComGen:
             out.printl("そのまま雪崩れ込むように膣穴を犯されてしまう・・・")
     _houshi_juel(ctx, 50, 25)
     c.ex[99] += 1
-    r = boss_reaction_ref(ctx, st.flag[11], 2 - (1 if c.base[31] > 0 else 0))  # :192–200
+    # :192–200。悪堕ちキャラ戦（FLAG:11 = 0：ACTION.ERB:38）は TENTACLE_BOSS_0_REACTION_REF が無く TRYCALLFORM 不発 →
+    # RESULT は前の値のまま：失敗の経路では :5 PRINT_DISTANCE の関数終端（RESULT = 0）以降 CALL が無い（式中関数のみ）ので 0。
+    if st.flag[11] in range(1, 8):
+        r = boss_reaction_ref(ctx, st.flag[11], 2 - (1 if c.base[31] > 0 else 0))
+    else:
+        if _mob(ctx) or enemy_type_check(st, "LASTBOSS") >= 1:
+            raise NotImplementedError("雑魚敵／ラスボスの REACTION_REF は未移植")
+        r = st.result[0]
     if r >= 0:
         st.tflag[17] = r
     return 1
     yield  # pragma: no cover
+
+
+def _cloth_tentacle_name(ctx: Ctx, suit: bool) -> str:
+    """COMF103:128–132／:162–166：`暴走した%ITEMNAME:199%`（暴走テンタクルスーツ）または `%ITEMNAME:400%`（触手拘束具）。"""
+    names = ctx.data.names["ITEM"]
+    return f"暴走した{names.get(199, '')}" if suit else names.get(400, "")
+
+
+def _sumata_tentacle_line(ctx: Ctx) -> None:
+    """COMF103:135–141／:168–174 の 3 択（`RAND:3 == 0`、`RAND:2 == 0` の順に引く）。"""
+    rand = ctx.state.rng.rand
+    if rand(3) == 0:
+        ctx.out.printl("拘束されて雌穴をくぱぁと広げられ、")
+    elif rand(2) == 0:
+        ctx.out.printl("種付けを受け入れる屈辱的な体勢を無理やり取らされ、")
+    else:
+        ctx.out.printl("思わぬタイミングで体勢を崩され、")
 
 
 def com104(ctx: Ctx) -> ComGen:

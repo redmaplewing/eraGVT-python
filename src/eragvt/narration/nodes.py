@@ -100,6 +100,16 @@ class VarSet(Stmt):
 
 
 @dataclass(slots=True)
+class Split(Stmt):
+    """SPLIT 文字列, 区切り, 文字列配列[, 個数変数]（S21：Process.ScriptProc.cs:522–538、引数 ArgumentBuilder.cs:1494–1514）。"""
+
+    src: Expr
+    sep: Expr
+    target: Var
+    num: Optional[Var] = None
+
+
+@dataclass(slots=True)
 class Style(Stmt):
     """SETCOLOR（args）／RESETCOLOR／FONTBOLD／FONTITALIC／FONTREGULAR／ALIGNMENT／SETFONT。"""
 
@@ -242,6 +252,7 @@ class FuncDef:
     kind: str = "proc"  # proc / int(#FUNCTION) / str(#FUNCTIONS)
     private: dict = field(default_factory=dict)  # name -> is_str
     consts: dict = field(default_factory=dict)  # 関数内 #DIM CONST：name -> values
+    sizes: dict = field(default_factory=dict)  # S21：1 次元文字列配列の要素数（関数内 #DIMS、#LOCALSSIZE）：SPLIT の切り捨て用
     body: list = field(default_factory=list)
     unsupported: list = field(default_factory=list)  # list[tuple[int, str]]
     calls: set = field(default_factory=set)  # 静的に決まる CALL 先・式中関数

@@ -224,7 +224,7 @@ def small_prison_com(ctx: Ctx, arg: int) -> Generator[None, int, None]:
                     else:
                         c.talent[ti("巨乳")] += 1
                     c.cflag[37] += 1  # :354
-                    set_profile(data, c)  # :356 SET_PROFILE, TARGET
+                    set_profile(data, c, st.result)  # :356 SET_PROFILE, TARGET
                 else:  # :357–359
                     L[154] += 5
                     L[3] *= 3

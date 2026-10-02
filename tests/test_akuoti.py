@@ -693,13 +693,24 @@ def test_akuoti_attack_negative_defence_sqrt_as_zero(ctx, monkeypatch):
     assert st.rng.snapshot() == []
 
 
-def test_akuoti_event_negative_defence_sqrt_as_zero(ctx, branches):
-    """同じ裁決を AKUOTI_EVENT の SQRT（:42／:58）にも適用：SELECT_N:0 = MIN(80 - 0, 40) = 40、
-    市街地 DAMAGE = 0 * 20 + (-100) * 5 / 100 = -5（C# の整数除算は 0 方向）。"""
+@pytest.mark.parametrize(
+    ("rolls", "expected"),
+    [
+        ([39, 0], ["_bus", "_apply"]),  # :48 SELECT = 39 < 40 → 市街地（:58）、:66 RAND:6 = 0 → 幼稚園バス
+        ([40, 0], ["_drug_shop", "_apply"]),  # 40 ≥ SELECT_N:0 → 暗躍（:465）、:473 RAND:3 = 0
+    ],
+)
+def test_akuoti_event_negative_defence_sqrt_as_zero(ctx, branches, rolls, expected):
+    """同じ裁決を AKUOTI_EVENT の SQRT（:42／:58／:465）にも適用：SELECT_N:0 = MIN(80 - 0, 40) = 40、SELECT_N:1 = 80。
+    D2（使用者裁決 2026-10-02）：損失式の防衛力の項も 0 → DAMAGE = 0（原作どおりなら :58 は 0 + (-100) * 5 / 100 = -5、
+    :465 は -10 で、:458 `FLAG:852 -= DAMAGE` により防衛力が増える）→ :456 `IF DAMAGE` 不成立：防衛力は変わらず文も出ない。"""
     st = ctx.state
     st.flag[852] = -100
     st.flag[111] = ENEMY
     st.time = 0
-    st.rng = FixedRng([39, 0])  # :48 SELECT = 39 < 40 → 市街地、:66 RAND:6 = 0 → 幼稚園バス
+    st.rng = FixedRng(rolls)
     akuoti.akuoti_event(ctx)
-    assert branches == ["_bus", "_apply"]
+    assert branches == expected
+    assert st.rng.snapshot() == []
+    assert st.flag[852] == -100
+    assert not any("防衛力が" in x for x in texts(ctx.out))

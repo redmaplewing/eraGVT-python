@@ -358,6 +358,7 @@ def sex_comex_random(ctx: Ctx, arg: int, arg1: int = 0) -> tuple[int, int]:
         cands = [k for k in range(4) if not ((at >> k) & 1) and (t(ctx, c, "オトコ") < 1 or k != 1)]
         if cands:
             at |= 1 << cands[rand(len(cands))]
+    st.set_result_x(at & ~shielded, at & shielded)  # SEX_COMEX.ERB:123（共用 RESULT:0〜1）
     return at & ~shielded, at & shielded
 
 
@@ -432,6 +433,7 @@ def sex_comex(ctx: Ctx, arg0: int, arg1: int, arg2: int) -> list[int]:
         if shield[2]:
             cal = div(cal, 2)
         lv[11] += cal
+    st.set_result_x(*lv)  # SEX_COMEX.ERB:338 RETURN L_VAR:0〜11（共用 RESULT）
     return lv
 
 

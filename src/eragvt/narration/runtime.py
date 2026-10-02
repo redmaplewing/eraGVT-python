@@ -228,6 +228,8 @@ class Interp:
         elif t is N.StrLen:
             text = self._text(s.kind, s.arg, fr)
             self._set_result([len(text) if s.unicode else cp932_len(text)])
+        elif t is N.Split:
+            self._split(s, fr)
         elif t is N.VarSet:
             self._varset(s, fr)
         elif t is N.Return:
@@ -477,7 +479,10 @@ class Interp:
             d = self._narr()
             if tgt.name in ("ARG", "LOCALS", "ARGS") or tgt.name in fr.fd.private:
                 key0 = (fr.name, tgt.name)
-            elif tgt.name in ("RESULT", "RESULTS", "COUNT") or getattr(self.cat.user_vars.get(tgt.name), "narration_owned", False):
+            elif tgt.name == "RESULT":
+                self.st.result.clear()  # 共用 RESULT（GameState.result）全體を 0 に
+                return
+            elif tgt.name in ("RESULTS", "COUNT") or getattr(self.cat.user_vars.get(tgt.name), "narration_owned", False):
                 key0 = tgt.name
             else:
                 raise NotSupported(f"{tgt.name} への VARSET")
@@ -668,9 +673,40 @@ class Interp:
     def _set_narr(self, name: str, key: Any, value: Any) -> None:
         self._narr()[(name, key)] = value
 
+    def _split(self, s: N.Split, fr: Frame) -> None:
+        """SPLIT（Process.ScriptProc.cs:522–538）：`target.Split(new string[]{区切り}, StringSplitOptions.None)`、
+        個数変数（省略時 RESULT:0、ArgumentBuilder.cs:1509）に分割数、配列長を超えた分は切り捨てて先頭から代入。"""
+        src = self.eval(s.src, fr)
+        sep = self.eval(s.sep, fr)
+        if not isinstance(src, str) or not isinstance(sep, str):
+            raise ErbRuntimeError("SPLIT の引数の型")
+        if sep == "":
+            raise NotSupported("SPLIT の区切りが空文字列（.NET は空白区切り扱い）")
+        if s.target.args:
+            raise NotSupported("SPLIT の配列に添字")
+        name = s.target.name
+        if name in fr.fd.sizes:
+            size = fr.fd.sizes[name]
+        elif name in ("LOCALS", "ARGS"):
+            size = 100  # 既定の要素数（GameData/ConstantData.cs:153–154、VariableData.cs:332–335）
+        else:
+            size = None
+        if size is None:
+            raise NotSupported(f"SPLIT 先 {name} の要素数が不明")
+        parts = src.split(sep)
+        if s.num is None:
+            self.st.result[0] = len(parts)
+        else:
+            self._assign_var(fr, s.num, len(parts))
+        for i, p in enumerate(parts[:size]):
+            self._assign_var(fr, Var(name, [Lit(i)]), p)
+
     def _set_result(self, vals: list) -> None:
-        for i, v in enumerate(vals):
-            self._set_narr("RESULT", i, v)
+        """RESULT:0〜 に代入（多値 RETURN 等）。RESULT は Python 移植部分と共用の `GameState.result`（S21）。"""
+        self.st.set_result_x(*vals)
+
+    def _get_result(self, i: int = 0) -> int:
+        return self.st.result[i]
 
     def _args(self, fr: Frame, v: Var) -> list:
         return [self.eval(a, fr) for a in v.args]
@@ -727,7 +763,9 @@ class Interp:
             return st.charanum
         if name == "LINECOUNT":
             return self.out.linecount
-        if name in ("RESULT", "COUNT"):
+        if name == "RESULT":
+            return self.st.result[self._idx(args[0], name) if args else 0]
+        if name == "COUNT":
             return self._get_narr(name, args[0] if args else 0, 0)
         if name == "RESULTS":
             return self._get_narr(name, args[0] if args else 0, "")
@@ -794,7 +832,11 @@ class Interp:
                 raise ErbRuntimeError("CONST への代入")
             self._set_narr((fr.name, name), self._private_key(fr, v), value)
             return
-        if name in ("RESULT", "RESULTS", "COUNT"):
+        if name == "RESULT":
+            args = self._args(fr, v)
+            self.st.result[self._idx(args[0], name) if args else 0] = value
+            return
+        if name in ("RESULTS", "COUNT"):
             args = self._args(fr, v)
             self._set_narr(name, args[0] if args else 0, value)
             return

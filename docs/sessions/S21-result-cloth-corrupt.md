@@ -36,3 +36,11 @@
 
 ## 完成條件
 pytest 全綠；**先把 STATUS 壓縮到 ≤120 行**（已完成階段各一行）再更新；deviations、unresolved 更新。結束時務必送出三段報告。
+
+## Part D：防衛力為負的 SQRT／損失（使用者追加裁決 2026-10-02）
+FLAG:852 < 0 時「當 0」全面延伸，皆標 `# DEVIATION:`（使用者裁決 2026-10-02）；deviations.md、STATUS 的待裁決項改為已裁決。
+- D1：`AKUOTI_EVENT`:42／:45／:58／:465 的 SQRT 以 0 計算（S20 已實作），註解寫明使用者已確認。
+- D2：:58／:465 的損失式中防衛力的項（`FLAG:852 * 5 / 100`、`* 10 / 100`）在 FLAG:852 < 0 時也代 0 → 損失 0，防衛力不會增加。
+- D3：`戦闘イベント.ERB`:65 `PERFORM_CHEERS_FIRST_HANTEI` 的 `SQRT(FLAG:852 + 625)` 括號內為負時以 0 計算。
+- D4：未移植的 `PASTIME_悪堕ち遭遇.ERB`:19、`ACTION_GATHER_INFORMATION.ERB`:142 之後移植時比照（deviations.md 記載，程式不改）。
+- D2、D3 各補測試。

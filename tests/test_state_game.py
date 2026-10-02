@@ -216,7 +216,7 @@ def test_temp_and_rng_not_saved(data):
 
 def test_save_header(data):
     obj = json.loads(dump_save(GameState.new(data)))
-    assert obj["format"] == "eragvt-save" and obj["version"] == 1
+    assert obj["format"] == "eragvt-save" and obj["version"] == 2  # S21：RESULT を存檔に追加
 
 
 def test_save_is_canonical_utf8_lf(data):

@@ -233,6 +233,7 @@ def inmon_recovery(ctx: Ctx, who: int) -> None:
             r1 += rand(min(a("欲望") + 1, 5))
             r1 += rand(min(a("触手中毒") + 1, 5))
             r1 = div(r1 * 3, 4)
+            st.result[1] = r1  # :859–860 は RESULT:1 への直接代入（共用 RESULT）
             prog = int(tattoo_access(ctx, "PROGRESS_VAR"))
             save_tattoo(ctx, limit(prog + r1, 0, 100))
             out.printl(f"{c.callname}の淫紋が{r1}％進行した・・・（{div(c.cflag[32], PROG_UNIT)}％）")

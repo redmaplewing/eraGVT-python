@@ -207,7 +207,92 @@ def m_tostr(it, a, fr) -> str:
     return str(v)
 
 
+def m_strfindu(it, a, fr) -> int:
+    """`StrfindMethod(unicode: true)`:2222–2280（S21）：開始位置・戻り値とも文字（UTF-16）単位。
+    `target.IndexOf(word, start)`（:2273）。空の target は start >= Length で -1。"""
+    target = _ev(it, a[0], fr)
+    word = _ev(it, a[1], fr)
+    start = _int(it, a[2], fr) if len(a) >= 3 and a[2] is not None else 0
+    if start < 0 or start >= len(target):
+        return -1
+    # UNVERIFIED: .NET の IndexOf(string, int) は文化依存比較。序数比較（str.find）で代用（unresolved.md S21）
+    return target.find(word, start)
+
+
+def _dotnet_regex(pattern: str):
+    """`new Regex(pattern)`。本作で使われる文字クラス・リテラルのみ（.NET と Python re で同じ意味のもの）を受け付ける。"""
+    import re
+
+    if any(ch in pattern for ch in "\\(){}?*+|^$"):
+        raise NotSupported(f"正規表現 {pattern!r}（.NET と Python の差を確認していない構文）")
+    try:
+        return re.compile(pattern)
+    except re.error as e:
+        raise ErbRuntimeError(f"第２引数が正規表現として不正です：{e}") from e
+
+
+def m_strcount(it, a, fr) -> int:
+    """`StrCountMethod`:2282–2302（S21）：`new Regex(第2引数).Matches(第1引数).Count`。"""
+    target = _ev(it, a[0], fr)
+    return len(_dotnet_regex(_ev(it, a[1], fr)).findall(target))
+
+
+def m_replace(it, a, fr) -> str:
+    """`ReplaceMethod`:2452–2474（S21）：`new Regex(第2引数).Replace(第1引数, 第3引数)`（置換文字列に `$` は不可）。"""
+    base = _ev(it, a[0], fr)
+    reg = _dotnet_regex(_ev(it, a[1], fr))
+    rep = _ev(it, a[2], fr)
+    if "$" in rep:
+        raise NotSupported("REPLACE の置換文字列に $（.NET の置換パターン）")
+    return reg.sub(lambda m: rep, base)
+
+
+def _read_int_like(s: str) -> int | None:
+    """TOINT／ISNUMERIC 共通（ToIntMethod:2357–2387、IsNumericMethod:2532–2569、Sub/LexicalAnalyzer.cs@ReadInt64:133–190）。
+    数値でなければ None。10 進のみ（0x／0b／指数 e・p は本作の到達経路に無いので NotSupported）。"""
+    if s == "":
+        return None
+    try:
+        if cp932_len(s) > len(s):  # 全角文字（cp932 で 2 バイト）を含む
+            return None
+    except UnicodeEncodeError:
+        raise NotSupported("cp932 にない文字を含む数値判定") from None
+    i = 0
+    if s[0] in "+-":
+        if len(s) < 2 or not s[1].isdigit():
+            return None
+        i = 1
+    elif not s[0].isdigit():
+        return None
+    if s[i:i + 2].lower() in ("0x", "0b"):
+        raise NotSupported("16／2 進表記の数値判定")
+    j = i
+    while j < len(s) and s[j].isdigit():
+        j += 1
+    if j < len(s) and s[j] in "eEpP":
+        raise NotSupported("指数表記の数値判定")
+    value = int(s[i:j]) * (-1 if s[0] == "-" else 1)
+    if j < len(s):
+        if s[j] != ".":
+            return None
+        if not all(ch.isdigit() for ch in s[j + 1:]):
+            return None
+    return value
+
+
+def m_isnumeric(it, a, fr) -> int:
+    """`IsNumericMethod`:2532–2569（S21）。"""
+    return 0 if _read_int_like(_ev(it, a[0], fr)) is None else 1
+
+
+def m_toint(it, a, fr) -> int:
+    """`ToIntMethod`:2357–2387（S21）。"""
+    v = _read_int_like(_ev(it, a[0], fr))
+    return 0 if v is None else v
+
+
 BUILTINS = {
+    "STRFINDU": m_strfindu, "STRCOUNT": m_strcount, "REPLACE": m_replace, "ISNUMERIC": m_isnumeric, "TOINT": m_toint,
     "GETBIT": m_getbit, "UNICODE": m_unicode, "STRFIND": m_strfind, "RAND": m_rand, "MAX": m_max,
     "MIN": m_min, "ABS": m_abs, "SIGN": m_sign, "LIMIT": m_limit, "POWER": m_power, "GROUPMATCH": m_groupmatch,
     "INRANGE": m_inrange, "STRLENS": m_strlens, "STRLENSU": m_strlensu, "SUBSTRING": m_substring,

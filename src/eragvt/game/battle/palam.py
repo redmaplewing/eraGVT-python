@@ -226,6 +226,7 @@ def palam_hosei(ctx: Ctx, pid: int, value: int) -> int:
         value = palam_hosei_random(ctx, value)
         if value <= 0:
             value = 1
+    st.result[0] = value  # :435 RETURN UPVALUE（共用 RESULT:0。TENTACLE_SAKUSEI の悪堕ちキャラ分岐が読む：syasei.py）
     return value
 
 
@@ -1108,18 +1109,19 @@ def palam_up(ctx: Ctx) -> None:
     if ecs_num > 0:  # :120–121
         up[14] += min(ecs_num * 5000, 20000)
     # :123–133 二次計算（原作は PALAM_HOSEI に PCOUNT（0〜3）を渡しており、快部位用の補正が掛かる：原作どおり）
-    last_hosei = 0  # 最後の PALAM_HOSEI の RESULT（:145 TENTACLE_SYASEI_CHECK 呼び出し時点の RESULT）
+    # 最後の PALAM_HOSEI の RETURN が :145 TENTACLE_SYASEI_CHECK 呼び出し時点の RESULT:0（共用 RESULT）
     for pc, pid in enumerate(NIJI_PALAM):
-        up[pid] = last_hosei = palam_hosei(ctx, pc, up[pid])
+        up[pid] = palam_hosei(ctx, pc, up[pid])
         up[pid] += cp[pid]
         cp[pid] = 0
     if v[2] == P_HOUSHI:
         up[12] += 150 + 15 * (abl(ctx, c, "従順") + abl(ctx, c, "奉仕精神") * 2)
     # :144–152 触手の射精チェック
     if st.flag[700] == 1:
-        r = list(tentacle_syasei_check(ctx, last_hosei))
+        r = list(tentacle_syasei_check(ctx))
         if (v[12] & HAIRAN) and (st.tflag[4] & 2):
             r[1] *= 4
+            st.result[1] = r[1]  # :147 `RESULT:1 *= 4`（共用 RESULT）
         up[10] += r[0]
         up[14] += r[1]
         up[11] += r[2]

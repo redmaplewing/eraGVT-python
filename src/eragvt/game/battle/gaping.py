@@ -539,6 +539,7 @@ def set_tentacle_size(ctx: Ctx, arg0: int, arg1: int, arg2: int, arg3: int, arg4
         for i in range(4):
             sz[(0, i)] = _gs(ctx, 2, tc(ctx).cflag[1], st.target)
             num[(0, i)] = 2 + rand(4)
+        st.result[0] = 0  # :1090 RETURN 0
         return
     if arg2 > 0:  # :1091–1121 洗脳／悪堕ちキャラが相手
         e = st.charas[arg3]
@@ -548,6 +549,7 @@ def set_tentacle_size(ctx: Ctx, arg0: int, arg1: int, arg2: int, arg3: int, arg4
             if config_check_maniac(st, 20) == 0:
                 local = isqrt(local * 55)
             r = tuple(e.abl[i] * 10 + 50 for i in range(4)) + (1, 1, 1, 1)
+            st.set_result_x(*r)  # :1098–1101 `RESULT:LCOUNT = …`／`RESULT:(LCOUNT+4) = 1`（共用 RESULT）
         else:  # :1102–1120 指サイズ（ペニスがあればＶＡはそのサイズ）、RETURN 0
             local = gaping_size(ctx, 10, 0, arg3)
             for i in range(4):
@@ -560,12 +562,14 @@ def set_tentacle_size(ctx: Ctx, arg0: int, arg1: int, arg2: int, arg3: int, arg4
                 sz[(0, 2)] = local
                 num[(0, 1)] = 1
                 num[(0, 2)] = 1
+            st.result[0] = 0  # :1120 RETURN 0（RESULT:1 以降は変わらない）
             return
     elif arg0 == 0:  # :1123–1128 ボス
         local = isqrt((result * 2 + 30) * 50)
         if config_check_maniac(st, 20) == 0:
             local = isqrt(local * 40)
         r = boss_tentacle_size(ctx, arg1, arg4)
+        st.set_result_x(*r)  # TENTACLE_BOSS_n_TENTACLE_SIZE の 8 値 RETURN（例 TENTACLE_BOSS_1_Ｃ触手.ERB:220）
     else:
         raise NotImplementedError("ラスボス／雑魚敵の触手サイズ（SET_TENTACLE_SIZE ARG:0 != 0）は未移植")
     sz[(0, 0)] = div(local * r[0], 520 + rand(161)) + 2  # :1159–1169
@@ -576,6 +580,7 @@ def set_tentacle_size(ctx: Ctx, arg0: int, arg1: int, arg2: int, arg3: int, arg4
     num[(0, 2)] = r[6]
     sz[(0, 3)] = div(local * r[3], 255 + rand(91)) + 5
     num[(0, 3)] = r[7]
+    st.result[0] = 0  # 関数終端（Process.ScriptProc.cs:61–67）
 
 
 _PART_INDEX = {"Ｃ": 0, "Ｖ": 1, "Ａ": 2, "Ｂ": 3}

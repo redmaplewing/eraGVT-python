@@ -43,3 +43,10 @@ S19。路徑相對 `source/earGVP/ERB/`。Python：`eragvt.game.akuoti`、`eragv
 ## 觀衆（`戦闘イベント.ERB`）
 
 悪堕ち經驗（EXP:陥落経験 > 0）があると、變身時に罵声（PERFORM_CHEERS_HATE，心境＝消沈）、被弾／回避時の觀衆反応が人気度減少側になる。
+
+## 容姿（S21，`eragvt.game.corruption`）
+
+設定 `CONFIG_CHECK_PRISON_F(4)` ON（基本セットは OFF）で、悪堕ち時（PRISON.ERB:360、SHOP_TURNEND.ERB:913、開局 :248）に CSTR:50〜58 へ
+悪堕ち容姿（目つき・髪型 F5・髪色 F6・目色 F7・肌 F8〔陥落経験 3 以上〕・変身後名）を登録して入れ替え、救出後（AFTER_RESCUED:29–30）に
+RECOVER_CORRUPTION で戻す（陥落経験に応じて確率で定着、陥落経験 > 10 か全定着で完堕ち → 衣装 196／402、名乗りの改竄）。
+地の文 `MESSAGE_AKUOTI.ERB` は catalog。防衛力が負の SQRT・損失は「當 0」（deviations 使用者裁決 2026-10-02）。

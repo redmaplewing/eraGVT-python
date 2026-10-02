@@ -111,7 +111,7 @@ def base_profile_generic(state: GameState, data: GameData, sel: int) -> None:
     chara_make_age_setting(state, data, c)
     chara_make_status_talent(state, data, sel)
     chara_make_status_talent_flavor(state, data, sel)
-    chara_size_default(data, c)
+    chara_size_default(data, c, state.result)
     # :524–529 髪型（STR:30000〜 前髪、STR:30100〜 後ろ髪）
     s = data.str_defaults
     c.cstr[12] = s.get(30000 + rng.rand(9), "")
