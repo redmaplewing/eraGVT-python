@@ -279,5 +279,6 @@ ERB 路徑相對 `source/earGVP/ERB/`。
   添字（:130／:134／:155）→ LOCAL:4〜11 加到 PALAM 4〜11（潤滑〜恐怖 10〜17 只有 10／11 收到苦痛／恐怖的值）；FOR 到 12 但 LOCAL:12 恆 0。
   素股焦らし失敗的處女喪失（COMF103:156–158）直接寫 `TALENT:処女 = -1`・`CFLAG:206 = 2`（不呼叫 LOSTVIRGIN）。
   拆除只能經 SHOP [112] 衣裝設定的 `CLOTH_RESETTING_TENTACLECLOTH`（觸手の欠片 1 個，未移植 UI；預設路徑＝不操作）或完堕ち／イベント戦的衣裝還原。
-- [ ] **開局的デフォルト悪堕ち**（S21）：`オープニング処理.ERB`:241–250 的 CORRUPT_CHANGE_LOOKS_MAIN 已接上，但 `event_first` 無輸出／narration
+- [x] **開局的デフォルト悪堕ち**（S21）：`オープニング処理.ERB`:241–250 的 CORRUPT_CHANGE_LOOKS_MAIN 已接上，但 `event_first` 無輸出／narration
   （同「開局 MESSAGE_FIRST」），其畫面輸出丟棄。預設開局不會發生（無悪堕ちキャラ）。（Python：`opening.event_first`）
+  **使用者裁決（2026-10-02）**：維持現況。
