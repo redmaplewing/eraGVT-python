@@ -109,10 +109,10 @@
 
 ## 下一步
 
-- 次階段候選：触手拘束具（SUBEVENT_BATTLE_SETTENTACLECLOTH／ACTTENTACLECLOTH：イベント戰の時間切れで発生）、悪堕ち容姿
-  （FLAG:804 bit4 ON 時のみ）、[反撃]スタイル、狀態畫面、設定畫面／プリセット、FLASHNEWS、ランダム命名畫面、ラスボス。
-- 已裁決（2026-10-01）並於 S20 實作：上記 DEVIATION 6 項＋斜體。
-- 待裁決：悪堕ちキャラ幽閉的 PALAM_HOSEI（RESULT 殘值不固定：全域 RESULT 模型化或固定值 DEVIATION，unresolved.md）、SQRT 當 0 延伸到 AKUOTI_EVENT 的確認。
+- **S21：共用 RESULT 陣列（PALAM_HOSEI 殘值照原作）＋触手拘束具＋悪堕ち容姿**（`docs/sessions/S21-result-cloth-corrupt.md`）。
+  之後候選：[反撃]スタイル、狀態畫面、設定畫面／プリセット、FLASHNEWS、ランダム命名畫面、ラスボス。
+- 已裁決（2026-10-01）並於 S20 實作：上記 DEVIATION 6 項＋斜體。已裁決（2026-10-02）：PALAM_HOSEI 殘值照原作（S21）。
+- 待裁決：SQRT 當 0 延伸到 AKUOTI_EVENT（:42／:45／:58／:465，已實作）的確認；戰鬥中 `SQRT(FLAG:852 + 625)` 是否也比照。
 - 已裁決（2026-09-30）：拡張度初期值照原作不設定；初期セット身體資料問題因 S10 改回預設開局而不再需要偏離；
   S13 苗床出産的 static LOSEDEF 等怪處全部照原作。
 - 口上 catalog 待擴充：改狀態的口上（hook 化）、入れ子內 $ラベル 的 GOTO（`KOJO_AEGI.ERB` $ＭＡＸ２，199 函式受影響）、SPLIT／STRDATA、未實作式中関数（覆蓋率報告）。
