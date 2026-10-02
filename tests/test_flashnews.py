@@ -176,13 +176,13 @@ def test_lastboss_news(st, data):
         (100004, "大型触手生物が市街地を襲来、複数の女性が行方不明に"),  # 4:106–107
         (120002, "女子高が触手生物の襲撃で壊滅、女生徒ら多数残されたまま汚染区域に認定へ…"),  # -1 は "" → 0 に戻る（:85–87）
         (120004, "大型触手生物が市街地を襲来、女性ら多数行方不明。中には魔法少女の姿も？"),  # 4:109–110
-        (103001, "前回の値"),  # 3001 は本体がコメント → 前回の RESULTS:0（:75）
+        (103004, "前回の値"),  # 3004 の ARG 0 は代入がコメント（3004:286–287）→ 前回の RESULTS:0（:75）
         (100005 + 20000, "市街地に突如大穴、触巣出現で集団下校中の女子生徒ら犠牲に"),  # 5 の -1 は書かない → 前回値 "" → 0
     ],
 )
 def test_event_battle_news(st, data, f60, text):
     st.flag[60] = f60
-    st.results[0] = "前回の値" if f60 == 103001 else ""
+    st.results[0] = "前回の値" if f60 == 103004 else ""
     assert _run(st, data, []) == [f"FLASH NEWS：《{text}》"]
     assert st.flag[60] == 0 and st.savestr[20] == text
 
@@ -191,6 +191,22 @@ def test_event_battle_news_3003_uses_target_name(st, data):
     st.flag[60] = 113003
     st.target = 3
     assert _run(st, data, []) == ["FLASH NEWS：《客を魅了、触手を翻弄！　アイドル「海野 蒼美」が囮となり避難の時間を稼ぐ》"]
+
+
+@pytest.mark.parametrize(
+    "f60",
+    [
+        120005,  # 5 触手洞窟で敗北（5:468–469 → ARG -1 は 5:481 でコメント → :83 前回値、"" でないので :85–87 に戻らない）
+        103004,  # 3004 プール奇襲で時間切れ＋被害（3004:208 失敗 → 3004:272–273 → ARG 0 は 3004:287 でコメント）
+    ],
+)
+def test_event_battle_news_residual_after_autosave(st, data, f60):
+    """S26b：戰後の BEGIN SHOP → @EVENTSHOP → オートセーブの @SAVEINFO（RESULTS:0 = "408"）→ @SHOW_SHOP → FLASHNEWS。
+    原作ではニュース欄に版数の "408" がそのまま出る。"""
+    st.flag[60] = f60
+    shop.save_info(st, data)
+    assert _run(st, data, []) == ["FLASH NEWS：《408》"]
+    assert st.savestr[20] == "408" and st.flag[60] == 0
 
 
 def test_event_battle_news_empty_falls_through(st, data):

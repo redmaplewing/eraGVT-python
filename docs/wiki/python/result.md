@@ -112,8 +112,7 @@ RESULTS を代入先にする SPLIT・STRDATA・HTML_TAGSPLIT・FIND_CHARADATA 0
 | `イベントから派生する特殊戦闘/{2,3,4,5,3003,3004}*.ERB@EVENT_BATTLE_FLASHNEWS_n`（`RESULTS'=…`；FLASHNEWS:74–87 の TRYCALLFORM 先；S26） | 0 | `raid.event_battle_flashnews` |
 | 未移植：WEAPON_CUSTOMIZE:28／44／60 からの SET_FSTYLE_INFO、`WEAPON_NAME.ERB`:18 VARSET・`GENERATE_WEAPON_STR_JP.ERB`:3505–3553（1）、`FIRSTSETTING_TITLE.ERB`:154／173／187（1〜3；CHARA_MAKE:215 のメニューからのみ）、`FIRSTSETTING_CHARA.ERB@FIRSTSETTING_CHARA_NAME_RANDOM`:1018–1019（1〜2） | — | 移植時は `GameState.results` に書くこと |
 
-RESULTS:0 の前回値を読む箇所（S26）：`SHOP_FLASHNEWS.ERB`:75／:79／:83／:87 `LOCALS'=RESULTS`（呼出先が書かない ARG・関数）。
-Python は `st.results[0]` を読む（RESULTS:0 だけの書き込みは模型化していないので殘值は原作と一致しないことがある：deviations「FLASHNEWS イベント戦ニュース」）。
+RESULTS:0 の前回値を読む箇所（S26、S26b で照原作）：`SHOP_FLASHNEWS.ERB`:75／:79／:83／:87 `LOCALS'=RESULTS`。下節「事件戰ニュースの前回値」。
 
 讀 RESULTS:1 以後：`CORRPUTION.ERB`:787（RESULTS:2：**前回の値を読みうる唯一の箇所**）、他（FIRSTSETTING_CHARA:540–541、WEAPON_CUSTOMIZE、
 WEAPON_NAME:31、SHOW_STATUS PAGE3:71–72、CHARA_TATTOO:454、WindowDrawer:95–106）はいずれも直前の同一処理が書いた値。
@@ -124,8 +123,32 @@ RESULTS:0 だけの書き込み（`RESULTS = …`、命令としての式中関�
 理由：RESULTS を含む行（口上以外 469、口上 30：`grep -c`）の読み側を全件確認し、すべて同じ流れの直前の書き込み（TENTACLE_ACCESS は :201 で必ず
 エラー文字列を書いてから TRYCALLFORM、TATTOO_ACCESS "POSITION_STR"・SEIKAKU_CHECK "STRING"（CHARA_SEIKAKU.ERB:17–31 どの経路も書く）・TOFULL・SUBSTRING(U)・INPUTS 等）を読んでいて、
 呼び出し前の値を読む箇所は無い（**S26 訂正**：`SHOP_FLASHNEWS.ERB`:75–87 の `LOCALS'=RESULTS` は TRYCALLFORM 先が書かない場合に前回値を読む。
-上の「RESULTS:0 の前回値を読む箇所」と deviations 参照）。例外として同期しているもの：STRMATCH・NANORI_FINAL の REPLACE（:794–807）、TATTOO_ACCESS "POSITION_STR"、
-WINDOW_*、PRINT_TATTOO（上表）。
+下節参照）。例外として同期しているもの：STRMATCH・NANORI_FINAL の REPLACE（:794–807）、TATTOO_ACCESS "POSITION_STR"、
+WINDOW_*、PRINT_TATTOO（上表）、**@SAVEINFO**（S26b：`shop.save_info`）。
+
+### 事件戰ニュースの前回値（S26b）
+
+- **前回値を読むのは 2 路だけ**：FLAG:60 は各 n の ABANDON／SUCCESS／FAILURE が設定し（`Sif !FLAG:60`）、3001／3002／6001／6002 は
+  その代入もコメント（3001:54–74、3002:136–156、6001:36–56、6002:34–54）→ `EVENT_BATTLE_FLASHNEWS_3001` 等は呼ばれない。
+  書かない ARG は 3004 の 0（3004:286–287：時間切れで 3004:208 の被害条件に当たる → 103004）と 5 の -1（5:481：敗北 → 120005）。
+  2・3 の -1 は "" を書く → :85–87 で ARG 0 に戻る。
+- **戰後 SHOP までの最後の書き込みは @SAVEINFO**：EVENTEND（BATTLE_TRAIN_AFTER.ERB:536 `BEGIN TURNEND`）→ EVENTTURNEND（SHOP_TURNEND.ERB:59–63
+  `BEGIN SHOP`；ENDING の FLAG:64 ≠ 0 路は Python 未移植で停止）→ @EVENTSHOP → オートセーブ（emuera.config:8「オートセーブを行なう:YES」、
+  EVENTTURNEND 実行中は SystemState が Normal：`Process.SystemProc.cs@beginTurnend`:602–612、`Process.State.cs@Begin`:271–273 →
+  `@endCallEventShop`:630–640）→ `@beginAutoSave`:642–654 が @SAVEINFO を呼ぶ（@SYSTEM_AUTOSAVE は本作に無い：grep）→ `@endAutoSave`:670–680
+  → @SHOW_SHOP。@SAVEINFO（`オープニング処理.ERB`:583–614）は :585 GETTIME（日時）→ :604 `SUBSTRING LOCALS:2, 1, 3` で RESULTS:0 =
+  "408"（GameBase.csv バージョン 408 → "1408" の 1〜3 文字目）。その後 @SHOW_SHOP:1–40（LB のみ）と FLASHNEWS:1–74（TENTACLE_SURVIVE "NUM"
+  は TENTACLE_ACCESS を呼ばない）に書き込みは無い → **原作のニュース欄は「FLASH NEWS：《408》」**。戰鬥中・EVENTEND・TURNEND・EVENTSHOP の
+  書き込み（下表）はすべて @SAVEINFO に上書きされるので、この 2 路の結果には影響しない。
+- 讀檔直後（`@endEventLoad`:775–780：オートセーブなし）は RESULTS が ""（存檔しない）→ 5 は ARG 0 の文、3004 は通常抽選。EVENTLOAD の UPDATE
+  が書くのは版数が古いときの :828–834 だけ（Python は 408 以外を未移植で停止）。
+- 戰後路上の RESULTS:0 書き込み元（調査用；全域：代入 `^\s*RESULTS(:0)?\s*('=|+=|=)` 152 行〔口上 5〕、文字列を返す式中関数の命令用法
+  （`Creator.cs` の methodList から抽出）REPLACE 25・SUBSTRING 14・SUBSTRINGU 18・TOFULL 11・CSVCSTR 1、INPUTS 系／GETTIME 30 行）：
+  TENTACLE_ACCESS:201＋各 `_GETNAME`（全 ARGS で エラー文字列 → NAME／GETNAME は名前）、疲労表示 TOFULL（BATTLE_COM_AFTER:17–18、
+  BATTLE_COM:804–805、BATTLE_TRAIN_AFTER:469–470）、COM_ATTACK_COMMON:160／292・COMF6・COMF47 の TOFULL、RAID_ATTACK:84／RAID_RESCUE:76 の
+  TINPUTS（既定路 "WARNING"）、CLOTH_HOSEI:71–87 の SUBSTRING と 3004 の BATTLE_EVENT_CLOTH_STATUS:9（CLOTH_STATUS_990〜992 経由）、
+  SEIKAKU_CHECK／SYUZOKU_CHECK "STRING"、口上・地の文（catalog が同期）。**模型化したのは @SAVEINFO だけ**（他は上書きされ読まれない）。
+  今後「前回の RESULTS:0」を読む箇所が戰鬥中に見つかったら、上の書き込み元の同期が必要。
 
 ## 限界（deviations「口上 catalog の表示簡化」・unresolved）
 

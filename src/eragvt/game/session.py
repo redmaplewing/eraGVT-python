@@ -173,7 +173,8 @@ class GameSession:
     def _autosave(self) -> None:
         """SystemProc@beginAutoSave:642–654：SAVEDATA_TEXT = 日時 + " " + @SAVEINFO の PUTFORM、99 番へ。"""
         assert self.state is not None
-        text = self.now().strftime("%Y/%m/%d %H:%M:%S") + " " + shop.save_info(self.state, self.data)
+        now = self.now()
+        text = now.strftime("%Y/%m/%d %H:%M:%S") + " " + shop.save_info(self.state, self.data, now)
         save_to_file(self._save_path(AUTOSAVE_INDEX), self.state, text, self.identity)
 
     def _show_shop(self) -> None:
@@ -340,7 +341,8 @@ class GameSession:
             self.out.clearline(1)
             self.out.printl("無効な値です")
             return
-        text = self.now().strftime("%Y/%m/%d %H:%M:%S") + " " + shop.save_info(self.state, self.data)
+        now = self.now()
+        text = now.strftime("%Y/%m/%d %H:%M:%S") + " " + shop.save_info(self.state, self.data, now)
         save_to_file(self._save_path(self._save_target), self.state, text, self.identity)
         self._show_shop()
 

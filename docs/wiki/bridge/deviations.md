@@ -18,15 +18,11 @@ ERB 路徑相對 `source/earGVP/ERB/`。
   已移植；仍未移植：角色製作／狀態畫面的手動生成（UI）、TOINT 的 16／2 進與指數表記（停止）。
 - [x] ~~**FLASHNEWS 未移植**~~（S26 解決）：`SHOP_FLASHNEWS.ERB` 全體（新聞產生・亂數・SAVESTR:20／FLAG:60・ゲームオーバーモード 10001・
   裏ボス 10000・イベント戦ニュース・CHOOSEIDOL 的 CFLAG:284 加權・static #DIM）已移植（`eragvt.game.flashnews`）。剩下的偏離見下一項。
-- [ ] **FLASHNEWS イベント戦ニュースが讀「前回の RESULTS:0」**（S26）：`TRYCALLFORM EVENT_BATTLE_FLASHNEWS_{n}(ARG)` の後 `LOCALS'=RESULTS`
-  （:74–87）。呼出先が RESULTS:0 を書かない場合（3001・3002・6001・6002 は本体が全部コメント、3004 の ARG 0、5 の ARG -1）原作は
-  その時点の RESULTS:0 殘值（戰鬥中最後の書き込み：例 `TENTACLE_ACCESS`:200 のエラー文字列、口上・SEIKAKU_CHECK "STRING" 等）を
-  ニュースとして表示する（空なら通常抽選へ）。Python の共用 `GameState.results` は RESULTS:0 だけの書き込みを模型化していない
-  （`docs/wiki/python/result.md`）ので、殘值が原作と一致しない（多くは "" → 通常抽選に進み亂數も變わる）。（原作：`インターミッション画面/
-  SHOP_FLASHNEWS.ERB@FLASHNEWS`:74–87＋`イベントから派生する特殊戦闘/3001 ボス触手の襲撃.ERB`:76–86 ほか；Python：
-  `eragvt.game.flashnews._priority_news`、`raid.event_battle_flashnews`）— 一致させるには RESULTS:0 の全書き込み元（戰鬥・口上・TURNEND…）の
-  模型化が必要。模擬（S26）では 3001／3002 の戰鬥結果が預設 250 局で 102 回、初期セット 250 局で 87 回。替代案：①現狀（Python が持つ値を読む）②この路だけ "" とみなす
-  ③停止。
+- [x] ~~**FLASHNEWS イベント戦ニュースが讀「前回の RESULTS:0」**（S26）~~（S26b 照原作解決）：`TRYCALLFORM EVENT_BATTLE_FLASHNEWS_{n}(ARG)` の後
+  `LOCALS'=RESULTS`（:74–87）で前回値を読むのは 3004 の ARG 0（時間切れ＋被害）と 5 の ARG -1（敗北）だけ（3001／3002／6001／6002 は FLAG:60 の
+  代入もコメントで到達しない；S26 の「102／87 回」は 3001／3002 の戰鬥回数で、この路の回数ではなかった）。戰後の BEGIN SHOP では
+  @EVENTSHOP 後のオートセーブが @SAVEINFO を呼び、:604 `SUBSTRING` が RESULTS:0 = "408" を書く → 原作どおり「FLASH NEWS：《408》」を表示
+  （`shop.save_info` が共用 RESULTS:0 を書く。詳細と書き込み元一覧は `docs/wiki/python/result.md`「事件戰ニュースの前回値」）。
 - [ ] **全域資料（GLOBAL）：成就・歷代紀錄不讀不寫**（S24 縮小範圍）：config 相關的 GLOBAL（LOADGLOBAL／UPDATE／UPDATE_GLOBAL、
   GLOBAL:4・11〜15・51〜59、MOB_GLOBAL、CONFIG 畫面的 SAVEGLOBAL、CHARA_MAKE_MAIN:9–21 的讀取）已照原作移植（`eragvt.game.config`、
   `state.savefile.GlobalStore`、`saves/global.json`；`docs/wiki/era/flow.md` §10）。仍不做的是成就／紀錄類：（原作：下列各處；Python：見各行）
@@ -264,7 +260,8 @@ ERB 路徑相對 `source/earGVP/ERB/`。
 - S20 襲撃／救援イベント戰照原作的怪處（`イベントから派生する特殊戦闘/`；Python：`eragvt.game.raid`）：
   `RAID_RESCUE` 的 LOCAL:1（:31 試行回數）是靜態 LOCAL，只有 :35「見つからない」路會留下 999 → 之後每次 RAID_RESCUE 都立刻「気のせい」結束；
   `RAID_ATTACK`:15 `ISHOLE()` 看呼叫時的 TARGET 而非候補；救援 2（女子高）`RAND:7` 不會出 7 → 「自衛隊員らしき女性」不出現；
-  3003／3004 的 MISSION_CHECKER（:78／:378）`&&`／`||` 同優先度左結合 → 未受凌辱而敗北（TFLAG:98 = 2、TFLAG:21 & 7 = 0）判為「成功」；
+  ~~3003／3004 的 MISSION_CHECKER 未受凌辱而敗北判為「成功」~~（S26b 訂正：S20 的解讀忽略了外側括號。3003:78／3004:208
+  `98 == 2 || (98 == 0 && (21 & 3) || …)` 的括號內是獨立部分式〔`ExpressionParser.cs`:404–414〕→ 敗北一律「失敗」，`raid._checker_idol` 已修正）；
   3004 TURNEND 的白濁シャワー（:344–354）只 RESETCOLOR 不 FONTREGULAR → 其後文字保持太字；3002 繁殖袋路 :25 `PRINTFORM`（無換行）
   與下一行相連；救援 5（触手洞窟）以 FLAG:111 == 0 為條件（同回合 AKUOTI_EVENT 留下的 FLAG:111 會讓 `5 触手洞窟.ERB`:146–302 的 CASE 0／1／2（知性 > 600）不加任何シチュエーション，ターン上限照設）；
   `CLOTHDATA※イベント専用装備.ERB` 的 `@CLOTH_STATUS_991` 定義兩次（:73／:88），引擎用先定義的 :73（HP0）；3004 以外 FLAG:45 的 992 インナー

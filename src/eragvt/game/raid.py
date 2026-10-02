@@ -1495,15 +1495,15 @@ def _turnend_3003(ctx: Ctx) -> None:
 
 
 def _checker_idol(ctx: Ctx) -> int:
-    """3003:75–83／3004:375–384：
+    """3003:75–83／3004:205–214：
     `IF TFLAG:98 == 2 || (TFLAG:98 == 0 && (TFLAG:21 & 3) || (TFLAG:21 & 4) || (TFLAG:21 & 5) || (TFLAG:21 & 6))`。
-    `&&`／`||` は同優先度・左結合なので `((((98==2 || 98==0) && (21&3)) || (21&4)) || (21&5)) || (21&6)`
-    （原作どおり：凌辱されずに敗北すると「達成」になる）。"""
+    括弧内は独立した部分式（reference/emuera-1824/Emuera/GameData/Expression/ExpressionParser.cs:404–414）、その中は
+    `&&`／`||` 同優先度・左結合（OperatorCode.cs:33–34）なので `98==2 || ((((98==0 && 21&3) || 21&4) || 21&5) || 21&6)`
+    → 敗北は常に「失敗」（S26b 修正：S20 は外側の括弧を無視して「凌辱されずに敗北すると達成」としていた）。"""
     st = ctx.state
     t98, t21 = st.tflag[98], st.tflag[21]
-    cond = (t98 == 2 or t98 == 0) and (t21 & 3)
-    cond = cond or (t21 & 4) or (t21 & 5) or (t21 & 6)
-    return 0 if cond else 1
+    inner = (t98 == 0 and (t21 & 3)) or (t21 & 4) or (t21 & 5) or (t21 & 6)
+    return 0 if (t98 == 2 or inner) else 1
 
 
 def _success_3003(ctx: Ctx) -> None:
@@ -1752,6 +1752,8 @@ _TURNEND = {3003: _turnend_3003, 3004: _turnend_3004}
 # ARG：1 = ミッション成功、0 = 失敗、-1 = ミッション以前に敗北幽閉。書くのは共用 RESULTS:0 だけ（`RESULTS'=…`）。
 # 本体が全部コメントの関数（3001:76–86、3002:158–168、6001:58–68、6002:56–66）や、書かない ARG（3004 の 0、5 の -1）は
 # RESULTS:0 を変えない（FLASHNEWS 側は前回の RESULTS:0 を読む）。関数終端の RESULT:0 = 0 は FLASHNEWS 側で読まないので書かない。
+# 3001／3002／6001／6002 は SUCCESS／FAILURE の FLAG:60 代入もコメント（3001:54–74 ほか）なので FLAG:60 がこの番号になることは無く、
+# 実際に前回値を読むのは 3004 の ARG 0 と 5 の ARG -1 だけ（S26b：前回値は戰後オートセーブの @SAVEINFO が書く "408"）。
 
 
 def _fn_2(st, arg: int) -> None:

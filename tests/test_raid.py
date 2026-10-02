@@ -516,8 +516,10 @@ def test_event_cloth_status_outside_3004(ctx):
         (2, 2, 0, 0), (2, 0, 0, 1), (2, 1, 0, 1),
         (4, 0, 0, 0), (4, 1, 0, 1), (4, 2, 0, 0),
         (3001, 2, 0, 0), (3002, 0, 0, 1),
-        # 3003:78 `98 == 2 || (98 == 0 && (21 & 3) || (21 & 4) || (21 & 5) || (21 & 6))`：&&／|| 同優先度・左結合
-        (3003, 1, 0, 1), (3003, 1, 2, 0), (3003, 0, 1, 0), (3003, 2, 0, 1), (3003, 0, 8, 1), (3004, 2, 1, 0),
+        # 3003:78／3004:208 `98 == 2 || (98 == 0 && (21 & 3) || (21 & 4) || (21 & 5) || (21 & 6))`：括弧内は部分式
+        # （ExpressionParser.cs:404–414）、その中は &&／|| 同優先度・左結合 → 敗北は常に失敗（S26b 修正）
+        (3003, 1, 0, 1), (3003, 1, 2, 0), (3003, 0, 1, 0), (3003, 2, 0, 0), (3003, 0, 8, 1), (3004, 2, 1, 0),
+        (3004, 2, 0, 0), (3004, 1, 1, 0), (3004, 1, 8, 1), (3004, 1, 4, 0), (3004, 0, 3, 0), (3004, 0, 0, 1),
     ],
 )
 def test_mission_checker(ctx, n, t98, t21, expected):
@@ -544,6 +546,49 @@ def test_mission_failure_3(ctx, t98, f60):
     raid.raid_mission_failure(ctx)
     assert st.flag[60] == f60
     assert texts(ctx.out)[-1] == "　救出ミッションに失敗しました……"
+
+
+@pytest.mark.parametrize(
+    ("n", "t98", "t21", "f60"),
+    [
+        (3001, 1, 0, 0), (3001, 2, 0, 0),  # 3001:54–74 SUCCESS／FAILURE の FLAG:60 代入はコメント
+        (3002, 0, 0, 0), (3002, 2, 0, 0),  # 3002:136–156 同上 → EVENT_BATTLE_FLASHNEWS_3001／3002 は呼ばれない
+        (3004, 0, 1, 103004),  # 時間切れ＋被害：3004:208 失敗 → 3004:272–273（ARG 0 → FLASHNEWS は前回値）
+        (3004, 2, 0, 123004),  # 敗北：3004:208 `98 == 2` で失敗 → ARG -1（3004:289–290 が書く）
+        (5, 2, 0, 120005),  # 敗北：5:384–391 → 5:468–469（ARG -1 → FLASHNEWS は前回値）
+    ],
+)
+def test_mission_news_number(ctx, n, t98, t21, f60):
+    """S26b：事件戰結束時に FLAG:60 へ入るニュース番号（BATTLE_TRAIN_AFTER.ERB:286–297／:379–390 → 各 SUCCESS／FAILURE）。"""
+    st = ctx.state
+    st.flag[45], st.tflag[98], st.tflag[21] = n, t98, t21
+    st.rng = GameRng(3)
+    raid.mission_check(ctx, 0 if t98 == 2 else 1)
+    assert st.flag[60] == f60
+
+
+def test_session_event_news_reads_saveinfo_results(data):
+    """S26b 整合：戰後の BEGIN SHOP（SHOP_TURNEND.ERB:59–63）→ @EVENTSHOP → オートセーブ @SAVEINFO（RESULTS:0 = "408"）
+    → @SHOW_SHOP:40 FLASHNEWS（5 の ARG -1 は書かないので前回値）。セーブ 99 には FLASHNEWS 前の FLAG:60 が残り、
+    讀檔では RESULTS が "" に戻る（VariableData.cs:558–574）→ :85–87 で ARG 0 の文に戻る。"""
+    s = _session(data, 21)
+    st = s.state
+    st.flag[60] = 120005
+    st.results[0] = "戰鬥中の値"
+    mark = len(s.out.lines)
+    s.begin_shop(called_when_normal=True)
+    assert s.phase == Phase.SHOP
+    texts_ = [ln.text for ln in s.out.lines[mark:]]
+    assert "FLASH NEWS：《408》" in texts_
+    assert st.flag[60] == 0
+    loaded, _ = load_from_file(Path(s.save_dir) / "save99.json")
+    assert loaded.flag[60] == 120005 and loaded.savestr[20] == ""
+    s.begin_load_game()
+    mark = len(s.out.lines)
+    s.input(99)
+    assert s.phase == Phase.SHOP
+    texts_ = [ln.text for ln in s.out.lines[mark:]]
+    assert "FLASH NEWS：《市街地に突如大穴、触巣出現で集団下校中の女子生徒ら犠牲に》" in texts_  # 5:477–478
 
 
 def test_mission_news_not_overwritten(ctx):

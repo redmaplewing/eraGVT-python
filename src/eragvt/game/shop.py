@@ -5,6 +5,8 @@
 
 from __future__ import annotations
 
+from datetime import datetime
+
 from ..data.csv_loader import GameData
 from ..state import GameState
 from ..state.constants import FORCE_REST_HP, MODE_OPTIONS, PARTY_MAX, ActionPlan, CharaState, GameMode, GameOption
@@ -824,8 +826,17 @@ def action_confirm_answer(state: GameState, data: GameData, kind: str, value: in
 _MODE_NAMES = ("GAMEOVER", "NORMAL", "SOLO", "HARDCORE", "SURVIVAL", "FREEPLAY", "SANDBOX", "INSTANT")  # DIM.ERH:49–59
 
 
-def save_info(state: GameState, data: GameData) -> str:
-    """`ゲーム内_イベント発生/オープニング処理.ERB@SAVEINFO`:583–614 の PUTFORM 内容。"""
+def save_info(state: GameState, data: GameData, now: datetime | None = None) -> str:
+    """`ゲーム内_イベント発生/オープニング処理.ERB@SAVEINFO`:583–614 の PUTFORM 内容。
+
+    共用 RESULTS:0 も原作どおり書く（S26b）：:585 `GETTIME` → 日時文字列（reference/emuera-1824/Emuera/GameProc/
+    Process.ScriptProc.cs:368–379）、:604 `SUBSTRING LOCALS:2, 1, 3`（命令としての式中関数 → RESULTS:0：GameProc/Function/
+    Instraction.Child.cs@METHOD_Instruction:398–405）→ 最終値は版数の下 3 桁（GameBase.csv バージョン 408 → "408"）。
+    オートセーブ（SystemProc@endCallEventShop:630–640 → @beginAutoSave:642–654）は @EVENTSHOP の後・@SHOW_SHOP の前に
+    毎回これを呼ぶので、FLASHNEWS:74–87 が読む「前回の RESULTS:0」はこの値になる（`docs/wiki/python/result.md`）。
+    """
+    stamp = now or datetime.now()
+    state.results[0] = stamp.strftime("%Y/%m/%d %H:%M:%S")  # :585 GETTIME（RESULT:0 の数値は模型化しない）
     mode = game_mode_check_proc(state)  # :586 CALL GAME_MODE_CHECK
     s0 = f"{_MODE_NAMES[mode]}モード" if 0 <= mode < len(_MODE_NAMES) else "☆カスタムモード"
     alive = tentacle_survive_num(state)
@@ -836,7 +847,9 @@ def save_info(state: GameState, data: GameData) -> str:
     else:
         s1 = f"{state.flag[3] + alive}体目"
     ver = data.game_base_int("バージョン", 0)
-    s2 = f"{div(ver, 1000)}.{str(1000 + ver)[1:4]}"  # SUBSTRING {1000+ver}, 1, 3
+    sub = str(1000 + ver)[1:4]  # :603–604 LOCALS:2 = {1000 + GAMEBASE_VERSION} / SUBSTRING LOCALS:2, 1, 3（半角数字なので幅＝文字数）
+    state.results[0] = sub
+    s2 = f"{div(ver, 1000)}.{sub}"  # :605
     s3 = f"{state.day[0]}日目"
     if state.flag[64] > 0:
         return f"{format_percent(s0, 14, True)} {format_percent(s3, 7, False)} {format_percent(s1, 12, False)}    ver{s2}"

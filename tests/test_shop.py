@@ -37,6 +37,16 @@ def test_save_info(st, data):
     assert shop.save_info(st, data) == "NORMALモード     1日目  1体目殲滅中    ver0.408"
 
 
+def test_save_info_writes_results(st, data):
+    # S26b：@SAVEINFO は共用 RESULTS:0 を書く。:585 GETTIME（Process.ScriptProc.cs:368–379）の日時文字列の後、
+    # :603–604 `LOCALS:2 = {1000 + 408}` / `SUBSTRING LOCALS:2, 1, 3`（METHOD_Instruction:398–405）で "408" が残る
+    st.results[0] = "前回の値"
+    st.results[1] = "x"
+    shop.save_info(st, data)
+    assert st.results[0] == "408"
+    assert st.results[1] == "x"  # RESULTS:1 以降は触らない
+
+
 def test_select_target(st):
     out = TextOutput()
     shop.select_target(st, out, 3)

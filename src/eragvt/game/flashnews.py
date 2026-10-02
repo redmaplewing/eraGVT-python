@@ -198,8 +198,9 @@ def _priority_news(st: GameState, data: GameData, f60: int) -> str:
 
     if 100000 <= f60 <= 109999:  # :73–75 ミッション失敗
         event_battle_flashnews(st, f60 - 100000, 0)
-        # DEVIATION: 呼出先が RESULTS:0 を書かない場合（3001／3002 全て・3004 の 0・5 の -1）は前回の RESULTS:0 を読む。
-        # Python の共用 RESULTS は RESULTS:0 だけの書き込みを模型化していない（result.md）ので、原作の殘值と一致しないことがある。
+        # 呼出先が RESULTS:0 を書かない場合（到達するのは 3004 の 0〔時間切れ＋被害〕と 5 の -1〔敗北〕）は前回の RESULTS:0
+        # （`LOCALS'=RESULTS`）。戰後の BEGIN SHOP では @EVENTSHOP の後のオートセーブで @SAVEINFO が必ず走り（shop.save_info が
+        # 同期）、@SHOW_SHOP:1–40／本関数 :1–74 には書き込みが無いので、通常は版数の "408"、讀檔直後は ""（S26b、result.md）。
         return st.results[0]
     if 110000 <= f60 <= 119999:  # :77–79 ミッション成功
         event_battle_flashnews(st, f60 - 110000, 1)
