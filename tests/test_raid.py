@@ -15,6 +15,7 @@ from pathlib import Path
 import pytest
 
 from eragvt.data import default_csv_dir, load_game_data
+from eragvt.game import flashnews as flashnews_mod
 from eragvt.game import raid, shop, turnend
 from eragvt.game.action import Ctx, Step
 from eragvt.game.battle import train
@@ -641,12 +642,19 @@ def test_session_raid_roundtrip(data, monkeypatch, kind, seed):
         return (yield from raid.raid_attack(ctx))
 
     monkeypatch.setattr(turnend, "raid_hantei", forced)
+    news60: list = []
+    orig_news = flashnews_mod._priority_news
+
+    def spy(st_, data_, f60):
+        news60.append(f60)
+        return orig_news(st_, data_, f60)
+
+    monkeypatch.setattr(flashnews_mod, "_priority_news", spy)
     s = _session(data, seed)
     st = s.state
     policy = random.Random(seed)
     # 救援は [0] 助けに行く を選ぶまで（:151）ターンを回す
     for _ in range(20):
-        before60 = st.flag[60]
         boss = sum(c.exp[data.index_of("EXP", "ボス経験")] for c in st.charas)
         _play(s, policy)
         fought = sum(c.exp[data.index_of("EXP", "ボス経験")] for c in st.charas) > boss
@@ -655,7 +663,10 @@ def test_session_raid_roundtrip(data, monkeypatch, kind, seed):
     assert fought and seen
     assert st.flag[45] == 0  # SHOP_TURNEND.ERB:59–63
     if kind == "rescue":
-        assert st.flag[60] != before60 or before60 != 0  # SUCCESS／FAILURE がニュース番号を設定（未設定なら）
+        # SUCCESS／FAILURE／ABANDON が FLAG:60 にニュース番号を設定し（未設定なら）、次の SHOP の FLASHNEWS が
+        # それを読んで 0 に戻す（SHOP_FLASHNEWS.ERB:69–88、:204）
+        assert any(100000 <= v <= 129999 for v in news60)
+        assert st.flag[60] == 0
     loaded, _ = load_from_file(Path(s.save_dir) / "save99.json")
     assert loaded.flag[45] == 0
     assert [c.base[0] for c in loaded.charas] == [c.base[0] for c in st.charas]

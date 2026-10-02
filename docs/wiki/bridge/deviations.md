@@ -16,10 +16,17 @@ ERB 路徑相對 `source/earGVP/ERB/`。
   `eragvt.game.body`）。查證結果：初期セットのキャラは `NO ≠ 0`（:498 條件不成立）→ 原作本來就不生成，BASE:40–48／CFLAG:33–34 為 0
   與原作一致（`docs/wiki/era/body-profile.md`）。S10：汎用キャラ的隨機生成（:507–980）與 AGE_SETTING 的年齢指定（CSTR:204–206）
   已移植；仍未移植：角色製作／狀態畫面的手動生成（UI）、TOINT 的 16／2 進與指數表記（停止）。
-- [ ] **FLASHNEWS 未移植**：新聞產生（含亂數、寫入 `SAVESTR:20`、`FLAG:60`）沒有執行，畫面顯示「（未實作）」。
-  ゲームオーバーモードの固定ニュース（`FLAG:60 = 10001`，:91–；DAY:2 起算的經過ターン數）也不顯示（FLAG:60／DAY:2 照原作設定）。（原作：`インターミッション画面/SHOP_FLASHNEWS.ERB@FLASHNEWS`:3–752；Python：`eragvt.game.shop.flashnews`）
-  S14：動画流出的 CFLAG:284 在 FLASHNEWS 只由 `@FLASHNEWS_CHOOSEIDOL`（"内容"，:974–982）讀取，用來加重「動画流出」新聞的
-  RANDCHOOSE 權重（結果只進新聞本文／SAVESTR:20），屬於未移植的新聞產生本體，不另外移植。
+- [x] ~~**FLASHNEWS 未移植**~~（S26 解決）：`SHOP_FLASHNEWS.ERB` 全體（新聞產生・亂數・SAVESTR:20／FLAG:60・ゲームオーバーモード 10001・
+  裏ボス 10000・イベント戦ニュース・CHOOSEIDOL 的 CFLAG:284 加權・static #DIM）已移植（`eragvt.game.flashnews`）。剩下的偏離見下一項。
+- [ ] **FLASHNEWS イベント戦ニュースが讀「前回の RESULTS:0」**（S26）：`TRYCALLFORM EVENT_BATTLE_FLASHNEWS_{n}(ARG)` の後 `LOCALS'=RESULTS`
+  （:74–87）。呼出先が RESULTS:0 を書かない場合（3001・3002・6001・6002 は本体が全部コメント、3004 の ARG 0、5 の ARG -1）原作は
+  その時点の RESULTS:0 殘值（戰鬥中最後の書き込み：例 `TENTACLE_ACCESS`:200 のエラー文字列、口上・SEIKAKU_CHECK "STRING" 等）を
+  ニュースとして表示する（空なら通常抽選へ）。Python の共用 `GameState.results` は RESULTS:0 だけの書き込みを模型化していない
+  （`docs/wiki/python/result.md`）ので、殘值が原作と一致しない（多くは "" → 通常抽選に進み亂數も變わる）。（原作：`インターミッション画面/
+  SHOP_FLASHNEWS.ERB@FLASHNEWS`:74–87＋`イベントから派生する特殊戦闘/3001 ボス触手の襲撃.ERB`:76–86 ほか；Python：
+  `eragvt.game.flashnews._priority_news`、`raid.event_battle_flashnews`）— 一致させるには RESULTS:0 の全書き込み元（戰鬥・口上・TURNEND…）の
+  模型化が必要。模擬（S26）では 3001／3002 の戰鬥結果が預設 250 局で 102 回、初期セット 250 局で 87 回。替代案：①現狀（Python が持つ値を読む）②この路だけ "" とみなす
+  ③停止。
 - [ ] **全域資料（GLOBAL）：成就・歷代紀錄不讀不寫**（S24 縮小範圍）：config 相關的 GLOBAL（LOADGLOBAL／UPDATE／UPDATE_GLOBAL、
   GLOBAL:4・11〜15・51〜59、MOB_GLOBAL、CONFIG 畫面的 SAVEGLOBAL、CHARA_MAKE_MAIN:9–21 的讀取）已照原作移植（`eragvt.game.config`、
   `state.savefile.GlobalStore`、`saves/global.json`；`docs/wiki/era/flow.md` §10）。仍不做的是成就／紀錄類：（原作：下列各處；Python：見各行）

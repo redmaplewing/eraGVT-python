@@ -211,7 +211,7 @@ MODE_SELECT（:297）沒有預設值，`[1] NORMAL` 是第一個選項（S03 起
   FORCE_悪堕ちキャラの淫謀.ERB:1609（AKUOTI_EVENT）、SCORE／SUCCESSION（GAME_MODE_CHECK_F、結局後）。
 - **注意**：防衛力 0 のため `AKUOTI_ATTACK`（悪堕ちキャラが居れば）は毎ターン必ず発生（AKUOTI_EVENT 未移植 → 停止）。
   取り込まれ（CFLAG:0 = 9、苗床化）が居ると `BIRTH_AUTO_RANDOM`:671– の苗床出産が毎ターン 1/4 で発生（未移植 → 停止）。
-  FLASHNEWS の 10001 番（DAY:2 から経過ターン数を出す）も未移植（FLASHNEWS 全体が deviations）。
+  FLASHNEWS の 10001 番（DAY:2 から経過ターン数を出す、FLAG:11 = 7 で 1〜9 ターン目は固定文）は S26 で移植（`eragvt.game.flashnews`）。
 
 ## 10. コンフィグと GLOBAL（S24，Python：`eragvt.game.config`、`state.savefile.GlobalStore`）
 

@@ -1,6 +1,6 @@
 # 現況（唯一真相，≤120 行）
 
-更新：2026-10-02（S25）
+更新：2026-10-02（S26）
 
 ## 已完成（各階段細節見 git log 與 wiki）
 
@@ -18,24 +18,24 @@
 - **S22** 共用 RESULTS（`docs/wiki/python/result.md`）：不存檔、名乗り改竄讀 RESULTS:2、BATTLE_COM_AFTER:1159 同步。
 - **S23** [反撃]スタイル（`battle/hangeki.py`，`--style 反撃` 人工模擬）。
 - **S24** 設定畫面／開局プリセット／GLOBAL（`eragvt.game.config`，`docs/wiki/era/flow.md` §10）。
-- **S25** ステータス畫面（下節）。
+- **S25** ステータス畫面（`eragvt.game.status_screen`／`status_talent`／`colorbar`／`export_csv`；5 頁＋頁內指令，入口 SHOP [110]・戰鬥 [800]・HEROINE_PRESET [20]〜；控えメンバー一覧 SHOP_SHOW_STATUS_RESERVE_LIST は未實作表示）。
+- **S26** FLASHNEWS（下節）。
 
-## S25 內容（`eragvt.game.status_screen`／`status_talent`／`colorbar`／`export_csv`）
+## S26 內容（`eragvt.game.flashnews`，`raid.event_battle_flashnews`）
 
-- `SHOW_STATUS_CHARA_SELECT` 5 頁全移植（戰鬥／素質・性成長／武器／相関／プロフィール），入口：SHOP [110]、戰鬥 [800]、
-  HEROINE_PRESET [20]〜[29]（全域 grep 只有這 3 處）。翻頁 [1]/[2]/[1000]〜[5000]、[100]/[200] 換人（戰鬥中不可）、[999] 返回。
-- 固有指令：P1 [0] 口上設定循環・[10] 主観モード・[11] 呼び名（FIRSTSETTING_CHARA_CALLNAME）・[13] 変身後名等；P2 [0] EXPORT_CSV（全移植）；
-  P5 [10] 通常／変身時切替・[20] 身體資料生成（GENERATE_BODYLINE→AGE→SIZE_DEFAULT→SIZE_SETTING 以 [99] 代替）。
-- PAGE5 顯示時 PRINTFORM_GAPING_NOW 設定拡張度初期值（S11 裁決）；SET_FSTYLE_INFO 寫共用 RESULTS:0〜2、GET_COLOR_BY_RANK／TOP_UNDER 寫 RESULT。
-- 共用部品：COLOR_BAR／COLORSENTENCE_BAR（SHOP・鍛錬・戰鬥的近似條改為原文）、COLORCHIP、TALENT_INFO（ERB 抽取表）、
-  SHOW_STATUS_TALENT（2 形式，鍛錬畫面也接上）；HTML_PRINT 新增 `<br>`／`<nobr>`／`<shape type='space'>`。
-- 測試共 1469 個（新增 `tests/test_status_screen.py` 29、`test_web.py` 1）。`test_hangeki` 統合測試的方針排除 [800]、`test_parasite` 改 seed 0（經路變化）。
-- `SHOP_SHOW_STATUS_RESERVE_LIST`（控えメンバー）屬 SHOP 一覽系（`SHOP_SHOW_STATUS_LIST.ERB`），不在本階段，仍印未實作。
+- `SHOP_FLASHNEWS.ERB` 全體：`@FLASHNEWS`（抽選済み再表示・最優先ニュース〔イベント戦 100000〜129999／ゲームオーバー 10001／裏ボス 10000〕・
+  昼の日付固定・防衛低下・アイドル・露出・即堕ち・末路・ボス・失言・人気度・$NEWSLOOP）、`@FLASH_VIRALMEDIA`、`@FLASHNEWS_CHOOSEHEROINE`、
+  `@FLASHNEWS_CHOOSEIDOL`（CFLAG:283／284／287 加權）。SHOP.ERB:40 から毎回呼ぶ（SAVESTR:20 があれば再表示のみ）。
+- 文字列 42 STRDATA＋固定文は ERB から機械抽出（`test_tables_match_erb` が原文照合）。関数内 static #DIM（`NOWLOOPNUM`：ゲーム通算 30 回まで
+  再抽選、`バイラルメディアフラグ`）は `TempVars`（新遊戲／讀檔で初期値）。共用 RESULT:0／1・RESULTS:0 を ERB どおり書く／読む（`result.md`）。
+- 未移植系統の値（SAVESTR:21〜25 の AV／写真集、魅了経験、CFLAG:283／287）はそのまま読む（通常 0／空 → 該当ニュースは出ない）。
+- 測試共 1515 個（新增 `tests/test_flashnews.py` 46；`test_raid` の FLAG:60 確認を「次の SHOP の FLASHNEWS が読んで 0 に戻す」に修正）。
 
-### 模擬（seed 0–249，`--max-shop 200`，4 並列分批；戰鬥中隨機按 [800] 會進入狀態畫面）
+### 模擬（seed 0–249，`--max-shop 200`，4 並列分批；亂數序列が變わったので S25 とは直接比較しない）
 
-- 預設：上限 246、停止 4（既有停止點 HATUJOU_TO_HAIRAN 地の文：經路改變後到達）；敗北後 SHOP 189.76、ゲームオーバー後 188.29。
-- 初期セット：250 局全部上限；敗北後 SHOP 192.95、ゲームオーバー後 188.55。狀態畫面新增停止 0（3 局抽樣：各頁 113 次、EXPORT_CSV 2 次）。
+- 預設：上限 249、停止 1（既存の HATUJOU_TO_HAIRAN 地の文）；敗北後 SHOP 192.92、ゲームオーバー後 187.51。
+- 初期セット：250 局全部上限；敗北後 SHOP 192.99、ゲームオーバー後 188.58。FLASHNEWS による新停止 0。
+- イベント戦ニュース：3001／3002 の戰後（預設 102 回・初期セット 87 回）は前回 RESULTS:0 を読む路（deviations 新項、要裁決）。
 
 ### 狀態畫面內仍會停止
 
@@ -46,18 +46,18 @@ P4 父親 CFLAG:9 指向不存在的ボス／ラスボス／モブ；HEROINE_PRE
 
 [34] 雑魚戦（802 bit4）→ MOB_TENTACLE_BATTLE 停止；[78] 裏プロフィール（805 bit6）→ MAKESEXUALPROFILE 停止；[11]／[15]〜[17] 調教ステータス表示
 （801 bit1／5〜7）→ 戰鬥中停止；[54] 返り血（803 bit4）→ SUPART_BLOOD 停止；[72] 触手の子種からも娘 → 命名 INPUTS 停止；
-[35] クズ市民・[55] ラスボス強化・[79] 有害ブログ 無作用（所在系統未移植）。[10]／[14] 素質表示 S25 起生效。
+[35] クズ市民・[55] ラスボス強化 無作用（所在系統未移植）。[10]／[14] 素質表示 S25 起、[79] 有害ブログ S26 起生效。
 `--config-preset 2／3` 模擬（S24）：250 局全部停止於雑魚戦。
 
 ## 下一步
 
 - **自主推進（使用者指定 2026-10-02，依序）**：~~S22 RESULTS 共用~~ → ~~S23 [反撃]スタイル~~ → ~~S24 設定畫面／プリセット~~ → ~~S25 狀態畫面~~
-  → **S26 FLASHNEWS** → S27 ラスボス → S28 未移植行動（特別活動・防衛・支援・情報・自由）。其他候選：ランダム命名畫面、SHOP [112] 衣裝設定。
+  → ~~S26 FLASHNEWS~~ → **S27 ラスボス** → S28 未移植行動（特別活動・防衛・支援・情報・自由）。其他候選：ランダム命名畫面、SHOP [112] 衣裝設定。
 - 已裁決（2026-10-02）：名乗り改竄的 RESULTS:2 殘值照原作（S22 實作）；開局デフォルト悪堕ち的輸出丟棄維持現況。
 - 已裁決（2026-10-02）：PALAM_HOSEI 殘值照原作、防衛力負數 D1〜D4（S21 實作）。已裁決（2026-10-01）：S20 的 DEVIATION 6 項＋斜體。
 - 已裁決（2026-09-30）：拡張度初期值照原作；S13 苗床出産的 static LOSEDEF 等怪處照原作。
 - 口上 catalog 待擴充：改狀態的口上（hook 化）、入れ子內 $ラベル 的 GOTO（`KOJO_AEGI.ERB` $ＭＡＸ２，199 函式）、STRDATA、未實作式中関数。
-- deviations.md 需裁決：振り解く `LOCAL:O`、口上的狀態副作用、口上 catalog 實行時失敗的回復、S08 以後新增項。
+- deviations.md 需裁決：振り解く `LOCAL:O`、口上的狀態副作用、口上 catalog 實行時失敗的回復、S08 以後新增項（S26：FLASHNEWS イベント戦ニュースの前回 RESULTS:0）。
 
 ## 仍會停止的分岐（`NotImplementedError` → Web 停止）
 

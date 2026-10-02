@@ -1746,3 +1746,88 @@ _SUCCESS = {2: _success_2, 3: _success_3, 4: _success_4, 5: _success_5, 3001: _n
 _FAILURE = {2: _failure_2, 3: _failure_3, 4: _failure_4, 5: _failure_5, 3001: _nothing, 3002: _nothing,
             3003: _failure_3003, 3004: _failure_3004}
 _TURNEND = {3003: _turnend_3003, 3004: _turnend_3004}
+
+
+# --- EVENT_BATTLE_FLASHNEWS_n（S26）：SHOP_FLASHNEWS.ERB@FLASHNEWS:74–87 の TRYCALLFORM 先 -------------------------------
+# ARG：1 = ミッション成功、0 = 失敗、-1 = ミッション以前に敗北幽閉。書くのは共用 RESULTS:0 だけ（`RESULTS'=…`）。
+# 本体が全部コメントの関数（3001:76–86、3002:158–168、6001:58–68、6002:56–66）や、書かない ARG（3004 の 0、5 の -1）は
+# RESULTS:0 を変えない（FLASHNEWS 側は前回の RESULTS:0 を読む）。関数終端の RESULT:0 = 0 は FLASHNEWS 側で読まないので書かない。
+
+
+def _fn_2(st, arg: int) -> None:
+    """`2 女子高救出.ERB@EVENT_BATTLE_FLASHNEWS_2`:305–315。"""
+    if arg == 1:
+        st.results[0] = "お手柄！ 女子高襲う触手生物を撃退、可憐な魔法少女に女生徒ら感謝の声"
+    elif arg == 0:
+        st.results[0] = "女子高が触手生物の襲撃で壊滅、女生徒ら多数残されたまま汚染区域に認定へ…"
+    elif arg == -1:
+        st.results[0] = ""
+
+
+def _fn_3(st, arg: int) -> None:
+    """`3 女性自衛官小隊救援.ERB@EVENT_BATTLE_FLASHNEWS_3`:168–178。"""
+    if arg == 1:
+        st.results[0] = "お見事！ 触手の奇襲で窮地に陥る女性自衛官らを魔法少女が華麗に救援"
+    elif arg == 0:
+        st.results[0] = "凶悪な巨大触手が女性自衛官の小隊を奇襲、複数の女性隊員が行方不明に……"
+    elif arg == -1:
+        st.results[0] = ""
+
+
+def _fn_4(st, arg: int) -> None:
+    """`4 攫われた女性.ERB@EVENT_BATTLE_FLASHNEWS_4`:101–111。"""
+    if arg == 1:
+        st.results[0] = "触手生物に攫われかけた女性らを魔法少女が華麗に救出、市民ら感謝の声"
+    elif arg == 0:
+        st.results[0] = "大型触手生物が市街地を襲来、複数の女性が行方不明に"
+    elif arg == -1:
+        st.results[0] = "大型触手生物が市街地を襲来、女性ら多数行方不明。中には魔法少女の姿も？"
+
+
+def _fn_5(st, arg: int) -> None:
+    """`5 触手洞窟.ERB@EVENT_BATTLE_FLASHNEWS_5`:472–482（ARG -1 の代入はコメント：:481）。"""
+    if arg == 1:
+        st.results[0] = "触手生物に攫われた女性たちを魔法少女が華麗に救出、市民ら感謝の声"
+    elif arg == 0:
+        st.results[0] = "市街地に突如大穴、触巣出現で集団下校中の女子生徒ら犠牲に"
+
+
+def _fn_3003(st, arg: int) -> None:
+    """`3003 ライブ奇襲.ERB@EVENT_BATTLE_FLASHNEWS_3003`:160–170（PRINT_TRANSNAME(TARGET)）。"""
+    if arg == 1:
+        st.results[0] = f"客を魅了、触手を翻弄！　アイドル「{print_transname(st, st.target)}」が囮となり避難の時間を稼ぐ"
+    elif arg == 0:
+        st.results[0] = f"巨大触手がライブ会場を襲撃、アイドル「{print_transname(st, st.target)}」が触手凌辱の餌食に"
+    elif arg == -1:
+        st.results[0] = f"巨大触手がライブ会場を襲撃、アイドル「{print_transname(st, st.target)}」や女性客ら攫われ失踪"
+
+
+def _fn_3004(st, arg: int) -> None:
+    """`3004 プール奇襲.ERB@EVENT_BATTLE_FLASHNEWS_3004`:275–291（ARG 0 の代入はコメント：:287）。"""
+    if arg == 1:
+        st.results[0] = ""
+        if st.tflag[98] == 1:
+            st.results[0] = "お手柄！　ナイトプール襲撃の巨大触手、居合わせた謎の少女が返り討ち"
+        else:
+            st.results[0] = "巨大触手がナイトプールを襲撃、女性客らに深刻な粘液被害か"
+    elif arg == -1:
+        st.results[0] = "巨大触手が室内プール襲撃、女性客ら多数行方不明に"
+
+
+def _fn_empty(st, arg: int) -> None:
+    """本体がすべてコメントの関数（3001／3002／6001／6002）。"""
+
+
+# 定義されている関数（全域 grep `@EVENT_BATTLE_FLASHNEWS_`：11 件、うち `_6xxx` はテンプレートで数値 FLAG:60 からは呼べない）
+_FLASHNEWS = {2: _fn_2, 3: _fn_3, 4: _fn_4, 5: _fn_5, 3001: _fn_empty, 3002: _fn_empty, 3003: _fn_3003, 3004: _fn_3004,
+              6001: _fn_empty, 6002: _fn_empty}
+
+
+def event_battle_flashnews(st, no: int, arg: int) -> bool:
+    """`TRYCALLFORM EVENT_BATTLE_FLASHNEWS_{no}(arg)`。関数が無ければ何もしない（False）
+    （reference/emuera-1824/Emuera/GameProc/Function/Instraction.Child.cs:2316–2325）。"""
+    f = _FLASHNEWS.get(no)
+    if f is None:
+        return False
+    f(st, arg)
+    return True

@@ -42,6 +42,7 @@ ERB 路徑相對 `source/earGVP/ERB/`。
 | `CHARA_SIZE.ERB@GENERATE_CHAR_SIZE`:283（TOP_UNDER :380 は上書きされる） | 0〜7 | `body.generate_char_size(…, result)`（呼出元が `st.result` を渡す） |
 | `SHOW_STATUS_CHARA_SELECT_PAGE2.ERB@GET_COLOR_BY_RANK`:289–304（S25） | 0〜2 | `status_screen.get_color_by_rank` |
 | `CHARA_SIZE.ERB@TOP_UNDER`:380（PAGE5:198 から直接呼出、続く CUP_SIZE が RESULT:0 を上書き；S25） | 0〜1 | `status_screen._apperance` |
+| `SHOP_FLASHNEWS.ERB`：:540／:607 `RESULT:1 = RANDCHOOSE_F()`、`@FLASHNEWS_CHOOSEHEROINE`:920／:922（2 値 RETURN）、`@FLASHNEWS_CHOOSEIDOL`:939–987（RESULT:1）・:1000、FLASHNEWS の RETURN／終端（RESULT:0 = 0；S26） | 0〜1 | `flashnews` |
 | `WindowDrawer.ERB`:330 `VARSET RESULT, 0`、:397–400、`TagSetText.ERB`:100／:218 | 全 0 | `narration.windowlib`（WINDOW_* 終了時に全消去） |
 | 口上・地の文（`SELF_CALL.ERB`:356／:381–425、`KOJO_4_汎用豹変.ERB`:64 ほか） | 各種 | catalog（`narration.runtime` が `GameState.result` を読み書き） |
 
@@ -51,7 +52,7 @@ RESULT:0 だけの書き込み（単値 RETURN・関数終端・INPUT 等）は�
 未移植のため書き込みも無い来源：`FIRSTSETTING_RANDOMNAMING.ERB`:298／303、`FIRSTSETTING_CHARA.ERB`:1021、
 `CALC_SEISAN.ERB`:137、`SEISAN_0_PART_TIME.ERB`:168、`ACTION_TRAINING.ERB@TRAINING_DAYTIME`:321
 （呼出なし）、ラスボス／雑魚／クズ市民の触手データ（`TENTACLE_LASTBOSS_*`、`TENTACLE_MOB_*`〔:1196 等の VARSET・`RESULT:n +=` 含む〕、
-`CITIZEN_1.ERB`:123）、`SHOP_FLASHNEWS.ERB`、`COLOR_TABLE.ERB`、`TRANS_SEX`／`SUCCESSION`／`FIRSTSETTING_CHARA_TRANSFORMATION` の GENERATE_CHAR_SIZE。
+`CITIZEN_1.ERB`:123）、`COLOR_TABLE.ERB`、`TRANS_SEX`／`SUCCESSION`／`FIRSTSETTING_CHARA_TRANSFORMATION` の GENERATE_CHAR_SIZE。
 移植時は同じく `GameState.result` に書くこと。
 
 ## 読む側（殘值を使う所）
@@ -108,7 +109,11 @@ RESULTS を代入先にする SPLIT・STRDATA・HTML_TAGSPLIT・FIND_CHARADATA 0
 | `CHARA_TATTOO.ERB@PRINT_TATTOO`:245 VARSET、`@TATTOO_LIB`:482／:1406–1407 | 全／0〜1 | `tattoo.print_tattoo`（catalog 不可の佔位時も同じ結果を書く） |
 | `口上/…/KOJO_0_21_ヤンデレ.ERB`:38 VARSET、その他口上・地の文 | 各種 | catalog（`narration.runtime` が `GameState.results` を読み書き、失敗時は復元） |
 | `FIGHT_STYLE.ERB@SET_FSTYLE_INFO`:118–165（0〜2；S25：PAGE3:69 から） | 0〜2 | `status_screen.set_fstyle_info` |
+| `イベントから派生する特殊戦闘/{2,3,4,5,3003,3004}*.ERB@EVENT_BATTLE_FLASHNEWS_n`（`RESULTS'=…`；FLASHNEWS:74–87 の TRYCALLFORM 先；S26） | 0 | `raid.event_battle_flashnews` |
 | 未移植：WEAPON_CUSTOMIZE:28／44／60 からの SET_FSTYLE_INFO、`WEAPON_NAME.ERB`:18 VARSET・`GENERATE_WEAPON_STR_JP.ERB`:3505–3553（1）、`FIRSTSETTING_TITLE.ERB`:154／173／187（1〜3；CHARA_MAKE:215 のメニューからのみ）、`FIRSTSETTING_CHARA.ERB@FIRSTSETTING_CHARA_NAME_RANDOM`:1018–1019（1〜2） | — | 移植時は `GameState.results` に書くこと |
+
+RESULTS:0 の前回値を読む箇所（S26）：`SHOP_FLASHNEWS.ERB`:75／:79／:83／:87 `LOCALS'=RESULTS`（呼出先が書かない ARG・関数）。
+Python は `st.results[0]` を読む（RESULTS:0 だけの書き込みは模型化していないので殘值は原作と一致しないことがある：deviations「FLASHNEWS イベント戦ニュース」）。
 
 讀 RESULTS:1 以後：`CORRPUTION.ERB`:787（RESULTS:2：**前回の値を読みうる唯一の箇所**）、他（FIRSTSETTING_CHARA:540–541、WEAPON_CUSTOMIZE、
 WEAPON_NAME:31、SHOW_STATUS PAGE3:71–72、CHARA_TATTOO:454、WindowDrawer:95–106）はいずれも直前の同一処理が書いた値。
@@ -118,7 +123,8 @@ WEAPON_NAME:31、SHOW_STATUS PAGE3:71–72、CHARA_TATTOO:454、WindowDrawer:95�
 RESULTS:0 だけの書き込み（`RESULTS = …`、命令としての式中関数、INPUTS 系、GETTIME）は原則として模型化しない（Python の戻り値で受け渡し）。
 理由：RESULTS を含む行（口上以外 469、口上 30：`grep -c`）の読み側を全件確認し、すべて同じ流れの直前の書き込み（TENTACLE_ACCESS は :201 で必ず
 エラー文字列を書いてから TRYCALLFORM、TATTOO_ACCESS "POSITION_STR"・SEIKAKU_CHECK "STRING"（CHARA_SEIKAKU.ERB:17–31 どの経路も書く）・TOFULL・SUBSTRING(U)・INPUTS 等）を読んでいて、
-呼び出し前の値を読む箇所は無い。例外として同期しているもの：STRMATCH・NANORI_FINAL の REPLACE（:794–807）、TATTOO_ACCESS "POSITION_STR"、
+呼び出し前の値を読む箇所は無い（**S26 訂正**：`SHOP_FLASHNEWS.ERB`:75–87 の `LOCALS'=RESULTS` は TRYCALLFORM 先が書かない場合に前回値を読む。
+上の「RESULTS:0 の前回値を読む箇所」と deviations 参照）。例外として同期しているもの：STRMATCH・NANORI_FINAL の REPLACE（:794–807）、TATTOO_ACCESS "POSITION_STR"、
 WINDOW_*、PRINT_TATTOO（上表）。
 
 ## 限界（deviations「口上 catalog の表示簡化」・unresolved）

@@ -248,7 +248,7 @@ def show_shop(state: GameState, data: GameData, out: TextOutput, narration: Narr
     lb(out)  # :23
     # :26–35 背景色：Web 側が state.time / FLAG:999 から決める
     out.drawline()
-    flashnews(state, out)
+    flashnews(state, data, out)  # :40
     out.drawline()
     shop_show_boss_info(state, data, out)
     out.drawline()
@@ -372,14 +372,11 @@ def _cprint_plain(out: TextOutput, text: str, color: str) -> None:
     out.reset_color()
 
 
-def flashnews(state: GameState, out: TextOutput) -> None:
-    """`インターミッション画面/SHOP_FLASHNEWS.ERB@FLASHNEWS`:3–752。"""
-    if state.savestr[20] != "":
-        out.printl(f"FLASH NEWS：《{state.savestr[20]}》")
-        state.flag[60] = 0
-        return
-    # DEVIATION: ニュース生成（:31–752、乱数と SAVESTR:20 への保存を含む）は未移植。
-    out.printl("FLASH NEWS：（未實作）")
+def flashnews(state: GameState, data: GameData, out: TextOutput) -> None:
+    """`インターミッション画面/SHOP_FLASHNEWS.ERB@FLASHNEWS`:3–749（S26：`eragvt.game.flashnews`）。"""
+    from .flashnews import flashnews as _flashnews
+
+    _flashnews(state, data, out)
 
 
 def shop_show_boss_info(state: GameState, data: GameData, out: TextOutput) -> None:
