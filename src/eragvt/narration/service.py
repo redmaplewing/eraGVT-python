@@ -45,6 +45,7 @@ class _Tx:
         self.locals = dict(st.temp.locals)
         self.narr = dict(st.temp.narr)
         self.result = st.result.copy()
+        self.results = st.results.copy()  # 共用 RESULTS（S22）
         self.ctx = ctx
 
     def rollback(self) -> None:
@@ -56,6 +57,7 @@ class _Tx:
         st.temp.locals = self.locals
         st.temp.narr = self.narr
         st.result = self.result
+        st.results = self.results
 
 
 class CatalogNarrationService:

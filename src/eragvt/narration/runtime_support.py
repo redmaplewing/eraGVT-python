@@ -30,7 +30,7 @@ TEMP_ARRAY_ATTR = {
 TEMP_SCALAR_ATTR = {"EX_COM": "ex_com", "SH_COM": "sh_com", "INSERT": "insert", "ターン上限": "turn_limit"}
 CLOTH_INDEX = {"CLOTH_NO_INNER": 0, "CLOTH_OUTER_PER": 1, "CLOTH_OUTER_DEF": 2, "CLOTH_INNER_PER": 3, "CLOTH_INNER_DEF": 4}
 STATE_SAVEDATA_ATTR = {"SHIELD": "shield", "MOB_FLAG": "mob_flag"}
-NARR_STORE = {"RESULT", "RESULTS", "COUNT"}  # 口上実行中だけ使う一時変数（state.temp.narr に置く）
+NARR_STORE = {"RESULT", "RESULTS", "COUNT"}  # 読み書きできる一時変数（RESULT／RESULTS は GameState.result／results 共用、COUNT は state.temp.narr）
 READ_ONLY_SPECIAL = {"RAND", "CHARANUM", "LINECOUNT", "NO", "STR", "SAVESTR", "CSTR", "特殊戦闘シチュエーション"}
 NAME_TABLE_OF = {
     "ABLNAME": "ABL", "TALENTNAME": "TALENT", "EXPNAME": "EXP", "MARKNAME": "MARK", "PALAMNAME": "PALAM",

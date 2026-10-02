@@ -1,4 +1,4 @@
-# 共用 RESULT 陣列（`GameState.result`，S21）
+# 共用 RESULT／RESULTS 陣列（`GameState.result`：S21、`GameState.results`：S22）
 
 原作的 RESULT 是跨函式的全域整數陣列，有幾處讀「前一次留下的值」（例：悪堕ちキャラ幽閉的 `EVENT_PALAM_HOSEI`）。
 S21 起 Python 移植部分與口上／地の文 catalog 共用 `GameState.result`（`IntArray`）。引擎路徑相對 `reference/emuera-1824/Emuera/`，
@@ -59,7 +59,66 @@ RESULT:0 だけの書き込み（単値 RETURN・関数終端・INPUT 等）は�
 - `COMF103.ERB`:197–200（悪堕ちキャラ戦の素股焦らし失敗）：RESULT:0（PRINT_DISTANCE 終端の 0）。
 - `COMF100.ERB`:52–62 のフェラ誘発（悪堕ちキャラ戦）：直前の TENTACLE_SYASEI_CHECK の RESULT:0（局所変数で実装、値は同じ）。
 
+## RESULT:0「呼び出し前の値」の再確認（S22）
+
+RESULT:0 は CALL の戻りで必ず書かれる（RETURN → SetResultX／RESULT = 0、関数終端 → 0：`Process.ScriptProc.cs`:61–67）ので、
+呼び出し前の値が読まれるのは「TRYCALL(FORM) の不発（`Instraction.Child.cs`:2310–2317）」と「関数先頭で呼出元の RESULT を読む」場合だけ。
+口上・地の文以外の `TRYCALL`／`TRYCALLFORM`（TRYC 系は CATCH があるので除外）直後の RESULT 読みを全件確認：
+既存の対処（COMF100／COMF102／COMF103、TENTACLE_SAKUSEI）に加え、`BATTLE_COM_AFTER.ERB`:1151–1160（素股焦らしの次ターン指定）の
+悪堕ちキャラ戦（FLAG:11 = 0 → `TENTACLE_BOSS_0_REACTION_REF` 不在）を S22 で同期：直前の `CALL HATUJOU_TO_HAIRAN`（:1147）の
+`RETURN 0`（`SUBEVENT_BATTLEE.ERB`:515–527）を `st.result[0]` に書き、:1159 はそれを読む（以前は NotImplementedError）。
+他（`TENTACLE_ACCESS` の数値キー〔悪堕ちキャラ戦〕は既存の停止、COM_ABLE・TRAINING_HOSEI_CHILD・KYUSHUTU_* は関数が存在、
+GAPING:1131／:1138・CLOTH_WEAR:931／:1526・CHARA_MAKE:319 は未移植）。
+
+# RESULTS（`GameState.results`，S22）
+
+## 引擎規格
+
+| 事項 | 依據 |
+|---|---|
+| 字串 1 維、大小 100（本作 VariableSize.csv 未指定） | `GameData/Variable/VariableCode.cs`:110（0x02）、`GameData/ConstantData.cs`:154–155 |
+| **不存檔**：0x02 ≥ `__COUNT_SAVE_STRING_ARRAY__`（0x01）且無 `__SAVE_EXTENDED__` | `VariableCode.cs`:104–110、`VariableData.cs@SaveToStream`:663–674、`VariableIdentifier.cs`:248–256 |
+| 新遊戲 ResetData・讀檔時 SetDefaultValue → 全 ""（null） | `VariableEvaluator.cs@ResetData`:1132–1139、`@LoadFromStream`:2173／`@LoadFromStreamBinary`:2339 → `VariableData.cs`:558–574 |
+| BEGIN TRAIN 不清（只清 TSTR） | `VariableEvaluator.cs@UpdateInBeginTrain`:1422–1460 |
+| `RETURN` 只收整數（`INT_ANY`）→ **沒有字串的多值 RETURN**；RETURNFORM 也是整數 | `Instraction.Child.cs@RETURN_Instruction`:1997–2023、`@RETURNFORM_Instruction`:1954–1993 |
+| `#FUNCTION(S)` 不可 CALL（CodeEE），RETURNF 的值只回到式中，不寫 RESULTS | `Process.CalledFunction.cs`:117–120、`Process.State.cs@ReturnF`:502–525 |
+| 式中関数當命令用：字串結果進 RESULTS:0 | `Instraction.Child.cs@METHOD_Instruction`:390–409 |
+| INPUTS／TINPUTS／ONEINPUTS 系：RESULTS:0 | `Process.cs@InputString`:257–260 |
+| GETTIME：RESULTS:0（日時字串） | `Process.ScriptProc.cs`:368–379 |
+| STRDATA 無引數 → RESULTS:0（本作 STRDATA 全部有代入先：grep） | `ArgumentBuilder.cs@VAR_STR_ArgumentBuilder`:1270–1290、`Process.ScriptProc.cs`:730–755 |
+| HTML_TAGSPLIT 無代入先 → RESULTS、CHKDATA／CHKCHARADATA → RESULTS:0、FIND_CHARADATA → RESULTS:0〜 | `ArgumentBuilder.cs`:1520–1545、`Creator.Method.cs`:425–505（本作 0 件：grep） |
+| SPLIT：代入先必須（第 3 引數），不會隱含寫 RESULTS；PRINTDATA 的引數是整數變數 | `ArgumentBuilder.cs`:1494–1514、:1248–1267 |
+| `ARRAYCOPY "a", "RESULTS"`：短的一方的長度 | `Process.ScriptProc.cs`:661–700 → `VariableEvaluator.cs@CopyArray`:764–775 |
+
+因此 Python 端：`GameState.results`（`StrArray`，compare=False，不寫入存檔 → **SAVE_VERSION 不升**，讀檔／新遊戲為空）。
+`set_results_array(list)` = `VARSET RESULTS, ""`＋ARRAYCOPY。
+
+## RESULTS:1 以後的寫入（全域 grep，S22）
+
+查法：`RESULTS\s*:\s*(?!0(?![0-9]))[^\s=]+` 口上以外 66 行（讀寫混在）、口上 0 行；`VARSET RESULTS` 7 件（WEAPON_NAME:18、
+CHARA_TATTOO:245／:482、TagSetText:101／178／219／270）＋口上 1 件（KOJO_0_21_ヤンデレ:38）；`ARRAYCOPY … "RESULTS"` 2 件（TagSetText:179／:271）；
+RESULTS を代入先にする SPLIT・STRDATA・HTML_TAGSPLIT・FIND_CHARADATA 0 件。
+
+| 來源 | 寫入 | Python |
+|---|---|---|
+| `汎用関数/コモン関数.ERB@STRMATCH`:1378–1393（呼出は `CORRPUTION.ERB`:786 のみ） | 成立 0〜2、不成立 0〜1 | `corruption.corruption_get_nanori_final`（＋catalog） |
+| `TagSetText.ERB@CUT_TAGSET_TEXT`／`@SHAPE_TAGSET_TEXT`（VARSET＋ARRAYCOPY） | 全 100 | `narration.windowlib`（WINDOW_* 終了時に最後の SHAPE／CUT の結果） |
+| `CHARA_TATTOO.ERB@PRINT_TATTOO`:245 VARSET、`@TATTOO_LIB`:482／:1406–1407 | 全／0〜1 | `tattoo.print_tattoo`（catalog 不可の佔位時も同じ結果を書く） |
+| `口上/…/KOJO_0_21_ヤンデレ.ERB`:38 VARSET、その他口上・地の文 | 各種 | catalog（`narration.runtime` が `GameState.results` を読み書き、失敗時は復元） |
+| 未移植：`FIGHT_STYLE.ERB@SET_FSTYLE_INFO`:118–165（0〜2；呼出 WEAPON_CUSTOMIZE:28／44／60、SHOW_STATUS_CHARA_SELECT_PAGE3:69）、`WEAPON_NAME.ERB`:18 VARSET・`GENERATE_WEAPON_STR_JP.ERB`:3505–3553（1）、`FIRSTSETTING_TITLE.ERB`:154／173／187（1〜3；CHARA_MAKE:215 のメニューからのみ）、`FIRSTSETTING_CHARA.ERB@FIRSTSETTING_CHARA_NAME_RANDOM`:1018–1019（1〜2） | — | 移植時は `GameState.results` に書くこと（S23〜S25 で該当しうる） |
+
+讀 RESULTS:1 以後：`CORRPUTION.ERB`:787（RESULTS:2：**前回の値を読みうる唯一の箇所**）、他（FIRSTSETTING_CHARA:540–541、WEAPON_CUSTOMIZE、
+WEAPON_NAME:31、SHOW_STATUS PAGE3:71–72、CHARA_TATTOO:454、WindowDrawer:95–106）はいずれも直前の同一処理が書いた値。
+
+## RESULTS:0
+
+RESULTS:0 だけの書き込み（`RESULTS = …`、命令としての式中関数、INPUTS 系、GETTIME）は原則として模型化しない（Python の戻り値で受け渡し）。
+理由：RESULTS を含む行（口上以外 469、口上 30：`grep -c`）の読み側を全件確認し、すべて同じ流れの直前の書き込み（TENTACLE_ACCESS は :201 で必ず
+エラー文字列を書いてから TRYCALLFORM、TATTOO_ACCESS "POSITION_STR"・SEIKAKU_CHECK "STRING"（CHARA_SEIKAKU.ERB:17–31 どの経路も書く）・TOFULL・SUBSTRING(U)・INPUTS 等）を読んでいて、
+呼び出し前の値を読む箇所は無い。例外として同期しているもの：STRMATCH・NANORI_FINAL の REPLACE（:794–807）、TATTOO_ACCESS "POSITION_STR"、
+WINDOW_*、PRINT_TATTOO（上表）。
+
 ## 限界（deviations「口上 catalog の表示簡化」・unresolved）
 
-- RESULTS／COUNT は共用していない（catalog 専用の暫存）。
+- COUNT は共用していない（catalog 専用の暫存；Python は COUNT を模型化していない。unresolved `GAME_MODE_CHECK`）。
 - catalog で実行できない口上・地の文（Null narration 含む）の中の書き込みは起きない（`SELF_CALL_ANALYSIS` は S21 の STRFINDU 追加で実行可能に）。

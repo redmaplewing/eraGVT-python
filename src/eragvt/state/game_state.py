@@ -84,6 +84,14 @@ class GameState:
     # 新遊戲 ResetData 清零（VariableData.cs@SetDefaultValue:538–）；BEGIN TRAIN 不清（VariableEvaluator.cs@UpdateInBeginTrain:1422–）。
     # 跨函式共用：原作有讀「前一次 RESULT」的地方（EVENT_PALAM_HOSEI 的悪堕ち分岐等）。寫入來源一覽：docs/wiki/python/result.md。
     result: IntArray = field(default_factory=IntArray)
+    # 內建 RESULTS（字串 1 維、大小 100：VariableCode.cs:110 0x02、ConstantData.cs@setDefaultArrayLength:154–155；
+    # 本作 CSV/VariableSize.csv 未指定）。0x02 ≥ __COUNT_SAVE_STRING_ARRAY__（0x01，:105）且無 __SAVE_EXTENDED__ → **不存檔**
+    # （VariableData.cs@SaveToStream:663–674、VariableIdentifier.cs:248–256）；新遊戲 ResetData 與讀檔時 SetDefaultValue 清為空
+    # （VariableEvaluator.cs@ResetData:1132–1139、@LoadFromStream:2173／@LoadFromStreamBinary:2339 → VariableData.cs:558–574）；
+    # BEGIN TRAIN 不清（VariableEvaluator.cs@UpdateInBeginTrain:1422–1460 只清 TSTR）。
+    # 跨函式共用（S22）：CORRPUTION.ERB@CORRUPTTION_GET_NANORI_FINAL:787 讀前一次的 RESULTS:2。寫入來源：docs/wiki/python/result.md。
+    # 不存檔 → to_json／from_json 不含；compare=False（存讀檔往返的比較不看它）。
+    results: StrArray = field(default_factory=StrArray, compare=False)
     charas: list[Character] = field(default_factory=list)
     temp: TempVars = field(default_factory=TempVars, compare=False)
     rng: GameRng = field(default_factory=GameRng, compare=False, repr=False)
@@ -152,6 +160,15 @@ class GameState:
             if i >= 1000:
                 return
             self.result[i] = int(v)
+
+    RESULTS_SIZE = 100
+
+    def set_results_array(self, values: list[str]) -> None:
+        """`VARSET RESULTS, ""` → `ARRAYCOPY "src", "RESULTS"`（TagSetText.ERB:178–179／:270–271）：全消去後、先頭から
+        RESULTS の長さ（100）まで写す（VariableEvaluator.cs@CopyArray:764–775 は短い方の長さ）。"""
+        self.results.clear()
+        for i, v in enumerate(values[: self.RESULTS_SIZE]):
+            self.results[i] = v
 
     def swap_chara(self, a: int, b: int) -> None:
         """era `SWAPCHARA a, b`。"""

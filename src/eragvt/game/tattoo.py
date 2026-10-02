@@ -81,12 +81,14 @@ def tattoo_access(ctx: Ctx, key: str, arg: int = 0) -> int | str:
             else:
                 s = "体中"
             st.temp.locals[slot] = s  # type: ignore[assignment]
+            st.results[0] = s  # :217 RESULTS = %LOCALS%（共用 RESULTS、S22）
             return s
         s = st.temp.locals.get(slot, "")  # type: ignore[assignment]
         for i, name in enumerate(("下腹部", "腹部", "右臀部", "左乳房")):
             if des[i]:
                 s = name
         st.temp.locals[slot] = s  # type: ignore[assignment]
+        st.results[0] = str(s)  # :229
         return str(s)
     raise KeyError(key)
 
@@ -168,3 +170,23 @@ def print_tattoo(ctx: Ctx, arg: int, arg1: int = 0) -> None:
     if ctx.narration.run_function(ctx, "PRINT_TATTOO", [arg, arg1]):
         return
     ctx.out.print(f"〈淫紋：PRINT_TATTOO {arg}〉")
+    _print_tattoo_results(ctx, arg, arg1)
+
+
+def _print_tattoo_results(ctx: Ctx, arg: int, arg1: int) -> None:
+    """PRINT_TATTOO を佔位で代えたときの共用 RESULTS（S22）：:245 `VARSET RESULTS` → :397 `CALL TATTOO_LIB`（:478–1409：
+    `VARSET RESULTS` 後に RESULTS:0／1 を代入、PRINT・RAND なし）。TATTOO_LIB は catalog で実行する（表示が無いので出力は増えない）。
+    ERB/ が無く catalog が使えない場合は RESULTS:0／1 が空のまま（RESULTS:2 以降は原作どおり空）。"""
+    st = ctx.state
+    st.results.clear()  # :245
+    if arg == 7 and not (int(tattoo_access(ctx, "TATTOO_TYPE", 7)) >> arg1) & 1:  # :248–252
+        return
+    rank = limit(int(tattoo_access(ctx, "TATTOO_RANK", arg)), 0, 3)  # :373–374
+    cal = arg  # :375–391
+    if arg == 7:
+        cal = {0: 0, 1: 2, 2: 0, 3: 1, 4: 1, 5: 3, 6: 3}.get(arg1, arg)
+    r = int(tattoo_access(ctx, "TATTOO_TYPE", cal))  # :392
+    if arg == 7:  # :393–394
+        r += 100
+    if arg >= 0:  # :396–397
+        ctx.narration.run_function(ctx, "TATTOO_LIB", [r + cal * 10, rank])

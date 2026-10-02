@@ -681,7 +681,7 @@ def test_catalog_new_builtins(svc, ctx, src, result):
 def test_catalog_replace_statement(svc, ctx):
     """`REPLACE 文字列, 正規表現, 置換`（命令形）→ RESULTS（Instraction.Child.cs:390–409、ReplaceMethod:2452–2474）。"""
     it = _run_fd(svc, ctx, '@F\nREPLACE "参上！？", "[！？♪]", "❤"\n')
-    assert it._get_narr("RESULTS", 0, "") == "参上❤❤"
+    assert ctx.state.results[0] == "参上❤❤"  # S22：共用 RESULTS
 
 
 # =====================================================================================================

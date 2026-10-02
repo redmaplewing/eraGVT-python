@@ -379,22 +379,29 @@ def corruption_get_nanori_final(ctx: Ctx, who: int) -> None:
     else:
         a = _strdata(ctx, _NANORI_B)
         a1 = _strdata(ctx, _NANORI_B1)
-    # :786 `CALL STRMATCH(CSTR:ARG:3, CSTR:ARG:55)`（汎用関数/コモン関数.ERB:1378–1393）：STRFINDU が -1 なら RESULTS:2 を
-    # 書かない（RESULTS:0／1 だけ空にする）→ :787 の RESULTS:2 は前の値（Python では RESULTS を共用していないので再現できない）
+    # :786 `CALL STRMATCH(CSTR:ARG:3, CSTR:ARG:55)`（汎用関数/コモン関数.ERB:1378–1393）。SUBSTRINGU を命令として使うので結果は
+    # RESULTS:0（Instraction.Child.cs@METHOD_Instruction:398–404）。STRFINDU が -1 なら RESULTS:0／1 だけ空にして RESULTS:2 は
+    # 書かない → :787 は前回の RESULTS:2（共用 GameState.results、S22：使用者裁決 2026-10-02 で照原作）。
     src, word = c.cstr[3], c.cstr[55]
     # StrfindMethod(unicode):2264–2273（空の target は -1）。UNVERIFIED: IndexOf の文化依存比較を序数比較で代用（unresolved.md S21）
     idx = src.find(word) if src != "" else -1
-    st.result[0] = 0  # STRMATCH の RETURN
-    if idx < 0:
-        raise NotImplementedError("STRMATCH 不成立時の RESULTS:2（前回の値）は再現できない（CORRUPTTION_GET_NANORI_FINAL:786–791）")
-    after = src[idx + len(word):]
-    if after != "":  # :787–791
-        locals1 = after
+    st.result[0] = idx  # :1379 STRFINDU（命令 → RESULT:0）
+    if idx > -1:  # :1380–1388
+        st.results[1] = src[:idx]  # :1382–1383 SUBSTRINGU ARGS:0,0,RESULT
+        st.results[2] = src[idx + len(word):]  # :1385–1386
+        st.results[0] = word  # :1388 SUBSTRINGU ARGS:0,RESULT,STRLENSU(ARGS:1)
+    else:  # :1390–1392
+        st.results[0] = ""
+        st.results[1] = ""
+    st.result[0] = 0  # :1393 RETURN
+    if st.results[2] != "":  # :787–791
+        locals1 = st.results[2]
     else:
         locals1 = changingcall_detail(st, 0)  # LOCAL は静的で未代入（常に 0：モジュール docstring）
-    results = re.sub("[！？♪]", "❤", locals1)  # :794
+    results = re.sub("[！？♪]", "❤", locals1)  # :794（REPLACE を命令として → RESULTS:0）
     for pat, rep in _NANORI_REPLACE:  # :795–807
         results = results.replace(pat, rep)
+    st.results[0] = results
     locals1 = results + "❤❤"  # :809
     c.cstr[3] = f"{a}{a1}❤ {_print_theme(ctx, who)}{c.cstr[0]}{locals1}"  # :812–813
     c.cflag[5] = 1  # :816

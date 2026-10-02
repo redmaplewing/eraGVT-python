@@ -58,9 +58,9 @@
   RESULT 改為 `GameState.result` 共用陣列，已移植的全部寫入來源同步寫入（一覽 `docs/wiki/python/result.md`），:136 讀共用陣列。
   測試 `tests/test_result_cloth_corrupt.py`（路徑 a／b 的代表情形）。
 - [x] 悪堕ち容姿（`ヒロイン関連/悪堕ち/CORRPUTION.ERB`、`CORRUPTION_RECOVER.ERB`）— S21 移植（`eragvt.game.corruption`）。
-- [ ] `CORRPUTION.ERB@CORRUPTTION_GET_NANORI_FINAL`:786–791（S21）— `STRMATCH`（`コモン関数.ERB`:1378–1393）在名乗り（CSTR:3）中找不到
-  原變身後名（CSTR:55）時不寫 RESULTS:2 → :787 讀到前一次的 RESULTS:2。RESULTS 未共用（只有 catalog 暫存），無法重現 → 停止
-  （`NotImplementedError`）。到達條件：設定 F(4) ON＋完堕ち＋變身能力＋名乗り被手動改成不含變身後名。預設名乗り（`SAVESTR:10＋CSTR:0＋…`）必含。
-  已查：STRMATCH 本體、`StrfindMethod`（`Creator.Method.cs`:2222–2280）。
+- [x] `CORRPUTION.ERB@CORRUPTTION_GET_NANORI_FINAL`:786–791（S21）— `STRMATCH`（`コモン関数.ERB`:1378–1393）在名乗り（CSTR:3）中找不到
+  原變身後名（CSTR:55）時不寫 RESULTS:2 → :787 讀到前一次的 RESULTS:2。**S22 結案**（使用者裁決 2026-10-02：照原作）：RESULTS 改為
+  `GameState.results` 共用陣列（引擎：不存檔、讀檔／新遊戲清空；寫入來源一覽 `docs/wiki/python/result.md`），STRMATCH 同步寫入、:787 讀共用陣列，
+  停止點解除。測試 `tests/test_results_shared.py`（不成立＋前值非空／空、連續 2 人）。
 - [ ] `.NET string.IndexOf(string, int)`（STRFINDU，`Creator.Method.cs`:2273）是文化相依比較；catalog／corruption 以 Python `str.find`（序數）
   實作。本作用到的字串（假名・漢字・記號）在 CompareOptions.None 下應一致，但 reference 內無法確認 .NET 文化表（S21）。

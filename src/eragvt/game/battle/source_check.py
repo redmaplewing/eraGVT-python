@@ -179,7 +179,13 @@ def source_check(ctx: Ctx) -> Generator[None, int, None]:
 
         if enemy_type_check(st, "MOB") == 1 or enemy_type_check(st, "CITIZEN") == 1 or get_lastboss_phase(st) >= 1:
             raise NotImplementedError("ラスボス／雑魚敵の REACTION_REF は未移植")
-        r = boss_reaction_ref(ctx, st.flag[11], 1)
+        if st.flag[11] in range(1, 8):
+            r = boss_reaction_ref(ctx, st.flag[11], 1)
+        else:
+            # S22：悪堕ちキャラ戦（FLAG:11 = 0：ACTION.ERB:38）は TENTACLE_BOSS_0_REACTION_REF が無く TRYCALLFORM 不発
+            # （Instraction.Child.cs:2310–2317）→ :1159 の RESULT は直前の CALL HATUJOU_TO_HAIRAN（:1147）の RETURN 0
+            # （SUBEVENT_BATTLEE.ERB:515–527。RETURN 1 の経路は未移植で停止）＝共用 RESULT:0。
+            r = st.result[0]
         if r >= 0:
             st.tflag[17] = r
     _state_turnend(ctx)
@@ -910,6 +916,8 @@ def _hatujou_to_hairan(ctx: Ctx) -> None:
     st = ctx.state
     c = tc(ctx)
     v = c.tcvarn
+    # :515–527 の RETURN 0 → RESULT:0 = 0（共用 RESULT。BATTLE_COM_AFTER.ERB:1159 の不発 TRYCALLFORM 後に読まれる：S22）
+    st.result[0] = 0
     if t(ctx, c, "ケモミミ族") == 0:
         return
     if is_male(ctx.data, c) or t(ctx, c, "妊娠") > 0 or (v[12] & 2) or (v[12] & HATUJOU) == 0:

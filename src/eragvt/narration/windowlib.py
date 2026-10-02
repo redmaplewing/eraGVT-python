@@ -279,6 +279,18 @@ class WindowManager:
         self.text_print = [[""] * _WND_LINES for _ in range(_MAX_WINDOWS)]
         self.text = [[""] * _WND_LINES for _ in range(_MAX_WINDOWS)]
         self.info = [[0] * _WND_LINES for _ in range(_MAX_WINDOWS)]
+        # 最後に呼んだ SHAPE_TAGSET_TEXT／CUT_TAGSET_TEXT の RESULTS（どちらも `VARSET RESULTS, ""` → `ARRAYCOPY "strShapeText",
+        # "RESULTS"`：TagSetText.ERB:178–179／:270–271、size 以下の早期 RETURN は :101–106／:219–222）。None = この呼び出しで未使用。
+        # WINDOW_MGR "GETTEXT"（WindowDrawer.ERB:391–393）の RESULTS:0 は DISPLAY_EX 内で後続の SHAPE／CUT に上書きされる。
+        self.last_results: Optional[list[str]] = None
+
+    def _shape(self, text: str, size: int) -> list[str]:
+        self.last_results = r = shape_tagset_text(text, size)
+        return r
+
+    def _cut(self, text: str, size: int, mode: int, padding: int) -> list[str]:
+        self.last_results = r = cut_tagset_text(text, size, mode, padding)
+        return r
 
     def _check_id(self, wid: int) -> None:
         if not 0 <= wid < _MAX_WINDOWS:
@@ -308,10 +320,10 @@ class WindowManager:
             tp[0] = f"┏{bar}┓"
             tp[h - 1] = f"┗{bar}┛"
             for n in range(1, h - 1):
-                tp[n] = "┃" + _r(shape_tagset_text(self.text[wid][n - 1], w - 4), 0) + "┃"
+                tp[n] = "┃" + _r(self._shape(self.text[wid][n - 1], w - 4), 0) + "┃"
         else:
             for n in range(0, h):
-                tp[n] = _r(shape_tagset_text(self.text[wid][n], w), 0)
+                tp[n] = _r(self._shape(self.text[wid][n], w), 0)
 
     def destroy(self, wid: int) -> None:
         """@WINDOW_DESTROY:179–194 → "DESTROY":341–347。"""
@@ -328,9 +340,9 @@ class WindowManager:
         info = self.info[wid]
         if info[4] == 1:
             if line < info[3] - 2:
-                self.text_print[wid][line + 1] = "┃" + _r(shape_tagset_text(s, info[2] - 4), 0) + "┃"
+                self.text_print[wid][line + 1] = "┃" + _r(self._shape(s, info[2] - 4), 0) + "┃"
         else:
-            self.text_print[wid][line] = _r(shape_tagset_text(s, info[2]), 0)
+            self.text_print[wid][line] = _r(self._shape(s, info[2]), 0)
 
     def display_ex(self, out: Any, priority: list[int]) -> None:
         """@WINDOW_DISPLAY_EX:50–126。"""
@@ -349,16 +361,16 @@ class WindowManager:
                 if cl >= _DISPLAY_LINES:
                     raise ErbRuntimeError("arrDisplayText の範囲外")
                 if x >= 0:
-                    left = _r(cut_tagset_text(lines[cl], x, 0, 1), 0)
-                    right = _r(cut_tagset_text(lines[cl], x + w, 1, 0), 1)
-                    body = _r(shape_tagset_text(self.text_print[wid][wl], w), 0)
+                    left = _r(self._cut(lines[cl], x, 0, 1), 0)
+                    right = _r(self._cut(lines[cl], x + w, 1, 0), 1)
+                    body = _r(self._shape(self.text_print[wid][wl], w), 0)
                 else:
                     # :96–107（負の X）。本作では使われない
                     raise NotSupported("WINDOW_DISPLAY_EX：負の X 座標")
                 lines[cl] = left + body + right
                 max_line = max(max_line, cl)
         for cl in range(max_line + 1):
-            print_tagset_text(out, _r(shape_tagset_text(lines[cl], _DISPLAY_WIDTH), 0), 0x01)
+            print_tagset_text(out, _r(self._shape(lines[cl], _DISPLAY_WIDTH), 0), 0x01)
 
 
 def _trunc_div(a: int, b: int) -> int:
@@ -372,7 +384,16 @@ def py_functions(wm: WindowManager, out: Any) -> dict:
     RESULT：どの WINDOW_* も内部で `WINDOW_MGR` の `VARSET RESULT, 0`（WindowDrawer.ERB:330）を通り、最後に呼ぶ
     `SHAPE_TAGSET_TEXT`／`CUT_TAGSET_TEXT`（TagSetText.ERB:218／:100 も `VARSET RESULT, 0`）・RETURN でも RESULT:1 以降は
     書かれないので、終了時は RESULT 全体が 0（WINDOW_MGR "GETINFO" の RESULT:1〜4（:397–400）は DISPLAY_EX 内で後続の
-    VARSET に消される）。共用 RESULT（GameState.result）を全消去する。"""
+    VARSET に消される）。共用 RESULT（GameState.result）を全消去する。
+
+    RESULTS（S22）：最後に呼ばれた SHAPE／CUT の結果（`WindowManager.last_results`）を共用 RESULTS（GameState.results）に写す。
+    呼ばれなかった場合（DESTROY、高さ 0 の CREATE、枠外の SETTEXT）は RESULTS を変えない（WINDOW_MGR は RESULTS を消さない：
+    WindowDrawer.ERB:316–409。"GETTEXT" の RESULTS:0 代入〔:391–393〕は DISPLAY_EX の中だけで、最後の SHAPE が上書き）。"""
+
+    def _sync_results(it) -> None:
+        if wm.last_results is not None:
+            it.st.set_results_array(wm.last_results)
+            wm.last_results = None
 
     def _int(args: list, i: int) -> int:
         v = args[i] if i < len(args) and args[i] is not None else 0
@@ -381,25 +402,33 @@ def py_functions(wm: WindowManager, out: Any) -> dict:
         return v
 
     def create(it, args):
+        wm.last_results = None
         wm.create(*(_int(args, i) for i in range(6)))
         it.st.result.clear()
+        _sync_results(it)
         return 0
 
     def settext(it, args):
         s = args[2] if len(args) > 2 and args[2] is not None else ""
+        wm.last_results = None
         wm.settext(_int(args, 0), _int(args, 1), s)
         it.st.result.clear()
+        _sync_results(it)
         return 0
 
     def destroy(it, args):
+        wm.last_results = None
         wm.destroy(_int(args, 0))
         it.st.result.clear()
+        _sync_results(it)
         return 0
 
     def display(it, args):
         # @WINDOW_DISPLAY:129–134：nWindowCnt = 10、優先度 0..9
+        wm.last_results = None
         wm.display_ex(out, list(range(_MAX_WINDOWS)))
         it.st.result.clear()
+        _sync_results(it)
         return 0
 
     def display_ex(it, args):

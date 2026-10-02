@@ -1,6 +1,6 @@
 # 現況（唯一真相，≤120 行）
 
-更新：2026-10-02（S21）
+更新：2026-10-02（S22）
 
 ## 已完成（各階段細節見 git log 與 wiki）
 
@@ -14,43 +14,32 @@
 - **S13** 妊娠・出産・子供（`docs/wiki/era/pregnancy.md`）。**S14** 動画流出＋動画サイト視窗（catalog INPUTS／GOTO）。
 - **S15** 戰後レイプ・自慰系。**S16** ＳＰ変身・バースト。**S17** 寄生。**S18** 強制發生事件（脅迫・夜這い・子触手）。
 - **S19** 悪堕ちキャラ（`docs/wiki/era/akuoti.md`）：淫謀・洗脳／悪堕ちキャラ戰。**S20** 襲撃／救援イベント戰（`game.raid`）＋裁決修正 6 項＋斜體。
-- **S21** 共用 RESULT＋触手拘束具＋悪堕ち容姿＋防衛力負數裁決（下節）。測試共 1328 個（新增 `tests/test_result_cloth_corrupt.py` 46）。
+- **S21** 共用 RESULT＋触手拘束具＋悪堕ち容姿＋防衛力負數裁決（`docs/wiki/python/result.md`、`eragvt.game.corruption`）。
+- **S22** 共用 RESULTS（下節）。測試共 1344 個（新增 `tests/test_results_shared.py` 16）。
 
-## S21 內容
+## S22 內容
 
-- **共用 RESULT**（`GameState.result`，`docs/wiki/python/result.md`）：引擎上 RESULT 是存檔對象、大小 1000、多值 RETURN 只寫給定格數、
-  函式終端只設 RESULT:0。存檔 `SAVE_VERSION = 2`（v1 migration）。已移植的 RESULT:1 以後寫入來源全部同步寫入（TENTACLE_ACCESS(_PRISON)、
-  SET_TENTACLE_SIZE、PRISON_GAPING、COMMON_PRISON_EXP_SH、SEX_COMEX(_RANDOM)、ACT_HANTEI、TENTACLE_SYASEI 系、PALAM_UP:147、ABL_UP_EX、
-  INMON_RECOVERY、淫謀動画拡散、GENERATE_CHAR_SIZE、WINDOW_*〔全消去〕）；catalog 的 RESULT 也改用同一陣列（失敗回復時一併復原）。
-  悪堕ちキャラ幽閉的 PALAM_HOSEI 讀殘值（照原作，unresolved 結案）；TENTACLE_SAKUSEI／COMF103 的不發 TRYCALLFORM 讀 RESULT:0。
-- **触手拘束具**（CFLAG:42 = 400）：イベント戰時間切れ後的強制裝着（SUBEVENT_BATTLE_SETTENTACLECLOTH）、每回合被姦（ACTTENTACLECLOTH：
-  SEX_COMEX/2 → 補正 → COMMON_PALAM，照原作的添字錯位）、COMF103 素股焦らし失敗文（含處女喪失 :125–159）。拆除只在未移植的 [112] 衣裝設定
-  （預設路徑不操作）、完堕ち、イベント戰衣裝還原。地の文 MESSAGE_SUBEVENT 走 catalog。
-- **悪堕ち容姿**（`eragvt.game.corruption`）：CORRUPT_CHANGE_LOOKS_MAIN／CORRUPT_CHANGE_LOOKS／各 GET_CORRUPTED_*／SPNAME／THEME／NANORI_FINAL、
-  RECOVER_CORRUPTION（定着・完堕ち）。接上 PRISON 悪堕ち、淫紋陥落、開局デフォルト悪堕ち、AFTER_RESCUED。基本セット（F(4) OFF）下不作用。
-- **catalog 擴充**：SPLIT、STRFINDU／STRCOUNT／REPLACE／ISNUMERIC／TOINT → `MESSAGE_AKUOTI.ERB`・SETCOLOR_BY_STR・SELF_CALL_ANALYSIS 等可執行。
-  覆蓋率 13384 中 12844（96.0%）。
-- **Part D（使用者裁決 2026-10-02）**：AKUOTI_EVENT 的 SQRT 當 0（確認）、損失式防衛力項當 0（損失 0）、PERFORM_CHEERS_FIRST_HANTEI 的
-  `SQRT(FLAG:852 + 625)` 負→0；未移植的 PASTIME_悪堕ち遭遇:19／ACTION_GATHER_INFORMATION:142 之後比照。
+- **引擎查證**（`docs/wiki/python/result.md`）：RESULTS 大小 100、**不存檔**（存檔版本維持 2）、新遊戲・讀檔時清空、BEGIN TRAIN 不清；
+  RETURN／RETURNFORM 只收整數（無字串多值 RETURN）、#FUNCTION(S) 不可 CALL；寫 RESULTS 的內建：命令用式中関数・INPUTS 系・GETTIME
+  （RESULTS:0）、無代入先的 STRDATA／HTML_TAGSPLIT、CHKDATA 系、FIND_CHARADATA（本作皆不用）、ARRAYCOPY。
+- `GameState.results`（compare=False）。catalog 的 RESULTS（讀寫・VARSET・INPUTS・命令用式中関数）改用共用陣列，失敗回復時一併還原。
+- 寫入來源（全域 grep：RESULTS:1 以後 66 行、VARSET 7＋口上 1、ARRAYCOPY 2）：STRMATCH（NANORI_FINAL）、TagSetText（WINDOW_*）、
+  PRINT_TATTOO（佔位時也照 :245 VARSET＋TATTOO_LIB 寫）、TATTOO_ACCESS "POSITION_STR" 同步；未移植者列於 result.md（FIGHT_STYLE 等）。
+- **名乗り改竄**：`CORRUPTTION_GET_NANORI_FINAL`:786–791 讀共用 RESULTS:2（使用者裁決照原作），停止點解除，unresolved 結案。
+- RESULT:0「呼叫前值」再確認：不發 TRYCALLFORM 後的讀取，新增同步 `BATTLE_COM_AFTER.ERB`:1159（悪堕ちキャラ戦的素股焦らし次ターン指定，
+  讀 HATUJOU_TO_HAIRAN 的 RETURN 0；原本是 NotImplementedError）。RESULTS:0 無讀呼叫前值處 → 維持不模型化（理由見 result.md）。
 
-## S21 模擬（`tools/sim.py`，seed 0–249，`--max-shop 200`；4 並列分批，`--dump`／`--load` 合算）
+## S22 模擬（seed 0–249，`--max-shop 200`，4 並列分批）
 
-| 指標 | 預設 S20→S21 | 初期セット S20→S21 | `--enable-akuoti` S19→S21 | `--corrupt 3` S19→S21 |
-|---|---|---|---|---|
-| 停止前 SHOP（平均／最多） | 201.00／201 → 同 | 199.47 → 201.00／201 | — → 201.00／201 | — → 201.00／201 |
-| ゲームオーバーモード進入／進入後 SHOP 平均 | 250／188.10 → 同 | 248／188.67 → 250／188.65 | — → 250／188.16 | — → 250／184.11 |
-| 敗北局／敗北後 SHOP 平均 | 250／192.87 → 同 | 250／191.47 → 250／193.00 | — → 250／192.87 | — → 250／189.40 |
-| 停止 | 0 → 0 | 2（触手拘束具）→ 0 | 2（幽閉 PALAM 補正）→ 0 | 195（SQRT 178・補正 16 ほか）→ 0 |
-
-- 全設定とも 250 局すべて上限到達。`--enable-akuoti`（預設）：AKUOTI_EVENT 44098／250 局、悪堕ちキャラ戰 0。
-  `--corrupt 3`（預設）：AKUOTI_EVENT 41674／244、悪堕ちキャラ戰 459／204（勝 37・敗 344）、RAID_ATTACK 202。
-- 預設・初期セットの襲撃／救援：RAID_ATTACK 82／86、RAID_RESCUE 38／21（S20 とほぼ同じ）。
+4 設定（預設・初期セット・`--enable-akuoti`・`--corrupt 3`）的全部指標與 S21 完全相同（停止 0、全 250 局上限到達；
+敗北後 SHOP 192.87／193.00／192.87／189.40，ゲームオーバーモード後 188.10／188.65／188.16／184.11）。名乗り改竄不成立路徑需 F(4) ON，模擬未到達。
 
 ## 下一步
 
-- **自主推進（使用者指定 2026-10-02，依序）**：S22 RESULTS 共用 → S23 [反撃]スタイル → S24 設定畫面／プリセット → S25 狀態畫面
+- **自主推進（使用者指定 2026-10-02，依序）**：~~S22 RESULTS 共用~~ → **S23 [反撃]スタイル** → S24 設定畫面／プリセット → S25 狀態畫面
   → S26 FLASHNEWS → S27 ラスボス → S28 未移植行動（特別活動・防衛・支援・情報・自由）。其他候選：ランダム命名畫面、SHOP [112] 衣裝設定。
-- 已裁決（2026-10-02）：名乗り改竄的 RESULTS:2 殘值照原作（S22）；開局デフォルト悪堕ち的輸出丟棄維持現況。
+- 已裁決（2026-10-02）：名乗り改竄的 RESULTS:2 殘值照原作（S22 實作）；開局デフォルト悪堕ち的輸出丟棄維持現況。
+- S23〜S25 移植 `FIGHT_STYLE.ERB@SET_FSTYLE_INFO`（RESULTS:0〜2）等時，寫入 `GameState.results`（result.md 未移植表）。
 - 已裁決（2026-10-02）：PALAM_HOSEI 殘值照原作、防衛力負數 D1〜D4（S21 實作）。已裁決（2026-10-01）：S20 的 DEVIATION 6 項＋斜體。
 - 已裁決（2026-09-30）：拡張度初期值照原作；S13 苗床出産的 static LOSEDEF 等怪處照原作。
 - 口上 catalog 待擴充：改狀態的口上（hook 化）、入れ子內 $ラベル 的 GOTO（`KOJO_AEGI.ERB` $ＭＡＸ２，199 函式）、STRDATA、未實作式中関数。
@@ -58,8 +47,8 @@
 
 ## 仍會停止的分岐（`NotImplementedError` → Web 停止）
 
-S21 模擬 4 設定皆無停止。登記但罕見：
-- 悪堕ち：名乗り改竄時 STRMATCH 不成立（RESULTS:2 殘值，unresolved）、悪堕ち戰中 TENTACLE_ACCESS 的數值鍵（安全網）。
+S22 模擬 4 設定皆無停止。登記但罕見：
+- 悪堕ち：悪堕ち戰中 TENTACLE_ACCESS 的數值鍵（安全網）。
 - 襲撃／救援：ラスボス出現後（FLAG:100 = 0）の襲来、RAID_HANTEI のデバッグ入力、原作でも CodeEE になるエラー路。
 - 幽閉：ラスボス 的幽閉、TS 性別變化、ラスボス出現後的淫紋陥落。
 - 妊娠・子供：TS 変身キャラ妊娠時的女體化、子供名字等的手入力（INPUTS）與ランダム命名畫面、デバッグモード的妊娠確率輸入。
@@ -77,4 +66,4 @@ S21 模擬 4 設定皆無停止。登記但罕見：
 - 可玩範圍：休憩・鍛錬・出撃（含拘束戰鬥、拡張度、敗北後幽閉與救出、戰後レイプ、襲撃／救援イベント戰）、夜間いちゃラブ・自慰、
   妊娠・出産・子供、全滅後的ゲームオーバーモード。其他行動、11 日目夜的日數超過結局等會進入 Web「停止」畫面。
 - 初期セット選項的角色身體資料為 0（原作同樣不生成），戰鬥中女性敏捷 0・攻擊 2 倍（原作行為，是否偏離待決定）。
-- RESULTS／COUNT 仍未與 Python 共用（catalog 專用暫存，deviations「口上 catalog 的顯示簡化」）。
+- COUNT 仍未與 Python 共用（catalog 專用暫存，deviations「口上 catalog 的顯示簡化」）；RESULT／RESULTS 已共用。

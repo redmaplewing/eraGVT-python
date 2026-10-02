@@ -263,7 +263,7 @@ class Interp:
                 raise NotSupported("INPUTS（ジェネレータ呼び出しのみ対応）")
             if self.input_pos >= len(inputs):
                 raise NeedInput()
-            self._set_narr("RESULTS", 0, inputs[self.input_pos])
+            self.st.results[0] = inputs[self.input_pos]  # RESULTS は共用（GameState.results、S22）
             self.input_pos += 1
         elif t is N.Wait:
             self.out.wait()
@@ -295,7 +295,7 @@ class Interp:
         elif t is N.MethodStmt:
             v = self._method(s.name, s.args, fr)
             if isinstance(v, str):
-                self._set_narr("RESULTS", 0, v)
+                self.st.results[0] = v  # Instraction.Child.cs@METHOD_Instruction:398–404
             else:
                 self._set_result([v])
         elif t is N.Hook:
@@ -482,7 +482,10 @@ class Interp:
             elif tgt.name == "RESULT":
                 self.st.result.clear()  # 共用 RESULT（GameState.result）全體を 0 に
                 return
-            elif tgt.name in ("RESULTS", "COUNT") or getattr(self.cat.user_vars.get(tgt.name), "narration_owned", False):
+            elif tgt.name == "RESULTS":
+                self.st.results.clear()  # 共用 RESULTS（GameState.results、S22）全體を "" に
+                return
+            elif tgt.name == "COUNT" or getattr(self.cat.user_vars.get(tgt.name), "narration_owned", False):
                 key0 = tgt.name
             else:
                 raise NotSupported(f"{tgt.name} への VARSET")
@@ -655,6 +658,12 @@ class Interp:
                 raise ErbRuntimeError(str(e)) from e
         return v
 
+    def _results_idx(self, i: Any) -> int:
+        """RESULTS の添字（大きさ 100：ConstantData.cs:154–155。範囲外は引擎エラー）。"""
+        if not isinstance(i, int) or not 0 <= i < self.st.RESULTS_SIZE:
+            raise ErbRuntimeError(f"RESULTS の添字 {i!r} が範囲外")
+        return i
+
     def _chara(self, i: int):
         if not isinstance(i, int) or i < 0 or i >= self.st.charanum:
             raise ErbRuntimeError(f"キャラ番号 {i} が範囲外")
@@ -768,7 +777,7 @@ class Interp:
         if name == "COUNT":
             return self._get_narr(name, args[0] if args else 0, 0)
         if name == "RESULTS":
-            return self._get_narr(name, args[0] if args else 0, "")
+            return self.st.results[self._results_idx(args[0] if args else 0)]
         if name in TEMP_ARRAY_ATTR:
             arr = getattr(st.temp, TEMP_ARRAY_ATTR[name])
             if len(args) >= 2:
@@ -836,7 +845,11 @@ class Interp:
             args = self._args(fr, v)
             self.st.result[self._idx(args[0], name) if args else 0] = value
             return
-        if name in ("RESULTS", "COUNT"):
+        if name == "RESULTS":
+            args = self._args(fr, v)
+            self.st.results[self._results_idx(args[0] if args else 0)] = value
+            return
+        if name == "COUNT":
             args = self._args(fr, v)
             self._set_narr(name, args[0] if args else 0, value)
             return
