@@ -25,6 +25,7 @@ from ..text import Line, NarrationService, NullNarrationService, TextOutput
 from . import shop
 from .action import Ctx
 from .config import config_gen, update
+from .era import limit
 from .opening import event_first_gen
 from .turnend import run_turn
 
@@ -211,7 +212,14 @@ class GameSession:
             return
         elif value == 130:  # SHOP.ERB:271–273
             shop.shop_show_situation_list(st, self.data, out, self.narration)
-        elif value in (110, 111, 112, 113, 120, 150):  # SHOP.ERB:246–278
+        elif value == 110:  # SHOP.ERB:246–249 TARGET = LIMIT(TARGET, 1, CHARANUM-1) → CALL SHOW_STATUS_CHARA_SELECT
+            from .status_screen import show_status_chara_select
+
+            st.target = limit(st.target, 1, st.charanum - 1)
+            ctx = Ctx(st, self.data, out, self.narration)
+            self._run_gen(show_status_chara_select(ctx, st.target), self._show_shop)
+            return
+        elif value in (111, 112, 113, 120, 150):  # SHOP.ERB:251–278
             if shop.usershop_calls_submenu(st, value):
                 out.printl(f"（未實作：[{value}]）")
         elif value == 160:  # SHOP.ERB:281–285

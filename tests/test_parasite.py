@@ -446,7 +446,8 @@ def test_session_eventshop_input(data):
 def test_tokusou_act_limit_parasite_no_longer_halts(data, svc, monkeypatch):
     """S16 模擬で唯一停止した経路（初期セット seed 101：PRISON_COM301 で寄生されたキャラが救出後の戦闘で
     寄生の行動制限 COMMON_BATTLE_FUNC.ERB:226–255 を引く）。S18 で乱数の消費が変わり seed 101 では到達しなくなったので、
-    開局直後にキャラ 1〜3 へ 寄生 を付けて同じ経路を通す（S20 で襲撃／救援が起きるようになり乱数の消費が変わったので seed 6）。
+    開局直後にキャラ 1〜3 へ 寄生 を付けて同じ経路を通す（S20 で襲撃／救援が起きるようになり乱数の消費が変わったので seed 6、
+    S25 で戦闘中 [800] のステータス画面が開くようになり経路が変わったので seed 0）。
     停止せず SHOP 上限まで進む。"""
     import sys
 
@@ -467,6 +468,6 @@ def test_tokusou_act_limit_parasite_no_longer_halts(data, svc, monkeypatch):
         for i in (1, 2, 3):
             _parasitize(data, st.charas[i])
 
-    r = sim.run_one(data, svc, 6, "tokusou", 30, 100000, Path(tempfile.mkdtemp()), setup=setup)
+    r = sim.run_one(data, svc, 0, "tokusou", 30, 100000, Path(tempfile.mkdtemp()), setup=setup)
     assert r["reason"] == "上限"
     assert hits

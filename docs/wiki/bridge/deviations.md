@@ -102,13 +102,12 @@ ERB 路徑相對 `source/earGVP/ERB/`。
 - [ ] **無效輸入訊息**：Emuera 以「刪一行＋暫時行」顯示「無効な値です」，這裡以一般行輸出。
 - [ ] **SHOW_SHOP 的 TARGET == CHARANUM**：原作會因越界參照報錯，這裡視為「編成外」重新選擇 TARGET（`eragvt.game.shop.show_shop`）。
 
-- [ ] **鍛錬畫面**：`SHOW_STATUS_BASE_TRAINING` 的素質一覧 `SHOW_STATUS_TALENT`（`ヒロイン関連/CHARA_STATUS.ERB`:251–953）未顯示；體力等條以 SHOW_SHOP 同樣的近似條顯示。`PRINTLC` 以 cp932 位元組數補空白到 26，不做原作依字型寬度削減尾端空白（`GameView/EmueraConsole.Print.cs@CreateTypeCString`:383–425）。（Python：`eragvt.game.action.show_status_base_training`、`eragvt.text.TextOutput.print_lc`）
+- [ ] **鍛錬畫面**：（S25 起素質一覧 `SHOW_STATUS_TALENT` 與 COLORSENTENCE_BAR 已照原文移植，以下只剩 PRINTLC）`PRINTLC` 以 cp932 位元組數補空白到 26，不做原作依字型寬度削減尾端空白（`GameView/EmueraConsole.Print.cs@CreateTypeCString`:383–425）。（Python：`eragvt.game.action.show_status_base_training`、`eragvt.text.TextOutput.print_lc`）
 - [ ] **戰鬥畫面簡略顯示**（S05 新增）：`@SHOW_STATUS`（`ゲーム内_戦闘処理/BATTLE_SHOW_STATUS.ERB`:3–351，含
   `ヒロイン関連/CHARA_STATUS.ERB@SHOW_STATUS_BASE_DISPBATTLE`、`SHOW_TRAIN_PALAM_STATUS`、`CLOTH_BATTLE_DISPHP`、
   `SHOW_DISTANCE_WINDOW`）只顯示名稱・Lv・體力／氣力／性耐性條・EX 值・狀態・心境・敵名 Lv・距離・剩餘回合・
   敵體力／射精（解析度不足時 ？？？）・油斷・敵能力・解析度；距離適性、スタイル、衣裝耐久、PALAM 表、距離視窗未顯示。
-  這些函式內沒有 RAND；代入只有 `STATUS_PRINT_CHARGE`（CHARA_STATUS.ERB:1477–1489，每回合無條件）的 TCVARn:206（[反撃]バースト的蓄積限度），S16 起照原文計算（`train.status_charge_limit`），其餘不影響狀態。`[800]` ステータス畫面（`SHOW_STATUS_CHARA_SELECT`，5 頁）只顯示
-  「未移植」一行。`SHOW_USERCOM` 只移植「不分類」版（`BATTLE_COM.ERB`:379–568，基本設定 FLAG:801 bit2 = 0），
+  這些函式內沒有 RAND；代入只有 `STATUS_PRINT_CHARGE`（CHARA_STATUS.ERB:1477–1489，每回合無條件）的 TCVARn:206（[反撃]バースト的蓄積限度），S16 起照原文計算（`train.status_charge_limit`），其餘不影響狀態。`[800]` ステータス畫面 S25 起照原文移植（`eragvt.game.status_screen`）。`SHOW_USERCOM` 只移植「不分類」版（`BATTLE_COM.ERB`:379–568，基本設定 FLAG:801 bit2 = 0），
   《危険度》的顏色照 `FORECAST_OUTPUT_SETCOLOR`。（Python：`eragvt.game.battle.train.show_status`／`show_usercom`／`usercom`）
 - [ ] **性攻擊的地の文**（S06 新增、S07 更新）：S07 起 `地の文/MESSAGE_SEX*.ERB`、敗北 `MESSAGE_BATTLE_END_LOSS`、射精・處女喪失・
   ヒロイン側性攻撃的地の文由 catalog 輸出本文，其中的狀態變化行經 `narration/hooks.py`（140 行，對照 sexmsg）依 ERB 順序執行、
@@ -126,12 +125,16 @@ ERB 路徑相對 `source/earGVP/ERB/`。
   S14：動画サイト（`MESSAGE_WindowLibrary_VideoHostSite.ERB`:1343 INPUTS）也同樣；按鈕值 "0"〜"4"／"99" 都是數字，其他輸入走
   :1346–1347「上次看的下一段」，只差在不能輸入空字串（原作空字串也走這條），結果相同。（Python：`eragvt.narration.service.run_function_gen`）
 - [ ] **HTML_PRINT 的子集**（S11 新增，只影響顯示）：只支援原作用到的 `<font color>`／`<nonbutton title>`（tooltip 以 Web 的
-  title 屬性顯示）；其他タグ停止。（Python：`eragvt.text.TextOutput.html_print`）
+  title 屬性顯示）；S25 加 `<br>`（照 `GameView/HtmlManager.cs`:672–676、`PrintStringBuffer.cs`:189–196 分行）、`<nobr>`（Web 不折行，
+  無差）、`<shape type='space' param='n'>`（原作寬 n% × 字型大小：`ConsoleShapePart.cs`:40–53；**近似為半角空白 n/50 個**）。其他タグ停止。（Python：`eragvt.text.TextOutput.html_print`）
 - [ ] **子供加入時的キャラ設定畫面**（S13 新增，只影響顯示）：`ADD_CHILD`:515 的一人称設定（`FIRSTSETTING_CHARA_SELFCALL`）與
   :1078 的プロフィール設定（`CHARA_SIZE_UI.ERB@SIZE_SETTING`）不顯示，照 AGENTS.md 以「什麼都不改、直接按 [99] 決定」的狀態變化執行
   （CSTR:4 = 一人称、パーソナリティ前詰め、身體資料照 GENERATE_CHAR_SIZE 重算；顯示部分無代入・無 RAND）。フィート選擇畫面
   （[0]はい）有移植，種族／フィート說明（`SYUZOKU_INFO`／`FEAT_INFO`）走 catalog，不可執行時印「〈SYUZOKU_INFO n〉」。
   （Python：`eragvt.game.firstsetting.selfcall_default`／`size_setting_default`／`feat_select_ui`）
+  S25：ステータス畫面 PAGE5 [20]（`SHOW_STATUS_CHARA_SELECT_PAGE5.ERB`:73–79）也同樣：GENERATE_BODYLINE／CHARA_MAKE_AGE_SETTING／
+  CHARA_SIZE_DEFAULT 照原文執行後，SIZE_SETTING 以「直接按 [99]」的狀態變化代替（`status_screen._cmd_page5`，`# DEVIATION`）。
+  玩家無法在此手動改身長等（原作可以）。PAGE1 [12] 一人称設定畫面則是**停止**（玩家明示要改，不以預設代替）。
 - [ ] **Web 停止狀態**：遇到未移植處理時顯示「（未實作のため停止しました：…）」並停住，是原作沒有的畫面（見上「S04 未翻的行動」）。
   （S08 的全滅／ソロ結局後停止已於 S12 解除：照原作進入ゲームオーバーモード繼續。）
 
@@ -175,10 +178,16 @@ ERB 路徑相對 `source/earGVP/ERB/`。
   覆寫 GENERATE_BODYLINE 的成長曲線；AGE_SETTING（:514）在 FLAVOR 決定「学生」（:1077–1087）之前，所以學生別的年齢幅不會套用；
   STATUS_TALENT 可把 :508–512 立的処女拿掉（20%）但清純派留著。`CFLAG:123`（裕福な実家）在 FINALIZE 兩次各 +2500（本作 FLAVOR 不給此素質）。
 - S11 拡張度・いちゃラブ照原作的怪處（`docs/wiki/era/gaping.md`）：**Ｖ／Ａ拡張度 CFLAG:35／36 的初期值只在顯示拡張度時設定**
-  （`GAPING.ERB@PRINTFORM_GAPING_NOW`:800–808；呼叫者是 FLAG:801 bit 5 的戰鬥 PALAM 表示〔既定 OFF〕與ステータス畫面 PAGE5〔未移植〕），
+  （`GAPING.ERB@PRINTFORM_GAPING_NOW`:800–808；呼叫者是 FLAG:801 bit 5 的戰鬥 PALAM 表示〔既定 OFF〕與ステータス畫面 PAGE5〔S25 移植：顯示時設定〕），
   所以既定遊玩時從 0（rank 0）開始、第一次被插入就大幅上升（例：0 → 55、膣径 +3.8 cm）；GET_*_GAPING_EXP 的靜態 LOCAL 在 ARG < 3 時沿用
   上次值（:1018–1022）；V_GAPING 等的早期 RETURN 不還原 TARGET；いちゃラブ的処女地の文（MESSAGE_SEX.ERB:1301）因 SEX_V:221 先把
   処女改成 −1 而不會出現。**使用者裁決（2026-09-30）**：照原作，不在開局設定初期值（狀態畫面 PAGE5 移植後自然會在顯示時設定）。
+- S25 ステータス畫面照原作的怪處：PAGE1:100 `ELSEIF TALENT;ARG:変身能力 == …` 的 `;` 之後是行中註解
+  （`Sub/LexicalAnalyzer.cs`:954–966），實際條件是 `TALENT:TARGET:0`（TARGET 的処女，`VariableParser.cs`:107–119）→ 變身能力なし
+  且 TARGET 是処女時顯示【非戦闘員】、非戦闘員本人反而不顯示；性格素質なし時 PAGE1 的性格欄顯示 `TALENTNAME:0`（処女）與其說明；
+  PAGE1 アウター（變身能力あり）有名稱時不印「┏」；PAGE4 父親為不存在的ボス／ラスボス番號時 TRYCALLFORM 不發、印前一個 RESULTS
+  （Python 停止）；EXPORT_CSV 的 `GLOBAL:262`（成就）節因成就未移植永遠不輸出（見「全域資料（GLOBAL）」）；`PRINT_TALENT_CATEGORY`
+  的 `SUB_STR:0` 是靜態變數，CFLAG:0 為 -1／5 等時沿用前一個素質名（照移植）。（Python：`eragvt.game.status_screen`、`status_talent`、`export_csv`）
 - S13 妊娠・子供照原作的怪處（詳見 `docs/wiki/era/pregnancy.md`「照原作移植的怪處」）：**苗床出産的 `LOSEDEF` 是 static**
   （`BIRTH_AUTO_RANDOM`:607），每次呼叫都累加並以累計值扣防衛力，ゲームオーバーモード中防衛力下降會越來越快；
   `NUM_CHILD_TENTACLE(ARG)` 讀的是 TARGET（:579–601），苗床出産的母乳體質／膨乳改造値也加在 TARGET（:729–732）；

@@ -37,7 +37,7 @@ UPRATE /3、>110 壓回 110。回傳 GAPING_SIZE 差（mm；V 在処女時 0）�
 
 - **CFLAG:35／36 的初期值只在「顯示拡張度」時設定**：`PRINTFORM_GAPING_NOW`:800–808（年齢等 → 20 前後，再以經驗×10 跑 V_GAPING）。
   呼叫者只有戰鬥畫面的 `SHOW_STATUS_PALAM`（需 `CONFIG_CHECK_SCREEN_F(5)`，FLAG:801 bit 5；既定 FLAG:801 = 1 → 不顯示）
-  與ステータス畫面 PAGE5（`[800]`，未移植）。所以不開ステータス畫面時拡張度從 0（rank 0＝繊毛）開始，第一次被插入就
+  與ステータス畫面 PAGE5（SHOP [110]／戰鬥 [800]，S25 移植）。所以不開ステータス畫面時拡張度從 0（rank 0＝繊毛）開始，第一次被插入就
   一口氣上升（實測 0 → 55，＋3.8 cm）。全 ERB grep `CFLAG…:35／36` 的代入只有上表各處。
 - GET_V／A_GAPING_EXP 的 LOCAL 是靜態（`GameData/Variable/VariableToken.cs`:1712–1737）且 ARG < 3 時不代入 →
   沿用上次值（例：上次 2 → 這次 ARG 0 也 +2）。
@@ -49,7 +49,8 @@ UPRATE /3、>110 壓回 110。回傳 GAPING_SIZE 差（mm；V 在処女時 0）�
 
 - `PRINT_TENTACLE_SIZE`／`PRINTFORM_GAPING_NOW` 用 HTML_PRINT：`TextOutput.html_print`（獨立一行、`[n]` 不變按鈕、
   `<nonbutton title>` 變成 Part.title＝Web 的 tooltip；`GameView/EmueraConsole.Print.cs@PrintHtml`:344–357）。
-- PRINTFORM_GAPING_NOW 已移植但目前沒有可到達的呼叫者；`train.show_status` 在 FLAG:801 bit 5 時停止（到達前需先移植コンフィグ）。
+- PRINTFORM_GAPING_NOW：S25 起由ステータス畫面 PAGE5（`status_screen._page5`，CON = 0）呼叫，顯示時設定 CFLAG:35／36 初期值；
+  戰鬥 PALAM 表示（FLAG:801 bit 5）仍停止。
 
 ### 未移植（停止）
 

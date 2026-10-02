@@ -469,12 +469,10 @@ def shop_print_actionplan(out: TextOutput, action: int) -> None:
 
 
 def _bar(out: TextOutput, name: str, cur: int, mx: int) -> None:
-    """`汎用関数/コモン関数.ERB@COLORSENTENCE_BAR`:79–。
-    DEVIATION: COLOR_BAR の色分け・長さ計算は未移植。20 マスの単色バーで近似表示。"""
-    out.print(format_percent(name, 6, True) + "　  ")
-    filled = 0 if mx <= 0 else limit(div(cur * 20, mx), 0, 20)
-    out.print("₍" + "▮" * filled + "▯" * (20 - filled) + "₎")
-    out.print(f"（{format_curly(cur, 5)}/{format_curly(mx, 5)}）")
+    """`CALLFORM COLORSENTENCE_BAR(名前, 6, 現在値, 最大値, 20)`（`汎用関数/コモン関数.ERB`:79–111；S25 で COLOR_BAR を移植）。"""
+    from .colorbar import colorsentence_bar
+
+    colorsentence_bar(out, name, 6, cur, mx, 20)
 
 
 def shop_show_status_target(state: GameState, data: GameData, out: TextOutput) -> None:

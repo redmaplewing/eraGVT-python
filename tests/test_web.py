@@ -238,3 +238,21 @@ def test_sortie_restraint_battle_save_load(tmp_path, data):
     st2 = app.state.session.state
     assert (st2.flag[852], st2.charas[1].juel[20]) == snapshot
     assert st2.flag[700] == 0 and st2.charas[1].tcvarn[0] == 0
+
+
+def test_shop_status_screen_web(client):
+    """S25：SHOP [110] ステータス表示 → [2] 次ページ → [5000] 個人 → [999] 戻る → SHOP（SHOP.ERB:247–249）。"""
+    c, app, _ = client
+    c.post("/api/input", json={"value": 0})
+    c.post("/api/input", json={"value": 0})
+    c.post("/api/input", json={"value": 1})
+    s = c.post("/api/input", json={"value": 110}).json()
+    assert s["phase"] == "turn"
+    assert any(t.endswith("PAGE(1/5)") for t in texts(s))
+    assert {1, 2, 999, 1000, 5000, 100, 200}.issubset(buttons(s))
+    s = c.post("/api/input", json={"value": 2}).json()
+    assert any(t.endswith("PAGE(2/5)") for t in texts(s))
+    s = c.post("/api/input", json={"value": 5000}).json()
+    assert any(t.endswith("PAGE(5/5)") for t in texts(s))
+    s = c.post("/api/input", json={"value": 999}).json()
+    assert s["phase"] == "shop"

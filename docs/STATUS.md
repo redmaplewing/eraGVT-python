@@ -1,6 +1,6 @@
 # 現況（唯一真相，≤120 行）
 
-更新：2026-10-02（S24）
+更新：2026-10-02（S25）
 
 ## 已完成（各階段細節見 git log 與 wiki）
 
@@ -17,43 +17,43 @@
 - **S21** 共用 RESULT＋触手拘束具＋悪堕ち容姿＋防衛力負數裁決（`docs/wiki/python/result.md`、`eragvt.game.corruption`）。
 - **S22** 共用 RESULTS（`docs/wiki/python/result.md`）：不存檔、名乗り改竄讀 RESULTS:2、BATTLE_COM_AFTER:1159 同步。
 - **S23** [反撃]スタイル（`battle/hangeki.py`，`--style 反撃` 人工模擬）。
-- **S24** 設定畫面／開局プリセット／GLOBAL（下節）。測試共 1440 個（新增 `tests/test_config.py` 56）。
+- **S24** 設定畫面／開局プリセット／GLOBAL（`eragvt.game.config`，`docs/wiki/era/flow.md` §10）。
+- **S25** ステータス畫面（下節）。
 
-## S24 內容（`eragvt.game.config`、`state.savefile.GlobalStore`，`docs/wiki/era/flow.md` §10）
+## S25 內容（`eragvt.game.status_screen`／`status_talent`／`colorbar`／`export_csv`）
 
-- CONFIG_INIT 0〜3；HEROINE_PRESET 畫面（[0]〜[3]、[10] 編集；[20+] ステータス／[30] 相関関係は停止）。預設仍 [1]，既有 expected 不變。
-- CONFIG 畫面全項（2 頁、FLAG:800〜805）＋性嗜好（FLAG:850／GLOBAL:4）・雑魚敵（MOB_FLAG／MOB_GLOBAL）・自動変身（GLOBAL:51〜59）フィルタ。
-  入口：SHOP [700]、HEROINE_PRESET [10]、開局 2 択畫面的 [200]（MODE_SELECT:393–402）；2 択畫面另有 [100] タイトルに戻る・[300]（停止）。
-- GLOBAL：`saves/global.json`（代碼・版本檢查），記憶體在 Web app 內跨新遊戲保留；UPDATE（EVENTFIRST:32／:291、EVENTLOAD:7）照原作套用
-  自動ロード（FLAG:800 bit0）・FLAG:850・MOB_FLAG。原作怪處（初次存的 GLOBAL:3 = 0 被 UPDATE_GLOBAL 覆寫等）記於 deviations「原作行為」。
-- `tools/sim.py` 新增 `--config-preset N`（HEROINE_PRESET 選擇）與 `--clear-bit F:B`（人工關閉某 bit）。
+- `SHOW_STATUS_CHARA_SELECT` 5 頁全移植（戰鬥／素質・性成長／武器／相関／プロフィール），入口：SHOP [110]、戰鬥 [800]、
+  HEROINE_PRESET [20]〜[29]（全域 grep 只有這 3 處）。翻頁 [1]/[2]/[1000]〜[5000]、[100]/[200] 換人（戰鬥中不可）、[999] 返回。
+- 固有指令：P1 [0] 口上設定循環・[10] 主観モード・[11] 呼び名（FIRSTSETTING_CHARA_CALLNAME）・[13] 変身後名等；P2 [0] EXPORT_CSV（全移植）；
+  P5 [10] 通常／変身時切替・[20] 身體資料生成（GENERATE_BODYLINE→AGE→SIZE_DEFAULT→SIZE_SETTING 以 [99] 代替）。
+- PAGE5 顯示時 PRINTFORM_GAPING_NOW 設定拡張度初期值（S11 裁決）；SET_FSTYLE_INFO 寫共用 RESULTS:0〜2、GET_COLOR_BY_RANK／TOP_UNDER 寫 RESULT。
+- 共用部品：COLOR_BAR／COLORSENTENCE_BAR（SHOP・鍛錬・戰鬥的近似條改為原文）、COLORCHIP、TALENT_INFO（ERB 抽取表）、
+  SHOW_STATUS_TALENT（2 形式，鍛錬畫面也接上）；HTML_PRINT 新增 `<br>`／`<nobr>`／`<shape type='space'>`。
+- 測試共 1469 個（新增 `tests/test_status_screen.py` 29、`test_web.py` 1）。`test_hangeki` 統合測試的方針排除 [800]、`test_parasite` 改 seed 0（經路變化）。
+- `SHOP_SHOW_STATUS_RESERVE_LIST`（控えメンバー）屬 SHOP 一覽系（`SHOP_SHOW_STATUS_LIST.ERB`），不在本階段，仍印未實作。
 
-### 打開後會碰到未移植系統的設定項
+### 模擬（seed 0–249，`--max-shop 200`，4 並列分批；戰鬥中隨機按 [800] 會進入狀態畫面）
 
-| 項目 | 結果 |
-|---|---|
-| [34] 雑魚敵との戦闘（802 bit4；淫獄・クズ市民セット ON） | 出撃遭遇雑魚 → 停止「雑魚戦システム（MOB_TENTACLE_BATTLE）は未移植」 |
-| [78] 裏プロフィール（805 bit6；淫獄・クズ市民セット ON） | C／V／A／B 感覺 Lv 上升時停止「MAKESEXUALPROFILE 未移植」 |
-| [11] 調教ステータス上昇表示（801 bit1） | 戰鬥中 PALAM 上升時停止 |
-| [15]〜[17] 戦闘画面の調教ステータス一覧（801 bit5〜7） | 戰鬥畫面停止（SHOW_TRAIN_PALAM_STATUS） |
-| [54] ボス触手撃破で返り血（803 bit4） | 擊破ボス時停止（SUPART_BLOOD） |
-| [72] 触手の子種からも娘（805 bit0；淫獄・クズ市民 ON） | 娘出生時的命名 INPUTS 停止（既有停止點） |
-| [35] クズ市民との戦闘、[55] ラスボス強化、[79] FLASH NEWS 有害ブログ、[10]／[14] 素質表示 | 所在系統（自由行動・情報収集／ラスボス／FLASHNEWS／ステータス畫面）未移植，目前無作用 |
+- 預設：上限 246、停止 4（既有停止點 HATUJOU_TO_HAIRAN 地の文：經路改變後到達）；敗北後 SHOP 189.76、ゲームオーバー後 188.29。
+- 初期セット：250 局全部上限；敗北後 SHOP 192.95、ゲームオーバー後 188.55。狀態畫面新增停止 0（3 局抽樣：各頁 113 次、EXPORT_CSV 2 次）。
 
-## S24 模擬（seed 0–249，`--max-shop 200`，4 並列分批）
+### 狀態畫面內仍會停止
 
-- 預設（config 1）・初期セット：與 S23 完全相同（停止 0；敗北後 SHOP 192.87／193.00、ゲームオーバーモード後 188.10／188.65）。
-- `--config-preset 2`／`3`：250 局全部停止於雑魚戦（平均 3.46 SHOP，最多 18）。
-- 人工 `--clear-bit 802:4`（再關雑魚戦）：2／3 皆 250 局停止於裏プロフィール（平均 16.04 SHOP）。
-- 人工 `--config-preset 3 --clear-bit 802:4 --clear-bit 805:6`：上限 245、子供の名前の手入力 5（娘育成 ON 的出生）。
-- `--config-preset 0`（無 GLOBAL＝全 OFF）未另跑全量；單元／整合測試覆蓋其狀態。
+P1 [11]→[1] 呼び名手入力（INPUTS）、[12] 一人称設定畫面、[13] 各項的手入力／ランダム命名；P3 [0] 武器カスタマイズ；
+P4 父親 CFLAG:9 指向不存在的ボス／ラスボス／モブ；HEROINE_PRESET [20]〜[29] 的不存在角色（原作也報錯）；色指定 R//G//B 的 16 進・指數表記。
+
+### 設定項打開後會碰到未移植系統（S24，`flow.md` §10；預設 config 1 全 OFF）
+
+[34] 雑魚戦（802 bit4）→ MOB_TENTACLE_BATTLE 停止；[78] 裏プロフィール（805 bit6）→ MAKESEXUALPROFILE 停止；[11]／[15]〜[17] 調教ステータス表示
+（801 bit1／5〜7）→ 戰鬥中停止；[54] 返り血（803 bit4）→ SUPART_BLOOD 停止；[72] 触手の子種からも娘 → 命名 INPUTS 停止；
+[35] クズ市民・[55] ラスボス強化・[79] 有害ブログ 無作用（所在系統未移植）。[10]／[14] 素質表示 S25 起生效。
+`--config-preset 2／3` 模擬（S24）：250 局全部停止於雑魚戦。
 
 ## 下一步
 
-- **自主推進（使用者指定 2026-10-02，依序）**：~~S22 RESULTS 共用~~ → ~~S23 [反撃]スタイル~~ → ~~S24 設定畫面／プリセット~~ → **S25 狀態畫面**
-  → S26 FLASHNEWS → S27 ラスボス → S28 未移植行動（特別活動・防衛・支援・情報・自由）。其他候選：ランダム命名畫面、SHOP [112] 衣裝設定。
+- **自主推進（使用者指定 2026-10-02，依序）**：~~S22 RESULTS 共用~~ → ~~S23 [反撃]スタイル~~ → ~~S24 設定畫面／プリセット~~ → ~~S25 狀態畫面~~
+  → **S26 FLASHNEWS** → S27 ラスボス → S28 未移植行動（特別活動・防衛・支援・情報・自由）。其他候選：ランダム命名畫面、SHOP [112] 衣裝設定。
 - 已裁決（2026-10-02）：名乗り改竄的 RESULTS:2 殘值照原作（S22 實作）；開局デフォルト悪堕ち的輸出丟棄維持現況。
-- S23〜S25 移植 `FIGHT_STYLE.ERB@SET_FSTYLE_INFO`（RESULTS:0〜2）等時，寫入 `GameState.results`（result.md 未移植表）。
 - 已裁決（2026-10-02）：PALAM_HOSEI 殘值照原作、防衛力負數 D1〜D4（S21 實作）。已裁決（2026-10-01）：S20 的 DEVIATION 6 項＋斜體。
 - 已裁決（2026-09-30）：拡張度初期值照原作；S13 苗床出産的 static LOSEDEF 等怪處照原作。
 - 口上 catalog 待擴充：改狀態的口上（hook 化）、入れ子內 $ラベル 的 GOTO（`KOJO_AEGI.ERB` $ＭＡＸ２，199 函式）、STRDATA、未實作式中関数。
@@ -69,8 +69,8 @@ S23 模擬（含 [反撃] 人工設定）皆無停止。登記但罕見：
 - TURNEND：ENDING_1 的エンドレス分岐。拉致監禁的救出（CFLAG:71）只能經情報収集（未移植）。
 - 夜這い：TS キャラ的 `_ABLUP` 女体受容取得、`%CALLNAME:ARG%` 指向不存在角色（原作也報錯）。
 - 指令：戰鬥基礎 Lv5 的變身能力獲得（SENGIUP；反撃成功也會經由此處）。
-- 開局：HEROINE_PRESET 的 [20+]（ステータス）／[30]（相関関係）、2 択畫面的 [300]（ゲームの説明）。設定項造成的停止見上表。
-- ステータス PALAM 表示（FLAG:801 bit 5）、觸手服（ACTTENTACLESUIT・運動快感）、雜魚／クズ市民／ラスボス／事件戰／エンドレス、
+- 開局：HEROINE_PRESET 的 [30]（相関関係）、2 択畫面的 [300]（ゲームの説明）。狀態畫面內的停止見上節。設定項造成的停止見上表。
+- 戰鬥 PALAM 表示（FLAG:801 bit 5）、觸手服（ACTTENTACLESUIT・運動快感）、雜魚／クズ市民／ラスボス／事件戰／エンドレス、
   ボスの返り血（SUPART_BLOOD）、デバッグ模式、`HATUJOU_TO_HAIRAN` 地の文。
 
 ## 已知問題

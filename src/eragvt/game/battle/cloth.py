@@ -321,11 +321,11 @@ def refresh_cloth_data(ctx: Ctx) -> None:
                 v[dst] = div(v[base] * cl[INNER_PER], 100)
 
 
-def costume_name(ctx: Ctx, who: int) -> str:
-    """`@COSTUME_NAME(ARG)`（:409–434、trans = -1）。"""
+def costume_name(ctx: Ctx, who: int, trans: int = -1) -> str:
+    """`@COSTUME_NAME(ARG, trans = -1)`（:409–434）：trans = 0 は変身前、-1 は現在の状態（CFLAG:1 == 0 なら変身前）、他は変身後。"""
     c = ctx.state.charas[who]
     items = ctx.data.items
-    if c.cflag[1] == 0:
+    if trans == 0 or (trans == -1 and c.cflag[1] == 0):
         cid = c.cflag[40]
         if cid == 0:
             return ""

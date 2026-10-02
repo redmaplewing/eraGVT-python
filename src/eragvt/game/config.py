@@ -725,8 +725,14 @@ def heroine_preset_gen(state: GameState, data: GameData, out: TextOutput, store:
             if r == 10:
                 yield from config_gen(state, data, out, store, "mainmenu")
                 break
-            if 20 <= r <= 29:
-                raise NotImplementedError("ヒロインデータ確認（SHOW_STATUS_CHARA_SELECT）は未移植")
+            if 20 <= r <= 29:  # :656–658 CALL SHOW_STATUS_CHARA_SELECT(RESULT-19) → GOTO INPUT_LOOP_CON_HEAD
+                from ..text import NullNarrationService
+                from .action import Ctx
+                from .status_screen import show_status_chara_select
+
+                # 口上 catalog は開局時点では不要（淫紋 CFLAG:32 = 0 で PRINT_TATTOO を呼ばない）→ Null
+                yield from show_status_chara_select(Ctx(state, data, out, NullNarrationService()), r - 19)
+                break
             if r == 30 and state.charanum >= 2:
                 raise NotImplementedError("相関関係設定（CONVERT_RELATION／SET_RELATION）は未移植")
             if r < 0 or r > 3:

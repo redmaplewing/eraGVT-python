@@ -647,9 +647,10 @@ def usercom(ctx: Ctx, value: int) -> Generator[None, int, None]:
     if value == 999:
         return
     if value == 800:  # :626–628
+        from ..status_screen import show_status_chara_select
+
         out.drawline()
-        # DEVIATION（表示のみ）：SHOW_STATUS_CHARA_SELECT（ステータス画面、5 ページ）は未移植
-        out.printl("（ステータス画面は未移植です）")
+        yield from show_status_chara_select(ctx, st.target)
         return
     if value in (810, 820, 830):  # :629–634
         v[8] = {810: 0, 820: 1, 830: 2}[value]

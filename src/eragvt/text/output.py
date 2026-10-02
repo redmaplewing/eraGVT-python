@@ -262,7 +262,10 @@ def _html_unescape(text: str) -> str:
     return re.sub(r"&([^;&]+);", rep, text)
 
 
-def _parse_html(html: str) -> list[Part]:
+def _parse_html(html: str) -> list[list[Part]]:
+    """HTML → 表示行のリスト（`<br>` で改行：HtmlManager.cs@Html2DisplayLine:326–331、PrintStringBuffer.cs@ButtonsToDisplayLines:
+    189–196／:242–245：`<br>` ごとにそこまでを 1 行（空でも）にし、残りが空でなければ最後の 1 行）。"""
+    lines: list[list[Part]] = []
     parts: list[Part] = []
     colors: list[str | None] = [None]
     title: str | None = None
@@ -283,10 +286,21 @@ def _parse_html(html: str) -> list[Part]:
                 colors.append(_hex_color(attrs["color"]) if "color" in attrs else colors[-1])
         elif tag == "nonbutton":
             title = None if close else attrs.get("title")
+        elif tag == "br" and not close:  # HtmlManager.cs@tagAnalyze:672–676
+            lines.append(parts)
+            parts = []
+        elif tag == "nobr":  # :677–685（行の折り返し禁止。Web 側は折り返さないので表示上の違いなし）
+            pass
+        elif tag == "shape" and not close and attrs.get("type") == "space" and attrs.get("param", "").isdigit():
+            # :784–851 → ConsoleShapePart.cs:40–53：幅 param% × フォントサイズの空白。
+            # DEVIATION（表示のみ）：全角 1 文字 = フォントサイズとして半角空白 param/50 個で近似（deviations「HTML_PRINT 的子集」）
+            parts.append(Part([Segment(" " * (int(attrs["param"]) // 50))], title=title))
         else:
             raise NotImplementedError(f"HTML_PRINT：未対応のタグ <{m.group(0)}>")
     add(html[pos:])
-    return parts
+    if parts:
+        lines.append(parts)
+    return lines
 
 
 class TextOutput:
@@ -308,6 +322,11 @@ class TextOutput:
 
     def reset_color(self) -> None:
         self._color = None
+
+    @property
+    def color(self) -> str | None:
+        """現在の文字色（"#rrggbb"、既定色なら None）。GETCOLOR の代わり。"""
+        return self._color
 
     def set_bold(self, bold: bool = True) -> None:
         """FONTBOLD（True）／FONTREGULAR（False）。FONTREGULAR は FontStyle.Regular にするので斜体も解除する
@@ -358,12 +377,14 @@ class TextOutput:
         空文字なら何もしない；未換行の PRINT 文字列を先に 1 行として確定し、HTML を独立した行として追加する。
         HTML 内の `[数字]` は按鈕化されない（按鈕は `<button>` タグのみ：GameView/HtmlManager.cs@Html2DisplayLine:266–）。
         文字は Unescape（HtmlManager.cs@Unescape:398–）以外そのまま（空白を詰めない）。色は HTML 側の既定（SETCOLOR は効かない）。
-        対応タグは原作で使う `<font color='#rrggbb'>`・`<nonbutton title='…'>` のみ（他は NotImplementedError）。"""
+        対応タグは原作で使う `<font color='#rrggbb'>`・`<nonbutton title='…'>`・`<br>`（行を分ける）・`<nobr>`・
+        `<shape type='space' param='n'>` のみ（他は NotImplementedError）。"""
         if not html:
             return
         self._flush_partial()
-        # DEVIATION: HTML タグは原作で使う font／nonbutton のみ（deviations.md「HTML_PRINT 的子集」）
-        self._lines.append(Line(_parse_html(html)))
+        # DEVIATION: HTML タグは原作で使う font／nonbutton／br／nobr／shape(space) のみ（deviations.md「HTML_PRINT 的子集」）
+        for parts in _parse_html(html):
+            self._lines.append(Line(parts))
 
     def printl(self, text: str = "") -> None:
         """PRINTL：輸出後換行。"""

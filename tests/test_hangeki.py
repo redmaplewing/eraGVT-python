@@ -376,7 +376,8 @@ def test_hangeki_style_boss_battle_integration(data, monkeypatch):
                 if s.phase == Phase.ACTION_CONFIRM:
                     s.input(9)  # はい（次から確認しない）：SHOP.ERB の SELECTCASE は CASE 9 のみ
                 continue
-            buttons = [v for ln in s.out.lines[-40:] for (_, v) in ln.buttons]
+            # S25：[800] ステータス画面（表示のみ）は除外して S23 と同じ戦闘経路を保つ
+            buttons = [v for ln in s.out.lines[-40:] for (_, v) in ln.buttons if v != 800]
             s.input(policy.choice(buttons) if buttons else 0)
     assert shops > 6
     assert successes

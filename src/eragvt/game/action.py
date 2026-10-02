@@ -539,7 +539,7 @@ def show_status_base_training(ctx: Ctx, who: int) -> None:
     out.printl()
     out.printl(f"{c.callname} Lv.{c.abl[data.index_of('ABL', 'レベル')]} （{c.juel[50]}％）")
     for name, idx in (("体力", 0), ("気力", 1), ("性耐性", 2)):
-        _bar(out, name, c.base[idx], c.maxbase[idx])  # DEVIATION（表示のみ）：COLORSENTENCE_BAR は近似
+        _bar(out, name, c.base[idx], c.maxbase[idx])  # COLORSENTENCE_BAR（S25 で移植）
         out.printl()
     m = c.maxbase
     out.printl(f"戦闘力　　攻撃：{m[10]}  防御：{m[11]}  敏捷：{m[12]}  知性：{m[13]}")
@@ -548,7 +548,9 @@ def show_status_base_training(ctx: Ctx, who: int) -> None:
     out.print(data.names["TALENT"].get(s, "") if s else "ランダム")
     out.printl()
     out.printl(f"修練P　 　{tc.juel[20]}P")  # JUEL:修練P は TARGET
-    # DEVIATION（表示のみ）：SHOW_STATUS_TALENT（CHARA_STATUS.ERB:251–953、素質一覧）は未移植
+    from .status_talent import show_status_talent
+
+    show_status_talent(ctx, st.target, 1, 1)  # :224 CALL SHOW_STATUS_TALENT, TARGET, 1, 1（S25）
     _shortline(out)
     out.print_lc(f"体力基礎：{c.base[50]}")
     out.print_lc(f"気力基礎：{c.base[51]}")

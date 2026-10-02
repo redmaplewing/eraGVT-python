@@ -149,7 +149,7 @@ def test_heroine_preset_screen(data):
     assert st.flag[802] == 31
 
 
-@pytest.mark.parametrize("value, msg", [(20, "SHOW_STATUS_CHARA_SELECT"), (30, "CONVERT_RELATION")])
+@pytest.mark.parametrize("value, msg", [(30, "CONVERT_RELATION")])  # [20]〜[29] は S25 で移植（test_status_screen）
 def test_heroine_preset_unported(data, value, msg):
     _, _, _, gen = _start_heroine_preset(data)
     with pytest.raises(NotImplementedError, match=msg):

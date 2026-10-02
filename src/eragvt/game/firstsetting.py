@@ -59,6 +59,36 @@ def selfcall_default(ctx: Ctx, who: int) -> None:
     c.cstr[4] = call1
 
 
+def chara_callname(ctx: Ctx, who: int) -> Generator[None, int, int]:
+    """`FIRSTSETTING_CHARA.ERB@FIRSTSETTING_CHARA_CALLNAME, ARG`:1072–1101（呼び名の設定）。戻り値：[99] は 99、他は 0
+    （関数終端：RESULT:0 = 0）。[1] 自分で設定（INPUTS）は Web が整数入力のみのため未移植で停止。"""
+    out = ctx.out
+    c = ctx.state.charas[who]
+    out.printl(f"{who}人目のキャラの呼び名を設定してください")
+    out.printl("（※ 通常の地の文などで表示されるキャラ名です）")
+    out.printl("・" * 53)
+    if c.cstr[200] != "":
+        out.printl(f"[0]名前を呼び名に設定（名前：{c.cstr[200]}）")
+    out.printl("[1]自分で設定")
+    out.printl("[99]もどる")
+    while True:  # $INPUT_LOOP
+        r = yield
+        if r == 0:
+            if c.cstr[200] == "":
+                continue
+            c.callname = c.cstr[200]
+            out.printl(f"キャラの呼び名を 『{c.callname}』 に設定しました")
+            break
+        if r == 1:
+            out.printl("キャラの呼び名を入力してください。")
+            raise NotImplementedError("呼び名の手入力（INPUTS）は未移植")
+        if r == 99:
+            return 99
+    out.printl()
+    out.printl()
+    return 0
+
+
 # --- フィート（FEAT_ABLE_F、SET_FEAT_DEFAULT）--------------------------------------------------------
 
 _FEAT_ABLE = {
