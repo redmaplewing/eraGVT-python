@@ -20,6 +20,7 @@ from ..data import GameData
 from ..game import shop
 from ..game.session import GameSession
 from ..state import GameRng
+from ..state.savefile import GameIdentity, GlobalStore
 
 _HERE = Path(__file__).parent
 
@@ -46,8 +47,11 @@ def create_app(
     templates = Jinja2Templates(directory=str(_HERE / "templates"))
     app.mount("/static", StaticFiles(directory=str(_HERE / "static")), name="static")
 
+    # グローバル変数のメモリはタイトルに戻っても残る（Emuera：ResetData は GLOBAL を初期化しない）→ アプリ単位で 1 つ
+    globals_store = GlobalStore.in_dir(save_dir, GameIdentity.from_data(data))
+
     def new_session() -> GameSession:
-        return GameSession(data, save_dir, rng=rng_factory(), narration=narration, now=now)
+        return GameSession(data, save_dir, rng=rng_factory(), narration=narration, now=now, global_store=globals_store)
 
     app.state.session = new_session()
 

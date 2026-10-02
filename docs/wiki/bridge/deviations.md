@@ -20,17 +20,21 @@ ERB 路徑相對 `source/earGVP/ERB/`。
   ゲームオーバーモードの固定ニュース（`FLAG:60 = 10001`，:91–；DAY:2 起算的經過ターン數）也不顯示（FLAG:60／DAY:2 照原作設定）。（原作：`インターミッション画面/SHOP_FLASHNEWS.ERB@FLASHNEWS`:3–752；Python：`eragvt.game.shop.flashnews`）
   S14：動画流出的 CFLAG:284 在 FLASHNEWS 只由 `@FLASHNEWS_CHOOSEIDOL`（"内容"，:974–982）讀取，用來加重「動画流出」新聞的
   RANDCHOOSE 權重（結果只進新聞本文／SAVESTR:20），屬於未移植的新聞產生本體，不另外移植。
-- [ ] **全域資料（GLOBAL）不讀不寫**：永遠走「真正的初次啟動」路徑（MOB_FLAG 初始化為 100、不套用 GLOBAL 的 config／性嗜好フィルタ），也不存成就等全域資料。（原作：`オープニング処理.ERB@EVENTFIRST`:29–45、`バージョン間互換処理.ERB@UPDATE`:95–130；Python：`eragvt.game.opening.event_first`）— 等設定畫面／成就功能時一起做。
+- [ ] **全域資料（GLOBAL）：成就・歷代紀錄不讀不寫**（S24 縮小範圍）：config 相關的 GLOBAL（LOADGLOBAL／UPDATE／UPDATE_GLOBAL、
+  GLOBAL:4・11〜15・51〜59、MOB_GLOBAL、CONFIG 畫面的 SAVEGLOBAL、CHARA_MAKE_MAIN:9–21 的讀取）已照原作移植（`eragvt.game.config`、
+  `state.savefile.GlobalStore`、`saves/global.json`；`docs/wiki/era/flow.md` §10）。仍不做的是成就／紀錄類：（原作：下列各處；Python：見各行）
+  キャラメイク畫面的 [170]／[180] 共通設定存讀（GLOBAL:5〜9・20〜23、GLOBALS:15〜17，UI 未移植 → 永遠是 0／空）也尚未移植。
   S05 起戰鬥中的 `UNLOCK_ACHIEVEMENT`（タクティカルオーダー、絶体絶命ヒロイン等）與 `GET_STATE_ABLUP` 同樣不執行（`eragvt.game.battle.core.unlock_achievement`）。
   S04 起同理不執行：`SHOP_TURNEND.ERB@UPDATE_STATUS_RECORD`:263–349（歷代最高紀錄 GLOBAL:103–131／GLOBALS、SAVEGLOBAL）與 `SHOP_TROPHY.ERB@GET_STATE_TROPHY`:398–441→`UNLOCK_ACHIEVEMENT`（成就達成訊息不會顯示）。（Python：`eragvt.game.turnend.recalc_partymember`、`eragvt.game.action.get_state_trophy`）
   S08 起同理不執行：幽閉的 `COMMON_PRISON.ERB@COMMON_PRISON_EXP`:87 `GET_STATE_EXPUP`、救出時的 `UNLOCK_ACHIEVEMENT`（271／273：
   `BATTLE_COM_AFTER.ERB`:209／240）、`MESSAGE_PRISON_PRISENTENCE_FIRST`:9（hook 為無動作）。（Python：`eragvt.game.prison.commands.common_prison_exp`、
   `battle.source_check._rescue_captives`、`narration/hooks.py` PRISON_HOOK_LINES）
-- [ ] **開局的 UI 跳過**（S10 改寫）：狀態已照原作預設路徑（NORMAL → キャラメイク不設定直接 `[1000]`＝汎用キャラ 3 名おまかせ生成
-  → HEROINE_PRESET `[1]` 基本セット → 序章 `[0]`，`docs/wiki/era/flow.md` §1）；剩下的偏離只有**畫面**：模式選擇／キャラメイク／
-  HEROINE_PRESET／序章畫面不顯示，改為標題 `[0]` 之後的 2 択「[0] おまかせで開始（原作既定）／[1] 初期セット『特装戦隊』で開始」
-  （後者＝キャラメイクで `[200]`→`[0]`→`[1]はい`→`[1000]`）。模式固定 NORMAL（MODE_SELECT 沒有預設值，[1] 是第一個選項）。
-  共通設定（FLAG:5–7・820–825）永遠是 GLOBAL 不存在時的 0。（Python：`eragvt.game.opening.event_first`、`session._new_game_input`）
+- [ ] **開局的 UI 跳過**（S10 改寫、S24 縮小）：狀態已照原作預設路徑（NORMAL → キャラメイク不設定直接 `[1000]`＝汎用キャラ 3 名おまかせ生成
+  → HEROINE_PRESET `[1]` 基本セット → 序章 `[0]`，`docs/wiki/era/flow.md` §1）。**S24**：HEROINE_PRESET 畫面照原文顯示並接受 [0]〜[3]・[10]
+  （[20+]／[30] 未移植 → 停止）。剩下的偏離只有**畫面**：模式選擇／キャラメイク／序章畫面不顯示，改為 `@EVENTFIRST` 中 MODE_SELECT 位置的
+  2 択「[0] おまかせで開始（原作既定）／[1] 初期セット『特装戦隊』で開始」（後者＝キャラメイクで `[200]`→`[0]`→`[1]はい`→`[1000]`），
+  其下照 MODE_SELECT:360–368 附 [100] タイトルに戻る／[200] グローバルコンフィグの編集（照原作）／[300] ゲームの説明（未移植 → 停止）。
+  模式固定 NORMAL（MODE_SELECT 沒有預設值，[1] 是第一個選項）。（Python：`eragvt.game.opening.event_first_gen`、`session._title_input`）
   開局 `MESSAGE_FIRST` 口上仍不輸出（見下「口上」）。
 
 - [ ] **S04 未翻的行動會停止遊戲**：（出撃已於 S05 接上，戰鬥內的停止見下一項）特別活動、拠点防衛、戦闘支援（本體）、情報収集、自由行動在 `action_main` 丟 `NotImplementedError`，Web session 捕捉後進入「停止」狀態（只能按「タイトルに戻る」）。同樣停止的還有：ENDING（全ボス撃破／**11 日目夜的日數超過**）、救出直後、妊娠・育兒・幽閉・悪堕ち等 S04 無法產生的狀態、鍛錬排程（CFLAG:110）、戦闘基礎 Lv5 的變身能力獲得。（原作：`ゲーム内_行動実行処理/ACTION.ERB`:74–175 等；Python：`eragvt.game.action`、`eragvt.game.turnend`、`eragvt.game.session._advance_turn`）— 各自屬 S05 以後；影響範圍見 `docs/wiki/era/actions.md`。
@@ -249,6 +253,16 @@ ERB 路徑相對 `source/earGVP/ERB/`。
   與下一行相連；救援 5（触手洞窟）以 FLAG:111 == 0 為條件（同回合 AKUOTI_EVENT 留下的 FLAG:111 會讓 `5 触手洞窟.ERB`:146–302 的 CASE 0／1／2（知性 > 600）不加任何シチュエーション，ターン上限照設）；
   `CLOTHDATA※イベント専用装備.ERB` 的 `@CLOTH_STATUS_991` 定義兩次（:73／:88），引擎用先定義的 :73（HP0）；3004 以外 FLAG:45 的 992 インナー
   走 CATCH 既定值（HP80・SEITAISEI95）；FLAG:999 ≠ 0（デバッグ以外の値も）時 FLAG:45 不抽選 → EVENT_BATTLE_SITUATION_0 不存在的錯誤路。
+
+- S24 コンフィグ／GLOBAL 照原作的怪處（`eragvt.game.config`，`docs/wiki/era/flow.md` §10）：
+  **GLOBAL:3 未設定的覆寫**：初次啟動（無 global 檔）時從 CONFIG [1]／[9999] 或 フィルタ [200] 存下的 GLOBAL，其 GLOBAL:3（全域資料版本）仍是 0
+  （只有 UPDATE_GLOBAL 會設 408）→ 下一次 UPDATE（新遊戲開局・讀檔）的 UPDATE_GLOBAL:21–31／:32–36／:56–66 把 GLOBAL:11〜14 改成 4／31／88／5、
+  GLOBAL:15 = 0、GLOBAL:4 反轉 9 個 bit，玩家第一次存的設定被蓋掉（第二次起正常）。CONFIG [2] 或 MODE_SELECT [200] 先跑過 UPDATE_GLOBAL 就不會發生。
+  **性嗜好フィルタ的初期值**：無 global 檔時 FLAG:850 = 0（全部 ○）；一旦有 global 檔，UPDATE 一律 FLAG:850 = GLOBAL:4，而 GLOBAL:4 經上述反轉後
+  是「淫紋サブ 5 項・拡張度表示・極端な拡張・極端な膨乳・極端な太さ」為 ×。MOB_FLAG 也一律 = MOB_GLOBAL（從未存過雑魚フィルタ時只有 MOB_GLOBAL:0:1 = 100，其餘雑魚 0%）。
+  **CONFIG_F [22]**（CONFIG_GLOBAL_MANIAC.ERB:195–196）：Wingdings 設為 × 時清除的是 bit 1（ふたなり）而非 bit 11。
+  **CONFIG("mainmenu")**：[999]／[9999] 不顯示但可輸入（:417–436 只控制顯示）；開局時在此改的 FLAG:800〜805 會被之後的 CONFIG_INIT 覆寫。
+  **TENTACLE_MOB_901_GETNAME**：雑魚フィルタ畫面顯示名稱時也會把 TFLAG:17 的 3／5 改成 -1（:9–13）。
 
 ## 使用者裁決 2026-10-01（`# DEVIATION:`，S20 實作）
 

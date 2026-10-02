@@ -127,17 +127,36 @@ def load_save(
     return state, obj.get("comment", "")
 
 
-def dump_global(g: GlobalState) -> bytes:
-    return _dump({"format": GLOBAL_FORMAT, "version": GLOBAL_VERSION, "global": g.to_json()})
+def dump_global(g: GlobalState, identity: GameIdentity = GameIdentity()) -> bytes:
+    """era `SAVEGLOBAL` 的檔案內容：遊戲代碼・版本（`VariableEvaluator.cs@SaveGlobal`:2200–2233 寫
+    ScriptUniqueCode／ScriptVersion）＋ GLOBAL・GLOBALS・`#DIM GLOBAL SAVEDATA`（MOB_GLOBAL）的全部內容
+    （`VariableData.cs@SaveGlobalToStream`:904–908、`@SaveGlobalToStream1808`:916–935）。"""
+    return _dump({
+        "format": GLOBAL_FORMAT,
+        "version": GLOBAL_VERSION,
+        "game_code": identity.code,
+        "game_version": identity.version,
+        "global": g.to_json(),
+    })
 
 
-def load_global(raw: bytes) -> GlobalState:
+def load_global(raw: bytes, identity: GameIdentity | None = None) -> GlobalState:
+    """給了 `identity` 時照 `VariableEvaluator.cs@LoadGlobal`:2256–2296 檢查遊戲代碼（UniqueCodeEqualTo）與版本（CheckVersion），
+    不符 → `SaveFormatError`（LOADGLOBAL 失敗）。"""
     try:
         obj = json.loads(raw.decode("utf-8"))
     except (UnicodeDecodeError, json.JSONDecodeError) as exc:
         raise SaveFormatError(f"全域資料無法解析：{exc}") from exc
     _check_header(obj, GLOBAL_FORMAT, GLOBAL_VERSION)
-    return GlobalState.from_json(obj["global"])
+    if identity is not None:
+        if not identity.code_matches(obj.get("game_code", 0)):
+            raise SaveFormatError("異なるゲームの全域資料です")
+        if not identity.version_ok(obj.get("game_version", 0)):
+            raise SaveFormatError("全域資料のバージョンが異なります")
+    try:
+        return GlobalState.from_json(obj["global"])
+    except (KeyError, TypeError, ValueError) as exc:
+        raise SaveFormatError(f"全域資料の内容が不正：{exc}") from exc
 
 
 def save_to_file(
@@ -175,3 +194,56 @@ def load_global_file(path: Path) -> GlobalState:
     if not path.exists():
         return GlobalState()
     return load_global(path.read_bytes())
+
+
+GLOBAL_FILE_NAME = "global.json"  # Emuera は `Config.SavDir + "global.sav"`（VariableEvaluator.cs:1745）
+
+
+class GlobalStore:
+    """Emuera のグローバル変数（メモリ）と global.sav（ファイル）の組。
+
+    - メモリ `mem`：GLOBAL・GLOBALS・MOB_GLOBAL。ResetData（新規ゲーム・RESETDATA）でもロードでも初期化されない
+      （`VariableEvaluator.cs@ResetData`:1132–1141「グローバルは初期化しない」、`@LoadFromStream`:2173–2174 は
+      SetDefaultValue／SetDefaultLocalValue のみ）。初期化はプロセス起動時と RESETGLOBAL（本作 0 件）だけ。
+    - `save()` = SAVEGLOBAL：メモリの全内容をファイルへ（`@SaveGlobal`:2200–2252）。
+    - `load()` = LOADGLOBAL：ファイルが無い／代碼・版本不符／読めない → False でメモリは変えない；成功 → メモリを
+      ファイルの内容で置き換えて True（`@LoadGlobal`:2256–2310。配列は保存値の後ろを 0 で埋める：
+      `Sub/EraDataStream.cs@ReadInt64Array`:77–102 → 全置換と同じ）。
+    `path=None` のときはファイルの代わりにメモリ上のバイト列を使う（テスト・模擬用）。
+    """
+
+    def __init__(self, path: Path | None = None, identity: GameIdentity = GameIdentity()) -> None:
+        self.mem = GlobalState()
+        self.path = path
+        self.identity = identity
+        self._bytes: bytes | None = None
+
+    @classmethod
+    def in_dir(cls, save_dir: Path, identity: GameIdentity = GameIdentity()) -> GlobalStore:
+        return cls(save_dir / GLOBAL_FILE_NAME, identity)
+
+    def exists(self) -> bool:
+        return self.path.exists() if self.path is not None else self._bytes is not None
+
+    def save(self) -> None:
+        raw = dump_global(self.mem, self.identity)
+        if self.path is None:
+            self._bytes = raw
+        else:
+            self.path.parent.mkdir(parents=True, exist_ok=True)
+            self.path.write_bytes(raw)
+
+    def load(self) -> bool:
+        try:
+            if self.path is None:
+                if self._bytes is None:
+                    return False
+                raw = self._bytes
+            else:
+                if not self.path.exists():
+                    return False
+                raw = self.path.read_bytes()
+            self.mem = load_global(raw, self.identity)
+        except (OSError, SaveFormatError):  # LoadGlobal:2297–2300 catch → false
+            return False
+        return True

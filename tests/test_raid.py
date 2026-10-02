@@ -604,6 +604,7 @@ def _session(data, seed):
     s = GameSession(data, Path(tempfile.mkdtemp()), rng=GameRng(seed))
     s.input(0)
     s.input(1)  # 初期セット『特装戦隊』
+    s.input(1)  # HEROINE_PRESET [1] 基本セット
     s.state.day[0] = 3
     return s
 

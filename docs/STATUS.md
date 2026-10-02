@@ -1,6 +1,6 @@
 # 現況（唯一真相，≤120 行）
 
-更新：2026-10-02（S23）
+更新：2026-10-02（S24）
 
 ## 已完成（各階段細節見 git log 與 wiki）
 
@@ -16,28 +16,41 @@
 - **S19** 悪堕ちキャラ（`docs/wiki/era/akuoti.md`）：淫謀・洗脳／悪堕ちキャラ戰。**S20** 襲撃／救援イベント戰（`game.raid`）＋裁決修正 6 項＋斜體。
 - **S21** 共用 RESULT＋触手拘束具＋悪堕ち容姿＋防衛力負數裁決（`docs/wiki/python/result.md`、`eragvt.game.corruption`）。
 - **S22** 共用 RESULTS（`docs/wiki/python/result.md`）：不存檔、名乗り改竄讀 RESULTS:2、BATTLE_COM_AFTER:1159 同步。
-- **S23** [反撃]スタイル（下節）。測試共 1384 個（新增 `tests/test_hangeki.py` 40）。
+- **S23** [反撃]スタイル（`battle/hangeki.py`，`--style 反撃` 人工模擬）。
+- **S24** 設定畫面／開局プリセット／GLOBAL（下節）。測試共 1440 個（新增 `tests/test_config.py` 56）。
 
-## S23 內容
+## S24 內容（`eragvt.game.config`、`state.savefile.GlobalStore`，`docs/wiki/era/flow.md` §10）
 
-- `battle/hangeki.py`＝`HANGEKI_STYLE.ERB@HANGEKI_TO_TENTACLE`（成否表 :9–52、ＥＸ反撃體勢＋自分の行動、TCVARn:205 蓄積、COM_ATTACK_COMMON 再攻擊、
-  戦技經驗・SENGIUP、行動ポイント +2、べとべと回復）；`ENEMY_ACTION.ERB`:933–934 呼叫（體液分岐補 LOCAL:2）。
-- `COMF4.ERB`:24–30 [反撃]的防禦＝ＥＸ反撃；`COM_ATTACK_COMMON.ERB`:417–426 反撃準備；完全防御文 PRINTDATAL（:1206–1209）。
-  地の文 MESSAGE_BATTLE_CHARA_HANGEKI(_EX)／ATTACK_HANGEKI 走 catalog，悪堕ち戰的 MESSAGE_OTHER_* 亦同。
-- `体勢：反撃成功`（302）全作無代入 → ATTACK_HANGEKI 地の文與「反撃成功時の攻撃力」照原作不會發生（deviations S23 記錄，非偏離）。
-- `FIGHT_STYLE.ERB@SET_FSTYLE_INFO` 戰鬥中不呼叫（只有武器カスタマイズ與狀態畫面 PAGE3）→ 留給 S25（寫 `GameState.results`）。
-- 到達條件：預設（汎用キャラ）與初期セット 0（CSTR:15–17 全「通常」）都不會是 [反撃]；只有武器カスタマイズ（未移植）、
-  錦木千束／長沢雪／船田純的 CSV 武器、森亜るるか口上。`tools/sim.py --style 反撃` 為人工設定（全員全距離 [反撃]）。
+- CONFIG_INIT 0〜3；HEROINE_PRESET 畫面（[0]〜[3]、[10] 編集；[20+] ステータス／[30] 相関関係は停止）。預設仍 [1]，既有 expected 不變。
+- CONFIG 畫面全項（2 頁、FLAG:800〜805）＋性嗜好（FLAG:850／GLOBAL:4）・雑魚敵（MOB_FLAG／MOB_GLOBAL）・自動変身（GLOBAL:51〜59）フィルタ。
+  入口：SHOP [700]、HEROINE_PRESET [10]、開局 2 択畫面的 [200]（MODE_SELECT:393–402）；2 択畫面另有 [100] タイトルに戻る・[300]（停止）。
+- GLOBAL：`saves/global.json`（代碼・版本檢查），記憶體在 Web app 內跨新遊戲保留；UPDATE（EVENTFIRST:32／:291、EVENTLOAD:7）照原作套用
+  自動ロード（FLAG:800 bit0）・FLAG:850・MOB_FLAG。原作怪處（初次存的 GLOBAL:3 = 0 被 UPDATE_GLOBAL 覆寫等）記於 deviations「原作行為」。
+- `tools/sim.py` 新增 `--config-preset N`（HEROINE_PRESET 選擇）與 `--clear-bit F:B`（人工關閉某 bit）。
 
-## S23 模擬（seed 0–249，`--max-shop 200`，4 並列分批）
+### 打開後會碰到未移植系統的設定項
 
-預設・初期セット與 S22 完全相同（停止 0；敗北後 SHOP 192.87／193.00、ゲームオーバーモード後 188.10／188.65），反撃路徑 0 次。
-人工 `--preset tokusou --style 反撃`：停止 0，HANGEKI 呼叫 1345（成功 472）、COM4 ＥＸ反撃 420、反撃準備 1633、[反撃]完全防御文 133。
-`--corrupt 3 --style 反撃`：停止 0，HANGEKI 1604（成功 665，含敵行動 5 押し倒す・6 波動）。バースト過剰蓄積 0 次（單元測試覆蓋）。
+| 項目 | 結果 |
+|---|---|
+| [34] 雑魚敵との戦闘（802 bit4；淫獄・クズ市民セット ON） | 出撃遭遇雑魚 → 停止「雑魚戦システム（MOB_TENTACLE_BATTLE）は未移植」 |
+| [78] 裏プロフィール（805 bit6；淫獄・クズ市民セット ON） | C／V／A／B 感覺 Lv 上升時停止「MAKESEXUALPROFILE 未移植」 |
+| [11] 調教ステータス上昇表示（801 bit1） | 戰鬥中 PALAM 上升時停止 |
+| [15]〜[17] 戦闘画面の調教ステータス一覧（801 bit5〜7） | 戰鬥畫面停止（SHOW_TRAIN_PALAM_STATUS） |
+| [54] ボス触手撃破で返り血（803 bit4） | 擊破ボス時停止（SUPART_BLOOD） |
+| [72] 触手の子種からも娘（805 bit0；淫獄・クズ市民 ON） | 娘出生時的命名 INPUTS 停止（既有停止點） |
+| [35] クズ市民との戦闘、[55] ラスボス強化、[79] FLASH NEWS 有害ブログ、[10]／[14] 素質表示 | 所在系統（自由行動・情報収集／ラスボス／FLASHNEWS／ステータス畫面）未移植，目前無作用 |
+
+## S24 模擬（seed 0–249，`--max-shop 200`，4 並列分批）
+
+- 預設（config 1）・初期セット：與 S23 完全相同（停止 0；敗北後 SHOP 192.87／193.00、ゲームオーバーモード後 188.10／188.65）。
+- `--config-preset 2`／`3`：250 局全部停止於雑魚戦（平均 3.46 SHOP，最多 18）。
+- 人工 `--clear-bit 802:4`（再關雑魚戦）：2／3 皆 250 局停止於裏プロフィール（平均 16.04 SHOP）。
+- 人工 `--config-preset 3 --clear-bit 802:4 --clear-bit 805:6`：上限 245、子供の名前の手入力 5（娘育成 ON 的出生）。
+- `--config-preset 0`（無 GLOBAL＝全 OFF）未另跑全量；單元／整合測試覆蓋其狀態。
 
 ## 下一步
 
-- **自主推進（使用者指定 2026-10-02，依序）**：~~S22 RESULTS 共用~~ → ~~S23 [反撃]スタイル~~ → **S24 設定畫面／プリセット** → S25 狀態畫面
+- **自主推進（使用者指定 2026-10-02，依序）**：~~S22 RESULTS 共用~~ → ~~S23 [反撃]スタイル~~ → ~~S24 設定畫面／プリセット~~ → **S25 狀態畫面**
   → S26 FLASHNEWS → S27 ラスボス → S28 未移植行動（特別活動・防衛・支援・情報・自由）。其他候選：ランダム命名畫面、SHOP [112] 衣裝設定。
 - 已裁決（2026-10-02）：名乗り改竄的 RESULTS:2 殘值照原作（S22 實作）；開局デフォルト悪堕ち的輸出丟棄維持現況。
 - S23〜S25 移植 `FIGHT_STYLE.ERB@SET_FSTYLE_INFO`（RESULTS:0〜2）等時，寫入 `GameState.results`（result.md 未移植表）。
@@ -56,6 +69,7 @@ S23 模擬（含 [反撃] 人工設定）皆無停止。登記但罕見：
 - TURNEND：ENDING_1 的エンドレス分岐。拉致監禁的救出（CFLAG:71）只能經情報収集（未移植）。
 - 夜這い：TS キャラ的 `_ABLUP` 女体受容取得、`%CALLNAME:ARG%` 指向不存在角色（原作也報錯）。
 - 指令：戰鬥基礎 Lv5 的變身能力獲得（SENGIUP；反撃成功也會經由此處）。
+- 開局：HEROINE_PRESET 的 [20+]（ステータス）／[30]（相関関係）、2 択畫面的 [300]（ゲームの説明）。設定項造成的停止見上表。
 - ステータス PALAM 表示（FLAG:801 bit 5）、觸手服（ACTTENTACLESUIT・運動快感）、雜魚／クズ市民／ラスボス／事件戰／エンドレス、
   ボスの返り血（SUPART_BLOOD）、デバッグ模式、`HATUJOU_TO_HAIRAN` 地の文。
 
@@ -63,7 +77,7 @@ S23 模擬（含 [反撃] 人工設定）皆無停止。登記但罕見：
 
 - 未決：`docs/wiki/bridge/unresolved.md`；偏離：`docs/wiki/bridge/deviations.md`（整體「暫時維持」，S06 以後新增項待裁決）。
 - 無 BOM 的 7 個角色 CSV 在原版 1.824 會以 Shift-JIS 讀（亂碼）；本程式以 UTF-8 讀，可能是 +v10 差異，待實機確認。
-- 開局：預設（NORMAL＋汎用キャラ 3 名おまかせ）與初期セット「特装戦隊」；其他初期セット／キャラメイク畫面的手動設定未移植。
+- 開局：預設（NORMAL＋汎用キャラ 3 名おまかせ）與初期セット「特装戦隊」，HEROINE_PRESET 可選 0〜3；其他初期セット／キャラメイク畫面的手動設定未移植。
 - 可玩範圍：休憩・鍛錬・出撃（含拘束戰鬥、拡張度、敗北後幽閉與救出、戰後レイプ、襲撃／救援イベント戰）、夜間いちゃラブ・自慰、
   妊娠・出産・子供、全滅後的ゲームオーバーモード。其他行動、11 日目夜的日數超過結局等會進入 Web「停止」畫面。
 - 初期セット選項的角色身體資料為 0（原作同樣不生成），戰鬥中女性敏捷 0・攻擊 2 倍（原作行為，是否偏離待決定）。

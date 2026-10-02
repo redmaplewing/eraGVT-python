@@ -32,7 +32,7 @@
 
 | 行 | 動作 |
 |---:|---|
-| 29–45 | `LOADGLOBAL`；有全域資料則 `CALL UPDATE`，否則初始化 `MOB_FLAG` 為 100 |
+| 29–45 | `LOADGLOBAL`；有全域資料則 `CALL UPDATE`（§10），否則初始化 `MOB_FLAG` 為 100 |
 | 48–49 | `TIME = 1`、`MONEY = 5000` |
 | 51 | `CALL CONFIG_INIT(1)`（`SYSTEM/コンフィグ/CONFIG_初期設定.ERB@CONFIG_INIT`） |
 | 53–59 | 初期持有衣裝 `ITEM:100,200,201,202,299,300,401 = 1` |
@@ -41,12 +41,12 @@
 | 90–105 | `FLAG:50 = FLAG:51 = 1`（設施等級）；`CALL GET_BOSS_ERB_NUM` → `FLAG:3`；`FLAG:4 = 1`；`FLAG:100` 逐位 SETBIT |
 | 111–135 | 角色製作：solo 模式 1 人、否則 3 人 `ADDCHARA 0`（汎用キャラ），`CALL CHARA_MAKE_MAIN, 0`（`SYSTEM/キャラメイキング関連/CHARA_MAKE.ERB`），`CALL CHARA_MAKE_FINALIZE`（`CHARA_MAKE_DEFAULT.ERB`:221）。**預設（不改設定直接 [1000]）的實際執行順序見下方「預設路徑」** |
 | 143–166 | 每名角色設定 `CFLAG:6`（口上番號，依 `NO` 與 `TALENT:口上設定`）、`CFLAG:100 = 予定_休憩` |
-| 169, 173 | `CALL SET_LIMIT_DAY`（:411）、`CALL HEROINE_PRESET`（:617） |
+| 169, 173 | `CALL SET_LIMIT_DAY`（:411）、`CALL HEROINE_PRESET`（:617，§10：[0]〜[3] → `CONFIG_INIT`） |
 | 177–238 | 是否顯示序章（`INPUT` 0/1） |
 | 242–250 | 預設墮落角色 → `CORRUPT_CHANGE_LOOKS_MAIN` |
 | 254–267 | 每名角色 `CALL MESSAGE_FIRST`（口上）；`LOCAL <= パーティ人数最大値` 者 `CFLAG:999 = 1`（入隊） |
 | 269–283 | 角色裝備中的衣裝（`CFLAG:40–43`、`EQUIP:600–699`）登記為持有 |
-| 286–292 | `FLAG:41 = 1`、`CALL RESEARCH_QUOTA`、`CALL UPDATE`、**`BEGIN SHOP`** |
+| 286–292 | `FLAG:41 = 1`、`CALL RESEARCH_QUOTA`、`CALL UPDATE`（§10）、**`BEGIN SHOP`** |
 
 **預設路徑（S10 查證；玩家在所有選單都不改設定直接確定，程式：`opening.event_first(preset=None)`、`game/chara_make.py`）**
 
@@ -85,8 +85,8 @@ MODE_SELECT（:297）沒有預設值，`[1] NORMAL` 是第一個選項（S03 起
 
 ## 2. 讀檔：`@EVENTLOAD`
 
-`CALL UPDATE`（`バージョン間互換処理.ERB@UPDATE`:95，存檔版本升級；全部是 `LASTLOAD_VERSION < n`（n ≦ 408）的分岐，
-版本 408 的存檔不會改動狀態）；`FLAG:999` 決定背景色；`FLAG:64 > 0`（已通關）則 `JUMP ENDING`。
+`CALL UPDATE`（`バージョン間互換処理.ERB@UPDATE`:95：先做 GLOBAL 部分（§10），再做存檔版本升級；後者全部是
+`LASTLOAD_VERSION < n`（n ≦ 408）的分岐，版本 408 的存檔不會改動狀態）；`FLAG:999` 決定背景色；`FLAG:64 > 0`（已通關）則 `JUMP ENDING`。
 之後直接 `@SHOW_SHOP`（見 §0）。
 
 ## 3. 回合開始：`@EVENTSHOP`（SHOP_TURNEND.ERB:141）
@@ -212,3 +212,30 @@ MODE_SELECT（:297）沒有預設值，`[1] NORMAL` 是第一個選項（S03 起
 - **注意**：防衛力 0 のため `AKUOTI_ATTACK`（悪堕ちキャラが居れば）は毎ターン必ず発生（AKUOTI_EVENT 未移植 → 停止）。
   取り込まれ（CFLAG:0 = 9、苗床化）が居ると `BIRTH_AUTO_RANDOM`:671– の苗床出産が毎ターン 1/4 で発生（未移植 → 停止）。
   FLASHNEWS の 10001 番（DAY:2 から経過ターン数を出す）も未移植（FLASHNEWS 全体が deviations）。
+
+## 10. コンフィグと GLOBAL（S24，Python：`eragvt.game.config`、`state.savefile.GlobalStore`）
+
+- **引擎**：`SAVEGLOBAL` 寫 GLOBAL・GLOBALS・`#DIM GLOBAL SAVEDATA`（本作只有 `MOB_GLOBAL`，DIM.ERH:170）全部到 `global.sav`，附遊戲代碼・版本
+  （`reference/emuera-1824/Emuera/GameData/Variable/VariableEvaluator.cs@SaveGlobal`:2200–2252、`VariableData.cs`:904–935）。
+  `LOADGLOBAL` 檔案不存在／代碼・版本不符／讀取錯誤 → RESULT 0、記憶體不變；成功 → 全部置換（未存的元素補 0：
+  `Sub/EraDataStream.cs@ReadInt64Array`:77–102）、RESULT 1（`@LoadGlobal`:2256–2310、`Instraction.Child.cs`:1285–1298）。
+  GLOBAL 記憶體**不會**被新遊戲／RESETDATA／讀檔清掉（`@ResetData`:1132–1141），只有程式啟動與 RESETGLOBAL（本作 0 件）。
+  Python：記憶體＝`GlobalStore.mem`（Web 每個 app 一份），檔案＝`saves/global.json`。
+- **`@UPDATE`**（:95–128）：PRINTL → LOADGLOBAL 成功時 `UPDATE_GLOBAL` → FLAG:800 bit0（自動ロード）則 FLAG:801〜805 = GLOBAL:11〜15
+  （GLOBAL:0+1+2 ≠ 0 才印訊息）→ **一律** FLAG:850 = GLOBAL:4、MOB_FLAG = MOB_GLOBAL（不存在的雑魚番號 = 0）。呼叫處：EVENTFIRST:32／:291、EVENTLOAD:7。
+- **`@UPDATE_GLOBAL`**（:12–91）：依 GLOBAL:3（全域資料版本）逐版修正，最後 `GLOBAL:3 = 408` 並 SAVEGLOBAL。GLOBAL:3 = 0 時：
+  GLOBAL:11〜14 = 4／31／88／5、GLOBAL:15 = 0、GLOBAL:4 反轉 bit 7・8・9・11・12・16・17・19・20、MOB_FLAG／MOB_GLOBAL:0:1 = 100 等。
+  **注意**：CONFIG 的 [1]／[9999]、性嗜好／雑魚／変身フィルタ的 [200] 只 SAVEGLOBAL、不設 GLOBAL:3 → 初次存下的設定在下一次 UPDATE 會被上述值蓋掉（原作行為）。
+- **CONFIG_INIT(ARG)**（CONFIG_初期設定.ERB:4–61，FLAG:800〜805）：0 = (1, GLOBAL:11〜15)；1 基本 = (0,1,15,263,1,2)；
+  2 淫獄 = (0,25,31,391,247,67)；3 クズ市民 = (0,25,63,391,1271,67)。EVENTFIRST:51 先以 1 初始化，HEROINE_PRESET:758 再以選擇值覆寫。
+- **HEROINE_PRESET**（:617–759）：[20+n] ステータス（未移植→停止）、[30] 相関関係設定（未移植→停止）、[10] `CONFIG("mainmenu")`、
+  [0]〜[3] → CONFIG_INIT；其他值無聲重新輸入。本程式預設輸入仍是 [1]。
+- **MODE_SELECT [200]**（:393–402）：FLAG:801〜805 = GLOBAL:11〜15 → UPDATE_GLOBAL → CONFIG("mainmenu")。FLAG 之後會被 CONFIG_INIT 覆寫，
+  留下的只有 GLOBAL（與 :291 UPDATE 讀回的 FLAG:850／MOB_FLAG）。本程式放在開局 2 択畫面（deviations「開局的 UI 跳過」）。
+- **CONFIG(FROM)**（CONFIG_SYSTEM.ERB:68–513）：2 頁。[0] FLAG:800 bit0、[10–17] FLAG:801、[30–34] FLAG:802（[33] 關掉時連 bit5 清除）、
+  [35] 只在 bit3 ON 時反轉、[36]、[50–58] FLAG:803、[60–71] FLAG:804、[72–80] FLAG:805（[74]／[75] 互斥）；[1] 存 GLOBAL、[2] 讀 GLOBAL＋UPDATE_GLOBAL、
+  [1000]／[2000]／[3000] 各フィルタ（存 GLOBAL:4／MOB_GLOBAL／GLOBAL:51〜59 並 SAVEGLOBAL）、[999] 返回、[9999] 存 GLOBAL 後返回。
+  FROM = "mainmenu" 時 [999]／[9999] 不顯示但仍可輸入。SHOP [700]（SHOP.ERB:302–303）以 FROM = "" 呼叫。
+- 選單編號與 FLAG:804 的位元：[60+n] = bit n（[69] bit9「觸手の虜無しでも悪堕ち」、[70] bit10 クズ市民幽閉、[71] bit11）。
+  CONFIG_SYSTEM.ERB:43–54 的註解編號（9 = クズ市民…）與選單不一致，以選單與使用處為準。
+

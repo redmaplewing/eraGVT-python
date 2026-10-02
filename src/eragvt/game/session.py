@@ -13,11 +13,19 @@ from pathlib import Path
 
 from ..data.csv_loader import GameData
 from ..state import GameRng, GameState
-from ..state.savefile import GameIdentity, SaveFormatError, load_from_file, read_save_comment, save_to_file
+from ..state.savefile import (
+    GameIdentity,
+    GlobalStore,
+    SaveFormatError,
+    load_from_file,
+    read_save_comment,
+    save_to_file,
+)
 from ..text import Line, NarrationService, NullNarrationService, TextOutput
 from . import shop
 from .action import Ctx
-from .opening import PRESET_TOKUSOU, event_first
+from .config import config_gen, update
+from .opening import event_first_gen
 from .turnend import run_turn
 
 AUTOSAVE_INDEX = 99  # SystemProc:805
@@ -28,7 +36,7 @@ AUTOSAVE = True
 
 class Phase(str, Enum):
     TITLE = "title"
-    NEW_GAME = "new_game"  # 開局経路の選択（モード選択・キャラメイク画面の代わり）
+    NEW_GAME = "new_game"  # @EVENTFIRST 中の INPUT 待ち（開局経路の 2 択・HEROINE_PRESET・コンフィグ）
     SHOP = "shop"
     ACTION_CONFIRM = "action_confirm"
     TURN = "turn"  # ACTION_MAIN〜TURNEND・@EVENTSHOP 中の INPUT 待ち
@@ -46,6 +54,7 @@ class GameSession:
         rng: GameRng | None = None,
         narration: NarrationService | None = None,
         now: Callable[[], datetime] = datetime.now,
+        global_store: GlobalStore | None = None,
     ) -> None:
         self.data = data
         self.save_dir = save_dir
@@ -53,6 +62,9 @@ class GameSession:
         self.narration = narration or NullNarrationService()
         self.now = now
         self.identity = GameIdentity.from_data(data)
+        # グローバル変数（メモリ）と global.json。Emuera ではタイトルに戻ってもメモリは消えない（ResetData は GLOBAL を
+        # 初期化しない：VariableEvaluator.cs@ResetData:1132–1141）ので、Web はアプリ単位の store を渡す。
+        self.globals = global_store or GlobalStore.in_dir(save_dir, self.identity)
         self.out = TextOutput()
         self.state: GameState | None = None
         self.phase = Phase.TITLE
@@ -61,6 +73,8 @@ class GameSession:
         self._load_from_title = False
         self._turn: Generator[None, int, None] | None = None
         self._turn_done: Callable[[], None] = lambda: None
+        self._gen_phase = Phase.TURN
+        self._gen_result: object = None
         self.begin_title()
 
     # --- 画面 -------------------------------------------------------------------
@@ -82,7 +96,7 @@ class GameSession:
     def input(self, value: int) -> None:
         handler = {
             Phase.TITLE: self._title_input,
-            Phase.NEW_GAME: self._new_game_input,
+            Phase.NEW_GAME: self._turn_input,
             Phase.SHOP: self._shop_input,
             Phase.ACTION_CONFIRM: self._action_confirm_input,
             Phase.TURN: self._turn_input,
@@ -118,12 +132,12 @@ class GameSession:
 
     def _title_input(self, value: int) -> None:
         if value == 0:
-            # DEVIATION: モード選択・キャラメイク等の画面は未移植。代わりに開局経路を 2 択で選ばせる
-            # （[0] が原作の既定＝何も変えずに確定した場合、[1] はキャラメイクで初期セットを読み込んだ場合）。
+            # SystemProc@endOpenning:197–209 → @beginFirst:233–242（@EVENTFIRST）
+            self.state = GameState.new(self.data, rng=self.rng)
             self.out.drawline()
-            self.out.printl("[0] おまかせで開始（原作の既定：汎用キャラ 3 名をランダム生成）")
-            self.out.printl("[1] 初期セット『特装戦隊』で開始")
-            self.phase = Phase.NEW_GAME
+            self.out.printl()
+            gen = event_first_gen(self.state, self.data, self.out, self.globals)
+            self._run_gen(gen, self._after_event_first, phase=Phase.NEW_GAME)
         elif value == 1:
             self._load_from_title = True
             self.begin_load_game()
@@ -131,19 +145,10 @@ class GameSession:
             self.out.clearline(1)
             self.out.printl("無効な値です")
 
-    def _new_game_input(self, value: int) -> None:
-        if value not in (0, 1):
-            self.out.clearline(1)
-            self.out.printl("無効な値です")
-            return
-        self.state = GameState.new(self.data, rng=self.rng)
-        self.out.drawline()
-        self.out.printl()
-        try:
-            # SystemProc@beginFirst:233–242
-            event_first(self.state, self.data, preset=None if value == 0 else PRESET_TOKUSOU)
-        except NotImplementedError as exc:  # 開局中の未移植分岐（年齢指定の特殊表記など）
-            self._halt(exc)
+    def _after_event_first(self) -> None:
+        if self._gen_result is False:  # MODE_SELECT [100]：RESETDATA → BEGIN TITLE（オープニング処理.ERB:82–85）
+            self.state = None
+            self.begin_title()
             return
         self.begin_shop(called_when_normal=True)  # オープニング処理.ERB:292 BEGIN SHOP
 
@@ -214,7 +219,10 @@ class GameSession:
                 out.printl(f"（未實作：[{value}]）")
             else:
                 out.printw("スケジュールを設定するキャラクターが選択されていません")
-        elif value in (169, 170, 180, 700, 800):
+        elif value == 700:  # SHOP.ERB:302–303 CALL CONFIG（FROM = ""）→ @USERSHOP 終了 → @SHOW_SHOP
+            self._run_gen(config_gen(st, self.data, out, self.globals), self._show_shop)
+            return
+        elif value in (169, 170, 180, 800):
             out.printl(f"（未實作：[{value}]）")
         # @USERSHOP 終了 → SystemProc@endCallEventBuy:737–755 → endAutoSave → @SHOW_SHOP
         self._show_shop()
@@ -234,10 +242,12 @@ class GameSession:
         self._run_gen(run_turn(Ctx(self.state, self.data, self.out, self.narration)),
                       lambda: self.begin_shop(called_when_normal=True))
 
-    def _run_gen(self, gen: Generator[None, int, None], done: Callable[[], None]) -> None:
-        """INPUT を yield するジェネレータを駆動する。終了したら `done`。"""
+    def _run_gen(self, gen: Generator[None, int, object], done: Callable[[], None], phase: Phase = Phase.TURN) -> None:
+        """INPUT を yield するジェネレータを駆動する。終了したら戻り値を `_gen_result` に入れて `done`。"""
         self._turn = gen
         self._turn_done = done
+        self._gen_phase = phase
+        self._gen_result = None
         self._advance_turn(None)
 
     def _turn_input(self, value: int) -> None:
@@ -250,15 +260,16 @@ class GameSession:
                 next(self._turn)
             else:
                 self._turn.send(value)
-        except StopIteration:
+        except StopIteration as stop:
             self._turn = None
+            self._gen_result = stop.value
             self._turn_done()
             return
         except NotImplementedError as exc:
             self._turn = None
             self._halt(exc)
             return
-        self.phase = Phase.TURN
+        self.phase = self._gen_phase
 
     def _halt(self, exc: NotImplementedError) -> None:
         self.out.printl()
@@ -360,11 +371,13 @@ class GameSession:
     def _event_load(self) -> None:
         """`ゲーム内_イベント発生/オープニング処理.ERB@EVENTLOAD`:4–15。"""
         assert self.state is not None
-        self.out.printl()  # CALL UPDATE（バージョン間互換処理.ERB:95–）：PRINTL のみ
-        if self.state.temp.last_load_version != self.identity.version:
-            # バージョン間互換処理.ERB:131–846 の `LASTLOAD_VERSION < n` 分岐（n ≦ 408）は未移植。
-            raise NotImplementedError("GameBase バージョン 408 以外のセーブの更新処理は未移植")
-        if self.state.flag[64] > 0:
-            raise NotImplementedError("JUMP ENDING（エンディング）は未移植")
+        try:
+            # :7 CALL UPDATE（バージョン間互換処理.ERB:95–846）：LOADGLOBAL 成功時は GLOBAL を反映
+            update(self.state, self.globals, self.out, self.identity.version)
+            if self.state.flag[64] > 0:
+                raise NotImplementedError("JUMP ENDING（エンディング）は未移植")
+        except NotImplementedError as exc:
+            self._halt(exc)
+            return
         # BEGIN なしで終了 → SystemProc@endEventLoad:775–780 → endAutoSave → @SHOW_SHOP（オートセーブなし）
         self._show_shop()

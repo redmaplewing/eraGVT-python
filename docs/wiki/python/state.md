@@ -61,8 +61,10 @@ IntEnum／IntFlag 可直接寫入 `IntArray`（`chara.cflag[100] = ActionPlan.SO
 - `load_save` 檢查 `format`、`version`（非 int、< 1、比程式新 → `SaveFormatError`）；
   舊版本依 `SAVE_MIGRATIONS[舊版]` 逐版升級（目前空）。**改存檔結構時：`SAVE_VERSION += 1` 並加 migration。**
 - `Character.from_json` 容許缺欄位（新增欄位時舊存檔讀得進來）。
-- 全域資料另一檔：`{"format": "eragvt-global", "version": 1, "global": {global, globals, mob_global}}`；
-  `load_global_file` 檔案不存在 → 空 `GlobalState`（對應 LOADGLOBAL 失敗 = 真正初次啟動）。
+- 全域資料另一檔 `saves/global.json`：`{"format": "eragvt-global", "version": 1, "game_code", "game_version", "global": {global, globals, mob_global}}`。
+  S24 起由 `GlobalStore` 管理：`mem`（GLOBAL 記憶體，新遊戲／讀檔不清；Web 每個 app 一份）、`save()` = SAVEGLOBAL、
+  `load()` = LOADGLOBAL（檔案不存在／代碼・版本不符／壞檔 → False 且記憶體不變）。`path=None` 時以記憶體內位元組代替檔案（測試・模擬）。
+  引擎依據與 config 流程見 `docs/wiki/era/flow.md` §10。
 - `comment` 對應原作 `@SAVEINFO`（`オープニング処理.ERB`:583）產生的存檔說明。
 
 ## 文字輸出（`text/output.py`）
@@ -79,7 +81,8 @@ IntEnum／IntFlag 可直接寫入 `IntArray`（`chara.cflag[100] = ActionPlan.SO
 ## 遊戲流程（`game/`）
 
 - `era.py`：Emuera 內建語意（整數除法向 0 截斷、`TIMES` 的 decimal 截斷、`SQRT`、`LIMIT`、字寬）。
-- `opening.py`：`@EVENTFIRST` 最小路徑（固定選擇見模組 docstring）。`shop.py`：`@EVENTSHOP` 初日、`@SHOW_SHOP`、`@USERSHOP` 各處理。
+- `opening.py`：`@EVENTFIRST`（`event_first_gen` 為 INPUT 驅動的 generator：開局 2 択・HEROINE_PRESET；`event_first` 以固定輸入跑完）。
+  `config.py`：CONFIG_INIT／UPDATE(_GLOBAL)／CONFIG 畫面與三種フィルタ（S24）。`shop.py`：`@EVENTSHOP` 初日、`@SHOW_SHOP`、`@USERSHOP` 各處理。
 - `session.py`：`GameSession` 是 Emuera 系統流程（標題、SHOP 迴圈、SAVEGAME／LOADGAME 選單、自動存檔 99 號）的狀態機，
   `input(數值)` 推進、`screen()` 回傳最後一次 `@LB` 之後的行。未移植的 ERB 分支一律 `NotImplementedError`（不默默走錯路）。
 - `web/`：FastAPI。`GET /` 渲染、`POST /input`（表單）、`GET /api/screen`／`POST /api/input`（JSON）、`POST /restart`。

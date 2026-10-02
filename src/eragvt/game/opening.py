@@ -5,19 +5,27 @@
 - ゲームモード選択 `[1] NORMAL`（`オープニング処理.ERB@MODE_SELECT`:297。既定値のない選択なので先頭の NORMAL）。
 - キャラメイキング：何も設定せず `[1000]★キャラメイクを完了する（未設定のキャラはおまかせ）`
   （`SYSTEM/キャラメイキング関連/CHARA_MAKE.ERB@CHARA_MAKE_MAIN`:5、:206–209）→ 3 名の汎用キャラをランダム生成。
-- ヒロインデータ確認 `[1]「基本セット」で開始`（`オープニング処理.ERB@HEROINE_PRESET`:617）。
+- ヒロインデータ確認 `[1]「基本セット」で開始`（`オープニング処理.ERB@HEROINE_PRESET`:617）。S24 からは画面を表示して
+  入力を受ける（`event_first_gen`；[0]〜[3]・[10] 編集。非対話の `event_first` は `config_preset`（既定 1）を入力する）。
 - プロローグ `[0]いいえ`。
 
 選択肢として `preset=PRESET_TOKUSOU`：キャラメイキングで `[200]プリセットを読み込む` → `[0] 特装戦隊` → `[1]はい`
 → `[1000]`（S03〜S09 の開局）。
+
+グローバルデータ（S24）：`GlobalStore`（メモリ＋ global.json）。:29 LOADGLOBAL 成功時は `CALL UPDATE`（GLOBAL の
+config・性嗜好フィルタ・雑魚敵フィルタを反映）、失敗時（真の初回起動）は MOB_FLAG を 100 で初期化。
 
 與原作不同之處都標 `DEVIATION:`，並列在 `docs/wiki/bridge/deviations.md`。
 """
 
 from __future__ import annotations
 
+from collections.abc import Generator
+
 from ..data.csv_loader import GameData
 from ..state import GameState
+from ..state.savefile import GameIdentity, GlobalStore
+from ..text import TextOutput
 from ..state.constants import MODE_OPTIONS, ActionPlan, Base, CharaState, GameMode, GameOption, PARTY_MAX
 from .chara_common import (
     charatalent,
@@ -30,6 +38,7 @@ from .chara_common import (
 from .era import div, isqrt, limit
 from .body import chara_make_age_setting, chara_size_default, generate_bodyline
 from .chara_make import base_profile_generic, initialize_personality, initialize_race
+from .config import config_gen, config_init, heroine_preset_gen, update, update_global
 from .tentacle import BOSS_ERB_NUM, MOB_TENTACLE_NUMBERS, get_lastboss_phase, tentacle_survive_num
 
 PRESET_TOKUSOU = 0  # 初期セット/0_特捜戦隊.ERB
@@ -43,20 +52,66 @@ def game_option(state: GameState, option: GameOption) -> bool:
 # --- @EVENTFIRST ------------------------------------------------------------
 
 
-def event_first(state: GameState, data: GameData, preset: int | None = None) -> None:
+def event_first(
+    state: GameState,
+    data: GameData,
+    preset: int | None = None,
+    config_preset: int = 1,
+    store: GlobalStore | None = None,
+    out: TextOutput | None = None,
+) -> None:
+    """`event_first_gen` を固定の入力で最後まで実行する（テスト・模擬用）。
+
+    入力：開局経路の 2 択（`preset` が None なら [0] おまかせ、番号なら [1] 初期セット）→ HEROINE_PRESET `[config_preset]`。
+    `store` 省略時は空のメモリ上グローバル（ファイルなし＝真の初回起動）。
+    """
+    gen = event_first_gen(state, data, out or TextOutput(), store or GlobalStore(identity=GameIdentity.from_data(data)))
+    inputs = [0 if preset is None else 1, config_preset]
+    try:
+        next(gen)
+        for v in inputs:
+            gen.send(v)
+    except StopIteration:
+        return
+    raise RuntimeError("event_first：入力が足りない（未対応の画面で INPUT 待ち）")
+
+
+MODE_SELECT_FOOTER = ("[100] タイトルに戻る　　　　　　　　", "[200] グローバルコンフィグの編集　　　　　　　　", "[300] ゲームの説明")
+
+
+def _show_mode_select(out: TextOutput) -> None:
+    # DEVIATION: モード選択・キャラメイク画面は未移植。代わりに開局経路を 2 択で選ばせる
+    # （[0] が原作の既定＝何も変えずに確定した場合、[1] はキャラメイクで初期セットを読み込んだ場合）。
+    # 末尾の [100]／[200]／[300] は MODE_SELECT:360–368 の原文。
+    out.drawline()
+    out.printl("[0] おまかせで開始（原作の既定：汎用キャラ 3 名をランダム生成）")
+    out.printl("[1] 初期セット『特装戦隊』で開始")
+    out.printl()
+    for text in MODE_SELECT_FOOTER:
+        out.print(text)
+    out.printl()
+
+
+def event_first_gen(
+    state: GameState, data: GameData, out: TextOutput, store: GlobalStore
+) -> Generator[None, int, bool]:
     """`ゲーム内_イベント発生/オープニング処理.ERB@EVENTFIRST`:19–292（最後の BEGIN SHOP の直前まで）。
 
     `state` は `GameState.new(data)`（endOpenning 後：キャラ 0 と 999）であること。
-    `preset` が None なら既定の経路（汎用キャラ 3 名をおまかせ生成）、番号ならその初期セットを読み込む。
+    戻り値：True＝BEGIN SHOP へ、False＝MODE_SELECT の [100]（:82–85 RESETDATA → BEGIN TITLE）。
     """
-    # :29–45 LOADGLOBAL 失敗（初回起動）→ 雑魚敵出現率フィルターを 100 で初期化
-    for n in MOB_TENTACLE_NUMBERS:
-        state.mob_flag[(n // 100, n % 100)] = 100
+    version = GameIdentity.from_data(data).version
+    # :29–44 LOADGLOBAL：成功 → CALL UPDATE、失敗（初回起動）→ 雑魚敵出現率フィルターを 100 で初期化
+    if store.load():
+        update(state, store, out, version)
+    else:
+        for n in MOB_TENTACLE_NUMBERS:
+            state.mob_flag[(n // 100, n % 100)] = 100
     # :48–49
     state.time = 1
     state.money = 5000
     # :51
-    config_init(state, 1)
+    config_init(state, 1, store)
     # :53–59 所持衣装
     for item in (100, 200, 201, 202, 299, 300, 401):
         state.item[item] = 1
@@ -67,6 +122,26 @@ def event_first(state: GameState, data: GameData, preset: int | None = None) -> 
     state.flag[100] = 0
     state.flag[101] = 0
     state.flag[852] = 5000
+    preset: int | None = None
+    _show_mode_select(out)
+    while True:  # MODE_SELECT:369 $INPUT_LOOP_MODE
+        r = yield
+        if r in (0, 1):
+            preset = None if r == 0 else PRESET_TOKUSOU
+            break
+        if r == 100:  # :391–392 RETURN 999 → :82–85 RESETDATA・BEGIN TITLE
+            return False
+        if r == 200:  # :393–402（引継ぎフラグ == 0）
+            for i in range(5):
+                state.flag[801 + i] = store.mem.global_[11 + i]
+            update_global(state, store, out, version)
+            yield from config_gen(state, data, out, store, "mainmenu")
+            _show_mode_select(out)  # GOTO MASTER_LOOP（MODE_SELECT:300）
+            continue
+        if r == 300:  # :403–405 CALL TUTORIAL
+            raise NotImplementedError("ゲームの説明（TUTORIAL）は未移植")
+        out.clearline(1)
+        out.printl("無効な値です")
     state.flag[0] = MODE_OPTIONS[GameMode.NORMAL]  # MODE_SELECT:372–376
     # :90–105
     state.flag[50] = 1
@@ -82,9 +157,9 @@ def event_first(state: GameState, data: GameData, preset: int | None = None) -> 
         state.flag[8] += 1
     # :127 CALL CHARA_MAKE_MAIN, 0
     if preset is None:
-        chara_make_main_default(state, data)
+        chara_make_main_default(state, data, store)
     else:
-        chara_make_main_preset(state, data, preset)
+        chara_make_main_preset(state, data, preset, store)
     # :135 キャラメイク完了処理（CHARA_MAKE_MAIN の [1000] に続いて 2 回目）
     chara_make_finalize(state, data)
     # :143–166 口上番号・行動予定
@@ -114,8 +189,8 @@ def event_first(state: GameState, data: GameData, preset: int | None = None) -> 
         c.cflag[100] = ActionPlan.REST
     # :169
     set_limit_day(state)
-    # :173 HEROINE_PRESET → [1] 基本セット → CONFIG_INIT(1)（:787–790）
-    config_init(state, 1)
+    # :173 HEROINE_PRESET（:617–759）→ 選んだプリセットで CONFIG_INIT（:758）
+    yield from heroine_preset_gen(state, data, out, store)
     # :177–238 プロローグ：表示のみ。:241–250 デフォルト悪堕ち（`GROUPMATCH(CFLAG:LOCAL:0, 状態_悪堕ち,)`：末尾の空引数は
     # 引数にならない＝ExpressionParser.cs@ReduceArguments:63–117）。既定の開局では該当なし（CFLAG:0 はすべて 0）。
     # event_first は出力を持たない（deviations「開局 MESSAGE_FIRST」）ので表示は捨てる。
@@ -153,20 +228,12 @@ def event_first(state: GameState, data: GameData, preset: int | None = None) -> 
     # :286–288
     state.flag[41] = 1
     research_quota(state)
-    # :291 CALL UPDATE：GLOBAL なし・LASTLOAD_VERSION == -1 のため状態変化なし
-    #（バージョン間互換処理.ERB@UPDATE:95–131、:131 `IF LASTLOAD_VERSION != -1`）
+    # :291 CALL UPDATE（バージョン間互換処理.ERB@UPDATE:95–846）：LOADGLOBAL 成功時は GLOBAL を反映。
+    # LASTLOAD_VERSION == -1 なので :131 以降は通らない。
+    update(state, store, out, version)
+    return True
 
 
-def config_init(state: GameState, preset: int) -> None:
-    """`SYSTEM/コンフィグ/CONFIG_初期設定.ERB@CONFIG_INIT(ARG)`:4–61（プリセット 1＝基本セットのみ）。"""
-    if preset != 1:
-        raise NotImplementedError("CONFIG_INIT は基本セット(1)のみ移植")
-    state.flag[800] = 0
-    state.flag[801] = 1
-    state.flag[802] = 1 + 2 + 4 + 8
-    state.flag[803] = 1 + 2 + 4 + 256
-    state.flag[804] = 1
-    state.flag[805] = 2
 
 
 def set_limit_day(state: GameState) -> None:
@@ -230,28 +297,31 @@ def research_quota(state: GameState) -> None:
 # --- キャラメイキング ---------------------------------------------------------
 
 
-def _chara_make_load_global(state: GameState) -> None:
-    """`CHARA_MAKE.ERB@CHARA_MAKE_MAIN`:9–21：LOADGLOBAL（失敗）後、GLOBAL の既定値（すべて 0／空）から共通設定を読む。
-    つまり主題・変身名・かけ声なし、苗字／名前の言語「デフォルト」、種族「ランダム」、フィート自動割り当て「なし」、
-    性格「完全ランダム」（:32–40 の表示）。"""
-    for k in (5, 6, 7, 820, 821, 822, 823, 824, 825):
-        state.flag[k] = 0
+def _chara_make_load_global(state: GameState, store: GlobalStore) -> None:
+    """`CHARA_MAKE.ERB@CHARA_MAKE_MAIN`:9–21：LOADGLOBAL 後、メモリ上の GLOBAL から共通設定を読む（成否は見ない）。
+    GLOBAL:5〜9・20〜23／GLOBALS:15〜17 はキャラメイク画面の [170]（未移植）でしか書かれないので、本程式では常に 0／空
+    ＝主題・変身名・かけ声なし、苗字／名前の言語「デフォルト」、種族「ランダム」、フィート自動割り当て「なし」、
+    性格「完全ランダム」（:32–40 の表示）。UPDATE_GLOBAL の :68–77（GLOBAL:8）・:79–83（GLOBAL:20）も 0 のまま。"""
+    store.load()
+    g, gs = store.mem.global_, store.mem.globals_
+    for k, gk in ((5, 5), (6, 6), (7, 7), (820, 8), (821, 9), (822, 20), (823, 21), (824, 22), (825, 23)):
+        state.flag[k] = g[gk]
     for k in (10, 11, 12):
-        state.savestr[k] = ""
+        state.savestr[k] = gs[k + 5]
 
 
-def chara_make_main_default(state: GameState, data: GameData) -> None:
+def chara_make_main_default(state: GameState, data: GameData, store: GlobalStore | None = None) -> None:
     """`CHARA_MAKE.ERB@CHARA_MAKE_MAIN`:5 で何も設定せず [1000] を押した場合の状態変化。"""
-    _chara_make_load_global(state)
+    _chara_make_load_global(state, store or GlobalStore())
     # :206–209 [1000] キャラメイクを完了する → CHARA_MAKE_FINALIZE（未設定のキャラは INITIALIZE でおまかせ生成）
     chara_make_finalize(state, data)
 
 
-def chara_make_main_preset(state: GameState, data: GameData, preset: int) -> None:
+def chara_make_main_preset(state: GameState, data: GameData, preset: int, store: GlobalStore | None = None) -> None:
     """`CHARA_MAKE.ERB@CHARA_MAKE_MAIN`:5 で [200] → 初期セット → [1000] と進んだ場合の状態変化。"""
     if preset != PRESET_TOKUSOU:
         raise NotImplementedError("初期セットは 0_特捜戦隊 のみ移植")
-    _chara_make_load_global(state)
+    _chara_make_load_global(state, store or GlobalStore())
     # :316–322 [200] → SHOKISET.ERB@CHARA_MAKE_FINALIZE_KAI:5–45 → [0] → [1]はい
     for _ in range(state.charanum - 1):
         state.del_chara(1)

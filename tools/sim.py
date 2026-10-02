@@ -24,6 +24,11 @@ S20：襲撃／救援イベント戦の次数（RAID_RESCUE／RAID_ATTACK 呼出
 S23：[反撃]スタイルの路徑次数（HANGEKI_TO_TENTACLE 呼出・成功、COM4 のＥＸ反撃、反撃準備、[反撃]の完全防御文、過剰蓄積）。
 `--style 反撃` は開局直後に全キャラ・全距離の CDFLAG:戦闘スタイル を 10（[反撃]）にする**人工的な状態**
 （原作では初期セット 0／汎用キャラとも 通常：武器カスタマイズ〔未移植〕か一部固有キャラの CSV／口上でしか [反撃] にならない）。
+
+S24：`--config-preset N`（0〜3，既定 1）＝開局の HEROINE_PRESET で押す番号（`オープニング処理.ERB`:643–649：
+0 グローバル引き継ぎ・1 基本セット・2 淫獄セット・3 クズ市民セット）。`--preset`（キャラの開局経路）とは別。
+模擬は毎回空の一時ディレクトリで行うので GLOBAL は無い（真の初回起動）：0 は FLAG:800 = 1、FLAG:801〜805 = 0（全 OFF）。
+`--clear-bit 802:4`（複数可）は開局直後に FLAG の bit を消す**人工的な操作**（SHOP [700] で切り替えたのと同じ状態。停止点の先を見る用）。
 """
 
 from __future__ import annotations
@@ -218,12 +223,15 @@ def _corrupt(state, data, who: int) -> None:
 
 def run_one(data, narration, seed: int, preset: str, max_shop: int, max_steps: int, save_dir: Path,
             enable_intimidation: bool = False, setup=None, enable_akuoti: bool = False, corrupt: int = 0,
-            style: str = "") -> dict:
+            style: str = "", config_preset: int = 1, clear_bits: tuple = ()) -> dict:
     """`setup(state)`：開局直後に状態を変える（テスト用）。"""
     policy = random.Random(seed)
     s = GameSession(data, save_dir, rng=GameRng(seed), narration=narration)
     s.input(0)
     s.input(0 if preset == "default" else 1)
+    s.input(config_preset)  # HEROINE_PRESET（S24）
+    for f, b in clear_bits:
+        s.state.flag.set_bit(f, b, False)
     if enable_intimidation:
         s.state.flag[804] |= 1 << 10
     if enable_akuoti:
@@ -309,6 +317,9 @@ def summarize(results: list[dict], preset: str, key_len: int = 40) -> None:
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser()
     p.add_argument("--preset", choices=("default", "tokusou"), default="default")
+    p.add_argument("--config-preset", type=int, choices=(0, 1, 2, 3), default=1,
+                   help="HEROINE_PRESET の選択（0 引き継ぎ・1 基本・2 淫獄・3 クズ市民）")
+    p.add_argument("--clear-bit", action="append", default=[], help="開局直後に消す FLAG の bit（例 802:4）")
     p.add_argument("--seeds", default="0-249")
     p.add_argument("--max-shop", type=int, default=200)
     p.add_argument("--max-steps", type=int, default=100000)
@@ -326,7 +337,7 @@ def main(argv: list[str] | None = None) -> int:
         for path in a.load:
             with open(path, encoding="utf-8") as fp:
                 results.extend(json.loads(line) for line in fp if line.strip())
-        summarize(results, a.preset, a.key_len)
+        summarize(results, f"(--load {len(a.load)} 件)", a.key_len)
         return 0
     counts = install_event_counters()
     games_with: Counter = Counter()
@@ -337,7 +348,9 @@ def main(argv: list[str] | None = None) -> int:
         for seed in _parse_seeds(a.seeds):
             before = Counter(counts)
             r = run_one(data, narration, seed, a.preset, a.max_shop, a.max_steps, Path(tmp), a.enable_intimidation,
-                        enable_akuoti=a.enable_akuoti, corrupt=a.corrupt, style=a.style)
+                        enable_akuoti=a.enable_akuoti, corrupt=a.corrupt, style=a.style,
+                        config_preset=a.config_preset,
+                        clear_bits=tuple(tuple(int(x) for x in t.split(":")) for t in a.clear_bit))
             r["events"] = dict(counts - before)
             games_with.update(r["events"].keys())
             results.append(r)
@@ -347,7 +360,7 @@ def main(argv: list[str] | None = None) -> int:
         with open(a.dump, "w", encoding="utf-8", newline="\n") as fp:
             for r in results:
                 fp.write(json.dumps(r, ensure_ascii=False) + "\n")
-    summarize(results, a.preset, a.key_len)
+    summarize(results, f"{a.preset} config={a.config_preset}", a.key_len)
     return 0
 
 

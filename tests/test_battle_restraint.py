@@ -451,6 +451,7 @@ def test_e2e_sortie_restraint_back_to_shop(data):
     s = GameSession(data, Path(tempfile.mkdtemp()), rng=GameRng(12))
     s.input(0)
     s.input(1)  # 初期セット『特装戦隊』で開始
+    s.input(1)  # HEROINE_PRESET [1] 基本セット
     s.state.flag[47] = s.state.flag[46]  # ENCOUNT.ERB:159 ボス遭遇条件
     s.input(101)
     s.input(100)

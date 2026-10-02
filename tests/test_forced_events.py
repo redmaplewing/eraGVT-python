@@ -821,6 +821,7 @@ def _new_session(data, rng):
     s = GameSession(data, Path(tempfile.mkdtemp()), rng=GameRng(1))
     s.input(0)
     s.input(1)  # 初期セット『特装戦隊』
+    s.input(1)  # HEROINE_PRESET [1] 基本セット
     s.state.rng = rng
     return s
 

@@ -358,6 +358,7 @@ def test_e2e_default_opening_gaping_in_battle(data):
     s = GameSession(data, Path(tempfile.mkdtemp()), rng=GameRng(9))
     s.input(0)
     s.input(0)  # おまかせ（汎用キャラ 3 名）
+    s.input(1)  # HEROINE_PRESET [1] 基本セット
     s.state.flag[47] = s.state.flag[46]  # ENCOUNT.ERB:159 ボス遭遇条件
     s.input(101)
     s.input(100)

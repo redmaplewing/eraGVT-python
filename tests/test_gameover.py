@@ -425,6 +425,7 @@ def test_e2e_annihilation_to_gameover_mode(data):
     s = GameSession(data, tmp, rng=GameRng(0))
     s.input(0)
     s.input(1)  # 初期セット『特装戦隊』
+    s.input(1)  # HEROINE_PRESET [1] 基本セット
     st = s.state
     st.flag.set_bit(805, 2, True)
     for i in (2, 3):
