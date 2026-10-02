@@ -44,6 +44,7 @@ class Step(str, Enum):
     TURNEND = "turnend"  # BEGIN TURNEND
     SHOP = "shop"  # BEGIN SHOP
     TRAIN = "train"  # BEGIN TRAIN（S05）
+    TITLE = "title"  # RESETDATA → BEGIN TITLE（S27：SHOP_TURNEND.ERB:44–47）
 
 
 @dataclass

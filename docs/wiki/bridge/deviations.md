@@ -29,6 +29,10 @@ ERB 路徑相對 `source/earGVP/ERB/`。
   キャラメイク畫面的 [170]／[180] 共通設定存讀（GLOBAL:5〜9・20〜23、GLOBALS:15〜17，UI 未移植 → 永遠是 0／空）也尚未移植。
   S05 起戰鬥中的 `UNLOCK_ACHIEVEMENT`（タクティカルオーダー、絶体絶命ヒロイン等）與 `GET_STATE_ABLUP` 同樣不執行（`eragvt.game.battle.core.unlock_achievement`）。
   S04 起同理不執行：`SHOP_TURNEND.ERB@UPDATE_STATUS_RECORD`:263–349（歷代最高紀錄 GLOBAL:103–131／GLOBALS、SAVEGLOBAL）與 `SHOP_TROPHY.ERB@GET_STATE_TROPHY`:398–441→`UNLOCK_ACHIEVEMENT`（成就達成訊息不會顯示）。（Python：`eragvt.game.turnend.recalc_partymember`、`eragvt.game.action.get_state_trophy`）
+  S27 起同理不執行：`SCORE.ERB`:695–698／:740–747 的 GLOBAL:110（最高總合評價）・GLOBAL:100〜102（各模式クリア回數）與 SAVEGLOBAL、
+  實績 211〜213・259〜261・265・270（`BATTLE_COM_AFTER.ERB`:185／:283–304、SCORE:709／:722／:736）——判定沒有其他副作用、不影響畫面；
+  ENDING_1／3／6 エンドレス分岐的 GLOBAL:114（撃破數歷代記錄）不讀不寫 → **不顯示「ボス撃破の新記録を達成しました！」**（ENDLESS 模式
+  因模式選擇未移植目前到達不了）。（Python：`eragvt.game.ending.score`／`_endless_record`、`battle.source_check._all_bosses_cleared`）
   S08 起同理不執行：幽閉的 `COMMON_PRISON.ERB@COMMON_PRISON_EXP`:87 `GET_STATE_EXPUP`、救出時的 `UNLOCK_ACHIEVEMENT`（271／273：
   `BATTLE_COM_AFTER.ERB`:209／240）、`MESSAGE_PRISON_PRISENTENCE_FIRST`:9（hook 為無動作）。（Python：`eragvt.game.prison.commands.common_prison_exp`、
   `battle.source_check._rescue_captives`、`narration/hooks.py` PRISON_HOOK_LINES）
@@ -40,8 +44,8 @@ ERB 路徑相對 `source/earGVP/ERB/`。
   模式固定 NORMAL（MODE_SELECT 沒有預設值，[1] 是第一個選項）。（Python：`eragvt.game.opening.event_first_gen`、`session._title_input`）
   開局 `MESSAGE_FIRST` 口上仍不輸出（見下「口上」）。
 
-- [ ] **S04 未翻的行動會停止遊戲**：（出撃已於 S05 接上，戰鬥內的停止見下一項）特別活動、拠点防衛、戦闘支援（本體）、情報収集、自由行動在 `action_main` 丟 `NotImplementedError`，Web session 捕捉後進入「停止」狀態（只能按「タイトルに戻る」）。同樣停止的還有：ENDING（全ボス撃破／**11 日目夜的日數超過**）、救出直後、妊娠・育兒・幽閉・悪堕ち等 S04 無法產生的狀態、鍛錬排程（CFLAG:110）、戦闘基礎 Lv5 的變身能力獲得。（原作：`ゲーム内_行動実行処理/ACTION.ERB`:74–175 等；Python：`eragvt.game.action`、`eragvt.game.turnend`、`eragvt.game.session._advance_turn`）— 各自屬 S05 以後；影響範圍見 `docs/wiki/era/actions.md`。
-- [x] ~~**襲撃／救援 會被跳過**~~（S20 解決）：`RAID_HANTEI` 成立時照原作 `JUMP RAID_RESCUE／RAID_ATTACK` → イベント戦（`eragvt.game.raid`）。ラスボス出現後（FLAG:100 = 0）の襲来は ENCOUNT_BOSS のラスボス分岐が未移植のため停止。
+- [ ] **S04 未翻的行動會停止遊戲**：（出撃已於 S05 接上，戰鬥內的停止見下一項）特別活動、拠点防衛、戦闘支援（本體）、情報収集、自由行動在 `action_main` 丟 `NotImplementedError`，Web session 捕捉後進入「停止」狀態（只能按「タイトルに戻る」）。同樣停止的還有：（ENDING 於 S27 接上：クリア後只剩引き継ぎ SUCCESSION 停止）、救出直後、妊娠・育兒・幽閉・悪堕ち等 S04 無法產生的狀態、鍛錬排程（CFLAG:110）、戦闘基礎 Lv5 的變身能力獲得。（原作：`ゲーム内_行動実行処理/ACTION.ERB`:74–175 等；Python：`eragvt.game.action`、`eragvt.game.turnend`、`eragvt.game.session._advance_turn`）— 各自屬 S05 以後；影響範圍見 `docs/wiki/era/actions.md`。
+- [x] ~~**襲撃／救援 會被跳過**~~（S20 解決）：`RAID_HANTEI` 成立時照原作 `JUMP RAID_RESCUE／RAID_ATTACK` → イベント戦（`eragvt.game.raid`）。ラスボス出現後（FLAG:100 = 0）の襲来は S27 接上（生存ラスボス 0 で原作無限ループの路だけ停止）。
 - [ ] **未移植的戰鬥分岐會停止遊戲**（S05 新增、S06 更新）：戰鬥中下列情況丟 `NotImplementedError` → Web「停止」。
   S06 接上了拘束後的性攻擊、拘束中指令、絶頂／射精、敗北（→ 幽閉）與指令 6・7・16・17・69・71・72；
   S16 接上 ＳＰ変身（73）・ＳＰバースト（70）・ＳＰフルバースト（74）與バースト攻撃（TCVARn:217）的全部補正；
@@ -51,10 +55,8 @@ ERB 路徑相對 `source/earGVP/ERB/`。
   （Python：`eragvt.game.battle.*` 各處 `raise NotImplementedError`、`battle.commands.run_com` 的 `# DEVIATION:`）
   — 依規格「未移植分岐必須停止」。
 - [ ] **幽閉的未移植分岐會停止遊戲**（S08 新增）：（受精成立・苗床出産・`RESCUE_CHILD` 已於 S13 接上；膨乳化的
-  `SET_PROFILE` 已於 S09 接上）、ラスボス／悪堕ちキャラ 的幽閉（`TENTACLE_ACCESS_PRISON` 的
-  LASTBOSS 分岐、悪堕ち的 PALAM_HOSEI）、`CORRUPT_CHANGE_LOOKS_MAIN`:24–（設定 CONFIG_CHECK_PRISON_F(4) ON 時）、`RECOVER_CORRUPTION`、
-  TS 性別變化（`TS_MtoF` 等）、ラスボス出現後的淫紋陥落（ゲームオーバーモードは S12 接上；ENDING_1 的
-  エンドレス分岐 :266–293 仍停止）、悪堕ちキャラの淫謀（`AKUOTI_EVENT`，防衛力 0 時悪堕ちキャラ一在就必定發生）。
+  `SET_PROFILE` 已於 S09 接上）、悪堕ちキャラ 的幽閉（悪堕ち的 PALAM_HOSEI；ラスボス（Ｋ触手）的幽閉 S27 接上，天使の樹仍停止）、`CORRUPT_CHANGE_LOOKS_MAIN`:24–（設定 CONFIG_CHECK_PRISON_F(4) ON 時）、`RECOVER_CORRUPTION`、
+  TS 性別變化（`TS_MtoF` 等）（ゲームオーバーモードは S12、ENDING_1 的エンドレス分岐は S27 接上）、悪堕ちキャラの淫謀（`AKUOTI_EVENT`，防衛力 0 時悪堕ちキャラ一在就必定發生）。
   （Python：`eragvt.game.prison.*`、`party`、`ending`、`turnend._inmon_fall`、`turnend.akuoti_attack` 的 `raise NotImplementedError`）
   — 依規格「牽涉未移植系統時照 S06 慣例停止」。
 - [ ] **妊娠・子供的未移植分岐會停止遊戲**（S13 新增）：TS 変身キャラ妊娠時的女體化（`TRANS_SEX.ERB@TS_MtoF`：
@@ -70,6 +72,9 @@ ERB 路徑相對 `source/earGVP/ERB/`。
   `GameData/IdentifierDictionary.cs`:645），而振り解く的％顯示（`PRINT_COMNAME.ERB`:6–13）每次都會經過這裡，
   也就是原作（1.824）一被拘束就無法繼續。本作當作 `LOCAL:0`（體力氣力殘量％）的筆誤來判定。
   （Python：`eragvt.game.battle.hantei._hurihodoku`）— 替代方案：照 1.824 停止（等同無法玩拘束），或確認 +v10 的行為。
+- [ ] **SCORE 的 `FOR CCOUNT, O, CHARANUM`**（S27 新增，**需裁決**，與上項同類）：`ゲーム内_イベント発生/エンディング/SCORE.ERB`:150 的 `O`
+  同樣是全作不存在的識別子（grep：此處與上項 2 處、`CHARA_SIZE.ERB`:423 的 `RESULTS = O`〔字串，非識別子〕），1.824 在クリア時執行到
+  該行會報錯停止（同上依據）。本作當 0（MASTER = 0 會被 :151 跳過，結果與從 1 開始相同）。（Python：`eragvt.game.ending.score_values`）
 - [x] ~~**開局身體資料未生成對戰鬥的影響**~~（S09：**不是偏離**，移到下方「原作行為」）。
 - [ ] **口上的狀態副作用**（S07 更新，**需裁決**）：口上函式本身若對非 LOCAL 變數代入（CFLAG・TALENT・BASE・CSTR…，覆蓋率報告的
   「非 LOCAL 変数 … への代入」，約 300 函式；例：`★KOJO_0_16_真面目/鍛錬.ERB` 的 TRAINING 系 9 函式寫 CFLAG），catalog 判為 unsupported，
@@ -276,6 +281,14 @@ ERB 路徑相對 `source/earGVP/ERB/`。
   **CONFIG_F [22]**（CONFIG_GLOBAL_MANIAC.ERB:195–196）：Wingdings 設為 × 時清除的是 bit 1（ふたなり）而非 bit 11。
   **CONFIG("mainmenu")**：[999]／[9999] 不顯示但可輸入（:417–436 只控制顯示）；開局時在此改的 FLAG:800〜805 會被之後的 CONFIG_INIT 覆寫。
   **TENTACLE_MOB_901_GETNAME**：雑魚フィルタ畫面顯示名稱時也會把 TFLAG:17 的 3／5 改成 -1（:9–13）。
+
+- S27 ラスボス・結局照原作的怪處（`docs/wiki/era/lastboss.md`）：**完全殲滅不經 @EVENTEND**（`BATTLE_COM_AFTER.ERB`:306 在 SOURCE_CHECK 中
+  `BEGIN TURNEND`：該戰沒有經驗・報酬・FLAG:700 = 0 等，其餘角色照常行動後 ENDING_2）；**Ｋ觸手幽閉用Ｃ觸手的 PALAM 補正**
+  （`COMMON_TENTACLE_DATA.ERB`:338–339 呼 `TENTACLE_BOSS_{CFLAG:21}_PALAM_HOSEI`）；**ラスボス戰的 TENTACLE_LEVEL** 以 FLAG:4 數存活
+  （FLAG:10 = 1 → TENTACLE_SURVIVE "NUM" 走ラスボス側：撃破數 = FLAG:3 − 1 = 6）；**ENDING_2 的 LOCALS:3 判定**（:336 `IF LOCALS:3 == ""`
+  永真 → 悪堕ちキャラ每次覆寫 LOCALS:1）；**クリア後必定經引き継ぎ**（ENDING.ERB:29–69 `JUMP SUCCESSION`，沒有回標題的路；
+  讀クリアデータ〔FLAG:64 > 0〕也直接 `JUMP ENDING` → 引き繼ぎ）；**ラスボス出現後的悪堕ちキャラ戰**中 TENTACLE_ACCESS 走ラスボス側
+  （FLAG:11 = 0 → 錯誤字串），SOURCE_CHECK:1154 的素股焦らし REACTION_REF 不發 → 共用 RESULT:0。
 
 ## 使用者裁決 2026-10-01（`# DEVIATION:`，S20 實作）
 

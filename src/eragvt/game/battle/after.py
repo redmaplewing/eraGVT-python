@@ -403,8 +403,13 @@ def event_end(ctx: Ctx) -> Generator[None, int, Step]:
         if (st.flag[13] * 1000000) % st.flag[12]:
             st.flag[300 + n] += 1
         st.flag[500 + n] = st.flag[20]
-    elif enemy_type_check(st, "LASTBOSS") >= 1 and st.tflag[98] != 1:
-        raise NotImplementedError("ラスボスの蓄積ダメージ保持は未移植")
+    elif enemy_type_check(st, "LASTBOSS") >= 1 and st.tflag[98] != 1:  # :432–439（S27：:434 の重複代入も同値）
+        n = st.flag[11]
+        result = div(st.flag[13] * 1000000, st.flag[12])
+        st.flag[400 + n] = (1000000 - result) * 100
+        if (st.flag[13] * 1000000) % st.flag[12]:
+            st.flag[400 + n] += 1
+        st.flag[600 + n] = st.flag[20]
     # :443–464 戦闘支援効果で回復（CFLAG:100 が 出撃(101) か 防衛(105)）
     if st.flag[43] and c.cflag[100] in (ActionPlan.SORTIE, ActionPlan.DEFENSE) and st.tflag[98] != 2:
         support_heal(ctx)

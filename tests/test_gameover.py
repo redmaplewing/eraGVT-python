@@ -379,7 +379,10 @@ def test_ending_checks_skip_in_gameover(ctx):
     st.flag[100] = 0
     st.flag[101] = 0
     st.day[0], st.time = 99, 1
-    turnend.ending(ctx)  # 例外なし
+    from eragvt.game.ending import ending_gen
+
+    assert list(ending_gen(ctx)) == []  # 入力待ちも例外もなし
+    assert st.flag[999] == 0
 
 
 @pytest.mark.parametrize(

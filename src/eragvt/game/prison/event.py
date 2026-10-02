@@ -23,6 +23,7 @@ from ..action import (
 )
 from ..battle.core import (
     BOSSES,
+    LASTBOSSES,
     KANKAKU_NUM,
     abl,
     config_check_balance,
@@ -91,6 +92,18 @@ def _boss_prison_routine(ctx: Ctx, n: int) -> int:
     return 0
 
 
+def _lastboss_prison_routine(ctx: Ctx) -> int:
+    """`TENTACLE_LASTBOSS_1_PRISON_ROUTINE`（TENTACLE_LASTBOSS_1_Ｋ触手.ERB:208–239）。"""
+    from .commands import prison_comable
+
+    r = ctx.state.rng.rand(100)
+    for bound, com in ((10, 100), (20, 101), (30, 102), (40, 103), (50, 200), (60, 201), (70, 300), (75, 104), (85, 105)):
+        if r < bound:
+            prison_comable(ctx, com)
+            return 1
+    return 0
+
+
 def tentacle_access_prison(ctx: Ctx, who: int, key: str):
     """`@TENTACLE_ACCESS_PRISON, ARG, ARGS`:314–343（CFLAG:ARG:20 == 0 のボス触手のみ移植）。
 
@@ -119,8 +132,23 @@ def tentacle_access_prison(ctx: Ctx, who: int, key: str):
             st.set_result_x(*r)
             return r
         raise KeyError(key)
-    if c.cflag[20] == 1:
-        raise NotImplementedError("ラスボス触手による幽閉（TENTACLE_ACCESS_PRISON の LASTBOSS 分岐）は未移植")
+    if c.cflag[20] == 1:  # :329–342 ラスボス（S27）
+        n = c.cflag[21]
+        if n != 1:
+            raise NotImplementedError(f"TENTACLE_LASTBOSS_{n} による幽閉は未移植（天使の樹は未移植）")
+        if key == "NAME":
+            ctx.out.print(LASTBOSSES[n].name)
+            return ""
+        if key == "GETNAME":
+            return LASTBOSSES[n].name
+        if key == "PRISON_ROUTINE":
+            return _lastboss_prison_routine(ctx)
+        if key == "PALAM_HOSEI":
+            # :338–339 は TENTACLE_**BOSS**_{CFLAG:ARG:21}_PALAM_HOSEI を呼ぶ（原作どおり：Ｋ触手の幽閉はＣ触手の補正値）
+            b = BOSSES[n]
+            st.set_result_x(*b.palam_hosei)
+            return b.palam_hosei
+        raise KeyError(key)
     # CFLAG:20 == 2（悪堕ちキャラによる幽閉）：:314–343 にこの分岐は無い → 関数終端で RESULT:0 = 0 だけ
     # （reference/emuera-1824/Emuera/GameProc/Process.ScriptProc.cs:61–67）。RESULT:1〜11 は直前までの値のまま
     # （共用 RESULT＝GameState.result の殘值、照原作：使用者裁決 2026-10-02）。

@@ -252,20 +252,24 @@ def test_popularity(ctx):
 
 @pytest.mark.parametrize(("day", "time", "fires"), [(10, 1, False), (11, 0, False), (11, 1, True)])
 def test_ending_time_limit(ctx, day, time, fires):
+    from eragvt.game.ending import ending_gen
+
     st = ctx.state
     st.day[0], st.time = day, time
-    # ボス 7 体生存：(7 - 7 + 1) * FLAG:2(11) - DAY + DAY:1 <= 0 && TIME == 1
-    if fires:
-        with pytest.raises(NotImplementedError, match="ENDING_3"):
-            turnend.ending(ctx)
-    else:
-        turnend.ending(ctx)
+    # ボス 7 体生存：(7 - 7 + 1) * FLAG:2(11) - DAY + DAY:1 <= 0 && TIME == 1 → ENDING_3（S27：FLAG:999 = -999）
+    list(ending_gen(ctx))
+    assert (st.flag[999] == -999) is fires
+    assert ("時間切れです・・・" in texts(ctx.out)) is fires
 
 
 def test_ending_clear_condition(ctx):
+    from eragvt.game.ending import ending_gen
+
     ctx.state.flag[100] = 0
-    with pytest.raises(NotImplementedError, match="ENDING_2"):
-        turnend.ending(ctx)  # :9
+    gen = ending_gen(ctx)
+    assert next(gen) is None  # :9 ENDING_2 → SCORE →「クリアデータを記録しますか？」の INPUT
+    assert "この街に平和が戻りました！！" in texts(ctx.out)
+    assert "クリアデータを記録しますか？" in texts(ctx.out)
 
 
 # --- 夜間イベント：開局状態では起きない／条件が揃うと未移植で止まる ---------------------------------

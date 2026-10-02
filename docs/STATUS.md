@@ -1,6 +1,6 @@
 # 現況（唯一真相，≤120 行）
 
-更新：2026-10-02（S26b）
+更新：2026-10-02（S27）
 
 ## 已完成（各階段細節見 git log 與 wiki）
 
@@ -19,24 +19,27 @@
 - **S23** [反撃]スタイル（`battle/hangeki.py`，`--style 反撃` 人工模擬）。
 - **S24** 設定畫面／開局プリセット／GLOBAL（`eragvt.game.config`，`docs/wiki/era/flow.md` §10）。
 - **S25** ステータス畫面（`eragvt.game.status_screen`／`status_talent`／`colorbar`／`export_csv`；5 頁＋頁內指令，入口 SHOP [110]・戰鬥 [800]・HEROINE_PRESET [20]〜；控えメンバー一覧 SHOP_SHOW_STATUS_RESERVE_LIST は未實作表示）。
-- **S26** FLASHNEWS（下節）。**S26b** 事件戰ニュースの前回 RESULTS:0 を照原作（@SAVEINFO が RESULTS:0 = "408" を書く）、3003／3004 MISSION_CHECKER の括弧修正。
+- **S26** FLASHNEWS（`eragvt.game.flashnews`，SHOP_FLASHNEWS.ERB 全體）。**S26b** 事件戰ニュースの前回 RESULTS:0 を照原作、3003／3004 MISSION_CHECKER の括弧修正。
+- **S27** ラスボス（Ｋ触手）＋結局（下節、`docs/wiki/era/lastboss.md`）。
 
-## S26 內容（`eragvt.game.flashnews`，`raid.event_battle_flashnews`）
+## S27 內容（`docs/wiki/era/lastboss.md`）
 
-- `SHOP_FLASHNEWS.ERB` 全體：`@FLASHNEWS`（抽選済み再表示・最優先ニュース〔イベント戦 100000〜129999／ゲームオーバー 10001／裏ボス 10000〕・
-  昼の日付固定・防衛低下・アイドル・露出・即堕ち・末路・ボス・失言・人気度・$NEWSLOOP）、`@FLASH_VIRALMEDIA`、`@FLASHNEWS_CHOOSEHEROINE`、
-  `@FLASHNEWS_CHOOSEIDOL`（CFLAG:283／284／287 加權）。SHOP.ERB:40 から毎回呼ぶ（SAVESTR:20 があれば再表示のみ）。
-- 文字列 42 STRDATA＋固定文は ERB から機械抽出（`test_tables_match_erb` が原文照合）。関数内 static #DIM（`NOWLOOPNUM`：ゲーム通算 30 回まで
-  再抽選、`バイラルメディアフラグ`）は `TempVars`（新遊戲／讀檔で初期値）。共用 RESULT:0／1・RESULTS:0 を ERB どおり書く／読む（`result.md`）。
-- 未移植系統の値（SAVESTR:21〜25 の AV／写真集、魅了経験、CFLAG:283／287）はそのまま読む（通常 0／空 → 該当ニュースは出ない）。
-- 測試共 1532 個（S26：`tests/test_flashnews.py` 46；S26b：+17〔save_info の RESULTS、前回値 2 路、FLAG:60 番号、checker、Web 整合＋讀檔〕）。
+- ラスボス：最後のボス撃破で FLAG:101 = 1（出現メッセージ）→ SHOP の探索状況／状況一覧のラスボス表示 → `ENCOUNT_BOSS`:309–421（襲来含む）→
+  Ｋ触手の全データ（`battle.core.LASTBOSSES`、専用 ATTACK／SEX_ROUTINE・REACTION_REF 4 か所・TENTACLE_SIZE）→ 敗北時の蓄積ダメージ保持、
+  Ｋ触手による幽閉（PALAM_HOSEI は原作どおりＣ触手の値）→ 撃破で FLAG:64 = -1・完全殲滅 → **BEGIN TURNEND**（@EVENTEND を通らない：`BeginTurnend`）。
+- 結局（`eragvt.game.ending`）：`@ENDING` 本体（ジェネレータ `ending_gen`）、ENDING_2、`SCORE`（評価計算・コメント・FLAG:854 +1）、
+  「クリアデータを記録しますか？」→ ジェネレータ内 `SAVEGAME`（`SaveGameRequest` → セーブ畫面 → 続きから）→ 施設資金還元 → 引き継ぎで停止；
+  ENDING_3（日数超過）→ FLAG:999 = -999 → CLEARLINE・RESETDATA・タイトル（`Step.TITLE`）；ENDING_1／3／6 のエンドレス分岐；ENDING_6（呼び出し元なし）；
+  EVENTLOAD の `JUMP ENDING`（クリアデータ読込 → 還元 → 引き継ぎで停止）。
+- 測試共 1572 個（S27：`tests/test_lastboss.py` 40；`test_turnend`／`test_gameover` の ENDING 判定を ending_gen に書き換え）。
 
-### 模擬（seed 0–249，`--max-shop 200`，4 並列分批；亂數序列が變わったので S25 とは直接比較しない）
+### 模擬（seed 0–249，`--max-shop 200`，4 並列分批）
 
-- 預設：上限 249、停止 1（既存の HATUJOU_TO_HAIRAN 地の文）；敗北後 SHOP 192.92、ゲームオーバー後 187.51。
-- 初期セット：250 局全部上限；敗北後 SHOP 192.99、ゲームオーバー後 188.58。FLASHNEWS による新停止 0。
-- S26b 再模擬（同條件）：數值は S26 と同一・新停止 0。前回 RESULTS:0 を読む路（5 敗北 120005）は預設 3 回で「《408》」、初期セット 0 回
-  （3001／3002 は FLAG:60 を設定しないので到達しない：S26 の 102／87 は戰鬥回數。3003／3004 は模擬で未發生）。
+- 預設：上限 249、停止 1（HATUJOU_TO_HAIRAN 地の文）、敗北後 SHOP 192.92、ゲームオーバー後 187.51 ＝ S26b と同一。
+- 初期セット：250 局全部上限、敗北後 192.99、ゲームオーバー後 188.58 ＝ S26b と同一（どちらもボス全滅に届かない：ラスボス戰 0）。
+- 人工 `--bosses-cleared`（開局時 FLAG:100 = 0・FLAG:101 = 1）：上限 248、停止 2（HATUJOU_TO_HAIRAN）、新停止 0。ラスボス遭遇 860（250 局）、
+  敗北 748、勝利 0（Lv.22 のＫ触手に初期キャラは勝てない）。襲撃／救援イベント戦（3001／3002 等）がラスボス出現後も動作。
+  勝利 → ENDING_2 → SCORE → SAVEGAME → 引き継ぎ停止、ENDING_3 → タイトルは整合テストで確認。
 
 ### 狀態畫面內仍會停止
 
@@ -53,25 +56,27 @@ P4 父親 CFLAG:9 指向不存在的ボス／ラスボス／モブ；HEROINE_PRE
 ## 下一步
 
 - **自主推進（使用者指定 2026-10-02，依序）**：~~S22 RESULTS 共用~~ → ~~S23 [反撃]スタイル~~ → ~~S24 設定畫面／プリセット~~ → ~~S25 狀態畫面~~
-  → ~~S26 FLASHNEWS~~ → ~~S26b RESULTS:0 殘值~~ → **S27 ラスボス** → S28 未移植行動（特別活動・防衛・支援・情報・自由）。其他候選：ランダム命名畫面、SHOP [112] 衣裝設定。
+  → ~~S26 FLASHNEWS~~ → ~~S26b RESULTS:0 殘值~~ → ~~S27 ラスボス～結局~~ → **S28 未移植行動**（特別活動・防衛・支援・情報・自由）。
+  其他候選：引き継ぎ（SUCCESSION.ERB，クリア後の停止點）、天使の樹（引き継ぎ後のみ）、ランダム命名畫面、SHOP [112] 衣裝設定。
 - 已裁決（2026-10-02）：名乗り改竄的 RESULTS:2 殘值照原作（S22 實作）；開局デフォルト悪堕ち的輸出丟棄維持現況。
 - 已裁決（2026-10-02）：PALAM_HOSEI 殘值照原作、防衛力負數 D1〜D4（S21 實作）。已裁決（2026-10-01）：S20 的 DEVIATION 6 項＋斜體。
 - 已裁決（2026-09-30）：拡張度初期值照原作；S13 苗床出産的 static LOSEDEF 等怪處照原作。
 - 口上 catalog 待擴充：改狀態的口上（hook 化）、入れ子內 $ラベル 的 GOTO（`KOJO_AEGI.ERB` $ＭＡＸ２，199 函式）、STRDATA、未實作式中関数。
-- deviations.md 需裁決：振り解く `LOCAL:O`、口上的狀態副作用、口上 catalog 實行時失敗的回復、S08 以後新增項。
+- deviations.md 需裁決：振り解く `LOCAL:O` と同類の SCORE:150 `O`（S27）、口上的狀態副作用、口上 catalog 實行時失敗的回復、S08 以後新增項。
 
 ## 仍會停止的分岐（`NotImplementedError` → Web 停止）
 
 S23 模擬（含 [反撃] 人工設定）皆無停止。登記但罕見：
 - 悪堕ち：悪堕ち戰中 TENTACLE_ACCESS 的數值鍵（安全網）。
-- 襲撃／救援：ラスボス出現後（FLAG:100 = 0）の襲来、RAID_HANTEI のデバッグ入力、原作でも CodeEE になるエラー路。
-- 幽閉：ラスボス 的幽閉、TS 性別變化、ラスボス出現後的淫紋陥落。
+- 襲撃／救援：生存ラスボス 0 での襲来（原作無限ループ）、RAID_HANTEI のデバッグ入力、原作でも CodeEE になるエラー路。
+- ラスボス・結局（S27）：クリア後の引き継ぎ（SUCCESSION）、天使の樹（裏ボス：遭遇・形態變化・攻撃・幽閉・表示）、ENDING 後の JUMP SHOW_SHOP（原作もエラー）。
+- 幽閉：TS 性別變化。
 - 妊娠・子供：TS 変身キャラ妊娠時的女體化、子供名字等的手入力（INPUTS）與ランダム命名畫面、デバッグモード的妊娠確率輸入。
-- TURNEND：ENDING_1 的エンドレス分岐。拉致監禁的救出（CFLAG:71）只能經情報収集（未移植）。
+- TURNEND：拉致監禁的救出（CFLAG:71）只能經情報収集（未移植）。
 - 夜這い：TS キャラ的 `_ABLUP` 女体受容取得、`%CALLNAME:ARG%` 指向不存在角色（原作也報錯）。
 - 指令：戰鬥基礎 Lv5 的變身能力獲得（SENGIUP；反撃成功也會經由此處）。
 - 開局：HEROINE_PRESET 的 [30]（相関関係）、2 択畫面的 [300]（ゲームの説明）。狀態畫面內的停止見上節。設定項造成的停止見上表。
-- 戰鬥 PALAM 表示（FLAG:801 bit 5）、觸手服（ACTTENTACLESUIT・運動快感）、雜魚／クズ市民／ラスボス／事件戰／エンドレス、
+- 戰鬥 PALAM 表示（FLAG:801 bit 5）、觸手服（ACTTENTACLESUIT・運動快感）、雜魚／クズ市民／事件戰／エンドレス、
   ボスの返り血（SUPART_BLOOD）、デバッグ模式、`HATUJOU_TO_HAIRAN` 地の文。
 
 ## 已知問題
@@ -80,6 +85,6 @@ S23 模擬（含 [反撃] 人工設定）皆無停止。登記但罕見：
 - 無 BOM 的 7 個角色 CSV 在原版 1.824 會以 Shift-JIS 讀（亂碼）；本程式以 UTF-8 讀，可能是 +v10 差異，待實機確認。
 - 開局：預設（NORMAL＋汎用キャラ 3 名おまかせ）與初期セット「特装戦隊」，HEROINE_PRESET 可選 0〜3；其他初期セット／キャラメイク畫面的手動設定未移植。
 - 可玩範圍：休憩・鍛錬・出撃（含拘束戰鬥、拡張度、敗北後幽閉與救出、戰後レイプ、襲撃／救援イベント戰）、夜間いちゃラブ・自慰、
-  妊娠・出産・子供、全滅後的ゲームオーバーモード。其他行動、11 日目夜的日數超過結局等會進入 Web「停止」畫面。
+  妊娠・出産・子供、全滅後的ゲームオーバーモード、ラスボス戰～ENDING_2（引き継ぎで停止）、日數超過 ENDING_3（回標題）。其他行動會進入 Web「停止」畫面。
 - 初期セット選項的角色身體資料為 0（原作同樣不生成），戰鬥中女性敏捷 0・攻擊 2 倍（原作行為，是否偏離待決定）。
 - COUNT 仍未與 Python 共用（catalog 專用暫存，deviations「口上 catalog 的顯示簡化」）；RESULT／RESULTS 已共用。

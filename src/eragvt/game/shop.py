@@ -408,19 +408,26 @@ def shop_show_boss_info(state: GameState, data: GameData, out: TextOutput) -> No
     out.printl()
     saved11 = f[11]
     bit = 1
-    if get_lastboss_phase(state) != 0:
-        raise NotImplementedError("ラスボス出現後の表示は未移植")
+    lastboss = get_lastboss_phase(state) >= 1  # :53／:104（S27：ラスボス出現後は FLAG:4 体ぶん、SAVESTR:13 は触らない）
     out.print("　　　")
-    state.savestr[13] = "BOSS"
-    for _ in range(f[3]):
+    if not lastboss:
+        state.savestr[13] = "BOSS"
+    for _ in range(f[4] if lastboss else f[3]):
         no = tentacle_survive_check(state, bit)
         if no == 0:
             out.set_color((96, 96, 96))
-            if not state.flag.get_bit(0, 4):
+            if lastboss or not state.flag.get_bit(0, 4):  # :108–109 ラスボス側は GETBIT(FLAG:0,4) を見ない
                 out.print("[―――]")
         else:
             f[11] = no
-            name = BOSS_NAMES.get(no, "")
+            if lastboss:
+                from .battle.core import LASTBOSSES
+
+                if no not in LASTBOSSES:  # 天使の樹（_GETNAME が FLAG:21 で変わる）は未移植
+                    raise NotImplementedError(f"TENTACLE_LASTBOSS_{no} の表示は未移植")
+                name = LASTBOSSES[no].name  # TENTACLE_ACCESS "NAME" のラスボス分岐（COMMON_TENTACLE_DATA.ERB:258–262）
+            else:
+                name = BOSS_NAMES.get(no, "")
             if state.flag.get_bit(803, 1) and f[18] == f[11]:
                 out.set_color((255, 125, 125) if found else (255, 180, 0))
                 out.print(f"[[[{name}]]]")
@@ -886,8 +893,17 @@ def shop_show_situation_list(state: GameState, data: GameData, out: TextOutput, 
                 tentacle_access(ctx, "NAME")
                 out.print("]")
             bit *= 2
-    elif get_lastboss_phase(state) >= 1:
-        raise NotImplementedError("ラスボス出現後の状況一覧（SHOP_SHOW_SITUATION_LIST:26–38）は未移植")
+    elif get_lastboss_phase(state) >= 1:  # :26–38（S27）：SAVESTR:13 は設定しない、FLAG:11 は戻さない
+        out.printl(f"現在活動中の{data.str_defaults.get(2503, '')}")
+        out.drawline()
+        for _ in range(f[4]):
+            r = tentacle_survive_check(state, bit)
+            if r > 0:
+                f[11] = r
+                out.print("[")
+                tentacle_access(ctx, "NAME")
+                out.print("]")
+            bit *= 2
     out.printl()
     out.drawline()
     others = [i for i in range(1, state.charanum)]

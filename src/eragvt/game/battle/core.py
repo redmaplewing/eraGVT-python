@@ -24,6 +24,12 @@ class BeginAfterTrain(Exception):
     """`BEGIN AFTERTRAIN`：呼叫堆疊全部捨棄，進入 `@EVENTEND`（Process.SystemProc.cs@beginAfterTrain:524–534）。"""
 
 
+class BeginTurnend(Exception):
+    """戰鬥中的 `BEGIN TURNEND`（S27：ラスボス撃破後の完全殲滅 `BATTLE_COM_AFTER.ERB@SOURCE_CHECK`:306）。
+    呼叫堆疊全部捨棄（`@EVENTEND` を通らない）、`@EVENTTURNEND` へ（Process.SystemProc.cs@beginTurnend:602–612、
+    BEGIN の呼叫堆疊破棄：GameProc/Process.State.cs@Begin:263–310（:307 functionList.Clear））。"""
+
+
 # --- DIM.ERH 常數 ----------------------------------------------------------------
 
 # :129–136 TCVARn:12 の状態異常
@@ -449,6 +455,8 @@ class BossData:
     hold: int
     palam_hosei: tuple[int, ...]  # 12 個（快C〜恐怖）
     attack_routine: tuple[int, int]  # (RAND:100 < 20 のときの戻り値, 20)；(0, 0) は常に 0
+    # KOUGEKI／BOUGYO／BINSYOU の TENTACLE_STATUS_HOSEI の第 2 引数（ボスは全て省略 = 100、Ｋ触手は 100／50／50）
+    stat_bonus: tuple[int, int, int] = (100, 100, 100)
 
 
 BOSSES: dict[int, BossData] = {
@@ -490,6 +498,46 @@ BOSSES: dict[int, BossData] = {
 }
 
 
+# ラスボス：`触手データ/ボス触手/TENTACLE_LASTBOSS_{n}_*.ERB`。本作は 1（Ｋ触手）と 2（天使の樹）の 2 個
+# （GET_LASTBOSS_ERB_NUM：COMMON_TENTACLE_DATA.ERB:428–438）。天使の樹は周回（FLAG:854 > 0：SCORE.ERB:749 でのみ増え、
+# 引き継ぎ SUCCESSION.ERB〔未移植〕でしか次の周に持ち越せない）かつ HARDCORE でしか出現しない（BATTLE_COM_AFTER.ERB:176、:270）
+# ので未移植（遭遇したら停止）。
+LASTBOSSES: dict[int, BossData] = {
+    # TENTACLE_LASTBOSS_1_Ｋ触手.ERB:7–123（ATTACK_ROUTINE／SEX_ROUTINE／REACTION_REF／PRISON_ROUTINE／TENTACLE_SIZE は専用関数）
+    1: BossData("Ｋ触手", ("（数十メートルはある巨大な図体をしたラスボス触手）",
+                          "（その禍々しい威容はまさしく触手たちの王を名乗るにふさわしい）"),
+                (30000, 2000), (1250, 25), 100, 2260, 300, 200, 100, 65, 150, 150, 150, 200,
+                (120, 120, 120, 120, 100, 100, 100, 100, 100, 100, 100, 100), (0, 0), (100, 50, 50)),
+}
+LASTBOSS_ERB_NUM = 2
+LASTBOSS_NAMES = {1: "Ｋ触手", 2: "天使の樹"}  # _GETNAME（TENTACLE_LASTBOSS_2_天使の樹.ERB:8–15 は FLAG:21 で変わる：未移植）
+
+
+def lastboss_attack_routine(ctx: Ctx) -> int:
+    """`TENTACLE_LASTBOSS_1_ATTACK_ROUTINE`（TENTACLE_LASTBOSS_1_Ｋ触手.ERB:129–154）。BASE:防御 は TARGET のもの。"""
+    st = ctx.state
+    c = tc(ctx)
+    l1 = st.rng.rand(100)
+    l2 = c.base[ctx.data.index_of("BASE", "防御")] - 200
+    if st.flag[17] >= st.flag[16] and l1 < 35:  # :134–135 油断していると距離を取る
+        return 4
+    if l2 and l1 < div(l2, 2):  # :137–144（l2 が負なら成立しない）
+        return 1 if l1 < 5 else 3 if l1 < 35 else 2
+    if l1 < 50:
+        return 1
+    if l1 < 74:
+        return 2
+    if l1 < 98:
+        return 3
+    return 4
+
+
+def _is_lastboss_access(st: GameState) -> bool:
+    """TENTACLE_ACCESS の分岐（COMMON_TENTACLE_DATA.ERB:202）：GET_LASTBOSS_PHASE_F() != 0 で雑魚／クズ市民でなければ
+    ラスボス側（`TENTACLE_LASTBOSS_{FLAG:11}_*`）。FLAG:10 は見ない（ラスボス出現後の悪堕ちキャラ戦もこちら）。"""
+    return not (get_lastboss_phase(st) == 0 or enemy_type_check(st, "MOB") == 1 or enemy_type_check(st, "CITIZEN") == 1)
+
+
 def tentacle_level(st: GameState) -> int:
     """`COMMON_TENTACLE_DATA.ERB@TENTACLE_LEVEL`:356–406（S04 で移植済みの関数を使う）。"""
     from ..turnend import tentacle_level as _tl
@@ -503,9 +551,15 @@ def tentacle_status_hosei(st: GameState, value: int, bonus: int = 100) -> int:
 
 
 def boss_data(st: GameState) -> BossData:
-    """TENTACLE_ACCESS の分岐（:202）：ボス（SAVESTR:13 == "BOSS"）のみ移植。"""
-    if get_lastboss_phase(st) != 0 or enemy_type_check(st, "MOB") == 1 or enemy_type_check(st, "CITIZEN") == 1:
-        raise NotImplementedError("ラスボス／雑魚／クズ市民の触手データは未移植（S05 はボス触手のみ）")
+    """TENTACLE_ACCESS の分岐（:202）：ボス（SAVESTR:13 == "BOSS"）とラスボス 1（Ｋ触手、S27）。"""
+    if _is_lastboss_access(st):
+        if st.flag[11] == 2:
+            raise NotImplementedError("裏ボス（TENTACLE_LASTBOSS_2 天使の樹）は未移植")
+        if st.flag[11] not in LASTBOSSES:
+            raise NotImplementedError(f"TENTACLE_LASTBOSS_{st.flag[11]} は存在しない（TRYCALLFORM 不発の RESULT は再現しない）")
+        return LASTBOSSES[st.flag[11]]
+    if enemy_type_check(st, "MOB") == 1 or enemy_type_check(st, "CITIZEN") == 1:
+        raise NotImplementedError("雑魚／クズ市民の触手データは未移植（S05 はボス触手のみ）")
     if st.savestr[13] != "BOSS" or st.flag[11] not in BOSSES:
         raise NotImplementedError(f"TENTACLE_{st.savestr[13]}_{st.flag[11]} のデータは未移植")
     return BOSSES[st.flag[11]]
@@ -515,9 +569,11 @@ def _tentacle_func_missing(st: GameState) -> bool:
     """TENTACLE_ACCESS のボス分岐（:202 GET_LASTBOSS_PHASE_F() == 0）で `TENTACLE_{SAVESTR:13}_{FLAG:11}_*` が存在しない
     （本作のボスは 1〜7：tentacle.BOSS_ERB_NUM）。数値を返すキーでは RESULT が前の値のままになり再現できないので
     呼び出し側は停止する（boss_data）。"""
+    if _is_lastboss_access(st):
+        # S27：ラスボス側（:258–306）で TENTACLE_LASTBOSS_{FLAG:11} が無い（ラスボス出現後の悪堕ちキャラ戦 FLAG:11 = 0）
+        return st.flag[11] not in LASTBOSS_NAMES
     return (
-        get_lastboss_phase(st) == 0
-        and enemy_type_check(st, "MOB") == 0
+        enemy_type_check(st, "MOB") == 0
         and enemy_type_check(st, "CITIZEN") == 0
         and st.savestr[13] == "BOSS"
         and st.flag[11] not in BOSSES
@@ -554,11 +610,11 @@ def tentacle_access(ctx: Ctx, key: str) -> int | str:
     if key == "YUDAN":
         return b.yudan
     if key == "KOUGEKI":
-        return tentacle_status_hosei(st, b.kougeki)
+        return tentacle_status_hosei(st, b.kougeki, b.stat_bonus[0])
     if key == "BOUGYO":
-        return tentacle_status_hosei(st, b.bougyo)
+        return tentacle_status_hosei(st, b.bougyo, b.stat_bonus[1])
     if key == "BINSYOU":
-        return tentacle_status_hosei(st, b.binsyou)
+        return tentacle_status_hosei(st, b.binsyou, b.stat_bonus[2])
     if key == "CHISEI":
         return tentacle_status_hosei(st, b.chisei, 10)
     if key == "SHORT":
@@ -570,6 +626,8 @@ def tentacle_access(ctx: Ctx, key: str) -> int | str:
     if key == "HOLD":
         return b.hold
     if key == "ATTACK_ROUTINE":
+        if _is_lastboss_access(st):  # S27：Ｋ触手の専用ルーチン
+            return lastboss_attack_routine(ctx)
         value, per = b.attack_routine
         if per == 0:
             return 0
@@ -581,7 +639,8 @@ def tentacle_palam_hosei(ctx: Ctx) -> tuple[int, ...]:
     """TENTACLE_ACCESS "PALAM_HOSEI"（Ｐ触手は TFLAG:23 が非 0 なら全て /4：TENTACLE_BOSS_6_Ｐ触手.ERB:125–129）。"""
     st = ctx.state
     b = boss_data(st)
-    r = tuple(div(v, 4) for v in b.palam_hosei) if st.flag[11] == 6 and st.tflag[23] else b.palam_hosei
+    r = (tuple(div(v, 4) for v in b.palam_hosei)
+         if not _is_lastboss_access(st) and st.flag[11] == 6 and st.tflag[23] else b.palam_hosei)
     # ボスの PALAM_HOSEI の 12 値 RETURN（例 TENTACLE_BOSS_1_Ｃ触手.ERB:125）→ TENTACLE_ACCESS:253 も同じ 12 値（共用 RESULT）
     st.set_result_x(*r)
     return r

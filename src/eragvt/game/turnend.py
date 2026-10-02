@@ -47,21 +47,23 @@ from .child import grow_hantei
 from .intimidation import intimidation_event, kidnapping
 from .small_tentacle import small_tentacle_hantei
 from .yobai import yobai
+from .ending import ending_gen
 
 # --- 1 ターン（JUMP ACTION_MAIN → BEGIN TURNEND の繰り返し → BEGIN SHOP）-------------------
 
 
-def run_turn(ctx: Ctx) -> Generator[None, int, None]:
+def run_turn(ctx: Ctx) -> Generator[None, int, Step]:
     """`SHOP.ERB@USERSHOP_ACTION_CONFIRM`:557 の JUMP ACTION_MAIN から BEGIN SHOP まで。
-    BEGIN／JUMP は呼び出しスタックを捨てるので、ここでは順に呼び直すだけでよい。"""
+    BEGIN／JUMP は呼び出しスタックを捨てるので、ここでは順に呼び直すだけでよい。
+    戻り値：Step.SHOP（BEGIN SHOP）または Step.TITLE（S27：ENDING_3 後の RESETDATA → BEGIN TITLE）。"""
     step = yield from action_main(ctx)
     while True:
         if step == Step.TURNEND:
             step = yield from event_turnend(ctx)
         elif step == Step.ACTION_MAIN:
             step = yield from action_main(ctx)
-        elif step == Step.SHOP:
-            return
+        elif step in (Step.SHOP, Step.TITLE):
+            return step
         elif step == Step.TRAIN:
             from .battle.train import run_train
 
@@ -96,10 +98,16 @@ def event_turnend(ctx: Ctx) -> Generator[None, int, Step]:
                 break
     else:
         st.target = st.flag[798]
-    ending(ctx)  # :40
-    # :42–49（ENDING が戻ってきた場合のみ到達。FLAG:999 == -999／FLAG:64 != 0 は ENDING 本体でしか立たない）
-    if st.flag[999] == -999 or st.flag[64] != 0:
-        raise NotImplementedError("ENDING 後のタイトル復帰／引き継ぎは未移植")
+    yield from ending_gen(ctx)  # :42（S27：ENDING_2 → SCORE の INPUT・SAVEGAME のためジェネレータ）
+    # :43–52（ENDING が戻ってきた場合のみ到達）
+    if st.flag[999] == -999:  # :44–47 CLEARLINE LINECOUNT → RESETDATA → BEGIN TITLE（呼び出し側 GameSession が行う）
+        out.clearline(out.linecount)
+        return Step.TITLE
+    if st.flag[64] != 0:
+        # :48–51 FLAG:48 = 0 → JUMP SHOW_SHOP：SHOW_SHOP から戻ると EVENTTURNEND も終わり、Normal 状態のスクリプト終端
+        # （原作も CodeEE「予期しないスクリプト終端」：Process.SystemProc.cs@endNormal:993–996）。完全殲滅（FLAG:64 = -1）後に
+        # ENDING_2 の条件（CHECK_GAMEOVER_F() == 0）が満たされない場合などにだけ到達。
+        raise NotImplementedError("ENDING 後の JUMP SHOW_SHOP（原作でもスクリプト終端エラー）")
     yield from recalc_partymember(ctx)  # :52
     # :56–61
     if st.flag[45] > 0:
@@ -158,27 +166,6 @@ def event_turnend(ctx: Ctx) -> Generator[None, int, Step]:
     # FLAG:45 が残ったまま関数末尾 → Normal 状態でスクリプト終端 → 原作は CodeEE「予期しないスクリプト終端です」
     # （reference/emuera-1824/Emuera/GameProc/Process.SystemProc.cs@endNormal:993–996）。RAID_* のエラー分岐でのみ到達。
     raise NotImplementedError("EVENTTURNEND が FLAG:45 を残して終了（原作でも CodeEE：予期しないスクリプト終端）")
-
-
-def ending(ctx: Ctx) -> None:
-    """`ゲーム内_イベント発生/エンディング/ENDING.ERB@ENDING`:3–88 の判定部分。結末画面本体は未移植。"""
-    st = ctx.state
-    f = st.flag
-    if f[64] > 0:  # :4–5
-        raise NotImplementedError("引き継ぎ（ENDING START_SUCCESSION）は未移植")
-    if f[100] <= 0 and f[101] <= 0 and not check_gameover(st):  # :9
-        raise NotImplementedError("ENDING_2（ゲームクリア）は未移植")
-    # :74–85 日数制限超過
-    if f[999] == 0 and not check_gameover(st) and not game_option(st, GameOption.NO_TIME_LIMIT):
-        alive = tentacle_survive_num(st)
-        if enemy_type_check(st, "BOSS") == 1:
-            if ((f[3] - alive + 1) * f[2] - st.day[0] + st.day[1]) <= 0 and st.time == 1:
-                raise NotImplementedError("ENDING_3（日数制限超過）は未移植")
-        elif get_lastboss_phase(st) >= 1:
-            if (f[1] - st.day[0] + st.day[1]) == 0 and st.time == 1:
-                raise NotImplementedError("ENDING_3（日数制限超過）は未移植")
-    if f[999] == -997:  # :86–87
-        raise NotImplementedError("ENDING（FLAG:999 == -997 のスコア処理）は未移植")
 
 
 def recalc_partymember(ctx: Ctx) -> Generator[None, int, None]:

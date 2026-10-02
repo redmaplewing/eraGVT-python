@@ -50,6 +50,7 @@ from .core import (
     SEI_TEIKOU,
     ZETSUBOU,
     BeginAfterTrain,
+    BeginTurnend,
     config_check_balance,
     get_battle_situation,
     get_local,
@@ -1003,6 +1004,8 @@ def run_train(ctx: Ctx) -> Generator[None, int, Step]:
             yield from usercom(ctx, value)
     except BeginAfterTrain:
         pass
+    except BeginTurnend:  # S27：完全殲滅（BATTLE_COM_AFTER.ERB:306）は @EVENTEND を通らない
+        return Step.TURNEND
     return (yield from event_end(ctx))
 
 

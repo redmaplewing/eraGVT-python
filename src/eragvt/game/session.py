@@ -76,6 +76,8 @@ class GameSession:
         self._turn_done: Callable[[], None] = lambda: None
         self._gen_phase = Phase.TURN
         self._gen_result: object = None
+        # SAVEGAME（ジェネレータ内）から戻る先。None なら SHOP の [200]（loadPrevState → @SHOW_SHOP）
+        self._save_return: Callable[[], None] | None = None
         self.begin_title()
 
     # --- 画面 -------------------------------------------------------------------
@@ -248,8 +250,16 @@ class GameSession:
         assert self.state is not None
         # BEGIN SHOP（EVENTTURNEND 実行中の SystemState は Normal：SystemProc@beginTurnend:609–611）
         # → calledWhenNormal = true（Process.State.cs@Begin:271–273）→ オートセーブあり（SystemProc:633）
-        self._run_gen(run_turn(Ctx(self.state, self.data, self.out, self.narration)),
-                      lambda: self.begin_shop(called_when_normal=True))
+        self._run_gen(run_turn(Ctx(self.state, self.data, self.out, self.narration)), self._after_turn)
+
+    def _after_turn(self) -> None:
+        from .action import Step
+
+        if self._gen_result == Step.TITLE:  # SHOP_TURNEND.ERB:44–47 RESETDATA → BEGIN TITLE（S27：ENDING_3）
+            self.state = None
+            self.begin_title()
+            return
+        self.begin_shop(called_when_normal=True)
 
     def _run_gen(self, gen: Generator[None, int, object], done: Callable[[], None], phase: Phase = Phase.TURN) -> None:
         """INPUT を yield するジェネレータを駆動する。終了したら戻り値を `_gen_result` に入れて `done`。"""
@@ -264,11 +274,13 @@ class GameSession:
 
     def _advance_turn(self, value: int | None) -> None:
         assert self._turn is not None
+        from .ending import SaveGameRequest
+
         try:
             if value is None:
-                next(self._turn)
+                y = next(self._turn)
             else:
-                self._turn.send(value)
+                y = self._turn.send(value)
         except StopIteration as stop:
             self._turn = None
             self._gen_result = stop.value
@@ -277,6 +289,12 @@ class GameSession:
         except NotImplementedError as exc:
             self._turn = None
             self._halt(exc)
+            return
+        if isinstance(y, SaveGameRequest):
+            # S27：ジェネレータ内の SAVEGAME（ENDING.ERB:22）→ セーブ画面、終わったら（キャンセル含む）続きから
+            # （SystemProc@saveGameWaitInput:865–869／@endCallSaveInfo:926–934 の loadPrevState）
+            self._save_return = lambda: self._advance_turn(None)
+            self.begin_save_game()
             return
         self.phase = self._gen_phase
 
@@ -315,7 +333,7 @@ class GameSession:
     def _save_select_input(self, value: int) -> None:
         """SystemProc@saveGameWaitInput:863–903。"""
         if value == 100:
-            self._show_shop()  # loadPrevState → @USERSHOP の続き → @SHOW_SHOP
+            self._after_save()  # loadPrevState → @USERSHOP の続き → @SHOW_SHOP（SAVEGAME 命令なら命令の次）
             return
         if not 0 <= value < SAVE_DATA_NOS:
             self.out.clearline(1)
@@ -344,7 +362,14 @@ class GameSession:
         now = self.now()
         text = now.strftime("%Y/%m/%d %H:%M:%S") + " " + shop.save_info(self.state, self.data, now)
         save_to_file(self._save_path(self._save_target), self.state, text, self.identity)
-        self._show_shop()
+        self._after_save()
+
+    def _after_save(self) -> None:
+        ret, self._save_return = self._save_return, None
+        if ret is not None:
+            ret()
+        else:
+            self._show_shop()
 
     def begin_load_game(self) -> None:
         self.out.printl("何番をロードしますか？")
@@ -384,10 +409,13 @@ class GameSession:
         try:
             # :7 CALL UPDATE（バージョン間互換処理.ERB:95–846）：LOADGLOBAL 成功時は GLOBAL を反映
             update(self.state, self.globals, self.out, self.identity.version)
-            if self.state.flag[64] > 0:
-                raise NotImplementedError("JUMP ENDING（エンディング）は未移植")
         except NotImplementedError as exc:
             self._halt(exc)
+            return
+        if self.state.flag[64] > 0:  # :13–14 JUMP ENDING（S27：クリアデータ → $START_SUCCESSION → 引き継ぎ〔未移植で停止〕）
+            from .ending import ending_gen
+
+            self._run_gen(ending_gen(Ctx(self.state, self.data, self.out, self.narration)), self._show_shop)
             return
         # BEGIN なしで終了 → SystemProc@endEventLoad:775–780 → endAutoSave → @SHOW_SHOP（オートセーブなし）
         self._show_shop()

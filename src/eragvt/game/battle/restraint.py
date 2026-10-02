@@ -282,7 +282,7 @@ def com_able_restraint(ctx: Ctx, n: int) -> tuple[int, tuple[int, int, int] | No
 
 
 def _com_able_sex(ctx: Ctx, n: int, guard: bool, pink: tuple[int, int, int]) -> tuple[int, tuple[int, int, int] | None]:
-    from .sexcom import SEX_TYPE, boss_reaction_ref
+    from .sexcom import SEX_TYPE, boss_reaction_ref, lastboss_reaction_ref
 
     st = ctx.state
     c = tc(ctx)
@@ -325,11 +325,14 @@ def _com_able_sex(ctx: Ctx, n: int, guard: bool, pink: tuple[int, int, int]) -> 
             if (typ & 1) == 0:
                 return 0, None
         if n == 103:  # :991–1020
-            if _mob(ctx) or enemy_type_check(st, "LASTBOSS") >= 1:
-                raise NotImplementedError("雑魚敵／ラスボスの REACTION_REF は未移植")
-            if st.flag[11] not in range(1, 8):  # TENTACLE_BOSS_{FLAG:11}_REACTION_REF が無い（悪堕ちキャラ戦は 0）→ CATCH
+            if _mob(ctx):
+                raise NotImplementedError("雑魚敵の REACTION_REF は未移植")
+            if enemy_type_check(st, "LASTBOSS") >= 1:  # :996–1000（S27）
+                r = lastboss_reaction_ref(ctx, st.flag[11], 2)
+            elif st.flag[11] not in range(1, 8):  # TENTACLE_BOSS_{FLAG:11}_REACTION_REF が無い（悪堕ちキャラ戦は 0）→ CATCH
                 return 0, None
-            r = boss_reaction_ref(ctx, st.flag[11], 2)
+            else:
+                r = boss_reaction_ref(ctx, st.flag[11], 2)
             typ = SEX_TYPE.get(r)
             if typ is None:
                 return 0, None
@@ -1132,7 +1135,7 @@ def _houshi_juel(ctx: Ctx, base: int, per: int) -> None:
 
 def com100(ctx: Ctx) -> ComGen:
     """`COMF100.ERB@COM100`:2–70（手淫攻撃）。"""
-    from .sexcom import boss_reaction_ref
+    from .sexcom import boss_reaction_ref, lastboss_reaction_ref
     from .syasei import tentacle_syasei_check, tentacle_syasei_up
 
     st = ctx.state
@@ -1154,9 +1157,11 @@ def com100(ctx: Ctx) -> ComGen:
     r0 = tentacle_syasei_check(ctx)[0]  # RESULT = RESULT:0
     out.printl()
     if g >= 3 and st.rng.rand(100) < 10:  # :52–62
-        if _mob(ctx) or enemy_type_check(st, "LASTBOSS") >= 1:
-            raise NotImplementedError("雑魚敵／ラスボスの REACTION_REF は未移植")
-        if st.flag[11] in range(1, 8):
+        if _mob(ctx):
+            raise NotImplementedError("雑魚敵の REACTION_REF は未移植")
+        if enemy_type_check(st, "LASTBOSS") >= 1:  # COMF100.ERB:55–56（S27）
+            r = lastboss_reaction_ref(ctx, st.flag[11], 3)
+        elif st.flag[11] in range(1, 8):
             r = boss_reaction_ref(ctx, st.flag[11], 3)
         else:
             # TENTACLE_BOSS_{FLAG:11}_REACTION_REF が無い（悪堕ちキャラ戦は FLAG:11 = 0）→ TRYCALLFORM 不発で RESULT は
@@ -1257,7 +1262,7 @@ def com102(ctx: Ctx) -> ComGen:
 
 def com103(ctx: Ctx) -> ComGen:
     """`COMF103.ERB@COM103`:2–202（素股焦らし）。"""
-    from .sexcom import boss_reaction_ref, check_holyvirgin
+    from .sexcom import boss_reaction_ref, check_holyvirgin, lastboss_reaction_ref
     from .syasei import tentacle_syasei_check, tentacle_syasei_up
 
     st = ctx.state
@@ -1359,11 +1364,13 @@ def com103(ctx: Ctx) -> ComGen:
     c.ex[99] += 1
     # :192–200。悪堕ちキャラ戦（FLAG:11 = 0：ACTION.ERB:38）は TENTACLE_BOSS_0_REACTION_REF が無く TRYCALLFORM 不発 →
     # RESULT は前の値のまま：失敗の経路では :5 PRINT_DISTANCE の関数終端（RESULT = 0）以降 CALL が無い（式中関数のみ）ので 0。
-    if st.flag[11] in range(1, 8):
+    if _mob(ctx):
+        raise NotImplementedError("雑魚敵の REACTION_REF は未移植")
+    if enemy_type_check(st, "LASTBOSS") >= 1:  # :193–195（S27：MOB → LASTBOSS → BOSS の順）
+        r = lastboss_reaction_ref(ctx, st.flag[11], 2 - (1 if c.base[31] > 0 else 0))
+    elif st.flag[11] in range(1, 8):
         r = boss_reaction_ref(ctx, st.flag[11], 2 - (1 if c.base[31] > 0 else 0))
     else:
-        if _mob(ctx) or enemy_type_check(st, "LASTBOSS") >= 1:
-            raise NotImplementedError("雑魚敵／ラスボスの REACTION_REF は未移植")
         r = st.result[0]
     if r >= 0:
         st.tflag[17] = r

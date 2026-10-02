@@ -22,6 +22,7 @@
 - [ ] 未定義識別子 `LOCAL:O`（`ゲーム内_戦闘処理/COMMON_BATTLE_HANTEI.ERB`:241／:245，振り解く判定）— 1.824 在第一次執行該行時
   才解析引數（`GameProc/Process.ScriptProc.cs`:38–42），`O` 找不到 → `IdentifierNotFoundCodeEE`（`GameData/IdentifierDictionary.cs`:645）
   → 停止。原作附的 `Emuera1824+v10.exe` 是否同樣報錯未確認（reference 只有 1.824）。目前當 `LOCAL:0`（deviations.md）。
+  S27：`エンディング/SCORE.ERB`:150 `FOR CCOUNT, O, CHARANUM` 同類（クリア時必經），目前當 0（deviations.md「SCORE 的 FOR CCOUNT, O」）。
 
 ## 原作邏輯
 

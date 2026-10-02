@@ -30,6 +30,10 @@ S24：`--config-preset N`（0〜3，既定 1）＝開局の HEROINE_PRESET で�
 模擬は毎回空の一時ディレクトリで行うので GLOBAL は無い（真の初回起動）：0 は FLAG:800 = 1、FLAG:801〜805 = 0（全 OFF）。
 `--clear-bit 802:4`（複数可）は開局直後に FLAG の bit を消す**人工的な操作**（SHOP [700] で切り替えたのと同じ状態。停止点の先を見る用）。
 
+S27：ラスボス・結局の次数（ラスボス出現・遭遇・勝敗、完全殲滅、ENDING_2／3、SCORE 総合評価）。ENDING_3 後にタイトルへ戻ったら
+「タイトル復帰」で終了。`--bosses-cleared` は開局直後に FLAG:100 = 0・FLAG:101 = 1（全ボス撃破済みでラスボス出現中）にする
+**人工的な状態**（撃破までの経緯〔経験・ボス経験・蓄積ダメージ等〕は通らない）。
+
 S25：戦闘中の [800] でステータス画面（5 ページ・EXPORT_CSV 含む）に入るようになった（ランダム方針のまま。SHOP [110] は押さない）。
 """
 
@@ -197,6 +201,48 @@ def install_event_counters() -> Counter:
         return orig_pg(ctx)
 
     enemy.msg_perfect_guard = perfect_guard
+
+    # S27：ラスボス・結局
+    from eragvt.game import ending as ending_mod
+
+    def enc_boss_after(ctx, r):
+        if r and ctx.state.flag[10] == 1:
+            counts["ラスボス遭遇（ENCOUNT_BOSS）"] += 1
+
+    wrap_plain(encount, "encount_boss", enc_boss_after)
+    wrap_plain(source_check, "_victory_lastboss", lambda ctx, r: counts.update(["ラスボス撃破"]))
+    orig_all = source_check._all_bosses_cleared
+
+    def all_cleared(ctx):
+        key = "完全殲滅（BEGIN TURNEND）" if ctx.state.flag[64] == -1 else "ボス全滅→ラスボス出現"
+        counts[key] += 1
+        return orig_all(ctx)
+
+    source_check._all_bosses_cleared = all_cleared
+    orig_lose2 = source_check._battle_lose
+
+    def lose2(ctx, *a, **k):
+        if ctx.state.flag[10] == 1 and ctx.state.flag[110] == 0:
+            counts["ラスボス戦 敗北"] += 1
+        return orig_lose2(ctx, *a, **k)
+
+    source_check._battle_lose = lose2
+    for name in ("ending_2", "ending_3"):
+        orig_e = getattr(ending_mod, name)
+
+        def e(ctx, _orig=orig_e, _name=name):
+            counts[_name.upper()] += 1
+            return _orig(ctx)
+
+        setattr(ending_mod, name, e)
+    orig_score = ending_mod.score
+
+    def sc(ctx):
+        r = orig_score(ctx)
+        counts[f"SCORE 総合 {r}"] += 1
+        return r
+
+    ending_mod.score = sc
     return counts
 
 
@@ -209,6 +255,13 @@ def _set_style(state, data, style: str) -> None:
     for i in range(1, state.charanum):
         for dist in (1, 2, 3):
             state.charas[i].cdflag[(dist, idx)] = _STYLES[style]
+
+
+def _bosses_cleared(state) -> None:
+    """`--bosses-cleared`（人工状態）：全ボスのビットを寝かせ、ラスボス（Ｋ触手）出現中にする
+    （BATTLE_COM_AFTER.ERB:266–276 の FLAG:101 = 1 と同じ値。メッセージ・経験等は通らない）。"""
+    state.flag[100] = 0
+    state.flag[101] = 1
 
 
 def _corrupt(state, data, who: int) -> None:
@@ -257,6 +310,9 @@ def run_one(data, narration, seed: int, preset: str, max_shop: int, max_steps: i
             defeated_at = shops
         if st is not None and gameover_at is None and st.flag[0] == 0:  # CHANGE_GAMEOVER_MODE 後
             gameover_at = shops
+        if s.phase == Phase.TITLE and steps > 1:  # S27：ENDING_3 → RESETDATA → BEGIN TITLE
+            reason = "タイトル復帰"
+            break
         if s.phase == Phase.HALTED:
             text = next((ln.text for ln in reversed(s.out.lines) if ln.text.startswith(HALT_PREFIX)), "")
             reason = text[len(HALT_PREFIX):].rstrip("）")
@@ -332,6 +388,7 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--dump", help="各局の結果を JSON Lines で書き出す（分割実行用）")
     p.add_argument("--load", nargs="+", help="--dump の出力を読んで合算表示だけする")
     p.add_argument("--corrupt", type=int, default=0, help="開局時に悪堕ちにするキャラ番号（テスト用）")
+    p.add_argument("--bosses-cleared", action="store_true", help="開局直後に FLAG:100 = 0・FLAG:101 = 1（人工状態）")
     p.add_argument("--style", choices=tuple(_STYLES), default="", help="開局時に全キャラ・全距離の戦闘スタイルを設定（テスト用）")
     a = p.parse_args(argv)
     if a.load:
@@ -351,7 +408,7 @@ def main(argv: list[str] | None = None) -> int:
             before = Counter(counts)
             r = run_one(data, narration, seed, a.preset, a.max_shop, a.max_steps, Path(tmp), a.enable_intimidation,
                         enable_akuoti=a.enable_akuoti, corrupt=a.corrupt, style=a.style,
-                        config_preset=a.config_preset,
+                        config_preset=a.config_preset, setup=_bosses_cleared if a.bosses_cleared else None,
                         clear_bits=tuple(tuple(int(x) for x in t.split(":")) for t in a.clear_bit))
             r["events"] = dict(counts - before)
             games_with.update(r["events"].keys())

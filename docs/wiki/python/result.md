@@ -29,6 +29,8 @@ ERB 路徑相對 `source/earGVP/ERB/`。
 |---|---|---|
 | `COMMON_TENTACLE_DATA.ERB@TENTACLE_ACCESS`:253 ＋ボスの `_PALAM_HOSEI`（例 `TENTACLE_BOSS_1_Ｃ触手.ERB`:125） | 0〜11 | `battle.core.tentacle_palam_hosei` |
 | 同 `@TENTACLE_ACCESS_PRISON`:327（ボス）；CFLAG:20 == 2 は分岐なし → RESULT:0 = 0 只 | 0〜11／0 | `prison.event.tentacle_access_prison` |
+| S27：`@TENTACLE_ACCESS`:306 ＋ `TENTACLE_LASTBOSS_1_PALAM_HOSEI`（Ｋ触手.ERB:123）；`@TENTACLE_ACCESS_PRISON`:339（CFLAG:20 == 1 も BOSS 側の値） | 0〜11 | `battle.core.tentacle_palam_hosei`／`prison.event.tentacle_access_prison` |
+| S27：`GAPING.ERB@SET_TENTACLE_SIZE`:1135 ＋ `TENTACLE_LASTBOSS_1_TENTACLE_SIZE`（Ｋ触手.ERB:257） | 0〜7 | `battle.gaping.set_tentacle_size` |
 | `GAPING.ERB@SET_TENTACLE_SIZE`：ボス `_TENTACLE_SIZE` 8 值（:1128）、悪堕ち寄生 :1098–1101、終端 RESULT:0 = 0 | 0〜7 | `battle.gaping.set_tentacle_size` |
 | `GAPING.ERB@PRISON_GAPING`:1336 | 0〜1 | `prison.commands.prison_gaping` |
 | `COMMON_PRISON.ERB@COMMON_PRISON_EXP_SH`:71 | 0〜3 | `prison.commands.common_prison_exp_sh` |

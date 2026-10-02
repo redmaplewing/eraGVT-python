@@ -570,8 +570,21 @@ def set_tentacle_size(ctx: Ctx, arg0: int, arg1: int, arg2: int, arg3: int, arg4
             local = isqrt(local * 40)
         r = boss_tentacle_size(ctx, arg1, arg4)
         st.set_result_x(*r)  # TENTACLE_BOSS_n_TENTACLE_SIZE の 8 値 RETURN（例 TENTACLE_BOSS_1_Ｃ触手.ERB:220）
+    elif arg0 == 1:  # :1131–1135 ラスボス（S27）
+        local = isqrt((result * 6 + 35) * 150)
+        if config_check_maniac(st, 20) == 0:
+            local = isqrt(local * 75)
+        if arg1 != 1:
+            raise NotImplementedError(f"TENTACLE_LASTBOSS_{arg1}_TENTACLE_SIZE は未移植")
+        # TENTACLE_LASTBOSS_1_Ｋ触手.ERB:244–257（RAND は記述順：C・V・A・B）
+        l4 = rand(5) + 1
+        l5 = rand(3) + 1
+        l6 = rand(3) + 1
+        l7 = rand(5) + 1
+        r = (90, 120, 120, 90, l4, l5, l6, l7)
+        st.set_result_x(*r)  # 8 値 RETURN（:257）
     else:
-        raise NotImplementedError("ラスボス／雑魚敵の触手サイズ（SET_TENTACLE_SIZE ARG:0 != 0）は未移植")
+        raise NotImplementedError("雑魚敵の触手サイズ（SET_TENTACLE_SIZE ARG:0 == 2）は未移植")
     sz[(0, 0)] = div(local * r[0], 520 + rand(161)) + 2  # :1159–1169
     num[(0, 0)] = r[4]
     sz[(0, 1)] = div(local * r[1], 90 + rand(21))

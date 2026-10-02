@@ -2433,6 +2433,31 @@ def boss_sex_routine(ctx: Ctx, boss: int) -> int:
     raise NotImplementedError(f"TENTACLE_BOSS_{boss}_SEX_ROUTINE は未移植")
 
 
+def lastboss_sex_routine(ctx: Ctx, n: int) -> int:
+    """`TENTACLE_LASTBOSS_1_SEX_ROUTINE`（TENTACLE_LASTBOSS_1_Ｋ触手.ERB:158–180）。"""
+    if n != 1:
+        raise NotImplementedError(f"TENTACLE_LASTBOSS_{n}_SEX_ROUTINE は未移植")
+    lo = ctx.state.rng.rand(100)
+    for b, r in ((5, 1000), (10, 1001), (15, 1002), (20, 1003), (25, 1004), (30, 1005), (35, 1006), (40, 1007), (50, 1015)):
+        if lo < b:
+            return r
+    return -1
+
+
+def lastboss_reaction_ref(ctx: Ctx, n: int, arg: int = 0) -> int:
+    """`TENTACLE_LASTBOSS_1_REACTION_REF, ARG`（TENTACLE_LASTBOSS_1_Ｋ触手.ERB:187–204）。"""
+    if n != 1:
+        raise NotImplementedError(f"TENTACLE_LASTBOSS_{n}_REACTION_REF は未移植")
+    if arg == 1:
+        lo = ctx.state.rng.rand(6)
+        return 3 if lo < 2 else 5 if lo < 4 else 1001 if lo < 5 else 1002
+    if arg == 2:
+        return 15
+    if arg == 3:
+        return 11
+    return -1
+
+
 def boss_reaction_ref(ctx: Ctx, boss: int, arg: int = 0) -> int:
     """`TENTACLE_BOSS_{n}_REACTION_REF, ARG`（ARG=1 素股焦らし成功、2 失敗、3 フェラ誘発）。"""
     if boss not in range(1, 8):
@@ -2561,10 +2586,13 @@ def enemy_action_sex_routine(ctx: Ctx) -> int:
     if rand(100) < 8 and select < 0:  # :1353–1354（RAND を先に引く）
         select = 14
     if select < 0:  # :1357–1360 専用ルーチン（TENTACLE_ACCESS "SEX_ROUTINE"）
-        from .core import boss_data
+        from .core import _is_lastboss_access, boss_data
 
-        boss_data(st)  # ボス以外は停止
-        select = boss_sex_routine(ctx, st.flag[11])
+        boss_data(st)  # ボス・ラスボス 1 以外は停止
+        if _is_lastboss_access(st):  # TENTACLE_ACCESS:303（S27）
+            select = lastboss_sex_routine(ctx, st.flag[11])
+        else:
+            select = boss_sex_routine(ctx, st.flag[11])
     if select < 0:  # :1363–1428 汎用ルーチン
         n = 13
         while True:  # $TENTACLE_HANYOU_COMMOND

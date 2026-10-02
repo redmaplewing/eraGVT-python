@@ -32,6 +32,7 @@ from .core import (
     P_HANGEKI_OK,
     P_NORMAL,
     BeginAfterTrain,
+    BeginTurnend,
     abl,
     config_check_balance,
     get_battle_situation,
@@ -175,11 +176,15 @@ def source_check(ctx: Ctx) -> Generator[None, int, None]:
     _hatujou_to_hairan(ctx)
     # :1151–1161 素股焦らしの次ターン行動指定（`SELECTCOM == 103 && TFLAG:17 < 0 && RAND:100 < 95`：短絡）
     if st.temp.selectcom == 103 and st.tflag[17] < 0 and st.rng.rand(100) < 95:
-        from .sexcom import boss_reaction_ref
+        from .core import LASTBOSS_NAMES
+        from .sexcom import boss_reaction_ref, lastboss_reaction_ref
 
-        if enemy_type_check(st, "MOB") == 1 or enemy_type_check(st, "CITIZEN") == 1 or get_lastboss_phase(st) >= 1:
-            raise NotImplementedError("ラスボス／雑魚敵の REACTION_REF は未移植")
-        if st.flag[11] in range(1, 8):
+        if enemy_type_check(st, "MOB") == 1 or enemy_type_check(st, "CITIZEN") == 1:
+            raise NotImplementedError("雑魚敵の REACTION_REF は未移植")
+        if get_lastboss_phase(st) >= 1:  # :1154–1155（ENEMY_TYPE_CHECK ではなく GET_LASTBOSS_PHASE_F：S27）
+            # ラスボス出現後の悪堕ちキャラ戦（FLAG:11 = 0）は TENTACLE_LASTBOSS_0_REACTION_REF が無く不発 → 下と同じく共用 RESULT:0
+            r = lastboss_reaction_ref(ctx, st.flag[11], 1) if st.flag[11] in LASTBOSS_NAMES else st.result[0]
+        elif st.flag[11] in range(1, 8):
             r = boss_reaction_ref(ctx, st.flag[11], 1)
         else:
             # S22：悪堕ちキャラ戦（FLAG:11 = 0：ACTION.ERB:38）は TENTACLE_BOSS_0_REACTION_REF が無く TRYCALLFORM 不発
@@ -230,7 +235,7 @@ def _victory(ctx: Ctx) -> None:
             if st.flag[300 + i] < 0:
                 st.flag[300 + i] = 0
     st.tflag[98] = 1
-    if enemy_type_check(st, "BOSS") == 1:
+    if enemy_type_check(st, "BOSS") == 1 or enemy_type_check(st, "LASTBOSS") >= 1:  # :136
         # MESSAGE_BATTLE_END_WIN（地の文/MESSAGE_BATTLE.ERB:1634–1652）
         tentacle_access(ctx, "NAME")
         out.printl("は力尽きた！")
@@ -243,32 +248,102 @@ def _victory(ctx: Ctx) -> None:
         if config_check_maniac(st, 14) == 1 and st.rng.rand(1) < 1:
             _rescue_deadnum(ctx)
         out.printw()
-        if st.flag[18] == st.flag[11]:
-            st.flag[18] = 0
-        st.flag[st.flag[11] + 300] = 0
-        if game_option(st, GameOption.ENDLESS) and st.flag[11] > 0:
-            raise NotImplementedError("エンドレスモードのボス撃破は未移植")
-        if st.flag[11] > 0:
-            st.flag.set_bit(100, st.flag[11] - 1, False)
-        # :165 TRYCALL SUPART_BLOOD（返り血）
-        _supart_blood(ctx)
-        if c.base[0] == c.maxbase[0] and c.base[1] == c.maxbase[1] and st.tflag[0] >= 10:
+        if enemy_type_check(st, "BOSS") == 1:  # :142–165
+            if st.flag[18] == st.flag[11]:
+                st.flag[18] = 0
+            st.flag[st.flag[11] + 300] = 0
+            if game_option(st, GameOption.ENDLESS) and st.flag[11] > 0:
+                raise NotImplementedError("エンドレスモードのボス撃破は未移植")
+            if st.flag[11] > 0:
+                st.flag.set_bit(100, st.flag[11] - 1, False)
+            # :165 TRYCALL SUPART_BLOOD（返り血）
+            _supart_blood(ctx)
+        elif enemy_type_check(st, "LASTBOSS") == 1 and get_lastboss_phase(st) >= 1:  # :167–193 ラスボス（Ｋ）／裏ボス撃破（S27）
+            _victory_lastboss(ctx)
+        if c.base[0] == c.maxbase[0] and c.base[1] == c.maxbase[1] and st.tflag[0] >= 10:  # :198–200
             unlock_achievement(ctx, 266, "パーフェクション")
         # :202 AFTER_KILLED_BOSS（COMMON_TENTACLE_DATA.ERB:446–449）
         from ..opening import research_quota
 
         st.flag[49] = 1
         research_quota(st)
-        _rescue_captives(ctx)  # :203–262
-        if st.flag[100] == 0 and st.flag[101] == 0:
-            raise NotImplementedError("ボス全滅（ラスボス出現）は未移植")
-    elif enemy_type_check(st, "LASTBOSS") >= 1:
-        raise NotImplementedError("ラスボスへの勝利は未移植")
+        _rescue_captives(ctx)  # :204–262
+        if st.flag[100] == 0 and st.flag[101] == 0:  # :266–308
+            _all_bosses_cleared(ctx)
     elif enemy_type_check(st, "AKUOTI") == 1:
         _victory_akuoti(ctx)
     elif enemy_type_check(st, "MOB") == 1:
         raise NotImplementedError("雑魚戦の勝利は未移植（雑魚戦システムは基本セットで OFF）")
     raise BeginAfterTrain()
+
+
+def _victory_lastboss(ctx: Ctx) -> None:
+    """:167–193 ラスボス（Ｋ）撃破時のフラグ処理（S27）。実績 270 は GLOBAL のみ（deviations.md「全域資料」）。"""
+    st = ctx.state
+    f = st.flag
+    if f[18] == f[11]:  # :169–170
+        f[18] = 0
+    f[400 + f[11]] = 0  # :173
+    if f[854] > 0 and game_option(st, GameOption.HARDCORE) and f[101] == 1:  # :176–180 周回＆HARDCORE：裏ボス出現準備
+        f[4] += 1
+        f[1] += 5
+        f[21] = 1
+    elif f[101] == 2:  # :182–185 裏ボス撃破
+        f[64] = -1
+        unlock_achievement(ctx, 270, "とびっきりの最強対最強")
+    else:  # :186–188
+        f[64] = -1
+    if f[11] > 0:  # :192–193
+        f.set_bit(101, f[11] - 1, False)
+
+
+def _all_bosses_cleared(ctx: Ctx) -> None:
+    """:265–308 ボス全滅かつラスボス不在：ラスボス（裏ボス）出現、または完全殲滅 → `BEGIN TURNEND`（S27）。
+
+    完全殲滅は @EVENTEND（BATTLE_TRAIN_AFTER.ERB）を通らずに @EVENTTURNEND へ行く（原作どおり：経験・報酬・FLAG:700 = 0 等なし）。
+    :283–304 の実績（260／261／259／265）は GLOBAL のみ（deviations.md「全域資料」）：判定の副作用は無いので省略。"""
+    st, out, data = ctx.state, ctx.out, ctx.data
+    f = st.flag
+    if f[64] != -1:  # :268
+        if f[854] > 0 and game_option(st, GameOption.HARDCORE) and enemy_type_check(st, "LASTBOSS") == 2:  # :270–272
+            f[101] = 2
+            _msg_lastbossappear_2(ctx)
+        elif enemy_type_check(st, "LASTBOSS") == 0:  # :274–276
+            f[101] = 1
+            # MESSAGE_BATTLE_END_LASTBOSSAPPEAR（地の文/MESSAGE_BATTLE.ERB:1664–1670）
+            out.printl()
+            out.printl(f"全ての{data.str_defaults.get(2502, '')}を殲滅しました！")
+            out.printl(f"{data.str_defaults.get(2503, '')}が出現しました！")
+            kojo_root(ctx, "BATTLE_END_LASTBOSSAPPEAR")
+            out.printw()
+        return
+    # MESSAGE_BATTLE_END_PERFECT（MESSAGE_BATTLE.ERB:1673–1679）
+    out.printl()
+    out.printl(f"全ての{data.str_defaults.get(2500, '')}を完全殲滅しました！！")
+    out.printl()
+    kojo_root(ctx, "BATTLE_END_PERFECT")
+    out.printw()
+    raise BeginTurnend()  # :306
+
+
+def _msg_lastbossappear_2(ctx: Ctx) -> None:
+    """`MESSAGE_BATTLE_END_LASTBOSSAPPEAR_2`（MESSAGE_BATTLE.ERB:1682–1699）。"""
+    st, out = ctx.state, ctx.out
+    out.printl()
+    out.printl(f"全ての{ctx.data.str_defaults.get(2500, '')}を完全殲滅しました！！")
+    out.printl()
+    for w in ("…", "……", "………"):
+        out.printw(w)
+    out.printl()
+    out.printw("なにやら様子がおかしい……")
+    out.printl()
+    out.printl("突如大きな地響きが起こったかと思った次の瞬間、")
+    out.printl("目の前の触手の巨大な屍体が弾け飛び、地中から無数の肉の柱が出現した！")
+    out.printl("それらは互いに絡まり合い、巨大な一本の\"樹\"の形を成していく……")
+    out.printw()
+    out.printl("際限なく生長をつづける\"肉の樹\"は大地を砕き、ビルを倒壊させ、周囲を取り込んでいく。")
+    out.printl(f"{print_transcallname(st, st.target)}は危ういところで身を避わし、何とか撤退に成功した……")
+    out.printw()
 
 
 def _victory_akuoti(ctx: Ctx) -> None:

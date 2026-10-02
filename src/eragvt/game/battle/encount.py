@@ -19,6 +19,7 @@ from ..tentacle import BOSS_ERB_NUM, enemy_type_check, tentacle_survive_check, t
 from .cloth import cloth_battle_hosei
 from .core import (
     BOSSES,
+    LASTBOSSES,
     add_randchoose,
     choicecount,
     clear_randchoose,
@@ -201,7 +202,7 @@ def encount_enemy(ctx: Ctx) -> int:
 
 
 def encount_boss(ctx: Ctx) -> int:
-    """`@ENCOUNT_BOSS`:137–424（ボス触手分。ラスボスは遭遇が決まったところで停止）。"""
+    """`@ENCOUNT_BOSS`:137–424（ボス触手、S27 からラスボス触手 :309–421 も）。"""
     st = ctx.state
     c = tc(ctx)
     f = st.flag
@@ -284,39 +285,73 @@ def encount_boss(ctx: Ctx) -> int:
         else:
             message_encount_boss(ctx, "RAID_BOSS")  # MESSAGE_RAID_BOSS（S20）
         return 1
-    # :309– ラスボス触手
-    if f[45] == 0 and (f[47] < f[46] or f[49]):
+    # :309–421 ラスボス触手（S27）
+    if f[45] == 0 and (f[47] < f[46] or f[49]):  # :311–312
         return 0
-    if st.time == 0:
+    if st.time == 0:  # :314–318
         per = div(70 * f[47], f[46])
     elif st.time == 1:
         per = div(80 * f[47], f[46])
-    if defense:
+    if defense:  # :325–326
         return 0
-    if f[45] > 0:
+    if f[45] > 0:  # :329–330
         per = 100
-    if per > st.rng.rand(100):
+    if per > st.rng.rand(100):  # :333–352
         clear_randchoose(st)
+        # :338–344 GET_BOSS_ERB_NUM（7）で回すが、FLAG:100 == 0 なので TENTACLE_SURVIVE_CHECK はラスボス側（FLAG:101）を見る
+        # （COMMON_TENTACLE_DATA.ERB:55–118：bit 1 → 1、2 → 2）。POWER(2, -1) = 0。
         for n in range(BOSS_ERB_NUM + 1):
             if tentacle_survive_check(st, 2 ** (n - 1) if n >= 1 else 0) > 0:
                 add_randchoose(st, n)
         select = randchoose_f(st) if choicecount(st) > 0 else 0
-    if f[45] > 0 and select == 0:
-        raise NotImplementedError("襲来イベントのラスボス選択（GOTO RAID_LOOP）は未移植")
-    if select > 0 and f[999] == 1 and f[45] == 0:
+    if f[45] > 0 and select == 0:  # :354–355 GOTO RAID_LOOP
+        # ラスボスも全滅（FLAG:100 == FLAG:101 == 0）で襲来イベントが起きた場合のみ：ENCOUNT_PER = 100 で再抽選しても
+        # 0 のままなので原作は無限ループ。
+        raise NotImplementedError("襲来イベントのラスボス選択（GOTO RAID_LOOP：生存ラスボスなしで原作は無限ループ）")
+    if select > 0 and f[999] == 1 and f[45] == 0:  # :358–363
         raise NotImplementedError("デバッグモードの対戦相手指名は未移植")
-    if select <= 0:
+    if select <= 0:  # :365–366
         return 0
-    raise NotImplementedError("ラスボス触手との戦闘（ENCOUNT_BOSS:365–421）は未移植")
+    if defense:  # :368–369
+        return 0
+    f[11] = select  # :372
+    if select not in BOSSES:  # :374–381 TRYCCALLFORM TENTACLE_%SAVESTR:13%_{FLAG:11}_GETNAME（SAVESTR:13 = "BOSS"：:306）
+        ctx.out.printl(f"【エラー：TENTACLE_{st.savestr[13]}_{select}は定義されていない番号です】")
+        f[10] = 0
+        f[11] = 0
+        st.savestr[13] = ""
+        return 0
+    f[10] = 1  # :384 ラスボス戦
+    # :387–391 LASTBOSS_KYOUKA_F（LASTBOSS_POWERUP.ERB:5–13：CONFIG_CHECK_BALANCE_F(5) > 0 なら 5 倍）
+    f[12] = int(tentacle_access(ctx, "HP"))
+    f[12] = f[12] * (5 if config_check_balance(st, 5) > 0 and enemy_type_check(st, "LASTBOSS") >= 1 else 1)
+    f[13] = f[12]
+    acc = f[400 + f[11]]  # :394–398 蓄積ダメージ
+    f[13] = div(f[13] * (1000000 - div(acc, 100)), 1000000)
+    if acc % 100:
+        f[13] = min(f[13] + 1, f[12])
+    if f[13] <= 0:
+        f[13] = 1
+    f[14] = int(tentacle_access(ctx, "SYASEI"))  # :400–406
+    f[15] = 0
+    f[16] = int(tentacle_access(ctx, "YUDAN"))
+    f[17] = 0
+    f[22] = 0
+    f[16] += tentacle_level(st) * 10  # :409–410
+    c.exp[ctx.data.index_of("EXP", "ラスボス経験")] += 1  # :412
+    message_encount_boss(ctx, "RAID_LASTBOSS" if f[45] else "ENCOUNT_LASTBOSS")  # :415–419
+    return 1
 
 
 def message_encount_boss(ctx: Ctx, code: str = "ENCOUNT_BOSS") -> None:
     """`地の文/MESSAGE_BATTLE.ERB@MESSAGE_ENCOUNT_BOSS`:27–35。code = "RAID_BOSS" で `@MESSAGE_RAID_BOSS`:39–47
-    （本文は同じ、口上 KOJO_ROOT の code だけが違う）。"""
+    （本文は同じ、口上 KOJO_ROOT の code だけが違う）。"ENCOUNT_LASTBOSS"／"RAID_LASTBOSS" は `@MESSAGE_ENCOUNT_LASTBOSS`:51–59／
+    `@MESSAGE_RAID_LASTBOSS`:63–71（DEFENITION がラスボス側）。"""
     st, out = ctx.state, ctx.out
     tentacle_access(ctx, "NAME")
     out.printl(f" Lv.{tentacle_level(st)} と遭遇した！")
-    for line in BOSSES[st.flag[11]].definition:  # TENTACLE_BOSS_{n}_DEFENITION
+    # TENTACLE_BOSS_{n}_DEFENITION／ラスボスは TENTACLE_LASTBOSS_{n}_DEFENITION（MESSAGE_BATTLE.ERB:51–71、S27）
+    for line in (LASTBOSSES if code.endswith("LASTBOSS") else BOSSES)[st.flag[11]].definition:
         out.printl(line)
     out.printl("・・・・・・・・・・・・・・・")
     kojo_root(ctx, code)
