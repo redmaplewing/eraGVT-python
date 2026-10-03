@@ -37,6 +37,10 @@ S27：ラスボス・結局の次数（ラスボス出現・遭遇・勝敗、�
 S28a：`--actions 101,102,103,105,106,107`（既定は従来どおり 101,102,103）で SHOP の行動予約の候補を変える。拠点防衛・戦闘支援・
 情報収集（4 種の内訳、情報屋／コネ獲得、変身選択）・戦闘基礎 Lv5 の変身能力獲得・スケジュールの次数を数える。
 
+S28b：`--actions` に 104（特別活動）を入れると、活動別（アルバイト〜ライブ公演）・地の文別の次数（catalog で実行できず佔位になったものは
+「（佔位）」）・特別活動中の妊娠判定を数える。変身選択の次数は「{行動} 変身して行動」。`--seisan-unlock` は開局直後に全キャラの
+欲望 3・露出癖 2・マゾっ気 2・魅了経験 100 にする**人工的な状態**（援助交際〜枕営業・ライブ公演の分岐を通すため）。
+
 S25：戦闘中の [800] でステータス画面（5 ページ・EXPORT_CSV 含む）に入るようになった（ランダム方針のまま。SHOP [110] は押さない）。
 """
 
@@ -264,7 +268,7 @@ def install_event_counters() -> Counter:
 
     def tf_after(ctx, snap, arg, args):
         if ctx.state.charas[arg].cflag[1] > 0:
-            counts["情報収集 変身して行動"] += 1
+            counts[f"{args} 変身して行動"] += 1
 
     wrap(gather, "action_transformation_select", after=tf_after)
     wrap(gather, "_informant", before=lambda ctx, *a: ctx.state.target_chara.cflag[122],
@@ -281,6 +285,33 @@ def install_event_counters() -> Counter:
 
     gather._investigate = inv
     wrap(action_mod, "_sengiup_henshin", after=lambda ctx, snap, who: counts.update(["戦闘基礎 Lv5 変身能力獲得"]))
+
+    # S28b：特別活動（活動別・地の文別の次数、catalog で実行できず佔位になった地の文、スケジュール）
+    from eragvt.game import seisan as seisan_mod
+
+    for name, label in (("research", "研究"), ("idol_activity", "アイドル活動"), ("idol_live", "ライブ公演"),
+                        ("part_time", "アルバイト")):
+        wrap_plain(seisan_mod, name, lambda ctx, r, _l=label: counts.update([f"特別活動 {_l}"]))
+    for name, label in (("pest_control", "雑魚触手退治"), ("prostitution", "援助交際"), ("porn_video", "AV出演"),
+                        ("toilet", "公衆便所"), ("idol_prostitution", "枕営業")):
+        wrap(seisan_mod, name, after=lambda ctx, snap, _l=label: counts.update([f"特別活動 {_l}"]))
+    orig_msg = seisan_mod._msg
+
+    def smsg(ctx, func, *a, **k):
+        ok = orig_msg(ctx, func, *a, **k)
+        short = func.replace("MESSAGE_SEISAN_", "").replace("MESSAGE_", "")
+        counts[f"特別活動 地の文 {short}" + ("" if ok else "（佔位）")] += 1
+        return ok
+
+    seisan_mod._msg = smsg
+    orig_ninsin = seisan_mod._ninsin
+
+    def sninsin(ctx, *a):
+        r = orig_ninsin(ctx, *a)
+        counts["特別活動 妊娠判定" + ("→受精" if r else "")] += 1
+        return r
+
+    seisan_mod._ninsin = sninsin
     return counts
 
 
@@ -300,6 +331,17 @@ def _bosses_cleared(state) -> None:
     （BATTLE_COM_AFTER.ERB:266–276 の FLAG:101 = 1 と同じ値。メッセージ・経験等は通らない）。"""
     state.flag[100] = 0
     state.flag[101] = 1
+
+
+def _seisan_unlock(state, data) -> None:
+    """`--seisan-unlock`（S28b、人工状態）：全キャラの欲望 3・露出癖 2・マゾっ気 2・魅了経験 100 にして特別活動の全項目を解放する
+    （ACTION_SEISAN.ERB:23–42 の条件。調教・アイドル下積み等の経緯は通らない）。"""
+    for i in range(1, state.charanum):
+        c = state.charas[i]
+        c.abl[data.index_of("ABL", "欲望")] = 3
+        c.abl[data.index_of("ABL", "露出癖")] = 2
+        c.abl[data.index_of("ABL", "マゾっ気")] = 2
+        c.exp[data.index_of("EXP", "魅了経験")] = 100
 
 
 def _corrupt(state, data, who: int) -> None:
@@ -429,6 +471,7 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--bosses-cleared", action="store_true", help="開局直後に FLAG:100 = 0・FLAG:101 = 1（人工状態）")
     p.add_argument("--style", choices=tuple(_STYLES), default="", help="開局時に全キャラ・全距離の戦闘スタイルを設定（テスト用）")
     p.add_argument("--actions", default="101,102,103", help="SHOP で各キャラに予約する行動の候補（S28a）")
+    p.add_argument("--seisan-unlock", action="store_true", help="開局直後に特別活動の全項目を解放する（人工状態：S28b）")
     a = p.parse_args(argv)
     if a.load:
         results = []
@@ -447,7 +490,9 @@ def main(argv: list[str] | None = None) -> int:
             before = Counter(counts)
             r = run_one(data, narration, seed, a.preset, a.max_shop, a.max_steps, Path(tmp), a.enable_intimidation,
                         enable_akuoti=a.enable_akuoti, corrupt=a.corrupt, style=a.style,
-                        config_preset=a.config_preset, setup=_bosses_cleared if a.bosses_cleared else None,
+                        config_preset=a.config_preset,
+                        setup=(_bosses_cleared if a.bosses_cleared
+                               else (lambda st: _seisan_unlock(st, data)) if a.seisan_unlock else None),
                         clear_bits=tuple(tuple(int(x) for x in t.split(":")) for t in a.clear_bit),
                         actions=tuple(int(x) for x in a.actions.split(",")))
             r["events"] = dict(counts - before)

@@ -18,13 +18,13 @@ Python：`eragvt.game.action`（ACTION_MAIN／REST／TRAINING）、`eragvt.game.
 | 出撃 101 | `ENCOUNT`／`MOB_TENTACLE_ENCOUNT` | `FLAG:41++`；遭遇 → `BEGIN TRAIN`（戰鬥），未遭遇 → TURNEND | S05 |
 | 鍛錬 102 | `ACTION_TRAINING.ERB@TRAINING` | INPUT 選 0–10；體力 −`TRAINING_DOWNTAIRYOKU`、`BASEUP`（BASE 基礎值＋LEVELSTATUS）、戰技 EXP＋`SENGIUP`、`GET_EXP`（JUEL:50，升級）、`GET_SYUREN`（JUEL:20）、`CFLAG:101` = 選項 | 已翻 |
 | 休憩 103 | `ACTION_REST.ERB@REST` | 體力／氣力回復（設施 FLAG:51、素質、疲勞 CFLAG:99 修正）、性耐性全滿、疲勞減少、`CFLAG:101 = -1` | 已翻 |
-| 活動 104 | `ACTION_SEISAN.ERB@SEISAN` → `特別活動/SEISAN_0..8` | INPUT 選 9 種（打工、研究、驅除、賣春、AV、便器、偶像…），MONEY、EXP、JUEL、`_ABLUP`、變身 `TRANSFORM`；`CFLAG:111` 排程 | 未翻 |
+| 活動 104 | `ACTION_SEISAN.ERB@SEISAN` → `特別活動/SEISAN_0..8` | 變身選擇（GLOBAL:51–53）→ INPUT 選 9 種（CFLAG:111 スケジュール）→ 各活動（`CALC_SEISAN`：體力・氣力・性耐性減少、MONEY、性經驗）、JUEL、`_ABLUP 1`、變身解除；CFLAG:282／281／283／285／400／825・SAVESTR:21〜26・FLAG:853（人気度） | S28b `eragvt.game.seisan` |
 | 防衛 105 | `ACTION_GUARD.ERB@GUARD` | `FLAG:41++`；`ENCOUNT`（ENCOUNT_BOSS:164–177 防衛時はボス遭遇なし → 只有洗脳／悪堕ちキャラ）＋ MOB_TENTACLE_ENCOUNT（雜魚戰 OFF 時文章のみ・探索度半分）；RESULT ≠ 0 → TRAIN；RESULT == 0：體力・氣力 −12%（SYOUHI_KEIGEN）、`FLAG:852 += 125 + Lv*2 + RAND:26` | S28a `action.guard` |
 | 支援 106 | `ACTION_SUPPORT.ERB@SUPPORT` | 前線 0 人且 `FLAG:41 == 0` → 改休憩、FLAG:43−1；否則體力・氣力 ×0.24／0.18（FLAG:43 = 1／2，3 以上は MAXBASE 全量：原作どおり）×献身的 1.1、修練P 15–25、`GET_EXP((TENTACLE_LEVEL−3)/Lv*10+RAND:5)`、知性基礎 +0–2 | S28a `action.support` |
 | 情報 107 | `ACTION_GATHER_INFORMATION.ERB` | 變身選擇（GLOBAL:54–56）→ 4 種（噂話／事件の捜査／情報を買う／仲間の捜索，CFLAG:112 スケジュール）→ `_ABLUP 1` → 變身解除；探索度、魅了経験、知性、`CFLAG:120–122`（コネ）、MONEY、カラダ（EXP・JUEL・處女・NINSIN_HANTEI）、CFLAG:71（拉致監禁救出）・CFLAG:23（遭遇率）；クズ市民戰 → 停止 | S28a `eragvt.game.gather` |
 | 自由 108 | `ACTION_PASTIME.ERB@PASTIME` | 學校／街／遠出／運動（亂數或排程 `CFLAG:113`）、`CFLAG:320–354`、魅了經驗；`FLAG:73 > 0` 時 TRAIN | 未翻 |
 
-未翻的行動（活動 104・自由 108：S28b／S28c）在 `action_main` 丟 `NotImplementedError`；Web session 捕捉後顯示「未實作のため停止」並停住。
+未翻的行動（自由 108：S28c）在 `action_main` 丟 `NotImplementedError`；Web session 捕捉後顯示「未實作のため停止」並停住。
 
 ## S28a 補足
 
@@ -40,6 +40,25 @@ Python：`eragvt.game.action`（ACTION_MAIN／REST／TRAINING）、`eragvt.game.
 - **SHOP_SHOW_SITUATION_LIST:126** 拉致監禁中的名字用直前的 RESULT:0：USERSHOP 輸入 130 → LB 原樣返回 → ボス／ラスボス迴圈跑過則 0、
   悪堕ちキャラ幽閉表示則支配者番號；兩迴圈都沒跑（FLAG:110 = 1 等）→ 130 → 原作也添字範圍外（停止）。
 - 不在範圍：`ACTIONsub_DRUG_PREPARATION`（SHOP [113]）、`TSUIKAYOUSEI_NORMAL`（SHOP INSTANT 模式）、`ACTIONsub_CHARA_POWERUP`（空檔）——都不是行動呼叫。
+
+## S28b 補足（特別活動 `eragvt.game.seisan`）
+
+- **選單**（ACTION_SEISAN.ERB:14–45）：援助交際＝欲望 > 0、AV＝欲望＋露出癖 ≥ 5 或 CFLAG:283 ≥ 10、公衆便所＝欲望＋マゾっ気 ≥ 5（皆需 ISHOLE）、
+  魅了経験 > 99 で枕営業、さらに週末（DAY % 7 が 0／6）は [6] の代わりに [8]★ライブ公演（入力 6 も 8 に読み替え：:138–140）。
+  CFLAG:111 スケジュールで実行不能 → 手入力（:70–129 の GOTO INPUT_LOOP）。SHOP の予約・`IS_ACTION_INCAPABLE` は既存のまま。
+- **CALC_SEISAN**（:15–137）：係数表（SEISAN_CALC.ERH:157–197）を SEISAN_INIT の順で `EARN_TABLE` に。LOSEBASE 経由で體力・氣力に
+  SYOUHI_KEIGEN、性耐性は係数 > 0 のときだけ。客数＝體力減少量（活動別の補正）、稼ぎ＝共通式（IS_PROFITABLE かつ IS_NORMAL_EARN）、
+  RETURN 客数, 稼ぎ → 共用 RESULT:0〜1（`docs/wiki/python/result.md`）。
+- **原作どおりの怪處**（そのまま移植）：SEISAN_INIT:8 アルバイト「失敗」に成功の係数；研究所助手・路上ライブの表示額（知性倍率・+200）は
+  MONEY に入らない；公衆便所（野良犬）は表示 0＄でも CALC:85 の 1＋… が MONEY に入る；路地裏放置の経験（SEISAN_5:79–91）と
+  雑魚触手退治の妊娠判定（SEISAN_2:70）は AFTER_PILL／NINSIN_HANTEI 後の RESULT:0 を読む；路地裏放置の LOST_VIRGIN は常に 0；
+  ライブ公演の CHARM_BASE 等は静的変数で失敗時は前回値（初回 0）；AV タイトルの `\@変身能力 == 1?#…\@` は変身能力 1 で空。
+- **他系統への書き込み**：AV → CFLAG:282（種類）・281（サンプル確認）・SAVESTR:(20+TARGET)・CFLAG:285（75%）；写真集 → SAVESTR:(23+TARGET)
+  （FLASHNEWS:529–547 は 21〜25 を読む）；枕営業 → CFLAG:283（露見度）・285；公衆便所・援助交際 → CFLAG:285／825；ライブ → CFLAG:400；
+  人気度 FLAG:853。CFLAG:284（動画流出）・287 は特別活動からは書かれない（grep）。UNLOCK_ACHIEVEMENT・GET_STATE_EXPUP は実績のみ（何もしない）。
+- **地の文**：`MESSAGE_SEISAN_*`（58 函式）と `MESSAGE_CITIZEN_TRAIN_{KANCHO,PIG,DOG}` は catalog で全部実行可能（`narration/hooks.py`
+  `SEISAN_HOOK_LINES`：FLAG:900・`TARGET=ARG`・犬プレイの EXP）。写真集タイトルは `#DIMS REF BOOK_TITLE` を実行後に読む。
+- INPUT：変身選択、活動選択、生ハメの回答（SEISAN_3:304–334、想定外は黙って再入力）、AFTER_PILL、AV サンプル（:96–120、想定外は 1 回だけ警告）。
 
 ## 回合結束之後（EVENTTURNEND → BEGIN SHOP → EVENTSHOP）
 

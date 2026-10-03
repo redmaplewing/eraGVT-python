@@ -99,12 +99,18 @@ class UserVar:
     line: int = 0
 
 
+# S28b：CONST の初期値に書ける擬似変数（`reference/emuera-1824/Emuera/GameData/Variable/VariableToken.cs`:1669–1690
+# `__INT_MAX__`／`__INT_MIN__` = Int64.MaxValue／MinValue、`VariableData.cs`:308 で登録）。
+# 例：`特別活動/SEISAN_IDOL.ERH`:6 `アイドルレベル条件` の末尾。
+PSEUDO_INT_CONST = {"__INT_MAX__": 2**63 - 1, "__INT_MIN__": -(2**63)}
+
+
 class _ConstResolver(Resolver):
     def __init__(self, table: dict[str, UserVar]) -> None:
         self.table = table
 
     def is_variable(self, name: str) -> bool:
-        return name in self.table
+        return name in self.table or name in PSEUDO_INT_CONST
 
     def is_function(self, name: str) -> bool:
         return name in ("STRLENS",)
@@ -120,6 +126,8 @@ def _const_eval(e, table: dict[str, UserVar]):
     if isinstance(e, Lit):
         return e.value
     if isinstance(e, Var):
+        if e.name in PSEUDO_INT_CONST and not e.args:
+            return PSEUDO_INT_CONST[e.name]
         uv = table[e.name]
         idx = _const_eval(e.args[0], table) if e.args else 0
         return uv.values[idx]

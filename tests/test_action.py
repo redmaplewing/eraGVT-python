@@ -219,6 +219,6 @@ def test_action_main_support_count(ctx):
 
 
 def test_action_main_unported_action(ctx):
-    ctx.state.charas[1].cflag[100] = 104  # 予定_活動（特別活動）は未移植
+    ctx.state.charas[1].cflag[100] = 108  # 予定_自由（自由行動）は未移植（S28c；特別活動は S28b で移植）
     with pytest.raises(NotImplementedError):
         run(action_main(ctx))

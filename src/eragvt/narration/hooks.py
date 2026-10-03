@@ -202,6 +202,25 @@ NINSIN_HOOK_LINES: dict[tuple[str, int], tuple[str, str]] = {
     ("MESSAGE_BIRTH_DAUGHTER_HUMAN_ORIGIN", 734): ("CFLAG:TARGET:226 = 1", "男の子"),
 }
 
+# S28b：特別活動の地の文の状態変化行。(函式名, 行): (原文, 意味)。ERB 路徑：`地の文/特別活動関係/MESSAGE_SEISAN_3_PROSTITUTION.ERB`、
+# `地の文/MESSAGE_CITIZEN_TRAIN.ERB`（援助交際の変態プレイから `(TARGET,"男","特別活動")` で呼ばれる）。
+# FLAG:900 は直後の KOJO_ROOT の「ランダム分岐フラグ」（KOJO_ROOT が 0 に戻す）。`TARGET=ARG` は呼び出し元が TARGET を渡すので
+# 値は変わらない。犬プレイの EXP 加算（:399–403）は `嬲られ体質` 等の条件付き（Python 側の fallback は `eragvt.game.seisan`）。
+# tests/test_seisan.py::test_seisan_hook_table_matches_erb が原文一致と「表外の代入が無い」ことを確認する。
+SEISAN_HOOK_LINES: dict[tuple[str, int], tuple[str, str]] = {
+    ("MESSAGE_SEISAN_PROSTITUTION_MAINPLAY", 127): ("FLAG:900 = 4", "口上分岐"),
+    ("MESSAGE_SEISAN_PROSTITUTION_MAINPLAY", 133): ("FLAG:900 = 3", "口上分岐"),
+    ("MESSAGE_SEISAN_PROSTITUTION_MAINPLAY", 139): ("FLAG:900 = 2", "口上分岐"),
+    ("MESSAGE_SEISAN_PROSTITUTION_MAINPLAY", 145): ("FLAG:900 = 1", "口上分岐"),
+    ("MESSAGE_CITIZEN_TRAIN_DOG", 191): ("TARGET=ARG", "対象キャラ"),
+    ("MESSAGE_CITIZEN_TRAIN_DOG", 399): ("EXP:精液経験 += 2 + RAND(2,5)", "獣姦の経験"),
+    ("MESSAGE_CITIZEN_TRAIN_DOG", 400): ("EXP:絶頂経験 += 3 + RAND(2,5)", "獣姦の経験"),
+    ("MESSAGE_CITIZEN_TRAIN_DOG", 401): ("EXP:異常経験 += 1", "獣姦の経験"),
+    ("MESSAGE_CITIZEN_TRAIN_DOG", 402): ("EXP:Ｖ拡張経験 += 2 + RAND(2,5)", "獣姦の経験"),
+    ("MESSAGE_CITIZEN_TRAIN_DOG", 403): ("EXP:Ｖ経験 += 3 +RAND(3,6)", "獣姦の経験"),
+    ("MESSAGE_CITIZEN_TRAIN_KANCHO", 419): ("TARGET=ARG", "対象キャラ"),
+}
+
 # hook 化してよい CALL 先 → Python 移植（呼び出し時に import）
 HOOK_CALLS = {
     "SET_TENTACLE_SIZE_BY_MESSAGE": ("eragvt.game.battle.gaping", "set_tentacle_size_by_message"),
@@ -215,7 +234,7 @@ HOOK_CALLS = {
 }
 
 # hook の代入で書き込んでよい変数
-HOOK_WRITABLE = {"FLAG", "TFLAG", "TENTACLE_SIZE", "CFLAG", "TCVARN", "TALENT"}
+HOOK_WRITABLE = {"FLAG", "TFLAG", "TENTACLE_SIZE", "CFLAG", "TCVARN", "TALENT", "EXP", "TARGET"}
 
 
 def match_hook(func: str, line: int, text: str) -> Optional[str]:
@@ -223,6 +242,7 @@ def match_hook(func: str, line: int, text: str) -> Optional[str]:
         PRISON_HOOK_LINES.get((func, line))
         or LOVESEX_HOOK_LINES.get((func, line))
         or NINSIN_HOOK_LINES.get((func, line))
+        or SEISAN_HOOK_LINES.get((func, line))
     )
     if prow is not None:
         return f"{func}:{line}" if prow[0] == text.strip() else None

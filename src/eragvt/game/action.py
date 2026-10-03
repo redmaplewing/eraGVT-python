@@ -239,6 +239,11 @@ def action_main(ctx: Ctx) -> InputGen:
     if plan == ActionPlan.REST:  # :106–108
         rest(ctx)
         return Step.TURNEND
+    if plan == ActionPlan.ACTIVITY:  # :110–112（SEISAN:192 の BEGIN TURNEND と同じ）
+        from .seisan import seisan
+
+        yield from seisan(ctx)
+        return Step.TURNEND
     if plan == ActionPlan.SUPPORT:  # :132–143
         if number_on_frontline(data, st) == 0 and st.flag[41] == 0:
             # :133–140 戦闘に参加するキャラが居ない場合は休憩
@@ -280,7 +285,7 @@ def action_main(ctx: Ctx) -> InputGen:
         # GATHER_INFORMATION:88 の BEGIN TURNEND は関数を 1 段戻るだけ（Instraction.Child.cs@BEGIN_Instruction:1681–1689 →
         # Process.State.cs@Return:355–425）で、ここの BEGIN が上書きする（最後の BEGIN が有効：@Return:414–421 → @Begin:263–311）。
         return Step.TRAIN if st.flag[73] > 0 else Step.TURNEND
-    # 活動 SEISAN／自由 PASTIME は未移植（S28b／S28c、影響範囲は docs/wiki/era/actions.md）。
+    # 自由 PASTIME は未移植（S28c、影響範囲は docs/wiki/era/actions.md）。
     raise NotImplementedError(f"行動「{ACTION_NAMES[_find_action(plan)]}」は未移植")
 
 

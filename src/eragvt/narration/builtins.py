@@ -291,10 +291,27 @@ def m_toint(it, a, fr) -> int:
     return 0 if v is None else v
 
 
+def m_varsize(it, a, fr) -> int:
+    """`VarsizeMethod`:335–375（S28b）：`var.GetLength(dim)`。ERH の `#DIM CONST` 配列だけ扱う（要素数省略時は初期値の個数：
+    `GameProc/UserDefinedVariable.cs`:287–288）。それ以外の変数（CSV 変数・関数内 #DIM・REF 等）は unsupported。"""
+    name = _ev(it, a[0], fr)
+    dim = _int(it, a[1], fr) if len(a) > 1 and a[1] is not None else 0
+    uv = it.cat.user_vars.get(str(name).upper())
+    if uv is None or not uv.const:
+        raise NotSupported(f"VARSIZE({name})")
+    if uv.dims:
+        if dim >= len(uv.dims) or uv.dims[dim] is None:
+            raise NotSupported(f"VARSIZE({name}, {dim})")
+        return uv.dims[dim]
+    if dim != 0:
+        raise ErbRuntimeError("VARSIZE の次元が範囲外")
+    return len(uv.values)
+
+
 BUILTINS = {
     "STRFINDU": m_strfindu, "STRCOUNT": m_strcount, "REPLACE": m_replace, "ISNUMERIC": m_isnumeric, "TOINT": m_toint,
     "GETBIT": m_getbit, "UNICODE": m_unicode, "STRFIND": m_strfind, "RAND": m_rand, "MAX": m_max,
     "MIN": m_min, "ABS": m_abs, "SIGN": m_sign, "LIMIT": m_limit, "POWER": m_power, "GROUPMATCH": m_groupmatch,
     "INRANGE": m_inrange, "STRLENS": m_strlens, "STRLENSU": m_strlensu, "SUBSTRING": m_substring,
-    "SUBSTRINGU": m_substringu, "TOSTR": m_tostr,
+    "SUBSTRINGU": m_substringu, "TOSTR": m_tostr, "VARSIZE": m_varsize,
 }

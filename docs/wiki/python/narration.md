@@ -57,6 +57,10 @@ S14：`Label(name)`／`Goto(name)`、`Input`（INPUTS）、`DrawLine(form)`（DR
   `#DIMS`／`#LOCALSSIZE` 的宣告長〕截斷）、式中関数 STRFINDU・STRCOUNT・REPLACE（.NET Regex；只接受與 Python re 同義的字元類／字面，
   其他 unsupported）・ISNUMERIC・TOINT（10 進；0x／0b／指數 unsupported）（`Creator.Method.cs`:2222–2302、2357–2387、2452–2474、2532–2569）。
   `地の文/MESSAGE_AKUOTI.ERB`、`SETCOLOR_BY_STR` 等因此可執行（覆蓋率 12844／13384＝96.0%）。
+- S28b 追加：式中関数 VARSIZE（ERH の `#DIM CONST` 配列のみ：`Creator.Method.cs@VarsizeMethod`:335–375、要素数省略時は初期値の個数
+  `UserDefinedVariable.cs`:287–288）、CONST 初期値の `__INT_MAX__`／`__INT_MIN__`（`VariableToken.cs`:1669–1690）、hook の代入先に
+  EXP・TARGET（`SEISAN_HOOK_LINES`）。`#DIMS REF` 引数は値渡しの関数内変数として扱う（呼び出し側が `state.temp.narr` から読む：
+  `seisan._gravure_title`）。特別活動の地の文 58 函式はすべて実行可能（覆蓋率 12851／13384）。
 - 不支援：GOTOFORM／TRYGOTO 系、入れ子內的 $ラベル、INPUT（整數）・TINPUT・ONEINPUT 系與有既定值的 INPUTS、BEGIN、JUMP、PRINTV・
   PRINT K 系・PRINTC 系、STRDATA、TIMES、SETCOLORBYNAME、`@` 付き変数、未實作的式中関数（覆蓋率報告）。
 

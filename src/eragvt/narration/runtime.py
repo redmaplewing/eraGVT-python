@@ -875,6 +875,8 @@ class Interp:
             getattr(self._chara(c), CHARA_ATTR[name])[self._idx(i, name)] = value
         elif name == "TENTACLE_SIZE" and len(args) == 2:
             st.temp.tentacle_size[(args[0], args[1])] = value
+        elif name == "TARGET" and not args:  # S28b：`MESSAGE_CITIZEN_TRAIN.ERB`:191／:419 `TARGET=ARG`
+            st.target = value
         else:
             raise NotSupported(f"{name} への代入")
 

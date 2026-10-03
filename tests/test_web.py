@@ -150,7 +150,7 @@ def test_training_input_and_unported_halt(client):
     s = c.post("/api/input", json={"value": 3}).json()  # 筋トレ
     assert s["phase"] == "shop"
     assert app.state.session.state.charas[1].cflag[101] == 3
-    c.post("/api/input", json={"value": 104})  # 紅葉 → 活動（特別活動：未移植）
+    c.post("/api/input", json={"value": 108})  # 紅葉 → 自由行動（未移植：S28c）
     s = c.post("/api/input", json={"value": 100}).json()
     assert s["phase"] == "halted"
     assert any("未實作" in x for x in texts(s))

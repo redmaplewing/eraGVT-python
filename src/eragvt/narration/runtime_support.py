@@ -42,6 +42,7 @@ IMPLEMENTED_METHODS = {
     "GETBIT", "UNICODE", "STRFIND", "RAND", "MIN", "MAX", "ABS", "LIMIT", "GROUPMATCH", "POWER", "INRANGE",
     "STRLENS", "STRLENSU", "SUBSTRING", "SUBSTRINGU", "TOSTR", "SIGN",
     "STRFINDU", "STRCOUNT", "REPLACE", "ISNUMERIC", "TOINT",  # S21
+    "VARSIZE",  # S28b（ERH の CONST 配列のみ：builtins.m_varsize）
 }
 
 # Python 實作的使用者函式：名稱 → 說明（實體在 service.py 註冊）

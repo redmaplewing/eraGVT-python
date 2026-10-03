@@ -44,7 +44,7 @@ ERB 路徑相對 `source/earGVP/ERB/`。
   模式固定 NORMAL（MODE_SELECT 沒有預設值，[1] 是第一個選項）。（Python：`eragvt.game.opening.event_first_gen`、`session._title_input`）
   開局 `MESSAGE_FIRST` 口上仍不輸出（見下「口上」）。
 
-- [ ] **S04 未翻的行動會停止遊戲**：（出撃已於 S05 接上，戰鬥內的停止見下一項）特別活動、拠点防衛、戦闘支援（本體）、情報収集、自由行動在 `action_main` 丟 `NotImplementedError`，Web session 捕捉後進入「停止」狀態（只能按「タイトルに戻る」）。同樣停止的還有：（ENDING 於 S27 接上：クリア後只剩引き継ぎ SUCCESSION 停止）、救出直後、妊娠・育兒・幽閉・悪堕ち等 S04 無法產生的狀態、鍛錬排程（CFLAG:110）、戦闘基礎 Lv5 的變身能力獲得。（原作：`ゲーム内_行動実行処理/ACTION.ERB`:74–175 等；Python：`eragvt.game.action`、`eragvt.game.turnend`、`eragvt.game.session._advance_turn`）— 各自屬 S05 以後；影響範圍見 `docs/wiki/era/actions.md`。
+- [ ] **S04 未翻的行動會停止遊戲**：（出撃已於 S05 接上，戰鬥內的停止見下一項）自由行動（S28c；特別活動 S28b、拠点防衛・戦闘支援・情報収集 S28a 已接上）在 `action_main` 丟 `NotImplementedError`，Web session 捕捉後進入「停止」狀態（只能按「タイトルに戻る」）。同樣停止的還有：（ENDING 於 S27 接上：クリア後只剩引き継ぎ SUCCESSION 停止）、救出直後、妊娠・育兒・幽閉・悪堕ち等 S04 無法產生的狀態、鍛錬排程（CFLAG:110）、戦闘基礎 Lv5 的變身能力獲得。（原作：`ゲーム内_行動実行処理/ACTION.ERB`:74–175 等；Python：`eragvt.game.action`、`eragvt.game.turnend`、`eragvt.game.session._advance_turn`）— 各自屬 S05 以後；影響範圍見 `docs/wiki/era/actions.md`。
 - [x] ~~**襲撃／救援 會被跳過**~~（S20 解決）：`RAID_HANTEI` 成立時照原作 `JUMP RAID_RESCUE／RAID_ATTACK` → イベント戦（`eragvt.game.raid`）。ラスボス出現後（FLAG:100 = 0）の襲来は S27 接上（生存ラスボス 0 で原作無限ループの路だけ停止）。
 - [ ] **未移植的戰鬥分岐會停止遊戲**（S05 新增、S06 更新）：戰鬥中下列情況丟 `NotImplementedError` → Web「停止」。
   S06 接上了拘束後的性攻擊、拘束中指令、絶頂／射精、敗北（→ 幽閉）與指令 6・7・16・17・69・71・72；
@@ -340,3 +340,13 @@ ERB 路徑相對 `source/earGVP/ERB/`。
 - `ACTIONsub_TRANSFORMATION_SELECT.ERB`:37–39 先把 CFLAG:1 設 1 再設 0（與原值無關）；[9]／[10] 只改記憶體 GLOBAL（不 SAVEGLOBAL）。
 - `CALC_CHARM_FEAT.ERB`:34 `TALENT:平凡` 讀 TARGET；`SENGIUP`:761 `IF CFLAG:34` 讀 TARGET。
 - `ACTION_TRAINING.ERB`:274 スケジュール不正時看 CFLAG:111（特別活動）而非 110。
+
+## S28b 照原作的怪處（非偏離，備查；`docs/wiki/era/actions.md`「S28b 補足」）
+
+- `特別活動/SEISAN_INIT.ERB`:8 アルバイト「失敗」に `特活報酬_アルバイト_成功` の係数（`_失敗` は未使用）。
+- `SEISAN_1_RESEARCH.ERB`:57（研究所助手の知性倍率）・`SEISAN_6_IDOL_ACTIVITY.ERB`:56–57（路上ライブ +200）は表示額のみ、MONEY は CALC_SEISAN の稼ぎ。
+- `CALC_SEISAN.ERB`:80–85 公衆便所の固有稼ぎは野良犬（表示「１＄たりとも得られなかった」）でも MONEY に入る。
+- `SEISAN_5_TOILET.ERB`:56–57／:79–91 路地裏放置は AFTER_PILL（終端 0）・NINSIN_HANTEI 後の RESULT:0 で妊娠判定・経験を計算；:47 LOST_VIRGIN は常に 0。
+  `SEISAN_2_PEST_CONTROL.ERB`:70 も AFTER_PILL 後の RESULT:0（＝0）で NINSIN_HANTEI(2, 50, 200)。
+- `SEISAN_8_IDOL_LIVE.ERB`:12–14 CHARM_BASE 等は静的変数：失敗・絶頂失敗では前回値（初回 0）で魅了経験が上がる。
+- `SEISAN_4_PORN_VIDEO.ERB`:46／:50／:82 `\@TALENT:変身能力 == 1?#…\@` は変身能力 1 のとき空文字（変身できない人に「すぷらったー☆」等）。
