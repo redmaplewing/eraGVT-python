@@ -18,7 +18,7 @@ from .rng import GameRng
 
 SAVE_FORMAT = "eragvt-save"
 GLOBAL_FORMAT = "eragvt-global"
-SAVE_VERSION = 2
+SAVE_VERSION = 3
 GLOBAL_VERSION = 1
 
 
@@ -32,7 +32,14 @@ def _migrate_1_to_2(obj: dict[str, Any]) -> dict[str, Any]:
 
 
 # 舊版 → 新版的轉換：`{舊版本: fn(payload) -> 下一版 payload}`。
-SAVE_MIGRATIONS: dict[int, Callable[[dict[str, Any]], dict[str, Any]]] = {1: _migrate_1_to_2}
+def _migrate_2_to_3(obj: dict[str, Any]) -> dict[str, Any]:
+    """S35：既有未建模的 DA 均為0，補空稀疏陣列。"""
+    obj["state"].setdefault("da", {})
+    obj["version"] = 3
+    return obj
+
+
+SAVE_MIGRATIONS: dict[int, Callable[[dict[str, Any]], dict[str, Any]]] = {1: _migrate_1_to_2, 2: _migrate_2_to_3}
 
 
 class SaveFormatError(ValueError):

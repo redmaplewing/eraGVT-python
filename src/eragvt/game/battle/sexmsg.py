@@ -526,7 +526,7 @@ def msg_spcom7(ctx: Ctx):
     （`MESSAGE_WindowLibrary_VideoHostSite.ERB@MESSAGE_SEX_VIDEO_SITE_Window`）とも catalog で実行する。
     以下は catalog が無い（Null）場合の Python 移植（本文は佔位）。
     :1234–1240 CFLAG:34 > 0 なら「[1]映像を見る」を出して INPUTS、CLEARLINE。RESULTS == "1" なら動画サイト（状態変化なし）。
-    DEVIATION: Web の入力は整数のみなので、INPUTS の文字列は `str(整数)`（空文字・非数値は入力できない）。"""
+    S35：INPUTS 經共用文字等待通道，接受任意字串／空字串。"""
     if (yield from ctx.narration.run_function_gen(ctx, "MESSAGE_SEX_SPCOM7", [])):
         return
     st = ctx.state
@@ -547,8 +547,8 @@ def msg_spcom7(ctx: Ctx):
         if c.cflag[34] > 0:  # :1234–1238
             lcount = ctx.out.linecount
             ctx.out.printl("[1]映像を見る")
-            # DEVIATION: INPUTS は任意の文字列だが、Web の入力は整数のみ → str(整数)（deviations.md「INPUTS 只能輸入整數」）
-            results = str((yield))  # INPUTS（Instraction.Child.cs:642–667、EmueraConsole.cs:722–728）
+            from ..input_request import inputs
+            results = yield from inputs(ctx)
             ctx.out.clearline(ctx.out.linecount - lcount)
         if results == "1":  # :1242–1279（本文は佔位。動画サイトは :1260 CALL）
             if not (yield from ctx.narration.run_function_gen(ctx, "MESSAGE_SEX_VIDEO_SITE_Window", [])):

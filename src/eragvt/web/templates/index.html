@@ -29,7 +29,7 @@
 </main>
 <footer>
   <form method="post" action="/input" id="input-form">
-    <input type="number" name="value" id="value" autofocus autocomplete="off" required>
+    <input type="{{ 'text' if screen.input_kind == 'text' else 'number' }}" name="value" id="value" autofocus autocomplete="off"{% if screen.input_kind != "text" %} required{% endif %}>
     <button type="submit">入力</button>
   </form>
   <form method="post" action="/restart" class="restart"><button type="submit">タイトルに戻る</button></form>

@@ -364,7 +364,7 @@ class Interp:
         elif t is N.Goto:
             raise _Goto(s.name)
         elif t is N.Input:
-            value = self._input()
+            value = self._input(s.kind)
             if s.kind == "I":
                 # INPUT：整数 → RESULT:0（GameProc/Process.cs@InputInteger:249–252）
                 self._set_result([int(value)])
@@ -397,15 +397,17 @@ class Interp:
         else:  # pragma: no cover
             raise NotSupported(f"文 {t.__name__}")
 
-    def _input(self) -> Any:
+    def _input(self, kind="I") -> Any:
         """入力 1 つ。`Env.input_fn`（S28c2 `run_event_gen`：本当に中断して待つ）か、`Env.inputs`（再実行方式）。"""
+        from ..game.input_request import TextInputRequest
+        request = TextInputRequest() if kind != "I" else None
         if self.env.input_fn is not None:
-            return self.env.input_fn(None)
+            return self.env.input_fn(request)
         inputs = self.env.inputs
         if inputs is None:
             raise NotSupported("INPUT／INPUTS（ジェネレータ呼び出しのみ対応）")
         if self.input_pos >= len(inputs):
-            raise NeedInput()
+            raise NeedInput(request)
         v = inputs[self.input_pos]
         self.input_pos += 1
         return v

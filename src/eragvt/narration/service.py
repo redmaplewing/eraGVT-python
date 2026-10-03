@@ -275,7 +275,7 @@ class CatalogNarrationService:
 
     def run_function_gen(self, ctx, name: str, args: Optional[list] = None, hooks: Optional[dict] = None):
         """ジェネレータ版（`ok = yield from service.run_function_gen(...)`）。入力は `str(送られた値)`。
-        DEVIATION: Web の入力は整数のみ（deviations.md「INPUTS 只能輸入整數」）。"""
+        S35：INPUTS 的文字請求標記沿既有等待通道交給 Web。"""
         if not self.catalog.exists(name) or self.catalog.unsupported_reason(name) is not None:
             return False
         inputs: list[str] = []
@@ -286,12 +286,12 @@ class CatalogNarrationService:
                 it.call(name, list(args or []))
                 tx.commit()
                 return True
-            except NeedInput:
+            except NeedInput as need:
                 # S29：GameState の書き込み（KOJO_ROOT の FLAG を含む）はジャーナルで戻せるので再実行できる。
                 # Python 移植の hook が走っていたら戻せない
                 if not tx.can_rollback():
                     raise NotImplementedError(f"{name}：入力待ちより前に状態変化があるため再実行できません") from None
-                value = yield
+                value = yield need.args[0]
                 tx.rollback()
                 inputs.append(str(value))
             except (NotSupported, ErbRuntimeError) as e:

@@ -26,6 +26,7 @@ from . import shop
 from .action import Ctx
 from .config import config_gen, update
 from .era import limit
+from .input_request import TextInputRequest
 from .opening import event_first_gen
 from .turnend import run_turn
 
@@ -69,6 +70,7 @@ class GameSession:
         self.out = TextOutput()
         self.state: GameState | None = None
         self.phase = Phase.TITLE
+        self.input_kind = "number"
         self._confirm_kind = ""
         self._save_target = -1
         self._load_from_title = False
@@ -96,7 +98,14 @@ class GameSession:
                 run = 0
         return lines[start:]
 
-    def input(self, value: int) -> None:
+    def input(self, value: int | str) -> None:
+        if self.input_kind == "text":
+            value = str(value)
+        else:
+            try:
+                value = int(value)
+            except (ValueError, TypeError):
+                return
         handler = {
             Phase.TITLE: self._title_input,
             Phase.NEW_GAME: self._turn_input,
@@ -119,6 +128,7 @@ class GameSession:
             self._turn = None
 
     def begin_title(self) -> None:
+        self.input_kind = "number"
         gb = self.data.game_base
         out = self.out
         out.drawline()
@@ -287,13 +297,14 @@ class GameSession:
         self._gen_result = None
         self._advance_turn(None)
 
-    def _turn_input(self, value: int) -> None:
+    def _turn_input(self, value: int | str) -> None:
         self._advance_turn(value)
 
-    def _advance_turn(self, value: int | None) -> None:
+    def _advance_turn(self, value: int | str | None) -> None:
         assert self._turn is not None
         from .ending import SaveGameRequest
 
+        self.input_kind = "number"
         try:
             if value is None:
                 y = next(self._turn)
@@ -308,6 +319,7 @@ class GameSession:
             self._turn = None
             self._halt(exc)
             return
+        self.input_kind = "text" if isinstance(y, TextInputRequest) else "number"
         if isinstance(y, SaveGameRequest):
             # S27：ジェネレータ内の SAVEGAME（ENDING.ERB:22）→ セーブ画面、終わったら（キャンセル含む）続きから
             # （SystemProc@saveGameWaitInput:865–869／@endCallSaveInfo:926–934 の loadPrevState）

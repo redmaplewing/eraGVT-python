@@ -66,7 +66,7 @@ ERB 路徑相對 `source/earGVP/ERB/`。
   ランダム命名畫面 `FIRSTSETTING_RANDOMNAMING(_ALL)`）、変身後呼び名・かけ声・名乗り口上的「自分で設定」
   （`FIRSTSETTING_CHARA_TRANSFORMATION.ERB`）、デバッグモード的妊娠確率輸入（`NINSIN_HANTEI`:125–138）。
   （Python：`eragvt.game.battle.ninsin`、`eragvt.game.child`、`eragvt.game.firstsetting` 的 `raise NotImplementedError`）
-  — Web 只能輸入整數（見下「INPUTS 只能輸入整數」）；隨機命名畫面與 TS 系統屬之後的階段。
+  — S35 已補命名 INPUTS／隨機命名；TS 系統仍屬之後的階段。
 - [x] **振り解く判定的 `LOCAL:O`**（S06 新增；**已裁決 2026-10-03：視為打錯字，當 `0` 處理＝`LOCAL:0`**）：`ゲーム内_戦闘処理/COMMON_BATTLE_HANTEI.ERB`:241／:245
   `SIF LOCAL:5 <= 45 && LOCAL:O > 49` 的 `O` 是英文字母，全作沒有這個識別子（grep 僅此 2 處）。1.824 在執行到該行時
   報錯停止（`GameProc/Process.ScriptProc.cs`:38–42、`GameData/Expression/ExpressionParser.cs`:264–269、
@@ -135,11 +135,8 @@ ERB 路徑相對 `source/earGVP/ERB/`。
   （`MESSAGE_KYUUSHUTU` 則以 Python 輸出同文）。淫紋圖樣 `CHARA_TATTOO.ERB@PRINT_TATTOO`:239–474／`@TATTOO_LIB`（無代入到狀態、
   無 RAND）因 `CHKFONT`（依安裝字型）catalog 不支援，改印「〈淫紋：PRINT_TATTOO n〉」一行。
   （Python：`eragvt.game.prison.*` 的 `run_chinobun`、`eragvt.game.tattoo.print_tattoo`）
-- [ ] **INPUTS 只能輸入整數**（S11 新增）：Web 的輸入是整數，`MESSAGE_SEX_SPCOM7`:1236 的 INPUTS 以 `str(整數)` 比較
-  （原作可輸入任意字串／空字串：`GameView/EmueraConsole.cs`:722–728）。只有 "1" 有意義，實際選項不變。
-  （Python：`eragvt.game.battle.sexmsg.msg_spcom7`）
-  S14：動画サイト（`MESSAGE_WindowLibrary_VideoHostSite.ERB`:1343 INPUTS）也同樣；按鈕值 "0"〜"4"／"99" 都是數字，其他輸入走
-  :1346–1347「上次看的下一段」，只差在不能輸入空字串（原作空字串也走這條），結果相同。（Python：`eragvt.narration.service.run_function_gen`）
+- [x] **INPUTS 只能輸入整數**（S11／S14；S35 已消除）：Web 與既有 catalog 等待通道現接受任意字串／空字串；
+  命名、影片及巢狀呼叫共用文字請求標記。數字選單仍接收整數。詳見 `docs/wiki/python/naming.md`。
 - [ ] **HTML_PRINT 的子集**（S11 新增，只影響顯示）：只支援原作用到的 `<font color>`／`<nonbutton title>`（tooltip 以 Web 的
   title 屬性顯示）；S25 加 `<br>`（照 `GameView/HtmlManager.cs`:672–676、`PrintStringBuffer.cs`:189–196 分行）、`<nobr>`（Web 不折行，
   無差）、`<shape type='space' param='n'>`（原作寬 n% × 字型大小：`ConsoleShapePart.cs`:40–53；**近似為半角空白 n/50 個**）。其他タグ停止。（Python：`eragvt.text.TextOutput.html_print`）

@@ -10,7 +10,7 @@
 
 画面（一人称設定・プロフィール設定）は AGENTS.md「暫時跳過 UI 時走原作預設路徑」により、表示せず
 「何も変えずに [99] 決定」した場合の状態変化だけを行う（deviations.md「子供加入時のキャラ設定画面」）。
-名前などの手入力（INPUTS）は Web が整数入力のみのため未対応で停止する。
+S35：命名の INPUTS は既有 generator を通して Web 文字輸入へ接続。
 """
 
 from __future__ import annotations
@@ -21,6 +21,8 @@ from .action import Ctx
 from .body import AGE, BREAST_WEIGHT, BUST, HEIGHT, HIP, REAL_AGE, WAIST, WEIGHT, generate_char_size, set_profile
 from .chara_common import is_female, seikaku_check, talent
 from .era import format_percent
+from .input_request import inputs, input_number
+from .naming import random_naming, random_naming_all
 
 InputGen = Generator[None, int, None]
 
@@ -61,7 +63,7 @@ def selfcall_default(ctx: Ctx, who: int) -> None:
 
 def chara_callname(ctx: Ctx, who: int) -> Generator[None, int, int]:
     """`FIRSTSETTING_CHARA.ERB@FIRSTSETTING_CHARA_CALLNAME, ARG`:1072–1101（呼び名の設定）。戻り値：[99] は 99、他は 0
-    （関数終端：RESULT:0 = 0）。[1] 自分で設定（INPUTS）は Web が整数入力のみのため未移植で停止。"""
+    （関数終端：RESULT:0 = 0）。[1] 等待文字輸入。"""
     out = ctx.out
     c = ctx.state.charas[who]
     out.printl(f"{who}人目のキャラの呼び名を設定してください")
@@ -72,7 +74,7 @@ def chara_callname(ctx: Ctx, who: int) -> Generator[None, int, int]:
     out.printl("[1]自分で設定")
     out.printl("[99]もどる")
     while True:  # $INPUT_LOOP
-        r = yield
+        r = yield from input_number(ctx)
         if r == 0:
             if c.cstr[200] == "":
                 continue
@@ -81,11 +83,19 @@ def chara_callname(ctx: Ctx, who: int) -> Generator[None, int, int]:
             break
         if r == 1:
             out.printl("キャラの呼び名を入力してください。")
-            raise NotImplementedError("呼び名の手入力（INPUTS）は未移植")
+            while True:  # FIRSTSETTING_CHARA.ERB@FIRSTSETTING_CHARA_CALLNAME:1088–1095
+                value = yield from inputs(ctx)
+                if value != "":
+                    break
+            c.callname = value
+            out.printl(f"キャラの呼び名を 『{c.callname}』 に設定しました")
+            break
         if r == 99:
+            ctx.state.result[0] = 99
             return 99
     out.printl()
     out.printl()
+    ctx.state.result[0] = 0
     return 0
 
 
@@ -379,11 +389,12 @@ def feat_select_ui(ctx: Ctx, who: int, race: int) -> InputGen:
 
 
 def trans_after_name(ctx: Ctx, who: int) -> InputGen:
-    """`@FIRSTSETTING_CHARA_TRANSAFTERNAME, ARG`:64–221。[0]〔設定しない〕と FLAG:6 == 1 の [5]／[6] を移植。
-    [1] 自分で設定（INPUTS）、[2] ランダム（FIRSTSETTING_RANDOMNAMING_ALL）、[3]／[4]（FIRSTSETTING_RANDOMNAMING）は未移植で停止。"""
+    """`@FIRSTSETTING_CHARA_TRANSAFTERNAME, ARG`:64–221：手輸入、隨機與組合命名。"""
     st, out = ctx.state, ctx.out
     c = st.charas[who]
-    c.cstr[201] = ""  # :71–75（上の句・下の句を退避して初期化；退避値は [3]／[4] の「いいえ」でのみ使う）
+    st.results[0] = ""  # :67；不清 RESULTS:1 以後
+    old_up, old_down = c.cstr[201], c.cstr[202]
+    c.cstr[201] = ""  # :71–75
     c.cstr[202] = ""
     out.printl(f"{who}人目のキャラ 『{c.callname}』 の変身後名を設定してください")
     out.printl("（変身中の正式なキャラ名です。一部の地の文やステータス表示などに使用されます）")
@@ -397,7 +408,7 @@ def trans_after_name(ctx: Ctx, who: int) -> InputGen:
         out.printl(f"[5]『{st.savestr[11]}{c.callname}』 にする")
         out.printl(f"[6]『{c.callname}{st.savestr[11]}』 にする")
     while True:  # $INPUT_LOOP（:90–94）
-        r = yield
+        r = yield from input_number(ctx)
         if (st.flag[6] == 0 and (r < 0 or r > 4)) or (st.flag[6] == 1 and (r < 0 or r > 8)):
             continue
         break
@@ -406,8 +417,60 @@ def trans_after_name(ctx: Ctx, who: int) -> InputGen:
         c.cflag[3] = 0
         c.cstr[1] = ""
         out.printl("変身後名を設定しませんでした")
-    elif r in (1, 2, 3, 4):
-        raise NotImplementedError(f"変身後名の設定 [{r}]（手入力／ランダム命名画面）は未移植")
+    elif r == 1:
+        c.cflag[2] = 1
+        out.printl("変身後名を入力してください")
+        if c.cstr[0] != "":
+            out.printl(f"[999]変更しない（{c.cstr[0]}）")
+        while True:
+            value = yield from inputs(ctx)
+            if value != "":
+                break
+        if value != "999" or c.cstr[0] == "":
+            c.cstr[0] = value
+        out.printl(f"変身後名を 『{c.cstr[0]}』 に設定しました")
+        c.cstr[1], c.cflag[3] = c.cstr[0], 1
+    elif r == 2:
+        selected = yield from random_naming_all(ctx)
+        if selected == 99:
+            out.printl("変身後名を選ばずに戻ります")
+            st.result[0] = 0  # :124 RETURN
+            return
+        c.cflag[2] = 1
+        c.cstr[201] = ctx.data.str_defaults.get(st.da[0, selected], "")
+        c.cstr[202] = ctx.data.str_defaults.get(st.da[1, selected], "")
+        c.cstr[0] = c.cstr[201] + c.cstr[202]
+        out.printl(f"変身後名を 『{c.cstr[0]}』 に設定しました")
+        c.cstr[1], c.cflag[3] = c.cstr[0], 1
+    elif r in (3, 4):
+        c.cflag[2] = 1
+        prefix = c.callname if r == 3 else st.savestr[11]
+        c.cstr[201] = prefix
+        out.printl()
+        out.print("組み合わせる単語の")
+        while True:
+            yield from random_naming(ctx, who, prefix)
+            out.printl()
+            if st.result[1] == 1:
+                continue
+            out.printl(f"変身後名を 『{st.results[0]}』 に設定します。よろしいですか？")
+            out.printl()
+            out.printl("[0]いいえ")
+            out.printl("[1]はい")
+            if c.cstr[0] != "":
+                out.printl(f"[2]変更しない（{c.cstr[0]}）")
+            while True:
+                answer = yield from input_number(ctx)
+                if answer in (0, 1, 2):
+                    break
+            if answer == 0:
+                c.cstr[201], c.cstr[202] = old_up, old_down
+                continue
+            if answer == 1:
+                c.cstr[0] = st.results[0]
+                out.printl(f"変身後名を 『{c.cstr[0]}』 に設定しました")
+                c.cstr[1], c.cflag[3] = c.cstr[0], 1
+            break
     elif r in (5, 6):
         c.cflag[2] = 1
         head, tail = (st.savestr[11], c.callname) if r == 5 else (c.callname, st.savestr[11])
@@ -420,10 +483,12 @@ def trans_after_name(ctx: Ctx, who: int) -> InputGen:
     # r == 7／8（FLAG:6 == 1 で受け付けるが分岐なし）は何もしない（:93 の範囲判定どおり）
     out.printl()
     out.printl()
+    st.result[0] = 0  # Process.ScriptProc.cs:61–67：一般函式終端
+
 
 
 def trans_after_callname(ctx: Ctx, who: int) -> InputGen:
-    """`@FIRSTSETTING_CHARA_TRANSAFTERCALLNAME, ARG`:226–294。手入力（INPUTS）の選択肢は未移植で停止。"""
+    """`@FIRSTSETTING_CHARA_TRANSAFTERCALLNAME, ARG`:226–294。手輸入沿既有等待通道。"""
     st, out = ctx.state, ctx.out
     c = st.charas[who]
     out.printl(f"{who}人目のキャラ 『{c.callname}』 の変身後呼び名を設定してください")
@@ -434,12 +499,13 @@ def trans_after_callname(ctx: Ctx, who: int) -> InputGen:
         out.printl(f"[1]変身後名と同じに設定（変身後名：『{c.cstr[0]}』）")
         out.printl("[2]変身前の呼び名をそのまま使う")
         while True:
-            r = yield
+            r = yield from input_number(ctx)
             if 0 <= r <= 2:
                 break
         if r == 0:
-            raise NotImplementedError("変身後呼び名の手入力（INPUTS）は未移植")
-        c.cstr[1] = c.cstr[0] if r == 1 else c.callname
+            yield from _manual_trans_callname(ctx, c)
+        else:
+            c.cstr[1] = c.cstr[0] if r == 1 else c.callname
     else:  # :260–292
         out.printl(f"[0]変身後呼び名を 『{c.cstr[201]}』 に設定")
         out.printl(f"[1]変身後呼び名を 『{c.cstr[202]}』 に設定")
@@ -447,15 +513,30 @@ def trans_after_callname(ctx: Ctx, who: int) -> InputGen:
         out.printl(f"[3]変身後名と同じに設定（変身後名：『{c.cstr[0]}』）")
         out.printl("[4]変身前の呼び名をそのまま使う")
         while True:
-            r = yield
+            r = yield from input_number(ctx)
             if 0 <= r <= 4:
                 break
         if r == 2:
-            raise NotImplementedError("変身後呼び名の手入力（INPUTS）は未移植")
-        c.cstr[1] = {0: c.cstr[201], 1: c.cstr[202], 3: c.cstr[0], 4: c.callname}[r]
+            yield from _manual_trans_callname(ctx, c)
+        else:
+            c.cstr[1] = {0: c.cstr[201], 1: c.cstr[202], 3: c.cstr[0], 4: c.callname}[r]
     out.printl(f"変身後呼び名を 『{c.cstr[1]}』 に設定しました")
     out.printl()
     out.printl()
+    ctx.state.result[0] = 0
+
+
+def _manual_trans_callname(ctx, c):
+    # FIRSTSETTING_CHARA_TRANSFORMATION.ERB@FIRSTSETTING_CHARA_TRANSAFTERCALLNAME:245–253／277–285。
+    ctx.out.printl("変身後呼び名を入力してください")
+    if c.cstr[1] != "":
+        ctx.out.printl(f"[999]変更しない（{c.cstr[1]}）")
+    while True:
+        value = yield from inputs(ctx)
+        if value != "":
+            break
+    if value != "999":  # 與正式名不同：即使舊呼び名空白也保留
+        c.cstr[1] = value
 
 
 _CHANGINGCALL = (
@@ -472,7 +553,7 @@ def changingcall_random(ctx: Ctx) -> str:
 
 
 def trans_call(ctx: Ctx, who: int) -> InputGen:
-    """`@FIRSTSETTING_CHARA_TRANSCALL, ARG`:298–348。[2] 自分で設定（INPUTS）は未移植で停止。"""
+    """`@FIRSTSETTING_CHARA_TRANSCALL, ARG`:298–348。[2] 自分で設定等待文字輸入。"""
     st, out = ctx.state, ctx.out
     c = st.charas[who]
     out.printl(f"{who}人目のキャラ 『{c.callname}』 の変身時のかけ声を設定しますか？")
@@ -483,7 +564,7 @@ def trans_call(ctx: Ctx, who: int) -> InputGen:
     if st.flag[7] == 1:
         out.printl("[3]共通のかけ声に設定")
     while True:
-        r = yield
+        r = yield from input_number(ctx)
         if (st.flag[7] == 0 and (r < 0 or r > 2)) or (st.flag[7] == 1 and (r < 0 or r > 3)):
             continue
         break
@@ -498,24 +579,32 @@ def trans_call(ctx: Ctx, who: int) -> InputGen:
             out.printl("[0]もう一度選びなおす")
             out.printl("[1]はい")
             while True:
-                r2 = yield
+                r2 = yield from input_number(ctx)
                 if 0 <= r2 <= 1:
                     break
             if r2 == 1:
                 out.printl(f"かけ声を 『{c.cstr[2]}』 に設定しました")
                 break
     elif r == 2:
-        raise NotImplementedError("かけ声の手入力（INPUTS）は未移植")
+        c.cflag[4] = 1
+        out.printl("かけ声を入力してください")
+        while True:
+            value = yield from inputs(ctx)
+            if value != "":
+                break
+        c.cstr[2] = value
+        out.printl(f"かけ声を 『{c.cstr[2]}』 に設定しました")
     elif r == 3:
         c.cflag[4] = 1
         c.cstr[2] = st.savestr[12]
         out.printl(f"かけ声を 『{c.cstr[2]}』 に設定しました")
     out.printl()
     out.printl()
+    ctx.state.result[0] = 0
 
 
 def nanori(ctx: Ctx, who: int) -> InputGen:
-    """`@FIRSTSETTING_CHARA_NANORI, ARG`:353–445。自分で設定（INPUTS）は未移植で停止。"""
+    """`@FIRSTSETTING_CHARA_NANORI, ARG`:353–445。自分で設定等待文字輸入。"""
     from .opening import changingcall_detail
 
     st, out = ctx.state, ctx.out
@@ -528,21 +617,28 @@ def nanori(ctx: Ctx, who: int) -> InputGen:
         out.printl("[0]いいえ")
         out.printl("[1]自分で設定")
         while True:
-            r = yield
+            r = yield from input_number(ctx)
             if 0 <= r <= 1:
                 break
         if r == 0:
             c.cflag[5] = 0
             out.printl("名乗り口上を設定しませんでした")
         else:
-            raise NotImplementedError("名乗り口上の手入力（INPUTS）は未移植")
+            c.cflag[5] = 1
+            out.printl("名乗り口上を入力してください")
+            while True:
+                value = yield from inputs(ctx)
+                if value != "":
+                    break
+            c.cstr[3] = value
+            out.printl(f"名乗り口上を 『{c.cstr[3]}』 に設定しました")
     elif c.cflag[2] == 1:  # :387–443
         out.printl("[0]いいえ")
         out.printl("[1]主題 ＋ 変身後名 ＋ 一文 の構成で自動生成")
         out.printl("[2]変身後名 ＋ 一文 の構成で自動生成")
         out.printl("[3]自分で設定")
         while True:
-            r = yield
+            r = yield from input_number(ctx)
             if 0 <= r <= 3:
                 break
         if r == 0:
@@ -557,16 +653,24 @@ def nanori(ctx: Ctx, who: int) -> InputGen:
                 out.printl("[0]もう一度選びなおす")
                 out.printl("[1]はい")
                 while True:
-                    r2 = yield
+                    r2 = yield from input_number(ctx)
                     if 0 <= r2 <= 1:
                         break
                 if r2 == 1:
                     out.printl(f"名乗り口上を 『{c.cstr[3]}』 に設定しました")
                     break
         else:
-            raise NotImplementedError("名乗り口上の手入力（INPUTS）は未移植")
+            c.cflag[5] = 1
+            out.printl("名乗り口上を入力してください")
+            while True:
+                value = yield from inputs(ctx)
+                if value != "":
+                    break
+            c.cstr[3] = value
+            out.printl(f"名乗り口上を 『{c.cstr[3]}』 に設定しました")
     out.printl()
     out.printl()
+    ctx.state.result[0] = 0
 
 
 # --- プロフィール設定画面（CHARA_SIZE_UI.ERB@SIZE_SETTING）-----------------------------------------

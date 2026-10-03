@@ -3,7 +3,7 @@
 `ヒロイン関連/PREGNANT_CHILD_BIRTH_N.ERB@BIRTH_DAUGHTER_HUMAN_ORIGIN`:6–198。路徑相對 `source/earGVP/ERB/`。
 （`@TRAINING_HOSEI_CHILD`:32–47 は S04 で `eragvt.game.action.training_hosei_child` に移植済み。）
 
-INPUT を含むのでジェネレータ。名前などの手入力（INPUTS）は Web が整数入力のみのため未対応で停止する。
+INPUT を含むのでジェネレータ。S35：名前の手入力は Web 文字輸入を待つ。
 キャラ設定画面（一人称・プロフィール）は `eragvt.game.firstsetting` の「何も変えずに決定」を使う。
 
 Emuera 語意：
@@ -27,6 +27,7 @@ from .battle.ninsin import _dot_after, pregnancy_belly_expand
 from .body import AGE, REAL_AGE, chara_size_default, generate_bodyline, set_profile
 from .chara_common import is_female, is_male, level_status, seikaku_check, syuzoku_check
 from .era import div
+from .input_request import inputs, input_number
 from .opening import game_option
 from .party import recover_to_party
 from .shop import charanum_safe, check_gameover
@@ -76,13 +77,13 @@ def _random_given_name(ctx: Ctx, lang: int, add_child: bool) -> str | None:
 
 
 def _ask_random_name(ctx: Ctx, add_child: bool, sex: str | None) -> Generator[None, int, str]:
-    """$INPUT_CHILD_NAME_YN 〜 名前の決定（ランダム生成のみ。手入力は停止）。"""
+    """$INPUT_CHILD_NAME_YN 〜 名前の決定（隨機生成或手輸入）。"""
     out = ctx.out
     while True:  # $INPUT_CHILD_NAME_YN
         out.printl("キャラの名前を自分で決めますか？" + (f"（性別：{sex}）" if sex is not None else ""))
         out.printl("[0]いいえ（ランダム生成）")
         out.printl("[1]はい（手動入力）")
-        r = yield
+        r = yield from input_number(ctx)
         if r == 0:
             while True:  # $INPUT_LOOP_CHILD_NAME_RANDOM
                 out.printl("[0]日本語で構成")
@@ -94,12 +95,16 @@ def _ask_random_name(ctx: Ctx, add_child: bool, sex: str | None) -> Generator[No
                 if add_child:
                     out.printl("[6]中国語で構成")
                 out.printl("[99]完全ランダム")
-                lang = yield
+                lang = yield from input_number(ctx)
                 name = _random_given_name(ctx, lang, add_child)
                 if name is not None:
                     return name
         elif r == 1:
-            raise NotImplementedError("子供の名前の手入力（INPUTS）は未移植")
+            while True:
+                out.printl("キャラの名前を入力してください")
+                name = yield from inputs(ctx)
+                if name != "":
+                    return name
         else:
             out.printl("正しい数値を入力してください")
 

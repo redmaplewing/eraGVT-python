@@ -88,6 +88,8 @@ class GameState:
     # 新遊戲 ResetData 清零（VariableData.cs@SetDefaultValue:538–）；BEGIN TRAIN 不清（VariableEvaluator.cs@UpdateInBeginTrain:1422–）。
     # 跨函式共用：原作有讀「前一次 RESULT」的地方（EVENT_PALAM_HOSEI 的悪堕ち分岐等）。寫入來源一覽：docs/wiki/python/result.md。
     result: IntArray = field(default_factory=IntArray)
+    # DA：reference/emuera-1824/Emuera/GameData/Variable/VariableCode.cs:182，SAVE_EXTENDED。
+    da: IntArray = field(default_factory=IntArray)
     # 內建 RESULTS（字串 1 維、大小 100：VariableCode.cs:110 0x02、ConstantData.cs@setDefaultArrayLength:154–155；
     # 本作 CSV/VariableSize.csv 未指定）。0x02 ≥ __COUNT_SAVE_STRING_ARRAY__（0x01，:105）且無 __SAVE_EXTENDED__ → **不存檔**
     # （VariableData.cs@SaveToStream:663–674、VariableIdentifier.cs:248–256）；新遊戲 ResetData 與讀檔時 SetDefaultValue 清為空
@@ -194,6 +196,7 @@ class GameState:
             "shield": self.shield.to_json(),
             "mob_flag": self.mob_flag.to_json(),
             "result": self.result.to_json(),
+            "da": self.da.to_json(),
             "charas": [c.to_json() for c in self.charas],
         }
 
@@ -212,6 +215,7 @@ class GameState:
             shield=IntArray.from_json(obj["shield"]),
             mob_flag=IntArray.from_json(obj["mob_flag"]),
             result=IntArray.from_json(obj["result"]),
+            da=IntArray.from_json(obj["da"]),
             charas=[Character.from_json(c) for c in obj["charas"]],
             rng=rng or GameRng(),
         )

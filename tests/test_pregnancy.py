@@ -549,15 +549,27 @@ def test_add_child_male_and_surname(ctx, data):
     assert m.cflag[226] == 0  # :319
 
 
-def test_add_child_manual_name_stops(ctx, data):
+def test_add_child_manual_name_waits(ctx, data):
     st = ctx.state
     st.charas[3].cflag[0] = 11
     st.charas[3].cflag[224] = 9
     st.rng = GameRng(7)
     gen = child.grow_hantei(ctx)
     next(gen)
-    with pytest.raises(NotImplementedError, match="手入力"):
-        gen.send(1)
+    from eragvt.game.input_request import TextInputRequest
+    assert isinstance(gen.send(1), TextInputRequest)
+    assert isinstance(gen.send(""), TextInputRequest)
+    gen.send("小星")  # 到原作姓名確認，尚未寫角色姓名
+    assert st.results[0] == "小星"
+    gen.close()
+
+
+def test_add_child_manual_full_continues(ctx, data):
+    """PREGNANT_CHILD_BIRTH.ERB@ADD_CHILD:421–503：輸入→否決→重輸入→確認→無姓→續行。"""
+    m, c = _add_child_run(ctx, data, [1, "初名", 0, 1, "小星", 1, 0, 1, 0, 0, 0])
+    assert c.name == c.callname == "小星"
+    assert c.cstr[200] == ""  # 原文:470–491只寫NAME/CALLNAME，不寫200
+    assert m.cflag[0] == c.cflag[0] == 0
 
 
 @pytest.mark.parametrize(

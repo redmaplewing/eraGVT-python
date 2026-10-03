@@ -66,13 +66,13 @@ def _results(st: GameState, n: int = 4) -> list[str]:
 def test_results_not_saved(ctx):
     """RESULTS（0x02）≥ __COUNT_SAVE_STRING_ARRAY__（0x01）且無 __SAVE_EXTENDED__ → 不存檔（VariableCode.cs:104–110、
     VariableData.cs@SaveToStream:663–674）；讀檔時 SetDefaultValue 清空（VariableEvaluator.cs@LoadFromStream:2173）。
-    存檔版本不升（仍 2）。"""
+    RESULTS 不入存檔；S35 因DA新增升為3。"""
     st = ctx.state
     st.results[0] = "a"
     st.results[2] = "c"
     raw = dump_save(st)
     obj = json.loads(raw)
-    assert obj["version"] == 2
+    assert obj["version"] == 3
     assert "results" not in obj["state"]
     st2, _ = load_save(raw)
     assert _results(st2) == ["", "", "", ""]

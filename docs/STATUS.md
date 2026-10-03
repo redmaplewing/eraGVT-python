@@ -1,6 +1,6 @@
 # 現況（唯一真相，≤120 行）
 
-更新：2026-10-04（S34 完成）
+更新：2026-10-04（S35 完成）
 
 ## 已完成（各階段細節見 git log 與 wiki）
 
@@ -29,23 +29,25 @@
 - **S29** 口上／地の文的狀態書き込み（catalog が非 LOCAL 代入を GameState へ直接書く＋ジャーナルで失敗回復；下節）。
 - **S30** catalog 剩餘的不可執行原因（ループ內 $ラベルへの GOTO・STRDATA・SETCOLORBYNAME・FINDCHARA・GETCOLOR・RANDCHOOSE 系；下節）。
 
-## S34：裏プロフィール與相關狀態顯示
+## S35：子供與變身後命名
 
-- S32 已手翻 HATUJOU_TO_HAIRAN；S33 接通16種雜魚，詳見 `docs/wiki/python/mob-battle.md`。
-- S34 `game.sexual_profile` 手翻 MAKESEXUALPROFILE、由原文抽取字串候選；能力提高時寫入 CSTR:45–48，保留重抽及原亂數順序。
-- `battle.palam_display` 接通801 bit1／5–8的上升計算、上下列表、898／899；原作顯示初始化及一般函式終端 RESULT:0=0 均保留。
-- 依據與邊界：`docs/wiki/python/sexual-profile-status.md`。新增72測試；主代理最終完整 pytest：`2070 passed, 1 warning in 324.26s (0:05:24)`。
-- 正常 config2／3各seed0–9、40 SHOP、actions101–108已完成，無S34停止、catalog失敗0：
+- S32手翻HATUJOU_TO_HAIRAN；S33接通16種雜魚；S34補裏プロフィール與相關狀態顯示（詳見對應wiki）。
+- S35接通子供手輸入、變身後正式名／呼び名、相關かけ声／名乗り／普通呼び名輸入；全隨機20組與組合命名手翻於 `game.naming`。
+- 原作候選直接讀CSV STR；保留RNG順序、重抽、keep、上下句固定／反轉、static順序、RESULT／RESULTS殘值、空白及999語意。
+- SENGIUP、子供加入與SHOP狀態畫面已續行；Web與catalog共用文字等待，空字串可送出，數字名稱0007保持文字。
+- DA二維陣列入存檔，格式v3支援v1/v2遷移；RESULTS與static不存。依據：`docs/wiki/python/naming.md`。
+- 新增37測試；最終完整pytest：`2107 passed, 1 warning in 324.90s (0:05:24)`。
+- 正常config2／3各seed0–9、40SHOP、actions101–108完成，命名停止皆消失，20局catalog失敗0：
 
 | 組別 | 上限 | 回標題 | 既有未移植停止 |
 | --- | ---: | ---: | --- |
-| config2 | 5 | 2 | 子供命名3 |
-| config3 | 4 | 1 | 子供命名2、市民戰3 |
+| config2 | 8 | 2 | 0 |
+| config3 | 5 | 1 | 市民戰4 |
 
-- 標準500局驗收完成：預設／tokusou各seed0–249、max-shop200、actions101–108，10個50局前景批次全部成功。
-- 結果與S33基線一致：預設246上限／4回標題／0停止；tokusou250上限。520局catalog失敗0、seed全集及逐局log／JSONL已核對。
-- `source/`、`reference/`未動；修改檔案皆LF、UTF-8無BOM。
-- 沒有新增UNVERIFIED／DEVIATION；既有裁決與preset保持原作。
+- 標準500局：預設／tokusou各seed0–249、max-shop200、actions101–108，10個50局前景批次全部exit0。
+- 標準結果與S34一致：預設246上限／4回標題；tokusou250上限。520局catalog失敗0，seed全集／逐局log／JSONL已核對。
+- `source/`、`reference/`未動；所有修改檔案UTF-8無BOM、LF；git diff --check通過。
+- 無新增UNVERIFIED／DEVIATION；S11/S14「INPUTS只能整數」限制已消除；既有裁決與preset保持原作。
 
 ## 口上 catalog 現況
 
@@ -56,21 +58,21 @@
 
 ### 狀態畫面內仍會停止
 
-P1 [11]→[1] 呼び名手入力（INPUTS）、[12] 一人称設定畫面、[13] 各項的手入力／ランダム命名；P3 [0] 武器カスタマイズ；
+P1 [12] 一人称設定畫面；P3 [0] 武器カスタマイズ；
 P4 父親 CFLAG:9 指向不存在的ボス／ラスボス／モブ；HEROINE_PRESET [20]〜[29] 的不存在角色（原作也報錯）；色指定 R//G//B 的 16 進・指數表記。
 
 ### 設定項打開後會碰到未移植系統（S24，`flow.md` §10；預設 config 1 全 OFF）
 
 [34] 雑魚戦（802 bit4）S33接通；[78] 裏プロフィール（805 bit6）與[11]／[15]〜[17]狀態顯示（801 bit1／5〜7）S34接通。
-[54] 返り血（803 bit4）→ SUPART_BLOOD 停止；[72] 触手の子種からも娘 → 命名 INPUTS 停止；
+[54] 返り血（803 bit4）→ SUPART_BLOOD 停止；[72] 触手の子種からも娘的命名S35已接通；
 [35] クズ市民→市民戰仍停止；[55] ラスボス強化 所在系統未移植。[10]／[14] 素質表示 S25 起、[79] 有害ブログ S26 起生效。
-`--config-preset 2／3` 正常設定的驗收結果見 S34 節。
+`--config-preset 2／3` 正常設定的驗收結果見 S35 節。
 
 ## 下一步
 
 - **自主推進（使用者指定 2026-10-02，依序）**：~~S22 RESULTS 共用~~ → ~~S23 [反撃]スタイル~~ → ~~S24 設定畫面／プリセット~~ → ~~S25 狀態畫面~~
   → ~~S26 FLASHNEWS~~ → ~~S26b RESULTS:0 殘值~~ → ~~S27 ラスボス～結局~~ → ~~S28 未移植行動（S28a〜S28c2）~~：**指定範圍全部完成**。
-  S34完成後停止，其他候選：クズ市民戰、引き継ぎ（SUCCESSION.ERB，クリア後の停止點）、天使の樹（引き継ぎ後のみ）、ランダム命名畫面、SHOP [112] 衣裝設定、
+  S35完成後停止，其他候選：クズ市民戰、引き継ぎ（SUCCESSION.ERB，クリア後の停止點）、天使の樹（引き継ぎ後のみ）、SHOP [112] 衣裝設定、
   SHOP 子選單（[111] CHARA_POWERUP：SHOP.ERB:253、[113] DRUG_PREPARATION：:264、[180] TSUIKAYOUSEI_NORMAL（加入引退有り）：:294）。
 - 已裁決（2026-10-02）：名乗り改竄的 RESULTS:2 殘值照原作（S22 實作）；開局デフォルト悪堕ち的輸出丟棄維持現況。
 - 已裁決（2026-10-02）：PALAM_HOSEI 殘值照原作、防衛力負數 D1〜D4（S21 實作）。已裁決（2026-10-01）：S20 的 DEVIATION 6 項＋斜體。
@@ -85,8 +87,8 @@ S23 模擬（含 [反撃] 人工設定）皆無停止。登記但罕見：
 - 襲撃／救援：生存ラスボス 0 での襲来（原作無限ループ）、RAID_HANTEI のデバッグ入力、原作でも CodeEE になるエラー路。
 - ラスボス・結局（S27）：クリア後の引き継ぎ（SUCCESSION）、天使の樹（裏ボス：遭遇・形態變化・攻撃・幽閉・表示）、ENDING 後の JUMP SHOW_SHOP（原作もエラー）。
 - 幽閉：TS 性別變化。
-- 妊娠・子供：TS 変身キャラ妊娠時的女體化、子供名字等的手入力（INPUTS）與ランダム命名畫面、デバッグモード的妊娠確率輸入。
-- 情報収集（S28a）：クズ市民戰（事件の捜査 config 802 bit5／仲間の捜索で監禁場所特定）、デバッグ入力；SENGIUP Lv5 的變身後名設定 [1]。
+- 妊娠・子供：TS 変身キャラ妊娠時的女體化、デバッグモード的妊娠確率輸入。
+- 情報収集（S28a）：クズ市民戰（事件の捜査 config 802 bit5／仲間の捜索で監禁場所特定）、デバッグ入力。
 - ACTION_MAIN 由 EVENTTURNEND 經 JUMP 而終端（雜魚戰候選全部禁用：原作也錯誤）。
 - 自由行動（S28c2）：ナンパ・酒ナンパのレイプで クズ市民 config（CONFIG_CHECK_EVENT_F(5)）ON 時の ENCOUNT_CITIZEN。
 - 夜這い：TS キャラ的 `_ABLUP` 女体受容取得、`%CALLNAME:ARG%` 指向不存在角色（原作也報錯）。

@@ -540,12 +540,12 @@ def test_sengiup_lv5(ctx, data, gain, inputs, henshin, ts):
     assert "紅葉は戦闘の基礎を完全にマスターした！" in texts(ctx.out)
 
 
-def test_sengiup_lv5_transafter_name_halts(ctx, data):
+def test_sengiup_lv5_transafter_name_continues(ctx, data):
     st = ctx.state
     st.target = 1
     _lv5_ready(st, data)
-    with pytest.raises(NotImplementedError, match="変身後名"):
-        run(sengiup(ctx, 1, 3), [1, 1])
+    run(sengiup(ctx, 1, 3), [1, 1, 1, "星光", 1])
+    assert st.charas[1].cstr[0] == st.charas[1].cstr[1] == "星光"
 
 
 def test_sengiup_lv5_profile_size(ctx, data):

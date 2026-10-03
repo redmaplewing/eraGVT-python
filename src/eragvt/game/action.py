@@ -901,7 +901,12 @@ def _sengiup_henshin(ctx: Ctx, who: int) -> Generator[None, int, None]:
                     return
                 if r1 == 1:
                     out.printl()
-                    raise NotImplementedError("変身後名の設定（FIRSTSETTING_CHARA_TRANSAFTERNAME）は未移植")
+                    from .firstsetting import trans_after_name, trans_after_callname
+                    yield from trans_after_name(ctx, who)
+                    if c.cstr[0] != "":  # コモン関数.ERB@SENGIUP:783–785
+                        c.cflag[3] = 1
+                        yield from trans_after_callname(ctx, who)
+                    return
         result = yield  # :787–788 GOTO INPUT_LOOP_0
 
 

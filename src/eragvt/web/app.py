@@ -26,7 +26,7 @@ _HERE = Path(__file__).parent
 
 
 class InputBody(BaseModel):
-    value: int
+    value: int | str
 
 
 def create_app(
@@ -62,6 +62,7 @@ def create_app(
         bg = s.out.bgcolor
         return {
             "phase": s.phase.value,
+            "input_kind": s.input_kind,
             "background": bg,
             "lines": [line.to_json() for line in s.screen()],
         }
@@ -71,7 +72,7 @@ def create_app(
         return templates.TemplateResponse(request, "index.html", {"screen": screen_json()})
 
     @app.post("/input")
-    def post_input(value: int = Form(...)) -> RedirectResponse:
+    def post_input(value: str = Form("")) -> RedirectResponse:
         app.state.session.input(value)
         return RedirectResponse("/", status_code=303)
 
