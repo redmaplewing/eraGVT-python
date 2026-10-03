@@ -66,7 +66,7 @@ ERB 路徑相對 `source/earGVP/ERB/`。
   （`FIRSTSETTING_CHARA_TRANSFORMATION.ERB`）、デバッグモード的妊娠確率輸入（`NINSIN_HANTEI`:125–138）。
   （Python：`eragvt.game.battle.ninsin`、`eragvt.game.child`、`eragvt.game.firstsetting` 的 `raise NotImplementedError`）
   — Web 只能輸入整數（見下「INPUTS 只能輸入整數」）；隨機命名畫面與 TS 系統屬之後的階段。
-- [ ] **振り解く判定的 `LOCAL:O`**（S06 新增，**需裁決**）：`ゲーム内_戦闘処理/COMMON_BATTLE_HANTEI.ERB`:241／:245
+- [x] **振り解く判定的 `LOCAL:O`**（S06 新增；**已裁決 2026-10-03：視為打錯字，當 `0` 處理＝`LOCAL:0`**）：`ゲーム内_戦闘処理/COMMON_BATTLE_HANTEI.ERB`:241／:245
   `SIF LOCAL:5 <= 45 && LOCAL:O > 49` 的 `O` 是英文字母，全作沒有這個識別子（grep 僅此 2 處）。1.824 在執行到該行時
   報錯停止（`GameProc/Process.ScriptProc.cs`:38–42、`GameData/Expression/ExpressionParser.cs`:264–269、
   `GameData/IdentifierDictionary.cs`:645），而振り解く的％顯示（`PRINT_COMNAME.ERB`:6–13）每次都會經過這裡，
