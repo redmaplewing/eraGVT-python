@@ -82,7 +82,7 @@ P4 父親 CFLAG:9 指向不存在的ボス／ラスボス／モブ；HEROINE_PRE
 - 已裁決（2026-10-02）：PALAM_HOSEI 殘值照原作、防衛力負數 D1〜D4（S21 實作）。已裁決（2026-10-01）：S20 的 DEVIATION 6 項＋斜體。
 - 已裁決（2026-09-30）：拡張度初期值照原作；S13 苗床出産的 static LOSEDEF 等怪處照原作。
 - 口上 catalog 待擴充：改狀態的口上（hook 化）、入れ子內 $ラベル 的 GOTO（`KOJO_AEGI.ERB` $ＭＡＸ２，199 函式）、STRDATA、未實作式中関数。
-- deviations.md 需裁決：口上的狀態副作用、口上 catalog 實行時失敗的回復、S08 以後新增項、S28c1 的 2 項（夜間排程早送り、Null 時停止）、S28c2 的 1 項（Null 時停止）。
+- deviations.md 需裁決：振り解く `LOCAL:O`、口上的狀態副作用、口上 catalog 實行時失敗的回復、S08 以後新增項、S28c1 的 2 項（夜間排程早送り、Null 時停止）、S28c2 的 1 項（Null 時停止）。
 
 ## 仍會停止的分岐（`NotImplementedError` → Web 停止）
 
