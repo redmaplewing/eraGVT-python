@@ -503,8 +503,22 @@ def state_change_betobeto(ctx: Ctx, arg: int) -> None:
 
 
 def state_change_extraeffect(ctx: Ctx) -> None:
-    """`@STATE_CHANGE_EXTRAEFFECT(TCVARn:15)`（:342–359）：TCVARn:14 を設定するのは雑魚／イベント敵のみ。"""
-    raise NotImplementedError("エネミー独自の追加効果（STATE_CHANGE_EXTRAEFFECT）は未移植")
+    """CHARA_STATE_CHANGE.ERB@STATE_CHANGE_EXTRAEFFECT:342–359。
+    ENEMY_ACTION.ERB:251/370/547/735/914 只傳 TCVARn:15 給 ARG，沒有傳 TCVARn:14；
+    ARG:1 使用省略值 0，照原作保留，不把機率與編號交換。
+    """
+    fn = {1:state_change_kizetu,2:state_change_hairan,3:state_change_hatujou,
+          4:state_change_dengeki,5:state_change_betobeto,6:state_change_mahi,7:state_change_kizetu_damage}.get(tc(ctx).tcvarn[15])
+    if fn:
+        fn(ctx,0)
+
+
+def state_set_extraeffect(ctx: Ctx, name: str, probability: int) -> None:
+    """CHARA_STATE_CHANGE.ERB@STATE_SET_EXTRAEFFECT:361–377；未知名稱不改原本編號。"""
+    kinds = {"気絶":1,"排卵":2,"発情":3,"電撃":4,"べとべと":5,"麻痺":6,"気絶ダメージ":7}
+    if name in kinds:
+        tc(ctx).tcvarn[14] = kinds[name]
+    tc(ctx).tcvarn[15] = probability
 
 
 def attack_air_flag(ctx: Ctx) -> None:

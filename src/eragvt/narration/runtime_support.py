@@ -13,6 +13,16 @@ from .expr import Call, Var, walk
 
 NARRATION_DIRS = ("口上/", "地の文/")  # catalog の対象（ERB からの相対パスの接頭辞）
 
+
+def is_narration_function(path: str, name: str) -> bool:
+    """S33：雜魚檔只有 MESSAGE_* 顯示函式沿用 catalog，敵方規則不可在此執行。"""
+    # CITIZEN_1.ERB:408–656 的同名顯示函式先於雜魚檔載入。
+    # Config.cs:330–379／LabelDictionary.cs:58–77；emuera.config:40 啟用檔名排序。
+    return (path == "ゲーム内_戦闘処理/触手データ/クズ市民/CITIZEN_1.ERB"
+            and name == "MESSAGE_MOB_901_COM2") or path.startswith(NARRATION_DIRS) or (
+        path.startswith("ゲーム内_戦闘処理/触手データ/雑魚敵/") and name.startswith("MESSAGE_")
+    )
+
 # 角色變數 → Character 的欄位
 CHARA_ATTR = {
     "BASE": "base", "MAXBASE": "maxbase", "ABL": "abl", "TALENT": "talent", "EXP": "exp", "MARK": "mark",
@@ -42,7 +52,7 @@ READ_ONLY_SPECIAL = {"RAND", "CHARANUM", "LINECOUNT", "NO", "STR", "SAVESTR", "C
 # S29：口上／地の文（`NARRATION_DIRS`）の函式の中で、GameState に直接書き込める変数（状態モデルに欄位があるもの）。
 # 書き込みは `runtime.Interp._state_set`（要素数の検査・CSV 名の添字・ジャーナル記録）。
 STATE_WRITABLE = (
-    set(CHARA_ATTR) | set(CHARA_STR_ATTR) | {"CSTR", "CDFLAG"} | set(GLOBAL_ARRAY_ATTR) | {"TENTACLE_SIZE", "TARGET"}
+    set(CHARA_ATTR) | set(CHARA_STR_ATTR) | {"CSTR", "CDFLAG"} | set(GLOBAL_ARRAY_ATTR) | {"TENTACLE_SIZE", "TARGET", "INSERT"}
 )
 
 
@@ -79,11 +89,12 @@ IMPLEMENTED_METHODS = {
     "STRLENS", "STRLENSU", "SUBSTRING", "SUBSTRINGU", "TOSTR", "SIGN",
     "STRFINDU", "STRCOUNT", "REPLACE", "ISNUMERIC", "TOINT",  # S21
     "VARSIZE",  # S28b（ERH の CONST 配列のみ：builtins.m_varsize）
-    "FINDCHARA", "FINDLASTCHARA", "GETCOLOR",  # S30
+    "FINDCHARA", "FINDLASTCHARA", "GETCOLOR", "GETBGCOLOR",  # S30、S33
 }
 
 # Python 實作的使用者函式：名稱 → 說明（實體在 service.py 註冊）
 PY_FUNCTIONS = {
+    "TENTACLE_MOB_901_GETNAME": "ゲーム内_戦闘処理/触手データ/雑魚敵/TENTACLE_MOB_901_天界（セラプー）.ERB@TENTACLE_MOB_901_GETNAME:9–13",
     "KOJO_ROOT": "口上/口上システム関係/KOJO_ROOT.ERB@KOJO_ROOT（派發規則、FLAG:62／FLAG:900）",
     # S14：汎用関数/WindowDrawer.ERB（＋TagSetText.ERB）→ `narration.windowlib`
     "WINDOW_CREATE": "汎用関数/WindowDrawer.ERB@WINDOW_CREATE",

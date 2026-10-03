@@ -32,6 +32,15 @@ def buttons(screen):
     return [p["button"] for l in screen["lines"] for p in l["parts"] if p["button"] is not None]
 
 
+def test_background_uses_output_state(client):
+    """Console 背景與 GETBGCOLOR 共用：reference/emuera-1824/Emuera/GameView/EmueraConsole.Print.cs:78–81。"""
+    c,app,_=client
+    app.state.session.out.set_bgcolor((10,20,30))
+    assert c.get("/api/screen").json()["background"] == "#0a141e"
+    app.state.session.out.reset_bgcolor()
+    assert c.get("/api/screen").json()["background"] == "#000000"
+
+
 def test_new_game_default_opening_to_shop_and_save(client):
     """S10：タイトル [0] → [0] おまかせ（原作の既定経路：汎用キャラ 3 名）→ SHOP、存檔・讀檔。"""
     c, app, _ = client

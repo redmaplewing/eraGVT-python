@@ -105,8 +105,11 @@ def _colored(ctx: Ctx, color: tuple[int, int, int], text: str, bold: bool = Fals
 def msg_tentacle_attack(ctx: Ctx) -> None:
     """`@MESSAGE_BATTLE_TENTACLE_ATTACK`:1081–1122（ボスには MESSAGE_BATTLE_MOB_{n}_TENTACLE_ATTACK が無い）。"""
     st = ctx.state
-    if st.flag[11] in (301, 803, 901, 902) and enemy_type_check(st, "BOSS") != 1:
-        raise NotImplementedError("雑魚敵専用の攻撃地の文は未移植")
+    if enemy_type_check(st, "MOB") == 1:
+        from .mob import message
+
+        if message(ctx,f"MESSAGE_BATTLE_MOB_{st.flag[11]}_TENTACLE_ATTACK"):
+            return
     _enemy_prefix(ctx)
     ctx.out.print({1: "の攻撃！", 2: "の二点同時攻撃！"}.get(st.tflag[12], "の全方位攻撃！"))
     _range_marks(ctx)
@@ -196,8 +199,14 @@ def msg_absence(ctx: Ctx) -> None:
 def msg_karamituku(ctx: Ctx) -> None:
     """`@MESSAGE_BATTLE_TENTACLE_KARAMITUKU`:1247–1287。"""
     st = ctx.state
-    if (enemy_type_check(st, "AKUOTI") == 0 and enemy_type_check(st, "MOB") == 1) or enemy_type_check(st, "CITIZEN") == 1:
-        raise NotImplementedError("雑魚敵／クズ市民の絡みつく地の文は未移植")
+    if enemy_type_check(st, "MOB") == 1:
+        from .mob import message
+
+        if not message(ctx,f"MESSAGE_BATTLE_MOB_{st.flag[11]}_KARAMITUKU"):
+            raise NotImplementedError("原作 CALLFORM 的雜魚函式不存在")
+        return
+    if enemy_type_check(st, "CITIZEN") == 1:
+        raise NotImplementedError("クズ市民的地の文尚未移植")
     _enemy_prefix(ctx)
     if st.tflag[12] == 1:
         ctx.out.print("は触手を伸ばして絡みつこうとしてきた！")
@@ -229,8 +238,11 @@ def msg_karamituku_success(ctx: Ctx) -> None:
 def msg_taieki(ctx: Ctx) -> None:
     """`@MESSAGE_BATTLE_TENTACLE_TAIEKI`:1327–1370。"""
     st = ctx.state
-    if st.flag[11] == 803 and enemy_type_check(st, "BOSS") != 1:
-        raise NotImplementedError("雑魚敵専用の地の文は未移植")
+    if enemy_type_check(st, "MOB") == 1:
+        from .mob import message
+
+        if message(ctx,f"MESSAGE_BATTLE_MOB_{st.flag[11]}_TENTACLE_TAIEKI"):
+            return
     _enemy_prefix(ctx)
     ctx.out.print("は大きく身震いすると先端から腐臭のする体液を")
     ctx.out.print({1: "直線状に放ってきた！", 2: "放ってきた！"}.get(st.tflag[12], "広範囲に放ってきた！"))
@@ -277,8 +289,11 @@ def msg_hadou(ctx: Ctx) -> None:
     """`@MESSAGE_BATTLE_TENTACLE_HADOU`:1468–1510（TRYCCALLFORM MESSAGE_BATTLE_MOB_{FLAG:11}_TENTACLE_HADOU は
     901／902／803 のみ存在：触手データ/雑魚敵/。雑魚敵は未移植なので停止）。"""
     st = ctx.state
-    if st.flag[11] in (803, 901, 902):
-        raise NotImplementedError("雑魚敵専用の邪悪な波動地の文は未移植")
+    if enemy_type_check(st, "MOB") == 1:
+        from .mob import message
+
+        if message(ctx,f"MESSAGE_BATTLE_MOB_{st.flag[11]}_TENTACLE_HADOU"):
+            return
     if enemy_type_check(st, "AKUOTI") == 0:
         tentacle_access(ctx, "NAME")
         ctx.out.print("は邪悪な波動を")

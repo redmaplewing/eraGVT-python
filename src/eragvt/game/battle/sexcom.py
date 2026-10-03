@@ -488,6 +488,11 @@ def _maybe_auto_v(ctx: Ctx, need_v: bool) -> SexGen:
 
 def _mob_or_msg(ctx: Ctx, n: int, msg) -> None:
     """`IF 雑魚／市民 / TRYCALLFORM MESSAGE_MOB_… / ELSE / (悪堕ち) MESSAGE_OTHER_SEX_COMn / CALL MESSAGE_SEX_COMn`。"""
+    if enemy_type_check(ctx.state,"MOB") == 1:
+        from .mob import message
+
+        message(ctx,f"MESSAGE_MOB_{ctx.state.flag[11]}_COM{n}",[ctx.state.temp.ex_com,ctx.state.temp.sh_com])
+        return
     _no_mob(ctx, n)
     _other(ctx, f"COM{n}")
     msg()
@@ -624,14 +629,24 @@ def sex_com3(ctx: Ctx, arg: int = 0, arg1: int = 0) -> SexGen:
     if c.tcvarn[2] == P_V_GUARD:
         L[1] = div(L[1], 4)
     palam_vabc_estimate(ctx, L, 1, -1)
-    _no_mob(ctx, 3)
+    if enemy_type_check(st,"MOB") == 1:
+        from .mob import message
+
+        message(ctx,f"MESSAGE_MOB_{arg}_COM3",[st.temp.ex_com,st.temp.sh_com])
     if t(ctx, c, "処女") > 0 and c.tcvarn[2] != P_V_GUARD and c.base[31] <= 0:  # :88–93
         L[10] = 10000
-        lostvirgin(ctx)
+        if enemy_type_check(st,"MOB") == 1:
+            c.talent[ctx.data.index_of("TALENT","処女")] = -1
+            c.cflag[206],c.tcvarn[1] = 2,1
+        else:
+            _no_mob(ctx,3)
+            lostvirgin(ctx)
     else:
         L[10] = 0
-    _other(ctx, "COM3")  # :95–96
-    sexmsg.msg_com3(ctx, st.temp.ex_com, st.temp.sh_com)
+    if enemy_type_check(st,"MOB") != 1:
+        _no_mob(ctx,3)
+        _other(ctx, "COM3")  # :95–96
+        sexmsg.msg_com3(ctx, st.temp.ex_com, st.temp.sh_com)
     set_tentacle_pool(ctx)
     cloth_battle_damage(ctx, 8)
     if c.tcvarn[2] == P_V_GUARD:  # :107–117
@@ -731,14 +746,24 @@ def sex_com5(ctx: Ctx, arg: int = 0, arg1: int = 0) -> SexGen:
     _size(ctx, 5)
     _set(L, 2, _a_sense(ctx, (80, 500, 2000, 4000, 10000, 20000), (400, 1000, 2000, 4000, 10000, 20000)))
     palam_vabc_estimate(ctx, L, 2, -1)
-    _no_mob(ctx, 5)
+    if enemy_type_check(st,"MOB") == 1:
+        from .mob import message
+
+        message(ctx,f"MESSAGE_MOB_{arg}_COM5",[st.temp.ex_com,st.temp.sh_com])
     if t(ctx, c, "処女") > 0 and (ex & 2) and not vg and c.base[31] <= 0:  # :108–113
         L[10] = 10000
-        lostvirgin(ctx)
+        if enemy_type_check(st,"MOB") == 1:
+            c.talent[ctx.data.index_of("TALENT","処女")] = -1
+            c.cflag[206],c.tcvarn[1] = 2,1
+        else:
+            _no_mob(ctx,5)
+            lostvirgin(ctx)
     else:
         L[10] = 0
-    _other(ctx, "COM5")  # :115–116
-    sexmsg.msg_com5(ctx, st.temp.ex_com, st.temp.sh_com)
+    if enemy_type_check(st,"MOB") != 1:
+        _no_mob(ctx,5)
+        _other(ctx, "COM5")  # :115–116
+        sexmsg.msg_com5(ctx, st.temp.ex_com, st.temp.sh_com)
     set_tentacle_pool(ctx)
     cloth_battle_damage(ctx, 8)
     if st.temp.ex_com & A:  # :127–133
@@ -890,7 +915,7 @@ def sex_com9(ctx: Ctx, arg: int = 0, arg1: int = 0) -> None:
     _finish(ctx, "SEX_COM9", L, 300)
 
 
-def sex_com10(ctx: Ctx, arg: int = 0, arg1: int = 0) -> None:
+def sex_com10(ctx: Ctx, arg: int = 0, arg1: int = 0) -> SexGen:
     """`SEX_COM10.ERB@SEX_COM10`:7–137（手淫）。"""
     st = ctx.state
     c = tc(ctx)
@@ -904,7 +929,12 @@ def sex_com10(ctx: Ctx, arg: int = 0, arg1: int = 0) -> None:
     tentacle_syasei_up(ctx, 150)
     _size(ctx, 10)
     palam_vabc_estimate(ctx, L, -1)
-    _mob_or_msg(ctx, 10, lambda: sexmsg.msg_com10(ctx, st.temp.ex_com, st.temp.sh_com))
+    if enemy_type_check(st,"MOB") == 1:
+        from .mob import message_gen
+
+        yield from message_gen(ctx,f"MESSAGE_MOB_{arg}_COM10",[st.temp.ex_com,st.temp.sh_com])
+    else:
+        _mob_or_msg(ctx, 10, lambda: sexmsg.msg_com10(ctx, st.temp.ex_com, st.temp.sh_com))
     set_tentacle_pool(ctx)
     cloth_battle_damage(ctx, 5)
     add_exp(ctx, c, "奉仕快楽経験", 1)
@@ -1304,14 +1334,24 @@ def sex_com19(ctx: Ctx, arg: int = 0, arg1: int = 0) -> None:
     if config_check_balance(st, 7) == 0:
         _set(L, 2, _tbl(_a(ctx, "Ａ感覚"), (6, 35, 150, 300, 750, 1500)))
     palam_vabc_estimate(ctx, L, 1, 2, -1)
-    _no_mob(ctx, 19)
+    if enemy_type_check(st,"MOB") == 1:
+        from .mob import message
+
+        message(ctx,f"MESSAGE_MOB_{arg}_COM19",[st.temp.ex_com,st.temp.sh_com])
     if t(ctx, c, "処女") > 0 and c.tcvarn[2] != P_V_GUARD and c.base[31] <= 0:  # :111–116
         L[10] = 10000
-        lostvirgin(ctx)
+        if enemy_type_check(st,"MOB") == 1:
+            c.talent[ctx.data.index_of("TALENT","処女")] = -1
+            c.cflag[206],c.tcvarn[1] = 2,1
+        else:
+            _no_mob(ctx,19)
+            lostvirgin(ctx)
     else:
         L[10] = 0
-    _other(ctx, "COM19")  # :118–119
-    sexmsg.msg_plain(ctx, 19)
+    if enemy_type_check(st,"MOB") != 1:
+        _no_mob(ctx,19)
+        _other(ctx, "COM19")  # :118–119
+        sexmsg.msg_plain(ctx, 19)
     set_tentacle_pool(ctx)
     cloth_battle_damage(ctx, 3)
     add_exp(ctx, c, "Ｖ経験", 1)
@@ -2079,10 +2119,10 @@ def sex_spcom15(ctx: Ctx) -> None:
 
 _COM_FUNCS = {
     0: sex_com0, 1: sex_com1, 2: sex_com2, 4: sex_com4, 6: sex_com6, 7: sex_com7, 8: sex_com8, 9: sex_com9,
-    10: sex_com10, 11: sex_com11, 12: sex_com12, 13: sex_com13, 14: sex_com14, 15: sex_com15, 16: sex_com16,
+    11: sex_com11, 12: sex_com12, 13: sex_com13, 14: sex_com14, 15: sex_com15, 16: sex_com16,
     18: sex_com18, 19: sex_com19, 20: sex_com20,
 }
-_COM_GENS = {3: sex_com3, 5: sex_com5, 17: sex_com17}
+_COM_GENS = {3: sex_com3, 5: sex_com5, 10: sex_com10, 17: sex_com17}
 _SP_FUNCS = {
     1000: sex_spcom0, 1003: sex_spcom3, 1004: sex_spcom4, 1005: sex_spcom5, 1006: sex_spcom6,
     1008: sex_spcom8, 1009: sex_spcom9, 1010: sex_spcom10, 1011: sex_spcom11, 1012: sex_spcom12,
@@ -2119,9 +2159,14 @@ def sex_comable(ctx: Ctx, arg: int) -> SexGen:
     c = tc(ctx)
     cl = st.temp.cloth
     no_inner, outer_per, inner_per, inner_def = cl[NO_INNER], cl[OUTER_PER], cl[INNER_PER], cl[INNER_DEF]
-    if _mob(ctx):  # :17–23
+    if enemy_type_check(st,"CITIZEN") == 1:  # :17–23
         raise NotImplementedError("雑魚敵／クズ市民の追加責め部位指定（SEXCOM_OPTION_MOB_*）は未移植")
     local = 0
+    if enemy_type_check(st,"MOB") == 1:
+        from .mob import sex_option
+
+        local = sex_option(ctx,arg)
+        st.result[0] = local
     if c.cflag[42] == 398 and no_inner == 0 and arg in (5, 1002, 1010):  # :29–33 前貼り
         inner_def = 100
     st.tflag[10] = arg
@@ -2333,7 +2378,10 @@ def sex_comable(ctx: Ctx, arg: int) -> SexGen:
         else:
             yield from go(1015)
     elif 2000 <= arg <= 2999:  # :589–591（雑魚敵専用：ボス戦では何もしない）
-        pass
+        if enemy_type_check(st,"MOB") == 1:
+            from .mob_special import special_command
+
+            yield from special_command(ctx,arg,local)
     return 1
 
 
@@ -2588,10 +2636,14 @@ def enemy_action_sex_routine(ctx: Ctx) -> int:
     if select < 0:  # :1357–1360 専用ルーチン（TENTACLE_ACCESS "SEX_ROUTINE"）
         from .core import _is_lastboss_access, boss_data
 
-        boss_data(st)  # ボス・ラスボス 1 以外は停止
-        if _is_lastboss_access(st):  # TENTACLE_ACCESS:303（S27）
+        if enemy_type_check(st,"MOB") == 1:
+            from .mob import sex_routine
+
+            select = sex_routine(ctx)
+        elif _is_lastboss_access(st):  # TENTACLE_ACCESS:303（S27）
             select = lastboss_sex_routine(ctx, st.flag[11])
         else:
+            boss_data(st)
             select = boss_sex_routine(ctx, st.flag[11])
     if select < 0:  # :1363–1428 汎用ルーチン
         n = 13

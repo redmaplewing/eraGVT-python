@@ -180,9 +180,13 @@ def source_check(ctx: Ctx) -> Generator[None, int, None]:
         from .core import LASTBOSS_NAMES
         from .sexcom import boss_reaction_ref, lastboss_reaction_ref
 
-        if enemy_type_check(st, "MOB") == 1 or enemy_type_check(st, "CITIZEN") == 1:
-            raise NotImplementedError("雑魚敵の REACTION_REF は未移植")
-        if get_lastboss_phase(st) >= 1:  # :1154–1155（ENEMY_TYPE_CHECK ではなく GET_LASTBOSS_PHASE_F：S27）
+        if enemy_type_check(st, "CITIZEN") == 1:
+            raise NotImplementedError("クズ市民戰的 REACTION_REF 尚未移植")
+        if enemy_type_check(st, "MOB") == 1:
+            from .mob import reaction_ref
+
+            r = reaction_ref(ctx,1)
+        elif get_lastboss_phase(st) >= 1:  # :1154–1155（ENEMY_TYPE_CHECK ではなく GET_LASTBOSS_PHASE_F：S27）
             # ラスボス出現後の悪堕ちキャラ戦（FLAG:11 = 0）は TENTACLE_LASTBOSS_0_REACTION_REF が無く不発 → 下と同じく共用 RESULT:0
             r = lastboss_reaction_ref(ctx, st.flag[11], 1) if st.flag[11] in LASTBOSS_NAMES else st.result[0]
         elif st.flag[11] in range(1, 8):
@@ -274,7 +278,18 @@ def _victory(ctx: Ctx) -> None:
     elif enemy_type_check(st, "AKUOTI") == 1:
         _victory_akuoti(ctx)
     elif enemy_type_check(st, "MOB") == 1:
-        raise NotImplementedError("雑魚戦の勝利は未移植（雑魚戦システムは基本セットで OFF）")
+        from .mob import message
+        from .encount import research_progress
+
+        message(ctx,"MESSAGE_BATTLE_END_WIN")
+        local = 8 + st.rng.rand(5)
+        if c.cflag[100] != 101:
+            local = div(local,2)
+        if t(ctx,c,"狩人の勘") > 0:
+            local += 7
+        out.printl(f"探索度が{local}上昇した")
+        research_progress(ctx,local)
+        out.printl()
     raise BeginAfterTrain()
 
 

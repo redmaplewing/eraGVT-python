@@ -367,7 +367,13 @@ def m_getcolor(it, a, fr) -> int:
     return int(c.lstrip("#"), 16)
 
 
+def m_getbgcolor(it, a, fr) -> int:
+    """reference/emuera-1824/Emuera/GameData/Function/Creator.Method.cs:584–599：目前背景 RGB。"""
+    return int(it.out.bgcolor[1:], 16)
+
+
 BUILTINS = {
+    "GETBGCOLOR": m_getbgcolor,
     "FINDCHARA": m_findchara, "FINDLASTCHARA": m_findlastchara, "GETCOLOR": m_getcolor,
     "STRFINDU": m_strfindu, "STRCOUNT": m_strcount, "REPLACE": m_replace, "ISNUMERIC": m_isnumeric, "TOINT": m_toint,
     "GETBIT": m_getbit, "UNICODE": m_unicode, "STRFIND": m_strfind, "RAND": m_rand, "MAX": m_max,

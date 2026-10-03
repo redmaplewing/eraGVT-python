@@ -15,6 +15,7 @@ from ..action import Ctx, kojo_root, print_transcallname
 from ..chara_common import is_male
 from ..era import div, isqrt, times
 from ..tentacle import enemy_type_check
+from . import mob
 from .cloth import INNER_DEF, INNER_PER, OUTER_PER, cloth_battle_damage, cloth_battle_hosei
 from .core import (
     DARAKU,
@@ -74,8 +75,8 @@ def _mob(ctx: Ctx) -> bool:
 
 
 def _need_boss(ctx: Ctx) -> None:
-    if _mob(ctx):
-        raise NotImplementedError("雑魚敵戦の拘束中コマンドは未移植")
+    if enemy_type_check(ctx.state,"CITIZEN") == 1:
+        raise NotImplementedError("クズ市民戰的拘束中指令尚未移植")
 
 
 def _akuoti(ctx: Ctx) -> bool:
@@ -317,23 +318,23 @@ def _com_able_sex(ctx: Ctx, n: int, guard: bool, pink: tuple[int, int, int]) -> 
         if n in (101, 102, 103) and st.temp.prevcom == n:
             return 0, None
         if n == 101 and (s12 & KYOUKOUSOKU) == 0:  # :893–905
-            if _mob(ctx):
-                raise NotImplementedError("雑魚敵の SEX_TYPE_MOB_* は未移植")
-            typ = SEX_TYPE.get(st.tflag[20])
+            _need_boss(ctx)
+            typ = mob.sex_type(st.flag[11],st.tflag[20]) if _mob(ctx) else SEX_TYPE.get(st.tflag[20])
             if typ is None:  # TRYCCALLFORM SEX_TYPE_COM{TFLAG:20} が無い → CATCH で RETURN 0
                 return 0, None
             if (typ & 1) == 0:
                 return 0, None
         if n == 103:  # :991–1020
+            _need_boss(ctx)
             if _mob(ctx):
-                raise NotImplementedError("雑魚敵の REACTION_REF は未移植")
-            if enemy_type_check(st, "LASTBOSS") >= 1:  # :996–1000（S27）
+                r = mob.reaction_ref(ctx,2)
+            elif enemy_type_check(st, "LASTBOSS") >= 1:  # :996–1000（S27）
                 r = lastboss_reaction_ref(ctx, st.flag[11], 2)
             elif st.flag[11] not in range(1, 8):  # TENTACLE_BOSS_{FLAG:11}_REACTION_REF が無い（悪堕ちキャラ戦は 0）→ CATCH
                 return 0, None
             else:
                 r = boss_reaction_ref(ctx, st.flag[11], 2)
-            typ = SEX_TYPE.get(r)
+            typ = mob.sex_type(st.flag[11],r) if _mob(ctx) else SEX_TYPE.get(r)
             if typ is None:
                 return 0, None
             if (typ & 2) == 0:
@@ -1157,9 +1158,10 @@ def com100(ctx: Ctx) -> ComGen:
     r0 = tentacle_syasei_check(ctx)[0]  # RESULT = RESULT:0
     out.printl()
     if g >= 3 and st.rng.rand(100) < 10:  # :52–62
+        _need_boss(ctx)
         if _mob(ctx):
-            raise NotImplementedError("雑魚敵の REACTION_REF は未移植")
-        if enemy_type_check(st, "LASTBOSS") >= 1:  # COMF100.ERB:55–56（S27）
+            r = mob.reaction_ref(ctx,3)
+        elif enemy_type_check(st, "LASTBOSS") >= 1:  # COMF100.ERB:55–56（S27）
             r = lastboss_reaction_ref(ctx, st.flag[11], 3)
         elif st.flag[11] in range(1, 8):
             r = boss_reaction_ref(ctx, st.flag[11], 3)
@@ -1226,10 +1228,9 @@ def com102(ctx: Ctx) -> ComGen:
     print_distance(ctx)
     out.printl()
     select = enemy_action_sex_routine(ctx)  # :13–14
-    if _mob(ctx):
-        raise NotImplementedError("雑魚敵の SEX_TYPE_MOB_* は未移植")
-    # :20–22 TRYCALLFORM SEX_TYPE_COM{SELECT}：関数が無ければ RESULT は SELECT のまま
-    local = SEX_TYPE.get(select, select)
+    _need_boss(ctx)
+    # COMF102.ERB:15–22：缺函式時保留 SELECT。
+    local = mob.sex_type(st.flag[11],select,select) if _mob(ctx) else SEX_TYPE.get(select,select)
     g = abl(ctx, c, "技巧")
     rand = st.rng.rand
     # :26 `(LOCAL & 挿入) && RAND:100 < 95 || (RAND:100 < SQRT(1 + 50 * ABL:技巧))`（左結合・短絡）
@@ -1364,9 +1365,10 @@ def com103(ctx: Ctx) -> ComGen:
     c.ex[99] += 1
     # :192–200。悪堕ちキャラ戦（FLAG:11 = 0：ACTION.ERB:38）は TENTACLE_BOSS_0_REACTION_REF が無く TRYCALLFORM 不発 →
     # RESULT は前の値のまま：失敗の経路では :5 PRINT_DISTANCE の関数終端（RESULT = 0）以降 CALL が無い（式中関数のみ）ので 0。
+    _need_boss(ctx)
     if _mob(ctx):
-        raise NotImplementedError("雑魚敵の REACTION_REF は未移植")
-    if enemy_type_check(st, "LASTBOSS") >= 1:  # :193–195（S27：MOB → LASTBOSS → BOSS の順）
+        r = mob.reaction_ref(ctx,2 - (1 if c.base[31] > 0 else 0))
+    elif enemy_type_check(st, "LASTBOSS") >= 1:  # :193–195（S27：MOB → LASTBOSS → BOSS の順）
         r = lastboss_reaction_ref(ctx, st.flag[11], 2 - (1 if c.base[31] > 0 else 0))
     elif st.flag[11] in range(1, 8):
         r = boss_reaction_ref(ctx, st.flag[11], 2 - (1 if c.base[31] > 0 else 0))

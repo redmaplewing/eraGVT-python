@@ -372,12 +372,11 @@ def test_rescue_deadnum_no_candidate(svc, ctx):
 
 
 def test_coverage_remaining(svc):
-    """S30 後：13,384 中 13,383。残りは `地の文/スラング/T_SHAPE（触手の形状）.ERB@COLOR_T_SHAPE` の 1 函式だけで、原因は
-    呼び出し先 `汎用関数/PRINT_RGBTEXT（色名、文字列）.ERB`:106 の GETBGCOLOR（背景色は TextOutput で模型化していない）。"""
+    """S33 補足 GETBGCOLOR 後，13,384 個口上／地の文均通過靜態檢查。"""
     r = svc.catalog.report()
-    assert r["total"] == 13384 and r["ok"] == 13383
-    assert r["reasons"] == [("未実装の命令関数 GETBGCOLOR", 1)]
-    assert svc.catalog.unsupported_reason("COLOR_T_SHAPE").startswith("PRINT_RGBTEXT:106 ")
+    assert r["total"] == 13384 and r["ok"] == 13384
+    assert r["reasons"] == []
+    assert svc.catalog.unsupported_reason("COLOR_T_SHAPE") is None
     # GOTO の静的判定に引っかかる口上／地の文は無い
     for name in svc.catalog.narration_functions():
         fd = svc.catalog.get(name)

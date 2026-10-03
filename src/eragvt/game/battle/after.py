@@ -369,7 +369,18 @@ def event_end(ctx: Ctx) -> Generator[None, int, Step]:
                 research_progress(ctx, local)
                 out.printl()
     elif st.savestr[13] == "MOB" and st.tflag[98] == 1:  # :228–260
-        raise NotImplementedError("雑魚戦（戦闘あり）の勝利処理は未移植")
+        get_exp_battle(ctx)
+        tentacle_survive_num(st)
+        get_syuren(ctx,10+ex99()*2)
+        get_money(ctx,(25+st.rng.rand(11))*(5+st.rng.rand(5)))
+        local = st.rng.rand(50)+div(tentacle_level(st),2)+50
+        st.flag[852] = max(st.flag[852]+local,0)
+        out.printl(f"防衛力が{abs(local)}"+("低下した" if local<0 else "上昇した"))
+        out.printl()
+        ninsin_check_after(ctx)
+        transform(ctx,0)
+        _transform_enemy_off(ctx)
+        event_battle_reset_costume(ctx,st.target)
     elif st.tflag[98] == 1:  # :263–333 ボス勝利
         get_exp_battle(ctx)
         survive = tentacle_survive_num(st)

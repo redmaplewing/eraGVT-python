@@ -210,10 +210,7 @@ RANDCHOOSE 系與 UNLOCK_ACHIEVEMENT：S30 接上（下節）。
   UNLOCK_ACHIEVEMENT（GLOBAL のみ → 何もしない、RESULT = 0；deviations「全域資料」）。
 - 口上的名稱 hook 追加 CORRUPTTION_GET_THEME／CORRUPTTION_GET_NANORI_FINAL（`kojo_121／131_ホムラ.ERB` 的名乗り：STRDATA 後出現的下一個原因）。
 - `battle.source_check._rescue_deadnum`（ロストキャラの発見）改以 catalog 執行整個地の文（停止點解除；catalog 不可時照舊停止）。
-- 覆蓋率 13,161 → **13,383／13,384**。剩下 `地の文/スラング/T_SHAPE（触手の形状）.ERB@COLOR_T_SHAPE`：呼叫先
-  `汎用関数/PRINT_RGBTEXT（色名、文字列）.ERB`:106 的 **GETBGCOLOR**——背景色由 SHOW_SHOP（SHOP.ERB:26–35）、BATTLE_COM.ERB:648–654、
-  開局、PRISON、ENDING 的 SETBGCOLOR／RESETBGCOLOR 決定，TextOutput 沒有模型化（需要跨系統的新狀態）→ 停下列出。呼叫者只有未移植的
-  雑魚戦（`TENTACLE_MOB_201`），目前無法到達。
+- S30 覆蓋率達 13,383／13,384；最後一個 GETBGCOLOR 相依已由 S33 補足，現為 **13,384／13,384**。
 
 ## 覆蓋率
 
@@ -225,3 +222,17 @@ RANDCHOOSE 系與 UNLOCK_ACHIEVEMENT：S30 接上（下節）。
 整個由 catalog 執行（`sexmsg.msg_spcom7` 以 `run_function_gen`）。視窗內容（`strVSWBrowser`／`strVSWText`，函式內靜態 #DIMS）照 ERB 組出，
 `CALL WINDOW_*` 走 `windowlib.py`：各視窗以 cp932 位元組寬成形、疊合成 84 桁的行，`@B:n@…@/B@` 變成按鈕（PRINTBUTTON），其餘 PRINTPLAIN。
 迴圈 `$PRINT_LOOP`→INPUTS→`CLEARLINE LINECOUNT`（清除整個畫面紀錄，照原作）→`GOTO PRINT_LOOP`，輸入 "99" 結束。無狀態變化。
+
+## S33：背景色與雜魚顯示函式
+
+- `TextOutput.bgcolor` 保存目前背景色，Web JSON 與 GETBGCOLOR 讀取同一狀態；不是依 TIME 反推。
+- 引擎 `reference/emuera-1824/Emuera/GameData/Function/Creator.Method.cs:584–599` 回傳 Console.bgColor 的 RGB；
+  `GameView/EmueraConsole.Print.cs:18、78–81` 初始化／設定背景，`GameProc/Function/Instraction.Child.cs:1070–1081` 重設為設定色。
+  原作 `emuera.config:25` 的背景為黑色，`COLOR.ERH:20–22` 定義日／夜色。
+- 接線：`インターミッション画面/SHOP.ERB@SHOW_SHOP:26–35`、`ゲーム内_戦闘処理/BATTLE_COM.ERB@USERCOM:648–654`、
+  `ゲーム内_イベント発生/オープニング処理.ERB@EVENTLOAD:8–12`／`@EVENTFIRST:27`、
+  `ゲーム内_イベント発生/敗北幽閉中イベント/PRISON.ERB@PRISON:5–8`、`ゲーム内_イベント発生/エンディング/ENDING.ERB@ENDING:13`。
+- `COLOR_T_SHAPE` 經 `汎用関数/PRINT_RGBTEXT（色名、文字列）.ERB@PRINT_RGBTEXT:102–125` 比對背景，避免同色文字。
+- 雜魚檔僅 `MESSAGE_*` 顯示函式可寫 GameState，並加入 INSERT；遊戲規則保持手翻。特殊重名、Python hooks 及影片等待見
+  [mob-battle.md](mob-battle.md)。原有 `TRANSFORM` hook 保留共用 RESULT 語意。
+- `tests/test_narration_s33.py` 驗證三種前景／背景對比與 COLOR_T_SHAPE；`tests/test_web.py` 驗證背景狀態實際送至 Web。

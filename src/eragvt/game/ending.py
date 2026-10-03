@@ -301,7 +301,7 @@ def _start_score(ctx: Ctx) -> Generator[object, int, None]:
     """ENDING.ERB:11–69（$START_SCORE〜JUMP SUCCESSION）。"""
     st, out = ctx.state, ctx.out
     st.flag[999] = 0  # :12
-    # :13 RESETBGCOLOR：背景色は TextOutput で模型化していない（表示のみ）
+    out.reset_bgcolor()  # ENDING.ERB@ENDING:13 RESETBGCOLOR
     st.flag[64] = score(ctx)  # :14–15
     out.printl("クリアデータを記録しますか？")  # :16–18
     out.printl("[0]はい")

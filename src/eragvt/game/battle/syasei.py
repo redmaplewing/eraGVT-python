@@ -111,7 +111,18 @@ def _tentacle_syasei_check(ctx: Ctx) -> tuple[int, int, int, int]:
     f = st.flag
     out = ctx.out
     if enemy_type_check(st, "AKUOTI") == 0 and f[11] == 901 and f[15] >= f[14]:
-        raise NotImplementedError("雑魚敵（妖精）の敵絶頂（TENTACLE_SYASEI_CHECK:90–119）は未移植")
+        # TENTACLE_SYASEI.ERB@TENTACLE_SYASEI_CHECK:90–119。
+        out.set_bold(True)
+        out.printl("敵絶頂")
+        out.set_bold(False)
+        tentacle_access(ctx,"NAME")
+        out.printl("は耐え切れずに絶頂に達した！")
+        out.printl()
+        st.tflag[3] += 100
+        tentacle_sakusei(ctx,f[15],0,0,0,0)
+        f[15] -= f[14]
+        _clear_kyoukousoku(ctx)
+        return (0,0,0,0)
     if enemy_no_penis(ctx) and f[15] >= f[14]:  # :120–149 悪堕ちキャラ（ペニスなし）の敵絶頂
         out.set_bold(True)
         out.printl("敵絶頂")

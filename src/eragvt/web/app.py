@@ -58,10 +58,8 @@ def create_app(
     def screen_json() -> dict[str, Any]:
         s: GameSession = app.state.session
         st = s.state
-        # 背景色：SHOW_SHOP:26–35（FLAG:999 はデバッグ用の特別色）
-        bg = None
-        if st is not None:
-            bg = "#000028" if st.flag[999] else shop.BG_COLORS[st.time]
+        # 與 GETBGCOLOR 共用實際 Console 背景，不依目前 TIME 反推。
+        bg = s.out.bgcolor
         return {
             "phase": s.phase.value,
             "background": bg,

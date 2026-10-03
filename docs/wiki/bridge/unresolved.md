@@ -79,7 +79,5 @@
   `GameProc/Process.ScriptProc.cs`:408–420），名稱比對規則屬 .NET Framework（ColorConverter 的色名表），不在 reference 內。原作
   `地の文/MESSAGE_BATTLE.ERB`:364 寫 `HOTPINK`（KnownColor 名為 HotPink）；catalog 以「不分大小寫」處理（`narration.extract.DOTNET_NAMED_COLORS`，
   `# UNVERIFIED`），表只收本作用到的 HotPink・Fuchsia。已查：reference 全體 grep `FromName`（ArgumentBuilder.cs:366、Process.ScriptProc.cs:411／458、Creator.Method.cs:701、HtmlManager.cs:1011），皆只看 `A == 0`，比對規則不在 reference；各處的 transparent 判定用 OrdinalIgnoreCase 只是旁證。
-- [ ] `GETBGCOLOR`（S30，catalog 唯一剩下的不可執行原因）— 引擎回傳目前背景色（`GameData/Function/Creator.Method.cs@GetBGColorMethod`:584–599，
-  `Console.bgColor`）。背景色由 SHOP.ERB:26–35（時間帶）、BATTLE_COM.ERB:648–654、オープニング処理.ERB:9–27、PRISON.ERB:7、ENDING.ERB:13
-  的 SETBGCOLOR／RESETBGCOLOR 改變，Python 只在 Web 端由 TIME 推算（`web/app.py`:61–64），沒有「目前背景色」狀態。唯一使用者
-  `PRINT_RGBTEXT`←`COLOR_T_SHAPE`←雑魚戦 `TENTACLE_MOB_201`（未移植）。要支援需把上述 SETBGCOLOR 全部接到 TextOutput。
+- [x] `GETBGCOLOR`：S33 已建立 TextOutput 目前背景色，接通既有 SETBGCOLOR／RESETBGCOLOR 路徑及 Web。
+  依據 `reference/emuera-1824/Emuera/GameData/Function/Creator.Method.cs:584–599`；來源與驗證見 `../python/narration.md` 的 S33 節。

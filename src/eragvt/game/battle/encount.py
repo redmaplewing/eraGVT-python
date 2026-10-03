@@ -368,7 +368,15 @@ def mob_tentacle_encount(ctx: Ctx) -> int:
     st.savestr[13] = "MOB"
     c.exp[data.index_of("EXP", "戦闘経験")] += 1  # :432
     if config_check_event(st, 4) > 0:  # :436–447
-        raise NotImplementedError("雑魚戦システム（MOB_TENTACLE_BATTLE）は未移植")
+        from .mob import mob_tentacle_battle, message
+
+        result = mob_tentacle_battle(ctx)
+        if result > 0:
+            message(ctx,"MESSAGE_ENCOUNT_MOB_BATTLE")
+            if st.flag[999] == 1:
+                out.printl(f"ENCOUNT MOB:{result}")
+        st.result[0] = result
+        return result
     mob = data.str_defaults.get(2501, "")
     # MESSAGE_ENCOUNT_MOB（地の文/MESSAGE_BATTLE.ERB:5–11）
     out.printl(f"{mob} と遭遇した！")

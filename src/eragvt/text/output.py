@@ -309,6 +309,7 @@ class TextOutput:
         self._parts: list[Part] = []  # 本行已確定的單位
         self._pending: list[Segment] = []  # PRINT 累積、尚未判定按鈕的文字
         self._color: str | None = None
+        self._bgcolor = "#000000"  # emuera.config:25；EmueraConsole.Print.cs:18。
         self._bold = False
         self._italic = False
         self._align: Literal["left", "center", "right"] = "left"
@@ -322,6 +323,18 @@ class TextOutput:
 
     def reset_color(self) -> None:
         self._color = None
+
+    def set_bgcolor(self, color: str | tuple[int, int, int]) -> None:
+        """Console 背景色：reference/emuera-1824/Emuera/GameView/EmueraConsole.Print.cs:78–81。"""
+        self._bgcolor = _hex_color(color)
+
+    def reset_bgcolor(self) -> None:
+        """RESETBGCOLOR：Instraction.Child.cs:1070–1081；本作 Config 背景為黑色。"""
+        self._bgcolor = "#000000"
+
+    @property
+    def bgcolor(self) -> str:
+        return self._bgcolor
 
     @property
     def color(self) -> str | None:

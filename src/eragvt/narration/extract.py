@@ -535,10 +535,15 @@ class FuncParser:
             return N.ReturnF(no, v)
         if name in ("CALL", "TRYCALL", "CALLFORM", "TRYCALLFORM", "TRYCCALL", "TRYCCALLFORM", "CALLF", "CALLFORMF"):
             cs = self._call(no, name, arg)
-            from .hooks import KOJO_CALL_HOOKS
+            from .hooks import KOJO_CALL_HOOKS, MOB_CALL_HOOKS
+            from .runtime_support import is_narration_function
 
             if (
-                name == "CALL" and self.rel.startswith("口上/") and isinstance(cs.name, str) and cs.name in KOJO_CALL_HOOKS
+                name == "CALL" and isinstance(cs.name, str) and (
+                    (self.rel.startswith("口上/") and cs.name in KOJO_CALL_HOOKS)
+                    or (self.fd.name.startswith("MESSAGE_") and is_narration_function(self.rel,self.fd.name)
+                        and self.rel.startswith("ゲーム内_戦闘処理/触手データ/雑魚敵/") and cs.name in MOB_CALL_HOOKS)
+                )
                 and not getattr(self, "_hooking", False)
             ):
                 # S29：口上から呼ぶ「状態を変える非口上函式」のうち Python 移植のあるもの → hook（名前で一律）
@@ -826,9 +831,9 @@ class FuncParser:
         uv = self.ctx.user_vars.get(v.name)
         if uv is not None and getattr(uv, "narration_owned", False):
             return
-        from .runtime_support import NARRATION_DIRS, STATE_WRITABLE
+        from .runtime_support import is_narration_function, STATE_WRITABLE
 
-        if self.rel.startswith(NARRATION_DIRS):
+        if is_narration_function(self.rel, self.fd.name):
             # S29：口上／地の文の函式内の状態変数への代入は GameState に直接書く（runtime.Interp._state_set）
             if v.name in STATE_WRITABLE:
                 return

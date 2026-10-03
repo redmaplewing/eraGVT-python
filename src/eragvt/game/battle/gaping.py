@@ -583,8 +583,14 @@ def set_tentacle_size(ctx: Ctx, arg0: int, arg1: int, arg2: int, arg3: int, arg4
         l7 = rand(5) + 1
         r = (90, 120, 120, 90, l4, l5, l6, l7)
         st.set_result_x(*r)  # 8 値 RETURN（:257）
+    elif arg0 == 2:  # GAPING.ERB@SET_TENTACLE_SIZE:1137–1156；原作沒有 MOB 專用尺寸函式，走 CATCH。
+        local = isqrt((result + 20) * 30)
+        if config_check_maniac(st, 20) == 0:
+            local = isqrt(local * 25)
+        r = (120,80,80,120,1,1,1,1)
+        st.set_result_x(*r)
     else:
-        raise NotImplementedError("雑魚敵の触手サイズ（SET_TENTACLE_SIZE ARG:0 == 2）は未移植")
+        raise NotImplementedError(f"SET_TENTACLE_SIZE 的敵種類 {arg0} 尚未移植")
     sz[(0, 0)] = div(local * r[0], 520 + rand(161)) + 2  # :1159–1169
     num[(0, 0)] = r[4]
     sz[(0, 1)] = div(local * r[1], 90 + rand(21))

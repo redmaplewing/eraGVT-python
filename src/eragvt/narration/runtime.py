@@ -36,7 +36,7 @@ from .runtime_support import (
     CLOTH_INDEX,
     GLOBAL_ARRAY_ATTR,
     NAME_TABLE_OF,
-    NARRATION_DIRS,
+    NARRATION_DIRS, is_narration_function,
     STATE_SAVEDATA_ATTR,
     STATE_WRITABLE,
     TEMP_ARRAY_ATTR,
@@ -1076,7 +1076,7 @@ class Interp:
             args = self._args(fr, v)
             self._set_narr(name, tuple(args) if args else (0,), value)
             return
-        if getattr(self, "_state_write", False) or (fr.fd.file.startswith(NARRATION_DIRS) and name in STATE_WRITABLE):
+        if getattr(self, "_state_write", False) or (is_narration_function(fr.fd.file, fr.fd.name) and name in STATE_WRITABLE):
             self._state_set(v, value, fr)
             return
         raise NotSupported(f"{name} への代入")
@@ -1148,6 +1148,8 @@ class Interp:
             j.set_item(st.temp.tentacle_size, (args[0], args[1]), value)
         elif name == "TARGET" and not args:  # S28b：`MESSAGE_CITIZEN_TRAIN.ERB`:191／:419 `TARGET=ARG`
             j.set_attr(st, "target", value)
+        elif name == "INSERT" and not args:  # MESSAGE_MOB_801_COM2:411。
+            j.set_attr(st.temp, "insert", value)
         else:
             raise NotSupported(f"{name} への代入")
 

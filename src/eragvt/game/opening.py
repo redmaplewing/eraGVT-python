@@ -100,6 +100,7 @@ def event_first_gen(
     `state` は `GameState.new(data)`（endOpenning 後：キャラ 0 と 999）であること。
     戻り値：True＝BEGIN SHOP へ、False＝MODE_SELECT の [100]（:82–85 RESETDATA → BEGIN TITLE）。
     """
+    out.reset_bgcolor()  # オープニング処理.ERB@EVENTFIRST:27。
     version = GameIdentity.from_data(data).version
     # :29–44 LOADGLOBAL：成功 → CALL UPDATE、失敗（初回起動）→ 雑魚敵出現率フィルターを 100 で初期化
     if store.load():

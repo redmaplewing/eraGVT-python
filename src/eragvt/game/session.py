@@ -430,6 +430,11 @@ class GameSession:
         except NotImplementedError as exc:
             self._halt(exc)
             return
+        # オープニング処理.ERB@EVENTLOAD:8–12。
+        if self.state.flag[999] == 1:
+            self.out.set_bgcolor((0,0,40))
+        else:
+            self.out.reset_bgcolor()
         if self.state.flag[64] > 0:  # :13–14 JUMP ENDING（S27：クリアデータ → $START_SUCCESSION → 引き継ぎ〔未移植で停止〕）
             from .ending import ending_gen
 

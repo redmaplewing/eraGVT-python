@@ -185,8 +185,9 @@ def prison(ctx: Ctx) -> None:
     """`@PRISON`:3–34：幽閉中（CFLAG:0 == 1）のキャラごとに TARGET を移して PRISON_EVENT。TARGET は戻さない。"""
     st, out = ctx.state, ctx.out
     local = 0
-    if st.flag[999] == -998:  # :5–8（RESETBGCOLOR は背景色が時間帯で決まるので不要）
+    if st.flag[999] == -998:  # PRISON.ERB@PRISON:5–8。
         st.flag[999] = 0
+        out.reset_bgcolor()
     for i in range(st.charanum):  # :10 FOR LOCAL:999, 0, CHARANUM
         if i == GameState.MASTER:
             continue

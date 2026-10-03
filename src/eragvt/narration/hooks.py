@@ -381,6 +381,19 @@ KOJO_CALL_HOOKS = {
 }
 HOOK_CALLS.update(KOJO_CALL_HOOKS)
 
+# S33：雜魚專用 MESSAGE_* 只把這些 CALL 交回既有手翻函式。
+MOB_CALL_HOOKS = {
+    "LOSTVIRGIN": HOOK_CALLS["LOSTVIRGIN"],
+    "TENTACLE_SYASEI_UP": HOOK_CALLS["TENTACLE_SYASEI_UP"],
+    "TRANSFORM": KOJO_CALL_HOOKS["TRANSFORM"],
+    "CLOTH_BATTLE_DAMAGE": ("eragvt.game.battle.cloth", "cloth_battle_damage"),
+    "STATE_CHANGE_PKOUSOKU": ("eragvt.game.battle.sexcom", "state_change_pkousoku"),
+    **{name:("eragvt.game.battle.func",name.lower()) for name in
+       ("STATE_CHANGE_BETOBETO","STATE_CHANGE_HAIRAN","STATE_CHANGE_HATUJOU","STATE_SET_EXTRAEFFECT",
+        "STATE_CHANGE_KIZETU","STATE_CHANGE_KIZETU_DAMAGE")},
+}
+HOOK_CALLS.update(MOB_CALL_HOOKS)
+
 # hook の代入で書き込んでよい変数
 HOOK_WRITABLE ={"FLAG", "TFLAG", "TENTACLE_SIZE", "CFLAG", "TCVARN", "TALENT", "EXP", "TARGET"}
 

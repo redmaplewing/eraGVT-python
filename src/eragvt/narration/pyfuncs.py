@@ -89,7 +89,19 @@ def py_unlock_achievement(it, args: list) -> int:
     return 0
 
 
+def py_mob_901_getname(it, args: list) -> int:
+    """触手データ/雑魚敵/TENTACLE_MOB_901_天界（セラプー）.ERB@TENTACLE_MOB_901_GETNAME:9–13。"""
+    from ..game.config import MOB_NAMES
+
+    if it.st.tflag[17] in (3,5):
+        it.journal.set_item(it.st.tflag,17,-1)
+    it.st.results[0] = MOB_NAMES[901]
+    it._set_result([0])
+    return 0
+
+
 PY_FUNCS = {
+    "TENTACLE_MOB_901_GETNAME": py_mob_901_getname,
     "ADDRANDCHOOSE": py_addrandchoose,
     "CLEARRANDCHOOSE": py_clearrandchoose,
     "RANDCHOOSE_F": py_randchoose_f,

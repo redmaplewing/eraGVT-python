@@ -377,3 +377,8 @@ ERB 路徑相對 `source/earGVP/ERB/`。
   `tests/test_pastime_nanpa.py::test_nanpa_hook_table_matches_erb`），不會發生。
 - 備查（非偏離）：レイプ中 `CONFIG_CHECK_EVENT_F(5) == 1` 的 `ENCOUNT_CITIZEN(6001)` 是未移植系統 → 停止（既定 config 不發生）。
   照原作的怪處見 `docs/wiki/era/actions.md`「S28c2 補足」。
+
+## S33（雜魚戰）
+
+- 原作的重複函式、公式索引與省略參數照引擎規則保留，沒有自行修正；依據見 `../python/mob-battle.md`。
+- 無 catalog 時雜魚顯示明確停止，沿用既有「catalog 不可時停止」限制；Web 預設提供原文 catalog。

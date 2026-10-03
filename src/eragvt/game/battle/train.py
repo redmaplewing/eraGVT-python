@@ -668,9 +668,11 @@ def usercom(ctx: Ctx, value: int) -> Generator[None, int, None]:
         if st.flag[999] == 0:
             out.printl("DEBUG ON")
             st.flag[999] = 1
+            out.set_bgcolor("#000028")  # BATTLE_COM.ERB@USERCOM:648。
         elif st.flag[999] == 1:
             out.printl("DEBUG OFF")
             st.flag[999] = 0
+            out.reset_bgcolor()  # BATTLE_COM.ERB@USERCOM:654。
         return
     if value < 400:  # :656–663
         v[8] += 10

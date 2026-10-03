@@ -258,7 +258,8 @@ def show_shop_gen(state: GameState, data: GameData, out: TextOutput, narration: 
                 break
     state.flag[799] = 0  # :20
     lb(out)  # :23
-    # :26–35 背景色：Web 側が state.time / FLAG:999 から決める
+    # SHOP.ERB@SHOW_SHOP:26–35：Console 背景保持到下次 SET／RESETBGCOLOR。
+    out.set_bgcolor("#000028" if state.flag[999] else BG_COLORS[state.time])
     out.drawline()
     flashnews(state, data, out)  # :40
     out.drawline()

@@ -586,6 +586,10 @@ def tentacle_access(ctx: Ctx, key: str) -> int | str:
     "NAME" は名前を PRINTFORM して "" を返す、"GETNAME" は名前（RESULTS）を返す。
     """
     st = ctx.state
+    if enemy_type_check(st, "MOB") == 1:
+        from .mob import access
+
+        return access(ctx, key)
     if key in ("NAME", "GETNAME") and _tentacle_func_missing(st):
         # :200 `RESULTS'="【エラー："+SAVESTR:13+"_"+TOSTR(FLAG:11)+"に対するTENTACLE_ACCESS('"+ARGS+"')関数失敗】"` の後
         # TRYCALLFORM が不発なので RESULTS はそのまま（"NAME" は内部で "GETNAME" を呼ぶので 'GETNAME' の文になる）。
@@ -638,6 +642,12 @@ def tentacle_access(ctx: Ctx, key: str) -> int | str:
 def tentacle_palam_hosei(ctx: Ctx) -> tuple[int, ...]:
     """TENTACLE_ACCESS "PALAM_HOSEI"（Ｐ触手は TFLAG:23 が非 0 なら全て /4：TENTACLE_BOSS_6_Ｐ触手.ERB:125–129）。"""
     st = ctx.state
+    if enemy_type_check(st, "MOB") == 1:
+        from .mob import PALAM
+
+        r = PALAM[st.flag[11]]
+        st.set_result_x(*r)
+        return r
     b = boss_data(st)
     r = (tuple(div(v, 4) for v in b.palam_hosei)
          if not _is_lastboss_access(st) and st.flag[11] == 6 and st.tflag[23] else b.palam_hosei)
