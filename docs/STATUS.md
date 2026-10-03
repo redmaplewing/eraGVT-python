@@ -1,6 +1,6 @@
 # 現況（唯一真相，≤120 行）
 
-更新：2026-10-04（S31）
+更新：2026-10-04（S32 完成）
 
 ## 已完成（各階段細節見 git log 與 wiki）
 
@@ -29,38 +29,27 @@
 - **S29** 口上／地の文的狀態書き込み（catalog が非 LOCAL 代入を GameState へ直接書く＋ジャーナルで失敗回復；下節）。
 - **S30** catalog 剩餘的不可執行原因（ループ內 $ラベルへの GOTO・STRDATA・SETCOLORBYNAME・FINDCHARA・GETCOLOR・RANDCHOOSE 系；下節）。
 
-## S31：口上選單輸入
+## S32：HATUJOU_TO_HAIRAN
 
-- 使用者裁決：TURNEND／SHOP 口上遇到 INPUT 依原作等待玩家選擇；選完續行，不重放先前狀態與亂數。
-- 接通 `kojo_root_gen`／`call_kojo_gen`／`show_shop_gen`，巢狀口上共用輸入通道；輸入後的執行錯誤會停止。
-- 規格：`docs/sessions/S31-kojo-input.md`；細節與依據：`docs/wiki/python/narration.md` 的 S31 節。
-- 測試：`1846 passed, 1 warning`（新增 13 項）；`HATUJOU_TO_HAIRAN` 仍未實作。
-- 模擬：兩組各 seed 0–249、`--max-shop 200 --actions 101,102,103,104,105,106,107,108`，前景分批完成並核對無遺漏／重複。
+- `source_check._hatujou_to_hairan` 已手翻條件、10% 判定及旗標／RESULT 更新；顯示段落從原文抽取，接回戰鬥呼叫點。
+- 規格：`docs/sessions/S32-hatujou-to-hairan.md`；依據與抽取方式：`docs/wiki/python/narration.md` 的 S32 節。
+- 新增 22 項測試；完整 pytest：`1868 passed, 1 warning in 319.48s (0:05:19)`。
+- 前景分批模擬：兩組各 seed 0–249、`--max-shop 200 --actions 101,102,103,104,105,106,107,108`。
 
-| 開局 | SHOP 上限 | 回標題 | HATUJOU_TO_HAIRAN | 與 S30 比較 |
-|---|---:|---:|---:|---|
-| 預設 | 243 | 4 | 3 | 相同 |
-| 初期セット | 250 | 0 | 0 | 相同 |
+| 組別 | S31 上限／回標題／未實作停止 | S32 上限／回標題／未實作停止 |
+| --- | --- | --- |
+| 預設 | 243／4／3 | 246／4／0 |
+| 初期セット（tokusou） | 250／0／0 | 250／0／0 |
 
-- 兩組 catalog 執行失敗皆為 0；原 S30 的病嬌 5,399 次、豹變 31／74 次 INPUT 失敗解除。
-  實際觸發設定：病嬌預設 34 局；豹變預設 1 局、初期セット 2 局。未實作停止仍為 seed 52／124／240。
+- 原停止 seed 52／124／240 各成功觸發一次並達 200 SHOP；500 局 catalog 失敗為 0。
+- 本階段沒有新增 UNVERIFIED／DEVIATION；既有待裁決事項維持。
 
-## S29 內容（`docs/wiki/python/narration.md`「S29」）
+## 口上 catalog 現況
 
-- 口上／地の文の非 LOCAL 代入（盤點 1,064 處）を GameState へ直接書く・TCVAR は 0・TIMES・口上 CALL の名前 hook（`game.kojo_calls`）・
-  `runtime.StateJournal` で失敗時に完全回復（停止は Python 移植 hook CALL 後の失敗のみ）。覆蓋率 12,851 → 13,161。
-
-## S30 內容（`docs/wiki/python/narration.md`「S30」）
-
-- 實行中のループ（FOR／REPEAT／WHILE／DO）の本體內 $ラベルへの GOTO：同じ周回をラベルから續行（`Interp._exec_path`）；實行中でない FOR／REPEAT
-  の中へは unsupported。附帶修正：BREAK で FOR／REPEAT のカウンタ +步進（`BREAK_Instruction`:2054–2077）、DO…LOOP の執行器。
-- STRDATA、SETCOLORBYNAME（HotPink・Fuchsia）、FINDCHARA／FINDLASTCHARA・GETCOLOR、`narration.pyfuncs`（RANDCHOOSE 系・UNLOCK_ACHIEVEMENT）、
-  口上 hook CORRUPTTION_GET_THEME／NANORI_FINAL；ロストキャラの発見（`source_check._rescue_deadnum`）を catalog で實行。
-- 覆蓋率 13,161 → **13,383／13,384**。殘 1：`COLOR_T_SHAPE`（PRINT_RGBTEXT の GETBGCOLOR：背景色未模型化、呼び出し元は未移植の雑魚戦のみ）。
-- 模擬 `--actions 101〜108`（seed 0–249，`--max-shop 200`，4 並列分批）：預設 243 上限・4 タイトル復帰・3 HATUJOU（seed 52／124／240）；
-  初期セット 250 上限。新停止 0。ジャーナル回復 預設 31（1 局）・初期セット 74（2 局）；實行時失敗 KOJO_4_HITOKUTI_SHOP（31／74）・
-  KOJO_0_TURNEND_21（預設 34 局 5,399；S29 の程式碼でも同じ、INPUT）。STRDATA AEGI 23／102、ロスト發見の判定 1／4（候補なし）。
-  `渧泣`（GOTO ＭＡＸ１／２）は霊夢・魔理沙・早苗の口上からのみ → 模擬では未到達（測試で確認）。
+- **S31** TURNEND／SHOP 口上 INPUT 依原作等待選擇並續行，巢狀呼叫共用輸入通道；回標題時關閉舊流程。
+- S31 的 500 局 catalog 執行失敗皆為 0；實際設定：病嬌預設 34 局，豹變預設 1 局／初期セット 2 局。
+- 口上／地の文函式可執行 13,383／13,384；剩餘 `COLOR_T_SHAPE` 的 GETBGCOLOR（未移植的雜魚戰使用）。
+- S29 狀態寫入／回復、S30 指令補完、S31 選單等待、S32 文字片段詳見 `docs/wiki/python/narration.md`。
 
 ### 狀態畫面內仍會停止
 
@@ -100,7 +89,7 @@ S23 模擬（含 [反撃] 人工設定）皆無停止。登記但罕見：
 - 夜這い：TS キャラ的 `_ABLUP` 女体受容取得、`%CALLNAME:ARG%` 指向不存在角色（原作也報錯）。
 - 開局：HEROINE_PRESET 的 [30]（相関関係）、2 択畫面的 [300]（ゲームの説明）。狀態畫面內的停止見上節。設定項造成的停止見上表。
 - 戰鬥 PALAM 表示（FLAG:801 bit 5）、觸手服（ACTTENTACLESUIT・運動快感）、雜魚／クズ市民／事件戰／エンドレス、
-  ボスの返り血（SUPART_BLOOD）、デバッグ模式、`HATUJOU_TO_HAIRAN`（SUBEVENT_BATTLEE.ERB:513–585，S30 模擬 3 局）。
+  ボスの返り血（SUPART_BLOOD）、デバッグ模式。
 
 ## 已知問題
 

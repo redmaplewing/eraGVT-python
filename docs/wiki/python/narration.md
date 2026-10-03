@@ -152,6 +152,23 @@ RANDCHOOSE 系與 UNLOCK_ACHIEVEMENT：S30 接上（下節）。
 - 覆蓋率 12,851 → **13,161／13,384**（98.3%）。剩餘第一原因：KOJO_AEGI `$ＭＡＸ２` 199、STRDATA 17、SETCOLORBYNAME 2、
   RANDCHOOSE_NUM 2（ADDRANDCHOOSE）、FINDCHARA 1、GETCOLOR 1、GLOBAL 1（UNLOCK_ACHIEVEMENT）。
 
+## S32：遊戲函式中的原文顯示片段
+
+- `catalog._TEXT_FRAGMENTS` 明列 `MESSAGE_HATUJOU_TO_HAIRAN` 對應的原文片段：
+  `ERB/ゲーム内_戦闘処理/SUBEVENT_BATTLEE.ERB@HATUJOU_TO_HAIRAN:528–582`。
+  使用原有抽取器及執行器，保留條件文字、式中函式、字型、色彩與 PRINTW；原作檔案保持唯讀。
+- 原函式 :514–526 的資格及 10% 判定、:583 的位元 OR、:585 的 RETURN 1，由
+  `game.battle.source_check._hatujou_to_hairan` 手寫；文字片段只在判定成功時執行，先顯示再更新狀態。
+  原函式整體仍因遊戲狀態代入而不屬於 catalog 可執行範圍，不把遊戲規則交給 catalog。
+- 呼叫點：`ERB/ゲーム内_戦闘処理/BATTLE_COM_AFTER.ERB@SOURCE_CHECK:1147`；成功寫 RESULT:0=1，早退寫 0，
+  保留 RESULT 其他元素。後續不成立的 TRYCALLFORM 會沿用此值，見 `result.md`。
+- 引擎依據：`reference/emuera-1824/Emuera/GameProc/Function/Instraction.Child.cs:1997–2024`（RETURN）、
+  `reference/emuera-1824/Emuera/GameData/Variable/VariableEvaluator.cs:1732–1740`（僅寫指定 RESULT 元素）、
+  `reference/emuera-1824/Emuera/GameData/Expression/OperatorMethod.cs:623–635`（位元 OR）。
+  RAND 的範圍由 `reference/emuera-1824/Emuera/GameData/Variable/VariableToken.cs:1451–1463` 及
+  `reference/emuera-1824/Emuera/_Library/SFMT.cs:60–65` 確認，使用既有注入 RNG。
+- catalog 不可用時於狀態更新前停止。測試 `tests/test_hatujou_to_hairan.py` 的文字預期值由原文行號挑選並組合。
+
 ## S31：口上設定選單的等待與續行
 
 - 使用者於 2026-10-04 裁決 INPUT 依原作等待玩家選擇。

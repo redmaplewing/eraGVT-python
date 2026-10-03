@@ -22,6 +22,13 @@ from .runtime_support import NARRATION_DIRS, PY_FUNCTIONS, unsupported_reasons_s
 from .symbols import UserVar, load_erh
 
 
+# 只抽取已手翻函式中的顯示段落。遊戲觸發條件與狀態更新仍由遊戲模組負責。
+# 原文：ゲーム内_戦闘処理/SUBEVENT_BATTLEE.ERB@HATUJOU_TO_HAIRAN:528–582。
+_TEXT_FRAGMENTS = {
+    "MESSAGE_HATUJOU_TO_HAIRAN": ("HATUJOU_TO_HAIRAN", 528, 582),
+}
+
+
 def list_erb_files(root: Path, ext: str = ".ERB") -> list[Path]:
     def walk(d: Path) -> list[Path]:
         out: list[Path] = []
@@ -70,6 +77,11 @@ class Catalog:
                     elif w == "FUNCTIONS":
                         kind = "str"
                 self.index[name] = _Entry(rel, s, e, kind)
+        for alias, (original, _, _) in _TEXT_FRAGMENTS.items():
+            if original in self.index:
+                if alias in self.index:
+                    raise ValueError(f"文字片段名稱與原作函式衝突：{alias}")
+                self.index[alias] = self.index[original]
         erh = []
         for p in list_erb_files(erb_dir, ".ERH"):
             rel = p.relative_to(erb_dir).as_posix()
@@ -118,6 +130,10 @@ class Catalog:
         if e is None:
             return None
         lines = self.lines_of(e.rel)[e.start : e.end]
+        if up in _TEXT_FRAGMENTS:
+            _, first, last = _TEXT_FRAGMENTS[up]
+            # 保留原文行號；不把函式的資格判定、RAND、旗標代入或 RETURN 抽進文字片段。
+            lines = [(lines[0][0], f"@{up}")] + [(n, s) for n, s in lines if first <= n <= last]
         fd = parse_function(self.ctx, e.rel, lines)
         self._parsed[up] = fd
         return fd

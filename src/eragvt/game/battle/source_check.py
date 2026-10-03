@@ -17,6 +17,7 @@ from .func import state_change_kizetu
 from .cloth import cloth_battle_damage, cloth_battle_hosei, cloth_check, refresh_cloth_data
 from .core import (
     BETOBETO,
+    HAIRAN,
     HATUJOU,
     KIZETU,
     KOSHIKUDAKE,
@@ -188,8 +189,8 @@ def source_check(ctx: Ctx) -> Generator[None, int, None]:
             r = boss_reaction_ref(ctx, st.flag[11], 1)
         else:
             # S22：悪堕ちキャラ戦（FLAG:11 = 0：ACTION.ERB:38）は TENTACLE_BOSS_0_REACTION_REF が無く TRYCALLFORM 不発
-            # （Instraction.Child.cs:2310–2317）→ :1159 の RESULT は直前の CALL HATUJOU_TO_HAIRAN（:1147）の RETURN 0
-            # （SUBEVENT_BATTLEE.ERB:515–527。RETURN 1 の経路は未移植で停止）＝共用 RESULT:0。
+            # （Instraction.Child.cs:2310–2317）→ :1159 讀取前一個 CALL HATUJOU_TO_HAIRAN（:1147）的共用 RESULT:0。
+            # SUBEVENT_BATTLEE.ERB:515–527 早退為 0；S32 接通 :585 成功為 1。
             r = st.result[0]
         if r >= 0:
             st.tflag[17] = r
@@ -992,19 +993,28 @@ def _auto_untangle(ctx: Ctx) -> None:
 
 
 def _hatujou_to_hairan(ctx: Ctx) -> None:
-    """`SUBEVENT_BATTLEE.ERB@HATUJOU_TO_HAIRAN`:513–585（ケモミミ族のみ）。"""
+    """`ゲーム内_戦闘処理/SUBEVENT_BATTLEE.ERB@HATUJOU_TO_HAIRAN:513–585`。
+
+    規則手寫為 Python；:528–582 的顯示段落由 catalog 從原文抽取。
+    RETURN 寫入共用 RESULT:0：reference/emuera-1824/Emuera/GameProc/Function/Instraction.Child.cs:1997–2024；
+    其餘 RESULT 元素保留：reference/emuera-1824/Emuera/GameData/Variable/VariableEvaluator.cs:1732–1740。
+    """
     st = ctx.state
     c = tc(ctx)
     v = c.tcvarn
-    # :515–527 の RETURN 0 → RESULT:0 = 0（共用 RESULT。BATTLE_COM_AFTER.ERB:1159 の不発 TRYCALLFORM 後に読まれる：S22）
-    st.result[0] = 0
     if t(ctx, c, "ケモミミ族") == 0:
+        st.result[0] = 0
         return
-    if is_male(ctx.data, c) or t(ctx, c, "妊娠") > 0 or (v[12] & 2) or (v[12] & HATUJOU) == 0:
+    if is_male(ctx.data, c) or t(ctx, c, "妊娠") > 0 or (v[12] & HAIRAN) or (v[12] & HATUJOU) == 0:
+        st.result[0] = 0
         return
     if st.rng.rand(100) >= 10:
+        st.result[0] = 0
         return
-    raise NotImplementedError("発情による排卵（HATUJOU_TO_HAIRAN の地の文）は未移植")
+    if not ctx.narration.run_function(ctx, "MESSAGE_HATUJOU_TO_HAIRAN"):
+        raise NotImplementedError("HATUJOU_TO_HAIRAN 的原文顯示片段無法執行")
+    v[12] |= HAIRAN  # :583；DIM.ERH:130 的位元值為 2，保留其他狀態。
+    st.result[0] = 1  # :585
 
 
 def _state_turnend(ctx: Ctx) -> None:

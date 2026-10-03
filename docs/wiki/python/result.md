@@ -73,7 +73,8 @@ RESULT:0 は CALL の戻りで必ず書かれる（RETURN → SetResultX／RESUL
 口上・地の文以外の `TRYCALL`／`TRYCALLFORM`（TRYC 系は CATCH があるので除外）直後の RESULT 読みを全件確認：
 既存の対処（COMF100／COMF102／COMF103、TENTACLE_SAKUSEI）に加え、`BATTLE_COM_AFTER.ERB`:1151–1160（素股焦らしの次ターン指定）の
 悪堕ちキャラ戦（FLAG:11 = 0 → `TENTACLE_BOSS_0_REACTION_REF` 不在）を S22 で同期：直前の `CALL HATUJOU_TO_HAIRAN`（:1147）の
-`RETURN 0`（`SUBEVENT_BATTLEE.ERB`:515–527）を `st.result[0]` に書き、:1159 はそれを読む（以前は NotImplementedError）。
+早退 `RETURN 0`（`ゲーム内_戦闘処理/SUBEVENT_BATTLEE.ERB@HATUJOU_TO_HAIRAN:515–527`）寫入 `st.result[0]`，
+S32 補上成功路徑的 `RETURN 1`（同函式 :585）；:1159 沿用此共用值，RESULT 其他元素保持原值。
 他（`TENTACLE_ACCESS` の数値キー〔悪堕ちキャラ戦〕は既存の停止、COM_ABLE・TRAINING_HOSEI_CHILD・KYUSHUTU_* は関数が存在、
 GAPING:1131／:1138・CLOTH_WEAR:931／:1526・CHARA_MAKE:319 は未移植）。
 

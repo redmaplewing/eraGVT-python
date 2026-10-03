@@ -51,6 +51,8 @@ S29：口上／地の文の GameState 書き込み（変数別「S29 書き込�
 S30：ループ内 $ラベルへの GOTO の再開（ラベル別：KOJO_AEGI の ＭＡＸ１／ＭＡＸ２ 等）、STRDATA（函式別）、`narration.pyfuncs`
 （RANDCHOOSE 系・UNLOCK_ACHIEVEMENT）、口上の CORRUPTTION_GET_* hook、ロストキャラの発見（catalog 実行）の次数。
 
+S32：記錄 HATUJOU_TO_HAIRAN 的成功次數（原文 RETURN 1），確認既有停止 seed 通過實際觸發路徑。
+
 S25：戦闘中の [800] でステータス画面（5 ページ・EXPORT_CSV 含む）に入るようになった（ランダム方針のまま。SHOP [110] は押さない）。
 """
 
@@ -509,6 +511,9 @@ def install_event_counters() -> Counter:
             counts["S30 ロストキャラの発見（肉体回収）"] += 1
 
     sc._rescue_deadnum = rd
+    wrap_plain(sc, "_hatujou_to_hairan", lambda ctx, r: (
+        counts.update(["S32 HATUJOU_TO_HAIRAN 成功"]) if ctx.state.result[0] == 1 else None
+    ))
     return counts
 
 
