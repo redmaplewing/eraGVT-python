@@ -72,7 +72,7 @@ S28c1 起 101〜108 全部已翻（`action_main` 的最後 `NotImplementedError`
   `MESSAGE_PASTIME_NANPA`／`_SAKE_NANPA`／`_CHIKAN` 停止。街・遠出・運動・學校的結尾都呼叫 NANPA 判定，遠出・學校一定經過 CHIKAN。
 - **派發**（ACTION_PASTIME:29–132）：排程 RESULT 0 學校(0)、1 隨機（晝 RAND:4 含學校／夜 1+RAND:3）、2〜4 各類隨機、5〜8 街(R-5)、9〜16 遠出(R-9)、
   17〜20 運動(R-17)、其他無事。SCHEDULE 畫面的「街：アミューズメント施設」(5) 實際是ショッピングモール（順序不同：原作どおり）。
-  夜間排程到學校 → `FOR LOCAL,1,NUM_SCHEDULE_F(113)+1` 找非學校；全是學校時跑 NUM_SCHEDULE_F 次後仍 0 → 夜也上學（DEVIATION：次數極大時早送り）。
+  夜間排程到學校 → `FOR LOCAL,1,NUM_SCHEDULE_F(113)+1` 找非學校；全是學校時原作會跑 NUM_SCHEDULE_F 次（極大）後仍 0 → 夜也上學；依使用者裁決（2026-10-03）改照作者意圖：一巡找不到就隨機去處（DEVIATION）。
 - **原作どおりの怪處**：PASTIME_CHIKAN 收呼叫端自己的 ARG（遠出 -1／0〜7、學校 -1／0）→ ARG == 1（遠出文）只在排程水族館、ARG == 3（通學混雑・
   CFLAG:356）只在排程植物園；`DOT_AFTER` 是 `RETURN RESULT`（RESULT 不變，S28c1 也訂正了 `seisan._dot_after`）；FitnessClub 的 `#DIM EROEVENT = 0`
   靜態 → 初次後一直 1（之後健身房不會有ナンパ）；學校 `#DIM 改造制服` 靜態不歸 0、`目的地` 在學生 0 時沿用前值；Classwork_PE 的 LOCAL（ヒップ形容）

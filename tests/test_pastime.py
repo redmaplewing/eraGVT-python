@@ -228,15 +228,17 @@ def test_schedule_night_school_skips_to_next(ctx, dispatch):
 
 @pytest.mark.parametrize("items", [1, 2, 9])
 def test_schedule_night_all_school(ctx, dispatch, items):
-    """:36 `FOR LOCAL,1,NUM_SCHEDULE_F(113)+1`：全部通学なら NUM_SCHEDULE_F 回 RES_SCHEDULE して RESULT 0 → 夜でも学校(0)。
-    実行番号は最初の 1 回 + n 回進む（項目数で巡回：ACTIONsub_SCHEDULE.ERB:481–493）。"""
+    """:33–43（DEVIATION：使用者裁決 2026-10-03、作者意図の :34「全てダメなら行先ランダム」）：全部通学なら項目数ぶん
+    （実行番号一巡）探して RESULT = 1 → 夜のランダム :59–67 `SELECTCASE 1+RAND:3`（RAND:3 = 0 → 街、RAND:4 = 2）。
+    実行番号は最初の 1 回 + 一巡で、最初の 1 回ぶん進んだ位置（ACTIONsub_SCHEDULE.ERB:481–493）。"""
     st = ctx.state
     st.time = 1
     n = sum(100**k for k in range(items))
     st.target_chara.cflag[113] = n
+    st.rng = FixedRng([0, 2])
     run(pt.pastime(ctx))
-    assert dispatch == [("school", 0)]
-    assert st.target_chara.cflag[113] == ((1 + n) % items) * E18 + n
+    assert dispatch == [("machi", 2)]
+    assert st.target_chara.cflag[113] == (1 % items) * E18 + n
 
 
 def test_manual_menu_invalid_inputs(ctx, dispatch, data):

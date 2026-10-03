@@ -217,41 +217,23 @@ _FALLBACKS = {
 # --- @PASTIME（ACTION_PASTIME.ERB:3–153） --------------------------------------------------
 
 
-def num_schedule_f(c, arg: int) -> int:
-    """`ACTIONsub_SCHEDULE.ERB@NUM_SCHEDULE_F(ARG)`:498–500 = CFLAG:ARG % 10^18。"""
-    from .schedule import E18
-
-    return mod(c.cflag[arg], E18)
-
-
 def _schedule_night(c) -> int:
-    """ACTION_PASTIME.ERB:33–43：夜に通学（0）が出たら `FOR LOCAL,1,NUM_SCHEDULE_F(113)+1` で通学以外を探す（RESULT = 1 は
-    すぐ RES_SCHEDULE に上書きされる）。全部通学なら NUM_SCHEDULE_F 回（最大 ~10^16）回して最後の RESULT（0）。
+    """ACTION_PASTIME.ERB:33–43：夜に通学（0）が出たら `RESULT = 1` にして `FOR LOCAL,1,NUM_SCHEDULE_F(113)+1` で通学以外を探す。
 
-    RES_SCHEDULE は CFLAG:113 の実行番号（10^18 の位、0〜8）を巡回させるだけなので、同じ CFLAG 値に戻ったら残り回数を周期で割った
-    余りだけ回せば最終状態は同じ。
-    DEVIATION: 原作は項目が多い（NUM_SCHEDULE_F が ~10^16）と事実上止まらない（応答なし）。ここでは周期で早送りして同じ最終状態で進む
-    （deviations.md「S28c1」）。項目 1〜2 個なら回数は 1／101 回で原作も止まらない。"""
+    DEVIATION: 使用者裁決（2026-10-03）により作者の意図（:34「全てダメなら行先ランダムにする」）どおりにする。原作は
+    (1) ループ回数に項目数でなく CFLAG:113 の項目コード（NUM_SCHEDULE_F、項目 9 個で ~10^16）を使い、全部通学だと事実上止まらない、
+    (2) ループ内の CALL RES_SCHEDULE が RESULT を毎回 0 で上書きするので、回り切っても :34 の 1 が残らず夜でも学校(0)になる。
+    ここでは項目数ぶん（＝実行番号が一巡、ACTIONsub_SCHEDULE.ERB:469–487）だけ回し、通学以外が無ければ RESULT = 1（ランダム）。
+    通学以外が見つかる通常ケースは原作と同じ（最初の非通学で BREAK）。（deviations.md「S28c1」）"""
     from .schedule import res_schedule
 
-    n = num_schedule_f(c, 113)
-    seen: dict[int, int] = {}
-    i = 0
-    result = 0
-    while i < n:
-        key = c.cflag[113]
-        if key in seen:  # 周期（この間ずっと 0）
-            period = i - seen[key]
-            rest = (n - i) % period
-            for _ in range(rest):
-                result = res_schedule(c, 113)
-            return result
-        seen[key] = i
+    seen: set[int] = set()
+    while c.cflag[113] not in seen:  # 実行番号が一巡するまで
+        seen.add(c.cflag[113])
         result = res_schedule(c, 113)
-        i += 1
         if result != 0:
             return result
-    return result
+    return 1
 
 
 def pastime(ctx: Ctx) -> InputGen:

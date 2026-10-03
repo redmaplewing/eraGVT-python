@@ -354,9 +354,10 @@ ERB 路徑相對 `source/earGVP/ERB/`。
 
 ## S28c1（自由行動；待使用者裁決）
 
-- [ ] **夜間排程全為學校時的迴圈早送り**（`ACTION_PASTIME.ERB`:33–43）：`FOR LOCAL,1,NUM_SCHEDULE_F(113)+1` 的次數是 CFLAG:113 的項目編碼
-  （項目 9 個時約 10^16），原作事實上停住（無回應）。Python 利用 RES_SCHEDULE 的實行番號以項目數為週期，早送り到同一最終狀態後繼續（結果＝學校(0)）。
-  項目 1〜2 個時次數 1／101，與原作相同。（Python：`pastime._schedule_night`）
+- [x] **夜間排程全為學校 → 隨機去處**（`ACTION_PASTIME.ERB`:33–43；**已裁決 2026-10-03：照作者意圖**）：原作 :34 註解「全てダメなら行先ランダムにする」
+  並設 `RESULT = 1`，但 (1) 迴圈次數用了 CFLAG:113 的項目編碼（`NUM_SCHEDULE_F`，項目 9 個時約 10^16），全為學校時事實上停住；
+  (2) 迴圈內 `CALL RES_SCHEDULE` 每次把 RESULT 蓋回 0，跑完也是夜裡上學。只要有非學校項目，原作在第一個非學校項目就 BREAK（正常情況夜裡不會上學）。
+  Python 只跑項目數次（實行番號一巡），全為學校則 RESULT = 1 → 夜間隨機（:59–67）。（Python：`pastime._schedule_night`）
 - [ ] **catalog 不可時的狀態變化**：本文中心函式（`PASTIME_HOOK_LINES`）在 Null narration 時，Pool 的淫乱分岐水着（CFLAG:270）與授業
   （Classwork_CL／PE 的 EXP・処女・CFLAG:42）依本文亂數決定 → 停止（NotImplementedError）；其他以 `_FALLBACKS` 照 ERB 更新。Web 預設 catalog 可執行，
   不會發生。（Python：`pastime._FALLBACKS`）
