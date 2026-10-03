@@ -121,6 +121,24 @@ def kojo_root(ctx: Ctx, code: str, force_print: int = 0) -> int:
     return kojo_root_full(ctx, ctx.state.target_chara.cflag[6], code, force_print)
 
 
+def kojo_root_gen(ctx: Ctx, code: str, force_print: int = 0):
+    """KOJO_ROOT 的等待版本；抑制條件同原作 @KOJO_ROOT:17–43。"""
+    if _kojo_suppressed(ctx, code, force_print):
+        return 0
+    return (yield from ctx.narration.call_kojo_gen(ctx, ctx.state.target_chara.cflag[6], code))
+
+
+def _kojo_suppressed(ctx: Ctx, code: str, force_print: int) -> bool:
+    c = ctx.state.target_chara
+    suppressed = bool((c.tcvarn[12] & 1) and not force_print) or any(
+        c.base[base_no] > 0 and any(k in code for k in codes)
+        for base_no, codes in _KOJO_SHIELD_CODES
+    )
+    if suppressed:
+        ctx.state.flag[900] = 0
+    return suppressed
+
+
 def kojo_root_full(ctx: Ctx, c_no: int, code: str, force_print: int = 0) -> int:
     """`口上/口上システム関係/KOJO_ROOT.ERB@KOJO_ROOT(C_NO, CODE, FORCEPRINT)`:12–90。
 
@@ -129,15 +147,8 @@ def kojo_root_full(ctx: Ctx, c_no: int, code: str, force_print: int = 0) -> int:
     （STRFIND は部分一致なので "SEX_COM1" は "SEX_COM10"〜"SEX_COM19" にも一致する：原作どおり）。
     :46–90 の派發（口上色・FLAG:62・TRYCCALLFORM・RESETCOLOR・FLAG:900 = 0・戻り値）は `NarrationService.call_kojo`。
     """
-    st = ctx.state
-    c = st.target_chara
-    if (c.tcvarn[12] & 1) and not force_print:
-        st.flag[900] = 0
+    if _kojo_suppressed(ctx, code, force_print):
         return 0
-    for base_no, codes in _KOJO_SHIELD_CODES:
-        if c.base[base_no] > 0 and any(k in code for k in codes):
-            st.flag[900] = 0
-            return 0
     return ctx.narration.call_kojo(ctx, c_no, code)
 
 

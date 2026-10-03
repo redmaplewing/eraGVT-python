@@ -79,6 +79,7 @@ def create_app(
 
     @app.post("/restart")
     def restart() -> RedirectResponse:
+        app.state.session.close()
         app.state.session = new_session()
         return RedirectResponse("/", status_code=303)
 

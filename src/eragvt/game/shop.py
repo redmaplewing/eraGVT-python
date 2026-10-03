@@ -226,13 +226,23 @@ def event_shop_gen(state: GameState, data: GameData, out: TextOutput, narration:
     state.flag[799] = 0
     state.target = 1
     lb(out)
-    show_shop(state, data, out, narration)  # JUMP SHOW_SHOP（:155）
+    yield from show_shop_gen(state, data, out, narration)  # JUMP SHOW_SHOP（:155）
 
 
 # --- @SHOW_SHOP --------------------------------------------------------------
 
 
 def show_shop(state: GameState, data: GameData, out: TextOutput, narration: NarrationService) -> None:
+    """無輸入呼叫端的相容入口；互動路徑由 GameSession 驅動。"""
+    gen = show_shop_gen(state, data, out, narration)
+    try:
+        for _ in gen:
+            raise RuntimeError("@SHOW_SHOP 要求 INPUT，請由 GameSession 驅動")
+    finally:
+        gen.close()
+
+
+def show_shop_gen(state: GameState, data: GameData, out: TextOutput, narration: NarrationService):
     """`インターミッション画面/SHOP.ERB@SHOW_SHOP`:5–189。"""
     cf = lambda i, k: state.charas[i].cflag[k]  # noqa: E731
     ok_states = (CharaState.SAFE, CharaState.BEFORE_BIRTH, CharaState.CHILDCARE)
@@ -300,9 +310,9 @@ def show_shop(state: GameState, data: GameData, out: TextOutput, narration: Narr
     if cf(state.target, 0) == CharaState.SAFE and state.target != GameState.MASTER:
         # MESSAGE_HITOKUTI_SHOP（地の文/MESSAGE.ERB:13–16）→ TRYCALLFORM KOJO_ROOT(CFLAG:6, "HITOKUTI_SHOP")、
         # RETURN RESULT（口上が無ければ -1 → LIMIT(4-(-1),0,4) = 4 行）
-        from .action import Ctx, kojo_root
+        from .action import Ctx, kojo_root_gen
 
-        result = kojo_root(Ctx(state, data, out, narration), "HITOKUTI_SHOP")
+        result = yield from kojo_root_gen(Ctx(state, data, out, narration), "HITOKUTI_SHOP")
         for _ in range(limit(4 - result, 0, 4)):
             out.printl()
     else:

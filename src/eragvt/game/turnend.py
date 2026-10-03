@@ -32,6 +32,7 @@ from .action import (
     config_check_prison,
     config_check_screen,
     kojo_root,
+    kojo_root_gen,
 )
 from .chara_common import charatalent, level_status, talent
 from .era import div, isqrt, limit, mod, times
@@ -134,7 +135,7 @@ def event_turnend(ctx: Ctx) -> Generator[None, int, Step]:
         if i == GameState.MASTER:
             continue
         st.target = i
-        kojo_root(ctx, "TURNEND")  # 地の文/MESSAGE.ERB@MESSAGE_TURNEND:8–10
+        yield from kojo_root_gen(ctx, "TURNEND")  # 地の文/MESSAGE.ERB@MESSAGE_TURNEND:8–10
     # DEVIATION: 使用者裁決（2026-10-01）：脅迫クールダウン CFLAG:72 をターン（半日）ごとに 1 減らす。原作は
     # FORCE_クズ市民の脅迫.ERB:520／:632 で 8 を代入するだけで、全 ERB に減算が無い（:13 で永久に脅迫されなくなる）。
     # 減算位置は INTIMIDATION 判定（SHOP_TURNEND.ERB:90–101）の直前（deviations.md「使用者裁決 2026-10-01」）。

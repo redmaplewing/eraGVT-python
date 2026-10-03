@@ -5,6 +5,7 @@
   `CSV定数定義/CFLAG.ERH`:79–80）は `KOJO_{C_NO}_%CODE%_{SEIKAKU_CHECK_F(TARGET)}`、`OTHER_` を含む code は
   FLAG:62 = 1 で `SEIKAKU_CHECK_F(FLAG:111)`。見つからなければ RESETCOLOR・FLAG:900 = 0・RETURN -1。
   見つかれば実行後 RESETCOLOR・FLAG:900 = 0、RESULT == 999 ならそのまま、それ以外は出力行数。
+- `call_kojo_gen`（S31）：TURNEND／SHOP 的等待版本；沿用 `run_event_gen` 的輸入通道，巢狀口上同樣可等待。
 - `run_function`：地の文など任意の ERB 函式を実行（可執行なら True）。INPUTS を含む（呼び出し先も含む）函式は False。
 - `run_function_gen`（S14）：同上のジェネレータ版。INPUTS に達したら `yield` で入力を受け取り、出力・亂數・LOCAL を開始時に
   戻して入力列を足して最初から再実行する（同じ入力列なら同じ結果になる：亂數は注入 RNG のスナップショットで戻す）。
@@ -98,6 +99,7 @@ class CatalogNarrationService:
         self.data = data
         self.failures: list[str] = []  # 実行時に不可執行と判明したもの（診断用）
         self.journal = StateJournal()  # S29：catalog の GameState 書き込みの記録（入れ子の _Tx が共有）
+        self._event = threading.local()  # 同一等待執行緒內的巢狀口上共用輸入通道。
 
     @classmethod
     def from_csv_dir(cls, csv_dir: Path, data) -> Optional["CatalogNarrationService"]:
@@ -124,6 +126,7 @@ class CatalogNarrationService:
         py.update(window_py_functions(WindowManager(), ctx.out))
         py.update(PY_FUNCS)  # S30：RANDCHOOSE 系・UNLOCK_ACHIEVEMENT（narration.pyfuncs）
         env = Env(ctx.state, ctx.data, ctx.out, py, hooks or {}, ctx, inputs, journal=self.journal)
+        env.input_fn = getattr(self._event, "input_fn", None)
         return Interp(self.catalog, env)
 
     def _run(self, ctx, fn: Callable[[Interp], Any], what: str, hooks: Optional[dict] = None):
@@ -134,6 +137,8 @@ class CatalogNarrationService:
             tx.commit()
             return True, r
         except (NotSupported, ErbRuntimeError) as e:
+            if getattr(self._event, "wait_count", 0):
+                raise NotImplementedError(f"{what}：輸入後無法繼續執行（{e}）") from e
             if not tx.can_rollback():
                 # Python 移植の hook（記録できない状態変化）の後に失敗したものは戻せない
                 raise NotImplementedError(f"{what}：状態変化の後で実行できなくなりました（{e}）") from e
@@ -147,6 +152,13 @@ class CatalogNarrationService:
         return self.catalog.unsupported_reason(name) is None
 
     # --- KOJO_ROOT:46–90 ---
+    def call_kojo_gen(self, ctx, c_no: int, code: str):
+        """保留 KOJO_ROOT 派發與回傳值，INPUT 直接等待，不重放選單或狀態。
+
+        reference/emuera-1824/Emuera/GameProc/Function/Instraction.Child.cs:616–640。
+        """
+        return (yield from self._run_waiting(lambda: self.call_kojo(ctx, c_no, code), f"KOJO_{c_no}_{code}"))
+
     def call_kojo(self, ctx, c_no: int, code: str) -> int:
         from ..game.chara_common import seikaku_check
 
@@ -205,28 +217,37 @@ class CatalogNarrationService:
         hook の Python 移植（AFTER_PILL 等）が yield した値はそのまま。送られた値が入力。"""
         if not self.catalog.exists(name) or self.catalog.unsupported_reason(name) is not None:
             return False
+
+        def run():
+            self._interp(ctx).call(name, list(args or []))
+            return True
+
+        return (yield from self._run_waiting(run, name))
+
+    def _run_waiting(self, run: Callable[[], Any], name: str):
+        """共用事件等待通道；巢狀 KOJO_ROOT 也從同一通道取得輸入。"""
         to_main: queue.Queue = queue.Queue()
         to_worker: queue.Queue = queue.Queue()
 
         def input_fn(y):
+            self._event.wait_count += 1
             to_main.put(("yield", y))
             kind, value = to_worker.get()
             if kind == "abort":
                 raise _Abort()
             return value
 
-        it = self._interp(ctx)
-        it.env.input_fn = input_fn
-
         def work() -> None:
+            self._event.input_fn = input_fn
+            self._event.wait_count = 0
             try:
-                it.call(name, list(args or []))
+                result = run()
             except _Abort:
                 return
             except BaseException as e:  # noqa: BLE001 主側で投げ直す
                 to_main.put(("error", e))
                 return
-            to_main.put(("done", None))
+            to_main.put(("done", result))
 
         old_size = threading.stack_size()
         threading.stack_size(_EVENT_STACK)
@@ -242,7 +263,7 @@ class CatalogNarrationService:
                     value = yield v
                     to_worker.put(("value", value))
                 elif kind == "done":
-                    return True
+                    return v
                 else:
                     if isinstance(v, (NotSupported, ErbRuntimeError)):
                         raise NotImplementedError(f"{name}：実行中に catalog で実行できなくなりました（{v}）") from v

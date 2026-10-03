@@ -6,6 +6,7 @@
 `run_function` 執行地の文等 ERB 函式（可執行時 True；否則呼叫端輸出佔位）。
 `run_function_gen` 是其 generator 版（S14）：函式內有 INPUTS 時以 `yield` 取得輸入（`value = yield`），回傳值同上。
 `run_event_gen`（S28c2）：事件本體（INPUT・hook 狀態變化・會等輸入的 Python 移植混在一起）用；真的中斷等待輸入，不重新執行。
+`call_kojo_gen`（S31）：口上派發的等待版本，保留派發回傳值並允許巢狀口上的 INPUT。
 實作：`eragvt.narration.service.CatalogNarrationService`（原作 ERB 抽取）、`NullNarrationService`（無 catalog）。
 """
 
@@ -15,6 +16,10 @@ from typing import Any, Generator, Optional, Protocol
 
 
 class NarrationService(Protocol):
+    def call_kojo_gen(self, ctx: Any, c_no: int, code: str) -> Generator[Any, Any, int]:
+        """口上派發的等待版本：選項輸入後從暫停位置續行。"""
+        ...
+
     def call_kojo(self, ctx: Any, c_no: int, code: str) -> int:
         """KOJO_ROOT.ERB:46–90。回傳 -1 = 找不到；999 = 口上的特殊回傳值；其他 = 輸出行數。"""
         ...
@@ -36,6 +41,10 @@ class NarrationService(Protocol):
 
 class NullNarrationService:
     """尚無 catalog 時的預設：永遠沒有口上（KOJO_ROOT.ERB:46–90 的「見つからない」路徑）。"""
+
+    def call_kojo_gen(self, ctx: Any, c_no: int, code: str) -> Generator[Any, Any, int]:
+        return self.call_kojo(ctx, c_no, code)
+        yield  # pragma: no cover
 
     def call_kojo(self, ctx: Any, c_no: int, code: str) -> int:
         st = ctx.state

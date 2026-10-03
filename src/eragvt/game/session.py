@@ -112,6 +112,12 @@ class GameSession:
 
     # --- タイトル（SystemProc@beginTitle:133–188、@endOpenning:197–231）----------
 
+    def close(self) -> None:
+        """放棄目前輸入流程，關閉等待執行緒及其狀態交易區間。"""
+        if self._turn is not None:
+            self._turn.close()
+            self._turn = None
+
     def begin_title(self) -> None:
         gb = self.data.game_base
         out = self.out
@@ -181,7 +187,11 @@ class GameSession:
 
     def _show_shop(self) -> None:
         assert self.state is not None
-        shop.show_shop(self.state, self.data, self.out, self.narration)
+        self._run_gen(
+            shop.show_shop_gen(self.state, self.data, self.out, self.narration), self._after_show_shop
+        )
+
+    def _after_show_shop(self) -> None:
         self.phase = Phase.SHOP
 
     def _shop_input(self, value: int) -> None:

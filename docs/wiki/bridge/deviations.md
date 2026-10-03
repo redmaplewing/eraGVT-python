@@ -91,12 +91,14 @@ ERB 路徑相對 `source/earGVP/ERB/`。
 - [ ] **口上 catalog 的實行時失敗**（S07 新增；S29 改寫）：執行中才發現的子集外（動態 CALLFORM 的呼叫先不可執行、generator 以外遇到 INPUT）
   或引擎會報錯停止的狀況（除以 0、範圍外參照），catalog 會回復輸出・亂數・LOCAL・RESULT(S)，S29 起連 **GameState 的書き込み**（ジャーナル
   `runtime.StateJournal`，含 KOJO_ROOT 的 FLAG:62／900）也完整回復，口上當「找不到」、地の文印佔位。原作會報錯停止或照常執行。
-  無法回復而停止（NotImplementedError）的只剩：Python 移植的 hook CALL（`HOOK_CALLS`：SET_TENTACLE_SIZE_BY_MESSAGE、NINSIN_HANTEI、
+  無法回復而停止（NotImplementedError）的情況包括：Python 移植的 hook CALL（`HOOK_CALLS`：SET_TENTACLE_SIZE_BY_MESSAGE、NINSIN_HANTEI、
   LEVELSTATUS…）執行後才失敗者。（Python：`eragvt.narration.service._run`）
   S14：含 INPUTS 的函式以「重放」執行（`run_function_gen`），S29 起 INPUTS 前的 GameState 書き込み／KOJO_ROOT 也可回復後重放，只有 hook CALL 之後才停止。
   S29 模擬（`--actions 101〜108`）實際觀察到的失敗：`KOJO_4_HITOKUTI_SHOP` 經動態呼叫到 INPUT（原作會等玩家輸入；本作當找不到、狀態回復）、
   `AEGI` 的 STRDATA（`KOJO_0_SEX_COM0_16` 等經由喘ぎ声；S30 解除）。S30 模擬另觀察到 `KOJO_0_TURNEND_21`（ヤンデレ）經
-  `YANDERE_FIRST_SETTING` 到 INPUT（預設 34 局 5,399 次；S29 的程式碼同 seed 也會發生，非 S30 新增），處理同 KOJO_4_HITOKUTI_SHOP（待裁決）。
+  `YANDERE_FIRST_SETTING` 到 INPUT（預設 34 局 5,399 次；S29 的程式碼同 seed 也會發生，非 S30 新增）。
+  **S31 裁決（2026-10-04）**：TURNEND／SHOP 口上遇到 INPUT 依原作顯示選項並等待，選完續行，不再回復為「找不到」。
+  輸入後才發現不可執行內容時停止；其他同步呼叫的失敗回復仍待裁決。詳見 narration wiki 的 S31 節。
 - [ ] **口上 catalog 的顯示簡化**（S07 新增，只影響顯示）：`SETFONT`（字型名）不反映（`FONTITALIC` 斜體 S20 起反映：`TextOutput.set_italic`）；`CLEARLINE` 只刪已完成的行；
   COUNT 放在口上專用的暫存（`state.temp.narr`），與 Python 移植部分不共用（原作是全域變數；Python 未模型化 COUNT）。RESULT（S21）・RESULTS（S22）
   已改為共用（`GameState.result`／`results`，`docs/wiki/python/result.md`）；Python 移植部分只同步寫 RESULT:1／RESULTS:1 以後的來源與「之後有人讀

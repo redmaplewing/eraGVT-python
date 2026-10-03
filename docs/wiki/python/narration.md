@@ -52,7 +52,7 @@ S14：`Label(name)`／`Goto(name)`、`Input`（INPUTS）、`DrawLine(form)`（DR
   （`windowlib.py`，`WINDOW_DISPLAY_EX` 的 REF 配列引數在執行時 unsupported）。
 - GOTO（S14）：只支援定數ラベル、且 `$ラベル` 在函式本體最上層（S28c2 起也支援 IF／SELECTCASE 內、S30 起ループ內，見下）。FOR 等在引擎是線形跳躍、
   沒有堆疊（`Instraction.Child.cs@GOTO_Instruction`:2366–2406），所以「從最上層ラベル的下一行重新執行本體」等價。
-- INPUTS（S14，無既定值者）：只有 generator 呼叫端（`run_function_gen`，以 `yield from` 呼叫）可執行；`run_function`／口上派發遇到
+- INPUTS（S14，無既定值者）：只有 generator 呼叫端（`run_function_gen`，以 `yield from` 呼叫）可執行；`run_function`／同步口上派發遇到
   （含靜態呼叫先，`Catalog.needs_input`）視為不可執行。實作是**重放**：到達尚無輸入的 INPUTS 時中斷、`yield` 取得輸入、把輸出・亂數・
   LOCAL 回到開始時，再以累積的輸入列從頭執行（同輸入列 → 同結果）。中斷前若已有狀態變化（hook、KOJO_ROOT）則無法重放 → 停止。
   輸入值 = `str(Web 的整數)`（deviations「INPUTS 只能輸入整數」）。
@@ -151,6 +151,23 @@ RANDCHOOSE 系與 UNLOCK_ACHIEVEMENT：S30 接上（下節）。
   實數只接受「數字[.數字]」且有效數字 ≤ 15。
 - 覆蓋率 12,851 → **13,161／13,384**（98.3%）。剩餘第一原因：KOJO_AEGI `$ＭＡＸ２` 199、STRDATA 17、SETCOLORBYNAME 2、
   RANDCHOOSE_NUM 2（ADDRANDCHOOSE）、FINDCHARA 1、GETCOLOR 1、GLOBAL 1（UNLOCK_ACHIEVEMENT）。
+
+## S31：口上設定選單的等待與續行
+
+- 使用者於 2026-10-04 裁決 INPUT 依原作等待玩家選擇。
+- `action.kojo_root_gen` → `CatalogNarrationService.call_kojo_gen` 保留原有派發、顏色、旗標與回傳值規則。
+  `call_kojo_gen` 與 `run_event_gen` 共用 `_run_waiting`：交替執行主流程與等待執行緒，不重放選項前的指令。
+  同一執行緒中的巢狀 KOJO_ROOT 共用輸入通道；沒有 catalog 時仍走原有「找不到」路徑。
+- 呼叫端：`ERB/インターミッション画面/SHOP_TURNEND.ERB@EVENTTURNEND:79–85` 的逐人口上，
+  以及 `ERB/インターミッション画面/SHOP.ERB@SHOW_SHOP:113–122`。`shop.show_shop_gen` 未完成時，
+  session 保持 `Phase.TURN` 接收選單輸入，完成後才切回 `Phase.SHOP`。
+  Web「回標題」先關閉舊 session 的等待流程，避免留下等待執行緒及共用 catalog 的交易區間。
+- 原作設定：`ERB/口上/女性汎用口上/KOJO_0_21_ヤンデレ.ERB@YANDERE_FIRST_SETTING:31–57` 選擇對象；
+  `ERB/口上/KOJO_4_汎用豹変.ERB@KOJO_4_FIRST:146–260` 選擇性格、場合及確認。
+- 引擎依據：`reference/emuera-1824/Emuera/GameProc/Function/Instraction.Child.cs:616–640` 要求整數輸入並等待；
+  `reference/emuera-1824/Emuera/GameProc/Process.cs:249–252` 將輸入寫入 RESULT。
+- 輸入後若發現不可執行的內容，停止並報告，不撤回已顯示的選單或玩家已完成的選擇。
+  其他同步口上的失敗回復機制仍見 deviations；本次未全面改動。
 
 ## S30：剩餘的不可執行原因
 

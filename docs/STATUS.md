@@ -1,6 +1,6 @@
 # 現況（唯一真相，≤120 行）
 
-更新：2026-10-03（S30）
+更新：2026-10-04（S31）
 
 ## 已完成（各階段細節見 git log 與 wiki）
 
@@ -29,17 +29,21 @@
 - **S29** 口上／地の文的狀態書き込み（catalog が非 LOCAL 代入を GameState へ直接書く＋ジャーナルで失敗回復；下節）。
 - **S30** catalog 剩餘的不可執行原因（ループ內 $ラベルへの GOTO・STRDATA・SETCOLORBYNAME・FINDCHARA・GETCOLOR・RANDCHOOSE 系；下節）。
 
-## S28a〜S28c2 內容（`docs/wiki/era/actions.md`「S28a／S28b／S28c1／S28c2 補足」）
+## S31：口上選單輸入
 
-- S28a：`action.guard`／`support`、`eragvt.game.gather`（情報収集 4 種＋ACTION_TRANSFORMATION_SELECT）、`eragvt.game.schedule`（CFLAG:110〜113）、
-  SENGIUP Lv5、SHOP_SHOW_SITUATION_LIST:126、`Step.FALLTHROUGH`、`Ctx.globals`。DEVIATION D4（:142 SQRT 負→0）。
-- S28b：`seisan.seisan`（選單・CFLAG:111 スケジュール・週末ライブ）、`calc_seisan`（係数表・LOSEBASE・共用 RESULT:0〜1）、9 活動
-  （アルバイト 4 種〜ライブ公演）、AFTER_PILL／NINSIN_HANTEI、CFLAG:282／281／283／285／400／825・SAVESTR:21〜26（FLASHNEWS の AV／写真集）・FLAG:853。
-  catalog：VARSIZE（ERH CONST）・`__INT_MAX__`・hook（`SEISAN_HOOK_LINES`：FLAG:900／TARGET／EXP）・REF 引数の読み出し → 地の文 58 函式全部可執行。
-- S28c1：`pastime.pastime`（自由行動：選單・CFLAG:113 排程・街／遠出／運動／學校・告白・悪堕ち遭遇・淫気応急）、本文 25 函式は catalog
-  （`PASTIME_HOOK_LINES` 41 行）。S28c2：ナンパ・酒ナンパ・痴漢の本編 11 関数を catalog で原文實行（INPUT、IF／SELECTCASE 内ラベルへの GOTO、
-  `run_event_gen`、`NANPA_HOOK_LINES` 72 行）。`docs/wiki/python/narration.md`「S28c2 追加」。
-- 測試共 1833 個（S30：`tests/test_narration_s30.py` 27）。
+- 使用者裁決：TURNEND／SHOP 口上遇到 INPUT 依原作等待玩家選擇；選完續行，不重放先前狀態與亂數。
+- 接通 `kojo_root_gen`／`call_kojo_gen`／`show_shop_gen`，巢狀口上共用輸入通道；輸入後的執行錯誤會停止。
+- 規格：`docs/sessions/S31-kojo-input.md`；細節與依據：`docs/wiki/python/narration.md` 的 S31 節。
+- 測試：`1846 passed, 1 warning`（新增 13 項）；`HATUJOU_TO_HAIRAN` 仍未實作。
+- 模擬：兩組各 seed 0–249、`--max-shop 200 --actions 101,102,103,104,105,106,107,108`，前景分批完成並核對無遺漏／重複。
+
+| 開局 | SHOP 上限 | 回標題 | HATUJOU_TO_HAIRAN | 與 S30 比較 |
+|---|---:|---:|---:|---|
+| 預設 | 243 | 4 | 3 | 相同 |
+| 初期セット | 250 | 0 | 0 | 相同 |
+
+- 兩組 catalog 執行失敗皆為 0；原 S30 的病嬌 5,399 次、豹變 31／74 次 INPUT 失敗解除。
+  實際觸發設定：病嬌預設 34 局；豹變預設 1 局、初期セット 2 局。未實作停止仍為 seed 52／124／240。
 
 ## S29 內容（`docs/wiki/python/narration.md`「S29」）
 
@@ -57,17 +61,6 @@
   初期セット 250 上限。新停止 0。ジャーナル回復 預設 31（1 局）・初期セット 74（2 局）；實行時失敗 KOJO_4_HITOKUTI_SHOP（31／74）・
   KOJO_0_TURNEND_21（預設 34 局 5,399；S29 の程式碼でも同じ、INPUT）。STRDATA AEGI 23／102、ロスト發見の判定 1／4（候補なし）。
   `渧泣`（GOTO ＭＡＸ１／２）は霊夢・魔理沙・早苗の口上からのみ → 模擬では未到達（測試で確認）。
-
-### 模擬（seed 0–249，`--max-shop 200`，4 並列分批）
-
-- 基準（`--actions` 既定 101–103）：預設 249 上限＋1 HATUJOU、敗北後 192.92／GO 後 187.51 ＝ S27／S28a と同一。
-- S28a `--actions 101,102,103,105,106,107`：預設 247 上限・2 HATUJOU・1 タイトル復帰；初期セット 250 上限。
-- S28b `--actions 101〜107`：預設 249 上限・1 HATUJOU；初期セット 248 上限・2 タイトル復帰。特別活動はレベル 0〜1 のみ（AV・枕営業・ライブ 0）。
-- `--actions 104 --seisan-unlock`（人工、預設 100 局）：AV 536・公衆便所 534・援助交際 566・枕営業 539・ライブ 106；停止は既存の HATUJOU 1 のみ。
-- S28c2 `--actions 101〜108`：預設 247 上限・3 タイトル復帰；初期セット 249 上限・1 タイトル復帰。停止 0、例外 0（S28c1 の本編停止 154／108 が解消）。
-  次數（預設／初期セット）：ナンパ本編 189／139（處女喪失 13／19；DATE 69／66、TAKEOUT 29／27、RAPE 6／2）、酒ナンパ本編 26／3
-  （DATE 9／2、TAKEOUT 0／2、RAPE 1／0、泥酔 RAPE 3／0）、痴漢本編 30／10（お持ち帰り 5／4、處女喪失 1／0）、変態プレイ 6／1、
-  ナンパ判定 →1 216／154、痴漢乘車 515／384。クズ市民（ENCOUNT_CITIZEN）0（既定 config）。`--actions 101〜107` 再跑 ＝ S28b と同一。
 
 ### 狀態畫面內仍會停止
 
@@ -90,7 +83,7 @@ P4 父親 CFLAG:9 指向不存在的ボス／ラスボス／モブ；HEROINE_PRE
 - 已裁決（2026-10-02）：名乗り改竄的 RESULTS:2 殘值照原作（S22 實作）；開局デフォルト悪堕ち的輸出丟棄維持現況。
 - 已裁決（2026-10-02）：PALAM_HOSEI 殘值照原作、防衛力負數 D1〜D4（S21 實作）。已裁決（2026-10-01）：S20 的 DEVIATION 6 項＋斜體。
 - 已裁決（2026-09-30）：拡張度初期值照原作；S13 苗床出産的 static LOSEDEF 等怪處照原作。
-- 口上 catalog：口上內動態呼叫到的 INPUT（`KOJO_4_HITOKUTI_SHOP`・`KOJO_0_TURNEND_21`）待裁決；GETBGCOLOR（背景色の模型化）。
+- 口上 catalog：TURNEND／SHOP 的動態 INPUT 已裁決並接通（S31）；GETBGCOLOR（背景色狀態）仍未實作。
 - deviations.md 需裁決：口上 catalog 實行時失敗的回復（S29 改寫：狀態也回復）、S08 以後新增項、S28c1 的 1 項（Null 時停止；夜間排程已裁決＝隨機）、S28c2 的 1 項（Null 時停止）。
 
 ## 仍會停止的分岐（`NotImplementedError` → Web 停止）
