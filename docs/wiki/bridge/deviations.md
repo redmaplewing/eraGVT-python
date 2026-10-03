@@ -28,6 +28,7 @@ ERB 路徑相對 `source/earGVP/ERB/`。
   `state.savefile.GlobalStore`、`saves/global.json`；`docs/wiki/era/flow.md` §10）。仍不做的是成就／紀錄類：（原作：下列各處；Python：見各行）
   キャラメイク畫面的 [170]／[180] 共通設定存讀（GLOBAL:5〜9・20〜23、GLOBALS:15〜17，UI 未移植 → 永遠是 0／空）也尚未移植。
   S05 起戰鬥中的 `UNLOCK_ACHIEVEMENT`（タクティカルオーダー、絶体絶命ヒロイン等）與 `GET_STATE_ABLUP` 同樣不執行（`eragvt.game.battle.core.unlock_achievement`）。
+  S30 起地の文 catalog 內的 `CALL UNLOCK_ACHIEVEMENT`（MESSAGE_BATTLE.ERB:355／368 等）也同樣什麼都不做、RESULT = 0（`eragvt.narration.pyfuncs`）。
   S04 起同理不執行：`SHOP_TURNEND.ERB@UPDATE_STATUS_RECORD`:263–349（歷代最高紀錄 GLOBAL:103–131／GLOBALS、SAVEGLOBAL）與 `SHOP_TROPHY.ERB@GET_STATE_TROPHY`:398–441→`UNLOCK_ACHIEVEMENT`（成就達成訊息不會顯示）。（Python：`eragvt.game.turnend.recalc_partymember`、`eragvt.game.action.get_state_trophy`）
   S27 起同理不執行：`SCORE.ERB`:695–698／:740–747 的 GLOBAL:110（最高總合評價）・GLOBAL:100〜102（各模式クリア回數）與 SAVEGLOBAL、
   實績 211〜213・259〜261・265・270（`BATTLE_COM_AFTER.ERB`:185／:283–304、SCORE:709／:722／:736）——判定沒有其他副作用、不影響畫面；
@@ -79,13 +80,13 @@ ERB 路徑相對 `source/earGVP/ERB/`。
 - [x] ~~**開局身體資料未生成對戰鬥的影響**~~（S09：**不是偏離**，移到下方「原作行為」）。
 - [x] ~~**口上的狀態副作用**~~（S07 更新；**S29 解除**）：口上／地の文函式內對狀態變數的代入（CFLAG・TALENT・BASE・CSTR・CDFLAG・NAME…
   盤點 1,064 處）改為直接寫 `GameState`（`narration.runtime.Interp._state_set`，`docs/wiki/python/narration.md`「S29」），KOJO_ROOT 照原作輸出並改變狀態。
-  口上 CALL 的 LEVELSTATUS／TRANSFORM／PERFORM_CHEERS_HATE 接 Python 移植（`eragvt.game.kojo_calls`）。仍「找不到」的口上只剩其他原因
-  （KOJO_AEGI `$ＭＡＸ２` 的 GOTO、STRDATA 等，見覆蓋率報告）。
+  口上 CALL 的 LEVELSTATUS／TRANSFORM／PERFORM_CHEERS_HATE 接 Python 移植（`eragvt.game.kojo_calls`）。S30 起靜態不可執行的口上為 0
+  （KOJO_AEGI 的 GOTO、STRDATA 等已支援；剩 1 個地の文 COLOR_T_SHAPE，見覆蓋率報告）。
 
 ## 只影響顯示
 
 - [ ] **口上**（S07 更新）：SHOP 一口メッセージ・行動・戰鬥中的口上改由 catalog 輸出（`eragvt.narration`）。仍未輸出的：
-  unsupported 的口上（S29 後只剩 GOTO $ＭＡＸ２・STRDATA 等，見覆蓋率報告）、開局 `MESSAGE_FIRST`（`opening.event_first` 沒有輸出／narration 參數，
+  unsupported 的口上（S30 起 0；實行時失敗者見下項）、開局 `MESSAGE_FIRST`（`opening.event_first` 沒有輸出／narration 參數，
   維持 FLAG:62＝0・FLAG:900＝0 的「找不到」處理）。無 `ERB/` 目錄時回落 `NullNarrationService`。
 - [ ] **口上 catalog 的實行時失敗**（S07 新增；S29 改寫）：執行中才發現的子集外（動態 CALLFORM 的呼叫先不可執行、generator 以外遇到 INPUT）
   或引擎會報錯停止的狀況（除以 0、範圍外參照），catalog 會回復輸出・亂數・LOCAL・RESULT(S)，S29 起連 **GameState 的書き込み**（ジャーナル
@@ -94,7 +95,8 @@ ERB 路徑相對 `source/earGVP/ERB/`。
   LEVELSTATUS…）執行後才失敗者。（Python：`eragvt.narration.service._run`）
   S14：含 INPUTS 的函式以「重放」執行（`run_function_gen`），S29 起 INPUTS 前的 GameState 書き込み／KOJO_ROOT 也可回復後重放，只有 hook CALL 之後才停止。
   S29 模擬（`--actions 101〜108`）實際觀察到的失敗：`KOJO_4_HITOKUTI_SHOP` 經動態呼叫到 INPUT（原作會等玩家輸入；本作當找不到、狀態回復）、
-  `AEGI` 的 STRDATA（`KOJO_0_SEX_COM0_16` 等經由喘ぎ声）。
+  `AEGI` 的 STRDATA（`KOJO_0_SEX_COM0_16` 等經由喘ぎ声；S30 解除）。S30 模擬另觀察到 `KOJO_0_TURNEND_21`（ヤンデレ）經
+  `YANDERE_FIRST_SETTING` 到 INPUT（預設 34 局 5,399 次；S29 的程式碼同 seed 也會發生，非 S30 新增），處理同 KOJO_4_HITOKUTI_SHOP（待裁決）。
 - [ ] **口上 catalog 的顯示簡化**（S07 新增，只影響顯示）：`SETFONT`（字型名）不反映（`FONTITALIC` 斜體 S20 起反映：`TextOutput.set_italic`）；`CLEARLINE` 只刪已完成的行；
   COUNT 放在口上專用的暫存（`state.temp.narr`），與 Python 移植部分不共用（原作是全域變數；Python 未模型化 COUNT）。RESULT（S21）・RESULTS（S22）
   已改為共用（`GameState.result`／`results`，`docs/wiki/python/result.md`）；Python 移植部分只同步寫 RESULT:1／RESULTS:1 以後的來源與「之後有人讀

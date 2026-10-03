@@ -79,6 +79,7 @@ IMPLEMENTED_METHODS = {
     "STRLENS", "STRLENSU", "SUBSTRING", "SUBSTRINGU", "TOSTR", "SIGN",
     "STRFINDU", "STRCOUNT", "REPLACE", "ISNUMERIC", "TOINT",  # S21
     "VARSIZE",  # S28b（ERH の CONST 配列のみ：builtins.m_varsize）
+    "FINDCHARA", "FINDLASTCHARA", "GETCOLOR",  # S30
 }
 
 # Python 實作的使用者函式：名稱 → 說明（實體在 service.py 註冊）
@@ -90,6 +91,12 @@ PY_FUNCTIONS = {
     "WINDOW_DESTROY": "汎用関数/WindowDrawer.ERB@WINDOW_DESTROY",
     "WINDOW_DISPLAY": "汎用関数/WindowDrawer.ERB@WINDOW_DISPLAY",
     "WINDOW_DISPLAY_EX": "汎用関数/WindowDrawer.ERB@WINDOW_DISPLAY_EX（REF 配列引数：実行時 unsupported）",
+    # S30：`narration.pyfuncs`
+    "ADDRANDCHOOSE": "汎用関数/RANDCHOOSE.ERB@ADDRANDCHOOSE（RANDCHOOSE_NUM＝GameState.temp.randchoose）",
+    "CLEARRANDCHOOSE": "汎用関数/RANDCHOOSE.ERB@CLEARRANDCHOOSE（ARG = 0 のみ）",
+    "RANDCHOOSE_F": "汎用関数/RANDCHOOSE.ERB@RANDCHOOSE_F",
+    "CHOICECOUNT_F": "汎用関数/RANDCHOOSE.ERB@CHOICECOUNT_F",
+    "UNLOCK_ACHIEVEMENT": "インターミッション画面/SHOP_TROPHY.ERB@UNLOCK_ACHIEVEMENT（GLOBAL のみ → 何もしない）",
 }
 
 
@@ -141,7 +148,7 @@ def unsupported_reasons_static(fd: N.FuncDef, catalog) -> list[tuple[int, str]]:
         if isinstance(s, N.Print):
             if not isinstance(s.arg, str):
                 check_expr(ln, s.arg)
-        elif isinstance(s, N.PrintData):
+        elif isinstance(s, (N.PrintData, N.StrData)):
             check_expr(ln, s.var)
             for item in s.items:
                 for kind, a, lno in item:
@@ -219,10 +226,20 @@ def unsupported_reasons_static(fd: N.FuncDef, catalog) -> list[tuple[int, str]]:
     visit(fd.body)
     for v, _ in fd.params:
         check_expr(fd.line, v)
-    # GOTO：飛び先は IF／SELECTCASE の枝だけを通って辿れる $ラベル（runtime.Interp._exec_body、S28c2 で入れ子にも拡張）
+    # GOTO：飛び先の $ラベル（runtime.Interp._exec_body、S28c2 で IF／SELECTCASE の中、S30 でループの中にも拡張）。
+    # 経路上の FOR／REPEAT は GOTO 自身を含むもの（＝実行中のループ）に限る：NEXT／REND は FOR／REPEAT 行に最後に記録された
+    # カウンタ・終値・步進を使う（Instraction.Child.cs@REND_Instruction:2135–2161、REPEAT_Instruction:1731–1744）ので、
+    # 実行中でないループへ飛び込むと「前回（別の呼び出しを含む）の FOR の値」で回る。それは保持していないので unsupported。
+    # WHILE／DO は状態を持たない（WEND・LOOP は条件式を再評価するだけ：:2163–2192）ので制限なし。
     for s in N.iter_stmts(fd.body):
-        if isinstance(s, N.Goto) and N.label_path(fd.body, s.name) is None:
-            out.append((s.line, f"GOTO 先 ${s.name} が IF／SELECTCASE の外側の経路にない"))
+        if isinstance(s, N.Goto):
+            path = N.label_path(fd.body, s.name, loops=True)
+            if path is None:
+                out.append((s.line, f"GOTO 先 ${s.name} が関数内にない"))
+                continue
+            anc = {id(a) for a in (N.ancestors_of(fd.body, s) or [])}
+            if any(isinstance(c, (N.For, N.Repeat)) and id(c) not in anc for c in N.path_containers(path)):
+                out.append((s.line, f"GOTO 先 ${s.name} が実行中でない FOR／REPEAT の中"))
         elif isinstance(s, N.DrawLine) and s.form is not None:
             check_expr(s.line, s.form)
     return out

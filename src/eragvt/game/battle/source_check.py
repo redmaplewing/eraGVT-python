@@ -454,9 +454,14 @@ def _rescue_captives(ctx: Ctx) -> None:
 
 
 def _rescue_deadnum(ctx: Ctx) -> None:
-    """`MESSAGE_BATTLE_END_RESCUE_DEADNUM`（MESSAGE_BATTLE.ERB:1739–1750）：取り込まれロストしたキャラの発見。"""
+    """`MESSAGE_BATTLE_END_RESCUE_DEADNUM`（MESSAGE_BATTLE.ERB:1739–1810）：取り込まれロストしたキャラの発見。
+    S30：地の文の catalog で全体を実行する（CLEARRANDCHOOSE／ADDRANDCHOOSE／RANDCHOOSE_F は `narration.pyfuncs`、
+    発見したキャラの CFLAG・BASE・TALENT と FLAG:112 は地の文の代入として GameState へ：S29）。catalog が使えない
+    （NullNarrationService 等）ときは従来どおり候補があれば停止。"""
     from .core import add_randchoose, choicecount, clear_randchoose
 
+    if ctx.narration.run_function(ctx, "MESSAGE_BATTLE_END_RESCUE_DEADNUM", []):
+        return
     st = ctx.state
     clear_randchoose(st)
     for i in range(1, st.charanum):

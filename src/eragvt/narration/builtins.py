@@ -308,7 +308,67 @@ def m_varsize(it, a, fr) -> int:
     return len(uv.values)
 
 
+def _findchara(it, a, fr, last: bool) -> int:
+    """S30：`FindcharaMethod`:222–292 → `VariableEvaluator.FindChara`:1228–1293。第 1 引数はキャラ変数で、その第 2 添字（要素）だけを
+    1 回評価する（キャラ添字は見ない：省略形 `CFLAG:100` の要素は 100）。評価順は 要素 → 第 3 引数（開始、既定 0）→ 第 4 引数
+    （終端、既定 CHARANUM）→ 第 2 引数（探す値）。開始が [0, CHARANUM)・終端が [0, CHARANUM] の外は引擎エラー。
+    [開始, 終端) を前から（FINDLASTCHARA は後ろから）見て、値が等しい最初のキャラ番号、無ければ -1。"""
+    from .expr import Lit, Var
+    from .runtime_support import CHARA_ATTR, CHARA_STR_ATTR
+
+    v = a[0] if a else None
+    if not isinstance(v, Var):
+        raise ErbRuntimeError("FINDCHARA の第 1 引数は変数")
+    name = v.name
+    if name in CHARA_ATTR or name == "CSTR":
+        if len(v.args) > 2:
+            raise ErbRuntimeError("FINDCHARA の第 1 引数の添字が多すぎます")
+        elem_e = v.args[-1] if v.args else None
+        elem = it.eval(elem_e, fr) if elem_e is not None else 0
+        make = lambda i: Var(name, [Lit(i), Lit(elem)])  # noqa: E731
+    elif name in CHARA_STR_ATTR:
+        make = lambda i: Var(name, [Lit(i)])  # noqa: E731
+    else:
+        raise NotSupported(f"FINDCHARA の変数 {name}")
+    n = it.st.charanum
+    start = _int(it, a[2], fr) if len(a) >= 3 and a[2] is not None else 0
+    end = _int(it, a[3], fr) if len(a) >= 4 and a[3] is not None else n
+    if start < 0 or start >= n:
+        raise ErbRuntimeError(f"FINDCHARA の第 3 引数({start})はキャラクタ位置の範囲外です")
+    if end < 0 or end > n:
+        raise ErbRuntimeError(f"FINDCHARA の第 4 引数({end})はキャラクタ位置の範囲外です")
+    word = _ev(it, a[1], fr)
+    if start >= end:
+        return -1
+    rng = range(end - 1, start - 1, -1) if last else range(start, end)
+    for i in rng:
+        if it._get_var(fr, make(i)) == word:
+            return i
+    return -1
+
+
+def m_findchara(it, a, fr) -> int:
+    return _findchara(it, a, fr, False)
+
+
+def m_findlastchara(it, a, fr) -> int:
+    return _findchara(it, a, fr, True)
+
+
+DEFAULT_FORE_COLOR = 0xC0C0C0  # `source/earGVP/emuera.config`:24「文字色:192,192,192」（Config.ForeColor）
+
+
+def m_getcolor(it, a, fr) -> int:
+    """S30：`GetColorMethod`:553–568：現在の文字色（`Console.StringStyle.Color`、RESETCOLOR 後は Config.ForeColor）の RGB。
+    TextOutput は既定色を None で持つ（`TextOutput.color`）。"""
+    c = it.out.color
+    if c is None:
+        return DEFAULT_FORE_COLOR
+    return int(c.lstrip("#"), 16)
+
+
 BUILTINS = {
+    "FINDCHARA": m_findchara, "FINDLASTCHARA": m_findlastchara, "GETCOLOR": m_getcolor,
     "STRFINDU": m_strfindu, "STRCOUNT": m_strcount, "REPLACE": m_replace, "ISNUMERIC": m_isnumeric, "TOINT": m_toint,
     "GETBIT": m_getbit, "UNICODE": m_unicode, "STRFIND": m_strfind, "RAND": m_rand, "MAX": m_max,
     "MIN": m_min, "ABS": m_abs, "SIGN": m_sign, "LIMIT": m_limit, "POWER": m_power, "GROUPMATCH": m_groupmatch,

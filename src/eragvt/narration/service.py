@@ -27,6 +27,7 @@ from pathlib import Path
 from typing import Any, Callable, Optional
 
 from .catalog import Catalog
+from .pyfuncs import PY_FUNCS
 from .runtime import Env, ErbRuntimeError, Interp, NeedInput, NotSupported, StateJournal
 from .windowlib import WindowManager
 from .windowlib import py_functions as window_py_functions
@@ -121,6 +122,7 @@ class CatalogNarrationService:
 
         py = {"KOJO_ROOT": py_kojo_root}
         py.update(window_py_functions(WindowManager(), ctx.out))
+        py.update(PY_FUNCS)  # S30：RANDCHOOSE 系・UNLOCK_ACHIEVEMENT（narration.pyfuncs）
         env = Env(ctx.state, ctx.data, ctx.out, py, hooks or {}, ctx, inputs, journal=self.journal)
         return Interp(self.catalog, env)
 

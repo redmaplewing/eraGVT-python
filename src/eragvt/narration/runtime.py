@@ -15,7 +15,8 @@
   `GameProc/LogicalLineParser.cs`:305–320）。FOR／REPEAT 等はスタックを持たない線形ジャンプなので、関数本体トップレベルの
   ラベルへはどの入れ子からでも「本体をラベル位置から再開」で等価。S28c2：IF／SELECTCASE の中のラベルへも、ELSEIF／ELSE／CASE は
   ENDIF／ENDSELECT へ飛ぶだけ・ENDIF は何もしない（`Instraction.Child.cs@ELSEIF_Instruction`:1805–1821、`ENDIF_Instruction`:1822–1832、
-  `FunctionIdentifier.cs`:231–237）ので「ラベル以降の残り → 外側の入れ子文の次 → …」で等価。ループの中のラベルは静的に unsupported。
+  `FunctionIdentifier.cs`:231–237）ので「ラベル以降の残り → 外側の入れ子文の次 → …」で等価。S30：ループの中のラベルへも
+  （実行中の FOR／REPEAT はそのループ自身が受けて同じ周回を続ける、WHILE／DO は状態なし：`Interp._exec_path`）。
 - INPUTS：入力文字列を RESULTS:0 に（`GameProc/Process.cs@InputString`:257–260）。`Env.inputs` が None（通常の呼び出し）なら
   unsupported。ジェネレータ呼び出しでは、まだ無い入力に達したら `NeedInput` で中断し、入力を足して最初から再実行する
   （`service.CatalogNarrationService.run_function_gen`：出力・亂數・LOCAL は開始時に戻すので再実行結果は同一）。
@@ -178,6 +179,7 @@ class Interp:
         self.hooks_fired = 0
         self.side_effects = 0  # py_functions による状態変化（KOJO_ROOT）の回数
         self.input_pos = 0
+        self.gotos = 0  # GOTO の回数（無限ループ検出：MAX_GOTO）
         if env.journal is None:
             env.journal = StateJournal()
         self.journal = env.journal
@@ -229,24 +231,59 @@ class Interp:
     MAX_GOTO = 100000
 
     def _exec_body(self, fd: N.FuncDef, fr: Frame) -> None:
-        """関数本体。GOTO はトップレベルの $ラベルの次から再開する。"""
+        """関数本体。GOTO は $ラベルの次から再開する（実行中のループの中のラベルはそのループ自身が受ける：`_for` 等）。"""
         body = fd.body
-        path: list = [(body, -1)]
-        jumps = 0
+        path: Optional[list] = None
         while True:
             try:
-                # 最も内側から：ラベルの次の文〜その文リストの終わり、次に一つ外側の「入れ子文の次」から…（S28c2）
-                for stmts, idx in reversed(path):
-                    for s in stmts[idx + 1:]:
-                        self.exec(s, fr)
+                if path is None:
+                    self.exec_block(body, fr)
+                else:
+                    self._exec_path(path, fr)
                 return
             except _Goto as g:
-                path = N.label_path(body, g.name)
-                if path is None:
-                    raise NotSupported(f"GOTO 先 ${g.name} が IF／SELECTCASE の外側の経路にない") from None
-                jumps += 1
-                if jumps > self.MAX_GOTO:
-                    raise ErbRuntimeError("GOTO の繰り返しが多すぎます（無限ループ）") from None
+                path = self._goto_path(body, g.name)
+
+    def _goto_path(self, stmts: list, name: str) -> list:
+        path = N.label_path(stmts, name, loops=True)
+        if path is None:
+            raise NotSupported(f"GOTO 先 ${name} が見つからない") from None
+        self.gotos += 1
+        if self.gotos > self.MAX_GOTO:
+            raise ErbRuntimeError("GOTO の繰り返しが多すぎます（無限ループ）") from None
+        return path
+
+    def _exec_path(self, path: list, fr: Frame) -> None:
+        """GOTO 後の再開：path[0] の文リストの path[0] 位置の入れ子文に入り（最後はラベル自身）、内側を終えたら
+        その文リストの残りを実行する。引擎はラベルの次の行から線形に進むだけ（`Process.ScriptProc.cs`:20–21 ShiftNextLine、
+        `$ラベル`行は何もしない:73–74）なので：
+        - IF／SELECTCASE：ELSEIF／ELSE／CASE／CASEELSE は ENDIF／ENDSELECT へ飛ぶだけ・ENDIF は何もしない
+          （`Instraction.Child.cs@ELSEIF_Instruction`:1805–1821、`ENDIF_Instruction`:1822–1832、`FunctionIdentifier.cs`:231–237）
+          → 枝の残りを終えたらその入れ子文は終わり。
+        - WHILE：WEND は WHILE の条件を再評価して真なら WHILE の次へ（:2163–2176）→ 本体の残りの後は通常のループ継続。
+        - DO：LOOP は条件が真なら DO の次へ（:2178–2192、DO は ENDIF_Instruction：`FunctionIdentifier.cs`:245）→ 同上。
+        - FOR／REPEAT：実行中のもの（GOTO を含むもの）は `_for`／Repeat 自身が _Goto を受けて再開する。ここに来るのは
+          実行中でないものだけ（前回の FOR の値で回る）→ unsupported（静的にも `unsupported_reasons_static` で弾く）。"""
+        stmts, i = path[0]
+        if len(path) > 1:
+            s = stmts[i]
+            rest = path[1:]
+            t = type(s)
+            if t is N.If or t is N.Select:
+                self._exec_path(rest, fr)
+            elif t is N.While:
+                self._while(s, fr, rest)
+            elif t is N.Loop:
+                self._do(s, fr, rest)
+            else:
+                raise NotSupported(f"GOTO 先 ${self._label_name(path)} が実行中でない FOR／REPEAT の中")
+        for s in stmts[i + 1:]:
+            self.exec(s, fr)
+
+    @staticmethod
+    def _label_name(path: list) -> str:
+        stmts, i = path[-1]
+        return stmts[i].name
 
     # --- 文 --------------------------------------------------------------------------
     def exec_block(self, stmts: list, fr: Frame) -> None:
@@ -271,6 +308,8 @@ class Interp:
                 self.exec(s.body, fr)
         elif t is N.PrintData:
             self._printdata(s, fr)
+        elif t is N.StrData:
+            self._strdata(s, fr)
         elif t is N.CallStmt:
             self._callstmt(s, fr)
         elif t is N.Style:
@@ -336,24 +375,11 @@ class Interp:
         elif t is N.For:
             self._for(s, fr)
         elif t is N.While:
-            while self._int(s.cond, fr) != 0:
-                try:
-                    self.exec_block(s.body, fr)
-                except _Break:
-                    break
-                except _Continue:
-                    continue
+            self._while(s, fr)
+        elif t is N.Loop:
+            self._do(s, fr)
         elif t is N.Repeat:
-            n = self._int(s.count, fr)
-            self._set_narr("COUNT", 0, 0)
-            while self._get_narr("COUNT", 0, 0) < n:
-                try:
-                    self.exec_block(s.body, fr)
-                except _Break:
-                    break
-                except _Continue:
-                    pass
-                self._set_narr("COUNT", 0, self._get_narr("COUNT", 0, 0) + 1)
+            self._repeat(s, fr)
         elif t is N.Break:
             raise _Break()
         elif t is N.Continue:
@@ -417,21 +443,91 @@ class Interp:
         finally:
             self._state_write = False
 
+    # --- ループ（S30：GOTO で本体の途中から再開できる） ---
+    # 本体の実行中に _Goto が来て、ラベルがそのループの本体にあれば「本体のラベル位置から」同じ周回を続ける
+    # （引擎は線形ジャンプ。NEXT／REND／WEND／LOOP に達すれば通常どおり：`_exec_path` の docstring）。
+    # BREAK：FOR／REPEAT はカウンタを 1 歩進めてから抜ける（`Instraction.Child.cs@BREAK_Instruction`:2054–2077
+    # 「eramakerではBREAK時にCOUNTが回る」、WHILE・DO は進めない）。CONTINUE：カウンタを進めて判定（:2079–2133）。
+    def _loop_body(self, s, fr: Frame, pending: Optional[list]) -> Optional[str]:
+        """本体を 1 周（pending があればその経路から）。戻り値 "break"／"goto"（self._pending に経路）／None。"""
+        try:
+            if pending is None:
+                self.exec_block(s.body, fr)
+            else:
+                self._exec_path(pending, fr)
+        except _Break:
+            return "break"
+        except _Continue:
+            return None
+        except _Goto as g:
+            if N.label_path(s.body, g.name, loops=True) is None:
+                raise
+            self._pending = self._goto_path(s.body, g.name)
+            return "goto"
+        return None
+
     def _for(self, s: N.For, fr: Frame) -> None:
+        # FOR：Instraction.Child.cs@REPEAT_Instruction:1731–1744（開始値代入→終値・步進を評価→判定）
         self._assign_var(fr, s.var, self._int(s.start, fr))
         end = self._int(s.end, fr)
         step = self._int(s.step, fr) if s.step is not None else 1
+        pending = None
         while True:
-            cur = self._int(s.var, fr)
-            if not ((step > 0 and end > cur) or (step < 0 and end < cur)):
-                break
-            try:
-                self.exec_block(s.body, fr)
-            except _Break:
-                break
-            except _Continue:
-                pass
+            if pending is None:
+                cur = self._int(s.var, fr)
+                if not ((step > 0 and end > cur) or (step < 0 and end < cur)):
+                    break
+            r = self._loop_body(s, fr, pending)
+            pending = None
+            if r == "goto":
+                pending = self._pending
+                continue
+            # NEXT（REND_Instruction:2135–2161）／BREAK／CONTINUE：カウンタ += 步進
             self._assign_var(fr, s.var, self._int(s.var, fr) + step)
+            if r == "break":
+                break
+
+    def _repeat(self, s: N.Repeat, fr: Frame) -> None:
+        # REPEAT：カウンタ COUNT:0、開始 0、步進 1（FOR と同じ REPEAT_Instruction）
+        n = self._int(s.count, fr)
+        self._set_narr("COUNT", 0, 0)
+        pending = None
+        while True:
+            if pending is None and not self._get_narr("COUNT", 0, 0) < n:
+                break
+            r = self._loop_body(s, fr, pending)
+            pending = None
+            if r == "goto":
+                pending = self._pending
+                continue
+            self._set_narr("COUNT", 0, self._get_narr("COUNT", 0, 0) + 1)
+            if r == "break":
+                break
+
+    def _while(self, s: N.While, fr: Frame, pending: Optional[list] = None) -> None:
+        # WHILE：条件が偽なら WEND の次へ（:1747–1761）、WEND は条件を再評価（:2163–2176）
+        while True:
+            if pending is None and self._int(s.cond, fr) == 0:
+                break
+            r = self._loop_body(s, fr, pending)
+            pending = None
+            if r == "goto":
+                pending = self._pending
+                continue
+            if r == "break":
+                break
+
+    def _do(self, s: N.Loop, fr: Frame, pending: Optional[list] = None) -> None:
+        # DO … LOOP 条件：DO は何もしない（FunctionIdentifier.cs:245）、LOOP は条件が真なら DO の次へ（:2178–2192）。
+        # CONTINUE は LOOP の条件で判定（:2118–2129）
+        while True:
+            r = self._loop_body(s, fr, pending)
+            pending = None
+            if r == "goto":
+                pending = self._pending
+                continue
+            if r == "break" or self._int(s.cond, fr) == 0:
+                break
 
     def _select(self, s: N.Select, fr: Frame) -> None:
         v = self.eval(s.expr, fr)
@@ -508,6 +604,15 @@ class Interp:
         finally:
             if s.dflag:
                 self.out._color = saved
+
+    def _strdata(self, s: N.StrData, fr: Frame) -> None:
+        """S30：STRDATA（Process.ScriptProc.cs:730–760）。空なら何もしない、`GetNextRand(件数)` で 1 件選び、
+        その行（DATALIST なら複数行を "\n" で連結）の文字列を変数に代入する。PRINTDATA と違い選択番号は返さない。"""
+        if not s.items:
+            return
+        item = s.items[self.st.rng.rand(len(s.items))]
+        text = "\n".join(self._text(kind, a, fr) for kind, a, _lno in item)
+        self._assign_var(fr, s.var, text)
 
     def _style(self, s: N.Style, fr: Frame) -> None:
         w = s.what

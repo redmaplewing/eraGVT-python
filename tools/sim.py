@@ -48,6 +48,9 @@ catalog の中で呼ばれた子関数（デート・お持ち帰り・レイプ
 S29：口上／地の文の GameState 書き込み（変数別「S29 書き込み 口上 CFLAG」等、hook 行は「（hook 行）」、函式別）、口上からの
 状態変更函式 hook（LEVELSTATUS／TRANSFORM／PERFORM_CHEERS_HATE）、ジャーナルで戻した回数を数える。
 
+S30：ループ内 $ラベルへの GOTO の再開（ラベル別：KOJO_AEGI の ＭＡＸ１／ＭＡＸ２ 等）、STRDATA（函式別）、`narration.pyfuncs`
+（RANDCHOOSE 系・UNLOCK_ACHIEVEMENT）、口上の CORRUPTTION_GET_* hook、ロストキャラの発見（catalog 実行）の次数。
+
 S25：戦闘中の [800] でステータス画面（5 ページ・EXPORT_CSV 含む）に入るようになった（ランダム方針のまま。SHOP [110] は押さない）。
 """
 
@@ -453,7 +456,8 @@ def install_event_counters() -> Counter:
         return orig_set(self, v, value, fr)
 
     Interp._state_set = sset
-    for fname in ("hook_levelstatus", "hook_transform", "hook_perform_cheers_hate"):
+    for fname in ("hook_levelstatus", "hook_transform", "hook_perform_cheers_hate",
+                  "hook_corruption_get_theme", "hook_corruption_get_nanori_final"):
         orig_k = getattr(kojo_calls, fname)
 
         def kf(ctx, *a, _o=orig_k, _n=fname):
@@ -469,6 +473,42 @@ def install_event_counters() -> Counter:
         return orig_rb(self)
 
     nsvc._Tx.rollback = rb
+
+    # S30：ループ内ラベルへの GOTO（函式別）・STRDATA・narration.pyfuncs・ロストキャラの発見（catalog）
+    orig_goto = Interp._goto_path
+
+    def gp(self, stmts, name):
+        counts[f"S30 GOTO 再開 ${name}"] += 1
+        return orig_goto(self, stmts, name)
+
+    Interp._goto_path = gp
+    orig_sd = Interp._strdata
+
+    def sd(self, s, fr):
+        counts[f"S30 STRDATA {fr.fd.name}"] += 1
+        return orig_sd(self, s, fr)
+
+    Interp._strdata = sd
+    from eragvt.narration import pyfuncs
+
+    for key, fn in list(pyfuncs.PY_FUNCS.items()):
+        def pf(it, args, _o=fn, _k=key):
+            counts[f"S30 pyfunc {_k}"] += 1
+            return _o(it, args)
+
+        pyfuncs.PY_FUNCS[key] = pf
+    from eragvt.game.battle import source_check as sc
+
+    orig_rd = sc._rescue_deadnum
+
+    def rd(ctx):
+        n0 = len(ctx.out.lines)
+        orig_rd(ctx)
+        counts["S30 MESSAGE_BATTLE_END_RESCUE_DEADNUM"] += 1
+        if any("【肉体回収】" in ln.text for ln in ctx.out.lines[n0:]):
+            counts["S30 ロストキャラの発見（肉体回収）"] += 1
+
+    sc._rescue_deadnum = rd
     return counts
 
 

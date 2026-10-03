@@ -375,6 +375,9 @@ KOJO_CALL_HOOKS = {
     "LEVELSTATUS": ("eragvt.game.kojo_calls", "hook_levelstatus"),
     "TRANSFORM": ("eragvt.game.kojo_calls", "hook_transform"),
     "PERFORM_CHEERS_HATE": ("eragvt.game.kojo_calls", "hook_perform_cheers_hate"),
+    # S30：STRDATA 対応で KOJO_121／131_BATTLE_CHARA_NANORI の次の原因になった（CSTR:60／3・CFLAG:5 を書く悪堕ち函式）
+    "CORRUPTTION_GET_THEME": ("eragvt.game.kojo_calls", "hook_corruption_get_theme"),
+    "CORRUPTTION_GET_NANORI_FINAL": ("eragvt.game.kojo_calls", "hook_corruption_get_nanori_final"),
 }
 HOOK_CALLS.update(KOJO_CALL_HOOKS)
 

@@ -35,3 +35,21 @@ def hook_perform_cheers_hate(ctx: Ctx) -> None:
 
     perform_cheers_hate(ctx)
     ctx.state.result[0] = 0
+
+
+def hook_corruption_get_theme(ctx: Ctx, arg: int = 0) -> None:
+    """`ヒロイン関連/悪堕ち/CORRPUTION.ERB@CORRUPTTION_GET_THEME, ARG`:678–731（流れ落ち → RESULT = 0）。
+    呼び出し元：`kojo_121_ホムラ.ERB`:289、`kojo_131_ホムラ.ERB`:348 の `CALL CORRUPTTION_GET_THEME, TARGET`（S30）。"""
+    from .corruption import corruption_get_theme
+
+    corruption_get_theme(ctx, arg)
+    ctx.state.result[0] = 0
+
+
+def hook_corruption_get_nanori_final(ctx: Ctx, arg: int = 0) -> None:
+    """`CORRPUTION.ERB@CORRUPTTION_GET_NANORI_FINAL(ARG)`:733–816（流れ落ち → RESULT = 0）。
+    呼び出し元：`kojo_121_ホムラ.ERB`:290、`kojo_131_ホムラ.ERB`:349（S30）。"""
+    from .corruption import corruption_get_nanori_final
+
+    corruption_get_nanori_final(ctx, arg)
+    ctx.state.result[0] = 0

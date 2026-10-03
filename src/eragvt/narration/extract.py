@@ -15,7 +15,7 @@ import re
 from typing import Callable, Optional
 
 from . import nodes as N
-from .expr import Call, Form, Parser, Resolver, T_COMMA, T_EOL, T_PAREN, Var, form_to_expr, walk
+from .expr import Call, Form, Lit, Parser, Resolver, T_COMMA, T_EOL, T_PAREN, Var, form_to_expr, walk
 from .lexer import (
     COMMA,
     F_CALLNAME,
@@ -128,6 +128,16 @@ _UNSUPPORTED_INSTR_REASON = {
     "TRYCGOTOFORM": "GOTO", "JUMP": "JUMP", "TRYJUMP": "JUMP", "JUMPFORM": "JUMP", "TRYJUMPFORM": "JUMP",
     "BEGIN": "BEGIN", "INPUT": "INPUT", "INPUTS": "INPUT", "TINPUT": "INPUT", "TINPUTS": "INPUT",
     "ONEINPUT": "INPUT", "ONEINPUTS": "INPUT", "TONEINPUT": "INPUT", "TONEINPUTS": "INPUT",
+}
+
+
+# S30：SETCOLORBYNAME の色名（.NET `System.Drawing.KnownColor`）。本作の ERB が使う名前だけを載せる（他は unsupported）：
+# `地の文/MESSAGE_BATTLE.ERB`:364 HOTPINK、`地の文/MESSAGE_OTHER.ERB`:716 Fuchsia。
+# UNVERIFIED: Color.FromName が大文字小文字を区別しないこと（.NET Framework の ColorConverter の色名表は OrdinalIgnoreCase）は
+# reference 外の .NET 実行時の仕様。原作が `HOTPINK`（KnownColor 名は HotPink）で動いている前提（unresolved.md「S30」）。
+DOTNET_NAMED_COLORS = {
+    "HOTPINK": 0xFF69B4,  # KnownColor.HotPink（eragvt.game.battle.train の MESSAGE_BATTLE_CHARA_TRANSRELEASE_ECS 移植と同じ）
+    "FUCHSIA": 0xFF00FF,  # KnownColor.Fuchsia
 }
 
 
@@ -416,6 +426,8 @@ class FuncParser:
             return N.Print(no, "raw" if name == "PRINTPLAIN" else "form", a, plain=True)
         if name.startswith("PRINTDATA"):
             return self._printdata(no, name, arg)
+        if name == "STRDATA":
+            return self._strdata(no, arg)
         if name in ("IF",):
             return self._if(no, arg)
         if name == "SIF":
@@ -470,6 +482,14 @@ class FuncParser:
         if name in ("SETCOLOR",):
             args = self._args_line(arg)
             return N.Style(no, "SETCOLOR", args)
+        if name == "SETCOLORBYNAME":
+            # S30：`Color.FromName(引数の文字列)` の色で SETCOLOR と同じ（ArgumentBuilder.cs@STR_ArgumentBuilder:364–373、
+            # Process.ScriptProc.cs:408–420）。A == 0（未知の名前・Transparent）は引擎エラー。
+            cname = arg.strip()
+            rgb = DOTNET_NAMED_COLORS.get(cname.upper())
+            if rgb is None:
+                raise _Unsup(f"命令 SETCOLORBYNAME（色名 {cname} は表に無い）")
+            return N.Style(no, "SETCOLOR", [Lit(rgb)])
         if name in ("RESETCOLOR", "FONTBOLD", "FONTITALIC", "FONTREGULAR"):
             return N.Style(no, name)
         if name == "SETFONT":
@@ -618,14 +638,31 @@ class FuncParser:
                 raise ErbSyntaxError("PRINTDATA の引数")
             self._check_local_target(v)
             var = v
+        items = self._data_items("PRINTDATA")
+        return N.PrintData(no, var, items, newline=m.group(3) in ("L", "W"), wait=m.group(3) == "W",
+                           dflag=bool(m.group(2)))
+
+    def _strdata(self, no: int, arg: str) -> N.StrData:
+        """S30：STRDATA 変数 … ENDDATA（Process.ScriptProc.cs:730–760）。引数省略 → RESULTS:0（ArgumentBuilder.cs@VAR_STR:1276–1283）。"""
+        if arg.strip():
+            v = self._expr_line(arg)
+            if not isinstance(v, Var) or not self.res.is_str_var(v.name):
+                raise ErbSyntaxError("STRDATA の引数")
+            self._check_local_target(v)
+            self._note_calls(v)
+        else:
+            v = Var("RESULTS", [Lit(0)])
+        return N.StrData(no, v, self._data_items("STRDATA"))
+
+    def _data_items(self, what: str) -> list:
+        """DATA／DATAFORM／DATALIST…ENDLIST の並び（ENDDATA まで）。items[i] = 1 選択肢の行のリスト。"""
         items: list = []
         while self.k < len(self.lines):
             lno, text = self.lines[self.k]
             self.k += 1
             iname, iarg = self._instr_name(text)
             if iname == "ENDDATA":
-                return N.PrintData(no, var, items, newline=m.group(3) in ("L", "W"), wait=m.group(3) == "W",
-                                   dflag=bool(m.group(2)))
+                return items
             if iname == "DATA":
                 items.append([("raw", iarg, lno)])
             elif iname == "DATAFORM":
@@ -650,7 +687,7 @@ class FuncParser:
                         raise _Unsup(f"DATALIST 内の {gname or gtext[:10]}")
                 items.append(group)
             else:
-                raise _Unsup(f"PRINTDATA 内の {iname or text[:10]}")
+                raise _Unsup(f"{what} 内の {iname or text[:10]}")
         raise _Unsup("ENDDATA がありません")
 
     # --- IF / SELECTCASE ---

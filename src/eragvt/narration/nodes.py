@@ -38,6 +38,14 @@ class PrintData(Stmt):
 
 
 @dataclass(slots=True)
+class StrData(Stmt):
+    """S30：STRDATA 変数 … ENDDATA。items は PrintData と同じ形。"""
+
+    var: Var
+    items: list
+
+
+@dataclass(slots=True)
 class If(Stmt):
     branches: list  # list[tuple[Expr, list[Stmt]]]
     orelse: Optional[list] = None
@@ -294,24 +302,63 @@ def iter_stmts(stmts):
             yield from iter_stmts(s.body)
 
 
-def label_path(body: list, name: str) -> Optional[list]:
+def _children(s) -> list:
+    """入れ子文の子の文リスト（IF／SELECTCASE の枝、ループの本体）。"""
+    t = type(s)
+    if t is If:
+        return [b for _, b in s.branches] + [s.orelse]
+    if t is Select:
+        return [b for _, b in s.cases] + [s.orelse]
+    if t in (For, While, Repeat, Loop):
+        return [s.body]
+    return []
+
+
+def label_path(body: list, name: str, loops: bool = False) -> Optional[list]:
     """`$name` までの経路 [(文リスト, その中の位置), …]（外側から。最後がラベル自身）。経路は IF／SELECTCASE の枝だけを通る
-    （ループの中・見つからない → None）。S28c2：入れ子の中のラベルへの GOTO（runtime.Interp._exec_body）。"""
+    （ループの中・見つからない → None）。S28c2：入れ子の中のラベルへの GOTO（runtime.Interp._exec_body）。
+    S30：loops=True ならループ（FOR／WHILE／REPEAT／DO）の本体も通る（runtime.Interp._exec_path）。"""
 
     def find(stmts: list) -> Optional[list]:
         for i, s in enumerate(stmts or ()):
             t = type(s)
             if t is Label and s.name == name:
                 return [(stmts, i)]
-            subs: list = []
-            if t is If:
-                subs = [b for _, b in s.branches] + [s.orelse]
-            elif t is Select:
-                subs = [b for _, b in s.cases] + [s.orelse]
-            for b in subs:
+            if not loops and t not in (If, Select):
+                continue
+            for b in _children(s):
                 r = find(b)
                 if r is not None:
                     return [(stmts, i)] + r
+        return None
+
+    return find(body)
+
+
+def path_containers(path: list) -> list:
+    """label_path の経路が通る入れ子文（外側から）。"""
+    return [stmts[i] for stmts, i in path[:-1]]
+
+
+def ancestors_of(body: list, target) -> Optional[list]:
+    """文 `target`（同一性で比較）を含む入れ子文の列（外側から）。SIF の単文・TRYCALL の CATCH 側も辿る。見つからない → None。"""
+
+    def find(stmts) -> Optional[list]:
+        for s in stmts or ():
+            if s is None:
+                continue
+            if s is target:
+                return []
+            t = type(s)
+            subs = _children(s)
+            if t is Sif:
+                subs = [[s.body]]
+            elif t is CallStmt:
+                subs = [s.catch, s.success]
+            for b in subs:
+                r = find(b)
+                if r is not None:
+                    return [s] + r
         return None
 
     return find(body)

@@ -18,6 +18,7 @@
 | `runtime.py`／`builtins.py` | 執行器、式中関数（`GameData/Function/Creator.Method.cs`） |
 | `hooks.py` | 狀態變化行的 hook 表（下述） |
 | `service.py` | `CatalogNarrationService`：`call_kojo`（KOJO_ROOT 派發）、`run_function`（地の文）、`run_function_gen`（含 INPUTS，S14）、`run_event_gen`（S28c2）、失敗回復 |
+| `pyfuncs.py` | S30：RANDCHOOSE 系・UNLOCK_ACHIEVEMENT 的 Python 實作（`PY_FUNCTIONS`） |
 | `windowlib.py` | `汎用関数/WindowDrawer.ERB`＋`TagSetText.ERB` 的 Python 移植（`CALL WINDOW_*`，S14；只有動画サイト使用） |
 
 產生物不落地：啟動時只掃 label（約 0.5 秒），函式本體第一次用到時解析、快取在記憶體。
@@ -49,7 +50,7 @@ S14：`Label(name)`／`Goto(name)`、`Input`（INPUTS）、`DrawLine(form)`（DR
 - 呼叫：呼叫先（任何 ERB 檔的函式，包含 `汎用関数/` 等）本身也可執行才算可執行（遞迴判定）。
   KOJO_ROOT 以 Python 實作（`action.kojo_root_full`＋`service.call_kojo`）；`WINDOW_CREATE／SETTEXT／DESTROY／DISPLAY` 也是
   （`windowlib.py`，`WINDOW_DISPLAY_EX` 的 REF 配列引數在執行時 unsupported）。
-- GOTO（S14）：只支援定數ラベル、且 `$ラベル` 在函式本體最上層（S28c2 起也支援 IF／SELECTCASE 內，見下）。FOR 等在引擎是線形跳躍、
+- GOTO（S14）：只支援定數ラベル、且 `$ラベル` 在函式本體最上層（S28c2 起也支援 IF／SELECTCASE 內、S30 起ループ內，見下）。FOR 等在引擎是線形跳躍、
   沒有堆疊（`Instraction.Child.cs@GOTO_Instruction`:2366–2406），所以「從最上層ラベル的下一行重新執行本體」等價。
 - INPUTS（S14，無既定值者）：只有 generator 呼叫端（`run_function_gen`，以 `yield from` 呼叫）可執行；`run_function`／口上派發遇到
   （含靜態呼叫先，`Catalog.needs_input`）視為不可執行。實作是**重放**：到達尚無輸入的 INPUTS 時中斷、`yield` 取得輸入、把輸出・亂數・
@@ -68,14 +69,14 @@ S14：`Label(name)`／`Goto(name)`、`Input`（INPUTS）、`DrawLine(form)`（DR
   - INPUT（整數、無既定值）→ RESULT:0（`GameProc/Process.cs@InputInteger`:249–252）。同 INPUTS 只在 generator 呼叫端可執行。
   - 入れ子內的 $ラベル：ラベル的路徑只經過 IF／SELECTCASE 的枝時可執行。引擎的 ELSEIF／ELSE／CASE／CASEELSE 只是跳到 ENDIF／ENDSELECT、
     ENDIF 什麼都不做（`Instraction.Child.cs@ELSEIF_Instruction`:1805–1821、`ENDIF_Instruction`:1822–1832、`FunctionIdentifier.cs`:231–237），
-    所以「ラベル之後的剩餘 → 外側入れ子文的下一句 → …」等價（`nodes.label_path`、`Interp._exec_body`）。ループ內的ラベル仍 unsupported。
+    所以「ラベル之後的剩餘 → 外側入れ子文的下一句 → …」等價（`nodes.label_path`、`Interp._exec_body`）。ループ內的ラベル：S30（下節）。
   - `run_event_gen`（事件本體用：`eragvt.game.pastime_nanpa`）：不重放，直接在另一條執行緒跑直譯器，INPUT（與 hook 的 Python 移植
     ——AFTER_PILL・CALC_GANGBANG——yield 的輸入等待）時真正中斷；兩邊交替執行，輸出・亂數順序與同步執行相同。所以輸入前有狀態變化也可以。
     執行中途才發現不可執行 → 無法回復 → NotImplementedError（Web 停止）。generator 被關閉時以 `_Abort` 收掉執行緒。
   - hook 的 CALL 可回傳 generator（在執行緒中驅動）；新增 HOOK_CALLS：COMMON_PRISON・COMMON_PRISON_EXP・_ABLUP・AFTER_PILL・CALC_GANGBANG・
     ENCOUNT_CITIZEN（停止）。表 `NANPA_HOOK_LINES` 72 行。
-- 不支援：GOTOFORM／TRYGOTO 系、ループ內的 $ラベル、TINPUT・ONEINPUT 系與有既定值的 INPUT／INPUTS、BEGIN、JUMP、PRINTV・
-  PRINT K 系・PRINTC 系、STRDATA、TIMES、SETCOLORBYNAME、`@` 付き変数、未實作的式中関数（覆蓋率報告）。
+- 不支援：GOTOFORM／TRYGOTO 系、實行中でない FOR／REPEAT 內的 $ラベル（S30）、TINPUT・ONEINPUT 系與有既定值的 INPUT／INPUTS、BEGIN、JUMP、PRINTV・
+  PRINT K 系・PRINTC 系、表外的 SETCOLORBYNAME 色名、`@` 付き変数、未實作的式中関数（覆蓋率報告）。STRDATA・TIMES・SETCOLORBYNAME 見 S29／S30。
 
 語意重點（皆有引擎行號，見 `runtime.py` docstring）：`&&`／`||` 短絡；`/`・`%` 先評價右辺；C# 的切り捨て除算；
 `PRINTDATA` 以 `RAND(件數)` 選 1 件；`%…,幅%` 以 cp932 位元組寬補空白；文字列中 `\n` 換行；函式末尾流れ落ち → RESULT = 0；
@@ -137,7 +138,7 @@ sexmsg 引用、以及「表外沒有漏掉的代入」。
 代入種類：`=` 914、`+=` 68、`-=` 48、SETBIT 17、`--` 8、`++` 5、`|=` 3、INVERTBIT 1。另有「未対応の変数 TCVAR」12 函式（讀取）。
 口上 CALL 的會改狀態的非口上函式：LEVELSTATUS（10 函式）・TRANSFORM（4）・PERFORM_CHEERS_HATE（4）→ 皆有 Python 移植，以名稱 hook
 （`hooks.KOJO_CALL_HOOKS` → `eragvt.game.kojo_calls`，RESULT:0 照 ERB）。地の文 `MESSAGE_BATTLE_END_RESCUE_DEADNUM` 的
-CLEARRANDCHOOSE（ARRAYSHIFT）／ADDRANDCHOOSE（RANDCHOOSE_NUM）、UNLOCK_ACHIEVEMENT（GLOBAL）未接 → 照舊 unsupported。
+RANDCHOOSE 系與 UNLOCK_ACHIEVEMENT：S30 接上（下節）。
 
 實作：
 - 抽取（`extract.FuncParser._check_local_target`）：檔案在 `口上/`・`地の文/` 且變數在 `runtime_support.STATE_WRITABLE`（CHARA_ATTR 全部・
@@ -150,6 +151,35 @@ CLEARRANDCHOOSE（ARRAYSHIFT）／ADDRANDCHOOSE（RANDCHOOSE_NUM）、UNLOCK_ACH
   實數只接受「數字[.數字]」且有效數字 ≤ 15。
 - 覆蓋率 12,851 → **13,161／13,384**（98.3%）。剩餘第一原因：KOJO_AEGI `$ＭＡＸ２` 199、STRDATA 17、SETCOLORBYNAME 2、
   RANDCHOOSE_NUM 2（ADDRANDCHOOSE）、FINDCHARA 1、GETCOLOR 1、GLOBAL 1（UNLOCK_ACHIEVEMENT）。
+
+## S30：剩餘的不可執行原因
+
+- **ループ內的 $ラベル**（KOJO_AEGI `@渧泣` 的 `GOTO ＭＡＸ２`／`ＭＡＸ１`：外層 `FOR ループカウンターＡ` 本體內、SELECTCASE 的別的 CASE）。
+  引擎：NEXT／REND 用 FOR／REPEAT 行上**最後一次執行時**記錄的カウンタ變數・終值・步進（`Instraction.Child.cs@REPEAT_Instruction`:1731–1744、
+  `REND_Instruction`:2135–2161）；WEND／LOOP 只重評條件（:2163–2192）；ELSEIF／CASE 跳 ENDIF／ENDSELECT。實作（`runtime.Interp`）：
+  - 各ループ（`_for`／`_repeat`／`_while`／`_do`）在本體執行中收到 `_Goto`、且ラベル在自己本體內 → 從ラベル位置繼續**同一周**
+    （`_exec_path`：IF／SELECTCASE 的枝做完就結束該文，WHILE／DO 從途中進入後照常判定），之後照常 NEXT。
+  - 經過**未執行中**的 FOR／REPEAT 的ラベル（GOTO 不在該ループ內）→ 會用「前回的 FOR 值」，未保存 → 靜態 unsupported
+    （`unsupported_reasons_static`「実行中でない FOR／REPEAT の中」，實行時也 NotSupported）。WHILE／DO 無狀態 → 不限制。
+  - 附帶修正（引擎語意）：**BREAK 時 FOR／REPEAT 的カウンタ也 +步進**（`BREAK_Instruction`:2054–2077「eramakerではBREAK時にCOUNTが回る」），
+    之前 Python 不加；DO…LOOP 之前抽出但沒有執行器（實行時 NotSupported），S30 補上（CONTINUE 以 LOOP 條件判定：:2118–2129）。
+  - 引擎在遞迴呼叫同一函式時 FOR 行的狀態被共用；catalog 可達範圍內含ループ的函式沒有靜態遞迴（S30 檢查：45 函式，動態 CALLFORM 只有
+    `渧泣`〔KOJO_*_COLOR〕・`KOJO_4_FIRST`），Python 以每次呼叫各自的值。
+- **STRDATA**（`N.StrData`；`Process.ScriptProc.cs`:730–760）：空→什麼都不做；`GetNextRand(件數)` 選 1 件，DATALIST 的各行以 `"\n"` 連結後代入；
+  引數省略 → RESULTS:0（`ArgumentBuilder.cs@VAR_STR_ArgumentBuilder`:1276–1283）。`★真面目関数.ERB@AEGI` 等 17 函式。
+- **SETCOLORBYNAME**：`Color.FromName`（`ArgumentBuilder.cs`:364–373、`Process.ScriptProc.cs`:408–420）。色名表只收本作使用的 HotPink・Fuchsia
+  （`extract.DOTNET_NAMED_COLORS`；大小寫不分是 .NET 的 ColorConverter 行為：`# UNVERIFIED`，unresolved.md）。
+- **式中関数**：FINDCHARA／FINDLASTCHARA（`Creator.Method.cs@FindcharaMethod`:222–292、`VariableEvaluator.FindChara`:1228–1293）、
+  GETCOLOR（:553–568；既定色 = emuera.config:24 文字色 192,192,192）。
+- **Python 實作的小函式**（`narration.pyfuncs`，登記在 `PY_FUNCTIONS`）：ADDRANDCHOOSE／CLEARRANDCHOOSE（ARG = 0）／RANDCHOOSE_F／CHOICECOUNT_F
+  （RANDCHOOSE_NUM = `GameState.temp.randchoose`，與 Python 移植共用；寫入時以 `set_attr` 換掉整個配列 → ジャーナル可回復）、
+  UNLOCK_ACHIEVEMENT（GLOBAL のみ → 何もしない、RESULT = 0；deviations「全域資料」）。
+- 口上的名稱 hook 追加 CORRUPTTION_GET_THEME／CORRUPTTION_GET_NANORI_FINAL（`kojo_121／131_ホムラ.ERB` 的名乗り：STRDATA 後出現的下一個原因）。
+- `battle.source_check._rescue_deadnum`（ロストキャラの発見）改以 catalog 執行整個地の文（停止點解除；catalog 不可時照舊停止）。
+- 覆蓋率 13,161 → **13,383／13,384**。剩下 `地の文/スラング/T_SHAPE（触手の形状）.ERB@COLOR_T_SHAPE`：呼叫先
+  `汎用関数/PRINT_RGBTEXT（色名、文字列）.ERB`:106 的 **GETBGCOLOR**——背景色由 SHOW_SHOP（SHOP.ERB:26–35）、BATTLE_COM.ERB:648–654、
+  開局、PRISON、ENDING 的 SETBGCOLOR／RESETBGCOLOR 決定，TextOutput 沒有模型化（需要跨系統的新狀態）→ 停下列出。呼叫者只有未移植的
+  雑魚戦（`TENTACLE_MOB_201`），目前無法到達。
 
 ## 覆蓋率
 

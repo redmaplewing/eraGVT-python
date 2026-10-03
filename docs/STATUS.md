@@ -1,6 +1,6 @@
 # 現況（唯一真相，≤120 行）
 
-更新：2026-10-03（S29）
+更新：2026-10-03（S30）
 
 ## 已完成（各階段細節見 git log 與 wiki）
 
@@ -27,6 +27,7 @@
 - **S28c1** 自由行動（`eragvt.game.pastime`／`pastime_school`：ACTION_PASTIME＋一般自由行動事件 12 檔；下節）。
 - **S28c2** 自由行動の本編ナンパ・酒ナンパ・痴漢（`eragvt.game.pastime_nanpa`：catalog の `run_event_gen` で原文 11 関数を実行；下節）。
 - **S29** 口上／地の文的狀態書き込み（catalog が非 LOCAL 代入を GameState へ直接書く＋ジャーナルで失敗回復；下節）。
+- **S30** catalog 剩餘的不可執行原因（ループ內 $ラベルへの GOTO・STRDATA・SETCOLORBYNAME・FINDCHARA・GETCOLOR・RANDCHOOSE 系；下節）。
 
 ## S28a〜S28c2 內容（`docs/wiki/era/actions.md`「S28a／S28b／S28c1／S28c2 補足」）
 
@@ -35,33 +36,33 @@
 - S28b：`seisan.seisan`（選單・CFLAG:111 スケジュール・週末ライブ）、`calc_seisan`（係数表・LOSEBASE・共用 RESULT:0〜1）、9 活動
   （アルバイト 4 種〜ライブ公演）、AFTER_PILL／NINSIN_HANTEI、CFLAG:282／281／283／285／400／825・SAVESTR:21〜26（FLASHNEWS の AV／写真集）・FLAG:853。
   catalog：VARSIZE（ERH CONST）・`__INT_MAX__`・hook（`SEISAN_HOOK_LINES`：FLAG:900／TARGET／EXP）・REF 引数の読み出し → 地の文 58 函式全部可執行。
-- S28c1：`pastime.pastime`（編入・變身選擇「気晴らし」・選單・CFLAG:113 排程・派發・PASTIME_REST・魅了經驗）、街／遠出／運動／學校、告白、
-  悪堕ち遭遇（D4）、淫気応急＋CALC_INKIOKYU；S28c2 的前段（NANPA／SAKE_NANPA 判定、PASTIME_CHIKAN 乘車〜抵抗）也已翻，本編停止。
-  本文中心的 25 函式走 catalog（hook `PASTIME_HOOK_LINES` 41 行）。`seisan._dot_after` 訂正為 RESULT 不變（DOT_AFTER は `RETURN RESULT`）。
-- S28c2：本編 11 関数（約 6,800 行、INPUT 7 か所）は手翻せず catalog で原文実行。catalog 拡張：INPUT（整数→RESULT）、IF／SELECTCASE 内の
-  $ラベルへの GOTO、`run_event_gen`（別スレッドで本当に中断＝INPUT 前の状態変化可）、generator を返す hook。状態変化 72 行
-  `NANPA_HOOK_LINES`（COMMON_PRISON・_ABLUP・AFTER_PILL・NINSIN_HANTEI・CALC_GANGBANG・ENCOUNT_CITIZEN〔停止〕）。
-  PASTIME_CHIKAN:458 お持ち帰りで RETURN 1、学校の合コンに学校の ARG を渡すよう訂正。`docs/wiki/python/narration.md`「S28c2 追加」。
-- 測試共 1806 個（S29：`tests/test_narration_state.py` 47）。
+- S28c1：`pastime.pastime`（自由行動：選單・CFLAG:113 排程・街／遠出／運動／學校・告白・悪堕ち遭遇・淫気応急）、本文 25 函式は catalog
+  （`PASTIME_HOOK_LINES` 41 行）。S28c2：ナンパ・酒ナンパ・痴漢の本編 11 関数を catalog で原文實行（INPUT、IF／SELECTCASE 内ラベルへの GOTO、
+  `run_event_gen`、`NANPA_HOOK_LINES` 72 行）。`docs/wiki/python/narration.md`「S28c2 追加」。
+- 測試共 1833 個（S30：`tests/test_narration_s30.py` 27）。
 
 ## S29 內容（`docs/wiki/python/narration.md`「S29」）
 
-- 盤點：口上 205 函式 1,038 處＋地の文 2 函式 26 處的非 LOCAL 代入（CFLAG 268・CSTR 215・TALENT 215・CDFLAG 169・BASE 108…）、TCVAR 讀取 12 函式。
-- 口上／地の文函式內對狀態變數（`STATE_WRITABLE`）的代入直接寫 GameState（TARGET 省略・CSV 名添字〔CDFLAG1／2〕・範圍外＝引擎錯誤），
-  TCVAR 讀為 0（全作無代入）、TIMES 實作、口上 CALL 的 LEVELSTATUS／TRANSFORM／PERFORM_CHEERS_HATE 以名稱 hook（`game.kojo_calls`）。
-- 失敗回復：`runtime.StateJournal`（入れ子の `_Tx` が共有、KOJO_ROOT の FLAG:62／900 も記録）。停止は Python 移植 hook CALL の後の失敗のみ。
-- 覆蓋率 12,851 → 13,161／13,384（98.3%）；「非 LOCAL 代入」「TCVAR」原因は口上／地の文自身では 0（殘：非口上呼叫先 ADDRANDCHOOSE・UNLOCK_ACHIEVEMENT）。
-- 模擬 `--actions 101〜108`（seed 0–249，`--max-shop 200`）：預設 245 上限・4 タイトル復帰・1 HATUJOU（seed 52）；初期セット 248 上限・
-  1 タイトル復帰・1 ロストキャラの発見（seed 221，`MESSAGE_BATTLE_END_RESCUE_DEADNUM` 未移植）。兩者皆既有登記的停止點（口上改變狀態後軌跡改變而到達）。
-  口上の直接書き込み：預設 CFLAG 3,958／TCVARn 42（69 函式）、初期セット CFLAG 591／TCVARn 189（32 函式）；ジャーナル回復 預設 31（1 局）・初期セット 46（2 局）。
+- 口上／地の文の非 LOCAL 代入（盤點 1,064 處）を GameState へ直接書く・TCVAR は 0・TIMES・口上 CALL の名前 hook（`game.kojo_calls`）・
+  `runtime.StateJournal` で失敗時に完全回復（停止は Python 移植 hook CALL 後の失敗のみ）。覆蓋率 12,851 → 13,161。
+
+## S30 內容（`docs/wiki/python/narration.md`「S30」）
+
+- 實行中のループ（FOR／REPEAT／WHILE／DO）の本體內 $ラベルへの GOTO：同じ周回をラベルから續行（`Interp._exec_path`）；實行中でない FOR／REPEAT
+  の中へは unsupported。附帶修正：BREAK で FOR／REPEAT のカウンタ +步進（`BREAK_Instruction`:2054–2077）、DO…LOOP の執行器。
+- STRDATA、SETCOLORBYNAME（HotPink・Fuchsia）、FINDCHARA／FINDLASTCHARA・GETCOLOR、`narration.pyfuncs`（RANDCHOOSE 系・UNLOCK_ACHIEVEMENT）、
+  口上 hook CORRUPTTION_GET_THEME／NANORI_FINAL；ロストキャラの発見（`source_check._rescue_deadnum`）を catalog で實行。
+- 覆蓋率 13,161 → **13,383／13,384**。殘 1：`COLOR_T_SHAPE`（PRINT_RGBTEXT の GETBGCOLOR：背景色未模型化、呼び出し元は未移植の雑魚戦のみ）。
+- 模擬 `--actions 101〜108`（seed 0–249，`--max-shop 200`，4 並列分批）：預設 243 上限・4 タイトル復帰・3 HATUJOU（seed 52／124／240）；
+  初期セット 250 上限。新停止 0。ジャーナル回復 預設 31（1 局）・初期セット 74（2 局）；實行時失敗 KOJO_4_HITOKUTI_SHOP（31／74）・
+  KOJO_0_TURNEND_21（預設 34 局 5,399；S29 の程式碼でも同じ、INPUT）。STRDATA AEGI 23／102、ロスト發見の判定 1／4（候補なし）。
+  `渧泣`（GOTO ＭＡＸ１／２）は霊夢・魔理沙・早苗の口上からのみ → 模擬では未到達（測試で確認）。
 
 ### 模擬（seed 0–249，`--max-shop 200`，4 並列分批）
 
 - 基準（`--actions` 既定 101–103）：預設 249 上限＋1 HATUJOU、敗北後 192.92／GO 後 187.51 ＝ S27／S28a と同一。
 - S28a `--actions 101,102,103,105,106,107`：預設 247 上限・2 HATUJOU・1 タイトル復帰；初期セット 250 上限。
-- S28b `--actions 101,102,103,104,105,106,107`：預設 249 上限・1 HATUJOU（敗北後 189.40／GO 後 180.87）；初期セット 248 上限・2 タイトル復帰
-  （ENDING_3）。新停止 0、佔位 0。特別活動次數（預設／初期セット）：アルバイト 303／324、研究 313／305、雑魚触手退治 313／257、
-  アイドル活動 303／286（全部レベル 0〜1）、援助交際 6／9、公衆便所 0／1、AV・枕営業・ライブ 0（ランダム方針では欲望・魅了経験が育たない）。
+- S28b `--actions 101〜107`：預設 249 上限・1 HATUJOU；初期セット 248 上限・2 タイトル復帰。特別活動はレベル 0〜1 のみ（AV・枕営業・ライブ 0）。
 - `--actions 104 --seisan-unlock`（人工、預設 100 局）：AV 536・公衆便所 534・援助交際 566・枕営業 539・ライブ 106；停止は既存の HATUJOU 1 のみ。
 - S28c2 `--actions 101〜108`：預設 247 上限・3 タイトル復帰；初期セット 249 上限・1 タイトル復帰。停止 0、例外 0（S28c1 の本編停止 154／108 が解消）。
   次數（預設／初期セット）：ナンパ本編 189／139（處女喪失 13／19；DATE 69／66、TAKEOUT 29／27、RAPE 6／2）、酒ナンパ本編 26／3
@@ -89,8 +90,7 @@ P4 父親 CFLAG:9 指向不存在的ボス／ラスボス／モブ；HEROINE_PRE
 - 已裁決（2026-10-02）：名乗り改竄的 RESULTS:2 殘值照原作（S22 實作）；開局デフォルト悪堕ち的輸出丟棄維持現況。
 - 已裁決（2026-10-02）：PALAM_HOSEI 殘值照原作、防衛力負數 D1〜D4（S21 實作）。已裁決（2026-10-01）：S20 的 DEVIATION 6 項＋斜體。
 - 已裁決（2026-09-30）：拡張度初期值照原作；S13 苗床出産的 static LOSEDEF 等怪處照原作。
-- 口上 catalog 待擴充：入れ子內 $ラベル 的 GOTO（`KOJO_AEGI.ERB` $ＭＡＸ２，199 函式）、STRDATA（17）、未實作式中関数、口上內動態呼叫到的 INPUT
-  （`KOJO_4_HITOKUTI_SHOP`，S29 模擬觀察到）。
+- 口上 catalog：口上內動態呼叫到的 INPUT（`KOJO_4_HITOKUTI_SHOP`・`KOJO_0_TURNEND_21`）待裁決；GETBGCOLOR（背景色の模型化）。
 - deviations.md 需裁決：口上 catalog 實行時失敗的回復（S29 改寫：狀態也回復）、S08 以後新增項、S28c1 的 1 項（Null 時停止；夜間排程已裁決＝隨機）、S28c2 的 1 項（Null 時停止）。
 
 ## 仍會停止的分岐（`NotImplementedError` → Web 停止）
@@ -107,7 +107,7 @@ S23 模擬（含 [反撃] 人工設定）皆無停止。登記但罕見：
 - 夜這い：TS キャラ的 `_ABLUP` 女体受容取得、`%CALLNAME:ARG%` 指向不存在角色（原作也報錯）。
 - 開局：HEROINE_PRESET 的 [30]（相関関係）、2 択畫面的 [300]（ゲームの説明）。狀態畫面內的停止見上節。設定項造成的停止見上表。
 - 戰鬥 PALAM 表示（FLAG:801 bit 5）、觸手服（ACTTENTACLESUIT・運動快感）、雜魚／クズ市民／事件戰／エンドレス、
-  ボスの返り血（SUPART_BLOOD）、デバッグ模式、`HATUJOU_TO_HAIRAN` 地の文、ロストキャラの発見（`MESSAGE_BATTLE_END_RESCUE_DEADNUM`）。
+  ボスの返り血（SUPART_BLOOD）、デバッグ模式、`HATUJOU_TO_HAIRAN`（SUBEVENT_BATTLEE.ERB:513–585，S30 模擬 3 局）。
 
 ## 已知問題
 
