@@ -40,8 +40,11 @@ S14：`Label(name)`／`Goto(name)`、`Input`（INPUTS）、`DrawLine(form)`（DR
   呼べたら CATCH までの文を実行して ENDCATCH へ：:2034–2038）。
 - 代入先：LOCAL／LOCALS／ARG／ARGS／函式內 `#DIM`（靜態：`UserDefinedVariable.cs`:27）、RESULT（S21 起＝`GameState.result`）／RESULTS（S22 起＝`GameState.results`，範圍外添字は錯誤；兩者與 Python 共用、失敗回復時一併還原：`result.md`）／COUNT、
   **口上專用的非 SAVEDATA `#DIM`**（口上／地の文的 ERH 宣告、且口上／地の文以外的 ERB 完全不參照者：例 `真面目_フラグ_シチュ`）。
-  其他代入（CFLAG、TALENT、FLAG…）→ unsupported。
+  S29 起：**口上／地の文（`NARRATION_DIRS`）的函式內**對狀態變數的代入直接寫 `GameState`（下節「S29」）。其他 ERB 的函式內的非 LOCAL 代入、
+  以及狀態模型沒有欄位的變數（MONEY、GLOBAL、RANDCHOOSE_NUM…）→ unsupported。
 - 讀取：狀態模型有對應的變數（BASE・TALENT・CFLAG…・FLAG・TFLAG・DAY・TCVARn・TENTACLE_SIZE・CLOTH_*・SHIELD・STR（Str.csv）…）。
+  S29：TCVAR（內建）讀為 0（本作全 ERB 無代入、`CSV/VariableSize.csv`:7「非使用」；引擎只在 BEGIN TRAIN 清 0：
+  `GameData/Variable/VariableEvaluator.cs`:1458–1460；測試 `test_tcvar_reads_zero_and_never_written` 保證無代入）。
   SOURCE・TEQUIP・PLAYER・GLOBAL 等模型沒有的變數 → unsupported（讀了等於猜 0）。
 - 呼叫：呼叫先（任何 ERB 檔的函式，包含 `汎用関数/` 等）本身也可執行才算可執行（遞迴判定）。
   KOJO_ROOT 以 Python 實作（`action.kojo_root_full`＋`service.call_kojo`）；`WINDOW_CREATE／SETTEXT／DESTROY／DISPLAY` 也是
@@ -95,14 +98,58 @@ ERB 內的 `TRYCALLFORM KOJO_ROOT(…)`（地の文）也走同一實作。`Null
 `MESSAGE_SEX_COM*`／`MESSAGE_SEX_SPCOM*` 中的狀態變化行（FLAG:900、TFLAG:4／21／23、TENTACLE_SIZE、CFLAG:206、TCVARn:12／25、
 CALL SET_TENTACLE_SIZE_BY_MESSAGE／TENTACLE_SYASEI_UP／NINSIN_HANTEI／LOSTVIRGIN）逐行列在 `hooks.HOOK_LINES`（140 行，
 附 sexmsg 對應函式與註解引用）。抽取時這些行成為 `Hook`：代入以「可寫入狀態」模式執行，CALL 轉呼叫既有 Python 移植，
-**依 ERB 的順序**與本文、RAND 交錯執行。表外的狀態變化仍是 unsupported。測試 `test_hook_table_matches_sexmsg` 對照原文、
+**依 ERB 的順序**與本文、RAND 交錯執行。S29 起表外的代入也直接寫 GameState（下節），hook 表的代入行只是保留（行為相同）。測試 `test_hook_table_matches_sexmsg` 對照原文、
 sexmsg 引用、以及「表外沒有漏掉的代入」。
 
 ## 失敗回復
 
-執行中才發現不可執行（動態 CALLFORM 的呼叫先 unsupported、除以 0 等引擎會報錯者）→ 回復輸出（TextOutput 內部狀態）、
-亂數（`GameRng.snapshot/restore`）、LOCAL／narr；口上當「找不到」、地の文走 fallback。hook 已執行（狀態已變）之後失敗則
-無法回復 → `NotImplementedError`（Web 停止）。
+執行中才發現不可執行（動態 CALLFORM 的呼叫先 unsupported、除以 0・範圍外添字等引擎會報錯者）→ 回復輸出（TextOutput 內部狀態）、
+亂數（`GameRng.snapshot/restore`）、LOCAL／narr、RESULT／RESULTS，以及 S29 起的 **GameState 書き込み**（`runtime.StateJournal`）；
+口上當「找不到」、地の文走 fallback。
+
+- ジャーナル：`service._Tx` 開一個區間（入れ子可，服務共用一個 `CatalogNarrationService.journal`）。`Interp._state_set`（含 hook 的代入行）
+  記錄「容器・鍵・舊值」；`py_kojo_root` 先記下 Python（`kojo_root_full`／`call_kojo`）會寫的 FLAG:62・FLAG:900。內側區間 rollback 只還原
+  自己的部分，commit 則留給外側（外側失敗時一併還原：例 地の文 → KOJO_ROOT → 口上 寫 CFLAG → 回到地の文後失敗）。沒有區間時不記錄。
+- 無法回復：hook 的 CALL（`HOOK_CALLS`，Python 移植的狀態變化）會讓 `journal.irreversible` 增加；區間內增加過 → 失敗時
+  `NotImplementedError`（Web 停止，同 S07）。
+- `run_function_gen`（INPUTS 重放）：INPUTS 前的 GameState 書き込み／KOJO_ROOT 也能以ジャーナル還原後重放；只有 hook CALL 之後才停止。
+  等待輸入的期間區間維持開啟（輸入前的狀態變化照原作可見）；generator 被關閉時區間在 `finally` 關閉。
+- 原作會報錯停止的情況（除以 0、範圍外參照）仍是「回復後當找不到」（deviations「口上 catalog 的實行時失敗」）。
+
+## S29：口上／地の文的狀態書き込み
+
+盤點（S29 實施前、`fd.unsupported` 全件，不只第一原因）：口上／地の文函式自身的「非 LOCAL 代入」共 1,064 處（口上 205 函式 1,038 處、
+地の文 2 函式 26 處；不含 Python 實作的 KOJO_ROOT 13 處）。
+
+| 變數 | 口上 | 地の文 | 索引形式・代入種類（例） |
+|---|---:|---:|---|
+| CFLAG | 259 | 9 | `CFLAG:270 = 3`、`CFLAG:(FLAG:112):35 += 300`、`CFLAG:TARGET:n`、小寫 `cflag:n`、SETBIT／INVERTBIT |
+| CSTR | 215 | 0 | `CSTR:n = FORM`（TARGET 省略 176）、`CSTR:TARGET:n`（39） |
+| TALENT | 205 | 10 | CSV 名 `TALENT:魔力貯蔵 = 1`、`TALENT:(FLAG:112):母乳体質 = MAX(…)` |
+| CDFLAG | 169 | 0 | `CDFLAG:TARGET:遠距離:戦闘スタイル`（第 1 添字 CDFLAG1、第 2 添字 CDFLAG2 的名稱：`ConstantData.cs`:826–844） |
+| BASE | 105 | 3 | `BASE:敏捷 -= n`、`BASE:攻撃 += n`、`BASE:(FLAG:112):体力 = 1` |
+| EQUIP／ITEM | 26／10 | 0 | `EQUIP:n = …`、`ITEM:n = …` |
+| MAXBASE | 23 | 0 | `MAXBASE:空中ダッシュ ++／--`、`MAXBASE:体力基礎 ±= n` |
+| TFLAG／FLAG | 10／0 | 3／1 | `TFLAG:n = …`、`TFLAG:97 |= 堕落` |
+| TCVARn | 6 | 0 | `TCVARn:n += …` |
+| NAME／CALLNAME | 5／5 | 0 | `NAME:TARGET = FORM` |
+
+代入種類：`=` 914、`+=` 68、`-=` 48、SETBIT 17、`--` 8、`++` 5、`|=` 3、INVERTBIT 1。另有「未対応の変数 TCVAR」12 函式（讀取）。
+口上 CALL 的會改狀態的非口上函式：LEVELSTATUS（10 函式）・TRANSFORM（4）・PERFORM_CHEERS_HATE（4）→ 皆有 Python 移植，以名稱 hook
+（`hooks.KOJO_CALL_HOOKS` → `eragvt.game.kojo_calls`，RESULT:0 照 ERB）。地の文 `MESSAGE_BATTLE_END_RESCUE_DEADNUM` 的
+CLEARRANDCHOOSE（ARRAYSHIFT）／ADDRANDCHOOSE（RANDCHOOSE_NUM）、UNLOCK_ACHIEVEMENT（GLOBAL）未接 → 照舊 unsupported。
+
+實作：
+- 抽取（`extract.FuncParser._check_local_target`）：檔案在 `口上/`・`地の文/` 且變數在 `runtime_support.STATE_WRITABLE`（CHARA_ATTR 全部・
+  NAME／CALLNAME／NICKNAME／MASTERNAME・CSTR・CDFLAG・FLAG／TFLAG／ITEM／DAY・TENTACLE_SIZE・TARGET）→ 可執行。不需逐行登記；
+  hooks 表只留給 CALL 到 Python 移植的情況（既有表的代入行行為不變，同樣經 `_state_set`，只是現在也記入ジャーナル）。
+- 執行（`runtime.Interp._state_set`）：キャラ變數省略第 1 添字 → TARGET（`VariableParser.cs`:104–135）；CSV 名添字；純粹的陣列寫入，
+  BASE 與 MAXBASE 不連動（`VariableToken.cs`:1066–1070、1121–1125、1150–1154、1196–1200）；範圍外 → 引擎錯誤（`CharaVariableToken.CheckElement`:275–283，
+  要素數 `runtime_support.var_length`：`ConstantData.cs`:147–181 預設＋`CSV/VariableSize.csv`＋ERH `#DIM`）。
+- `TIMES 變數, 實數`（同時解除 66 函式的第二原因）：decimal 乘算後截斷（`Instraction.Child.cs`:893–916；config `TIMESの計算をeramakerにあわせる:NO`）。
+  實數只接受「數字[.數字]」且有效數字 ≤ 15。
+- 覆蓋率 12,851 → **13,161／13,384**（98.3%）。剩餘第一原因：KOJO_AEGI `$ＭＡＸ２` 199、STRDATA 17、SETCOLORBYNAME 2、
+  RANDCHOOSE_NUM 2（ADDRANDCHOOSE）、FINDCHARA 1、GETCOLOR 1、GLOBAL 1（UNLOCK_ACHIEVEMENT）。
 
 ## 覆蓋率
 

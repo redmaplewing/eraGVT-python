@@ -45,6 +45,9 @@ S28c1：`--actions` に 108（自由行動）を入れると、行き先（CFLAG
 淫気応急・悪堕ち遭遇・ナンパ／酒ナンパ判定・痴漢判定（乗車）の次数を数える。S28c2：本編（ナンパ・酒ナンパ・痴漢）と
 catalog の中で呼ばれた子関数（デート・お持ち帰り・レイプ・泥酔レイプ・変態プレイ）・本編中の処女喪失・痴漢お持ち帰りの次数。
 
+S29：口上／地の文の GameState 書き込み（変数別「S29 書き込み 口上 CFLAG」等、hook 行は「（hook 行）」、函式別）、口上からの
+状態変更函式 hook（LEVELSTATUS／TRANSFORM／PERFORM_CHEERS_HATE）、ジャーナルで戻した回数を数える。
+
 S25：戦闘中の [800] でステータス画面（5 ページ・EXPORT_CSV 含む）に入るようになった（ランダム方針のまま。SHOP [110] は押さない）。
 """
 
@@ -436,6 +439,36 @@ def install_event_counters() -> Counter:
         setattr(pt, name, mf)
         if hasattr(pts, name):
             setattr(pts, name, mf)
+
+    # S29：口上／地の文の中の GameState 書き込み（変数別・函式数）、口上からの状態変更函式 hook、失敗回復
+    from eragvt.game import kojo_calls
+    from eragvt.narration import service as nsvc
+
+    orig_set = Interp._state_set
+
+    def sset(self, v, value, fr):
+        d = fr.fd.file.split("/", 1)[0] + ("（hook 行）" if getattr(self, "_state_write", False) else "")
+        counts[f"S29 書き込み {d} {v.name}"] += 1
+        counts[f"S29 書き込み函式 {fr.fd.name}"] += 1  # 種類数は --load の結果から数える
+        return orig_set(self, v, value, fr)
+
+    Interp._state_set = sset
+    for fname in ("hook_levelstatus", "hook_transform", "hook_perform_cheers_hate"):
+        orig_k = getattr(kojo_calls, fname)
+
+        def kf(ctx, *a, _o=orig_k, _n=fname):
+            counts[f"S29 口上 hook {_n}"] += 1
+            return _o(ctx, *a)
+
+        setattr(kojo_calls, fname, kf)
+    orig_rb = nsvc._Tx.rollback
+
+    def rb(self):
+        if not self.closed and len(self.journal.entries) > self.mark[0]:
+            counts["S29 ジャーナルで戻した（失敗回復・INPUT 再実行）"] += 1
+        return orig_rb(self)
+
+    nsvc._Tx.rollback = rb
     return counts
 
 
@@ -612,6 +645,7 @@ def main(argv: list[str] | None = None) -> int:
     with tempfile.TemporaryDirectory() as tmp:
         for seed in _parse_seeds(a.seeds):
             before = Counter(counts)
+            nfail = len(narration.failures)
             r = run_one(data, narration, seed, a.preset, a.max_shop, a.max_steps, Path(tmp), a.enable_intimidation,
                         enable_akuoti=a.enable_akuoti, corrupt=a.corrupt, style=a.style,
                         config_preset=a.config_preset,
@@ -619,6 +653,8 @@ def main(argv: list[str] | None = None) -> int:
                                else (lambda st: _seisan_unlock(st, data)) if a.seisan_unlock else None),
                         clear_bits=tuple(tuple(int(x) for x in t.split(":")) for t in a.clear_bit),
                         actions=tuple(int(x) for x in a.actions.split(",")))
+            for msg in narration.failures[nfail:]:  # S29：catalog の実行時失敗（回復して「見つからない」扱い）
+                counts[f"catalog 実行時失敗 {msg[:60]}"] += 1
             r["events"] = dict(counts - before)
             games_with.update(r["events"].keys())
             results.append(r)

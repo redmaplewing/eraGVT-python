@@ -514,7 +514,19 @@ class FuncParser:
             self._note_calls(v)
             return N.ReturnF(no, v)
         if name in ("CALL", "TRYCALL", "CALLFORM", "TRYCALLFORM", "TRYCCALL", "TRYCCALLFORM", "CALLF", "CALLFORMF"):
-            return self._call(no, name, arg)
+            cs = self._call(no, name, arg)
+            from .hooks import KOJO_CALL_HOOKS
+
+            if (
+                name == "CALL" and self.rel.startswith("口上/") and isinstance(cs.name, str) and cs.name in KOJO_CALL_HOOKS
+                and not getattr(self, "_hooking", False)
+            ):
+                # S29：口上から呼ぶ「状態を変える非口上函式」のうち Python 移植のあるもの → hook（名前で一律）
+                self.fd.calls.discard(cs.name)
+                h = N.Hook(no, f"{self.fd.name}:{no}", text, [cs])
+                self.fd.hooks.append(h)
+                return h
+            return cs
         if name in ("SETBIT", "CLEARBIT", "INVERTBIT"):
             args = self._args_line(arg)
             if not args or not isinstance(args[0], Var):
@@ -537,6 +549,19 @@ class FuncParser:
             if len(args) >= 4:
                 self._check_local_target(args[3])
             return N.Split(no, args[0], args[1], args[2], args[3] if len(args) >= 4 else None)
+        if name == "TIMES":
+            # S29：`TIMES 変数, 実数`。第 2 引数は LexicalAnalyzer.ReadDouble で読む実数リテラル（ArgumentBuilder.cs:249–283）。
+            # ここでは「数字[.数字]」の形だけ受け付ける（指数表記・符号などは子集合外）
+            head, sep, lit = arg.rpartition(",")
+            lit = lit.strip(" \t")
+            if not sep or not re.fullmatch(r"[0-9]+(\.[0-9]+)?", lit):
+                raise _Unsup("命令 TIMES（第 2 引数が単純な実数リテラルでない）")
+            v = self._expr_line(head)
+            if not isinstance(v, Var) or self.res.is_str_var(v.name):
+                raise ErbSyntaxError("TIMES の第 1 引数")
+            self._check_local_target(v)
+            self._note_calls(v)
+            return N.Times(no, v, lit)
         if name == "VARSET":
             args = self._args_line(arg)
             if not args or not isinstance(args[0], Var):
@@ -764,6 +789,13 @@ class FuncParser:
         uv = self.ctx.user_vars.get(v.name)
         if uv is not None and getattr(uv, "narration_owned", False):
             return
+        from .runtime_support import NARRATION_DIRS, STATE_WRITABLE
+
+        if self.rel.startswith(NARRATION_DIRS):
+            # S29：口上／地の文の函式内の状態変数への代入は GameState に直接書く（runtime.Interp._state_set）
+            if v.name in STATE_WRITABLE:
+                return
+            raise _Unsup(f"非 LOCAL 変数 {v.name} への代入（状態モデルに欄位が無い）")
         raise _Unsup(f"非 LOCAL 変数 {v.name} への代入")
 
     def _assign(self, no: int, text: str) -> N.Assign:

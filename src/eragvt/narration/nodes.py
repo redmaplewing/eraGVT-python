@@ -100,6 +100,15 @@ class VarSet(Stmt):
 
 
 @dataclass(slots=True)
+class Times(Stmt):
+    """TIMES 変数, 実数（S29：Instraction.Child.cs@TIMES_Instruction:893–916、引数 ArgumentBuilder.cs@SP_TIMES_ArgumentBuilder:249–283）。
+    factor は実数リテラルの原文（decimal で計算するため文字列のまま持つ）。"""
+
+    target: Var
+    factor: str
+
+
+@dataclass(slots=True)
 class Split(Stmt):
     """SPLIT 文字列, 区切り, 文字列配列[, 個数変数]（S21：Process.ScriptProc.cs:522–538、引数 ArgumentBuilder.cs:1494–1514）。"""
 

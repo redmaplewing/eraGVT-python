@@ -69,3 +69,9 @@
   （`GameProc/Function/Instraction.Child.cs@BEGIN_Instruction`:1681–1689、`GameProc/Process.State.cs@SetBegin`:203–228／`@Return`:355–425／`@Begin`:263–311）。
   `docs/wiki/era/actions.md`「S28a 補足」。
 - [ ] SCHEDULE 畫面（S28a）的 PRINT 行尾空白：原作行尾有半形空白（CRLF 前），Python 省略；只影響顯示寬度，未查 Emuera 是否保留引數行尾空白。
+- [ ] `TIMES 變數, 實數`（S29，catalog）— 引擎以 `(decimal)double` 計算（`GameProc/Function/Instraction.Child.cs`:905–916），.NET 的
+  double→decimal 轉換（有效數字 15 位捨入）不在 reference 內；catalog 以實數字面的原文作 Decimal（`narration.runtime.Interp._times`，`# UNVERIFIED`，
+  與 `game.era.times` 同前提），有效數字 > 15 位者 unsupported。本作口上／地の文只有 `0.5`（二進位精確）與 `0.20`（double 略大於 0.2，
+  乘整數後截斷結果與精確值相同），實際結果不受影響。
+- [ ] catalog 的 `run_function_gen` 等待 INPUTS 時ジャーナル區間保持開啟（S29）：若等待期間 Web 另外執行會寫 GameState 的 catalog 函式，
+  其書き込み會被算進這個區間、重放時一併回復。目前 INPUTS 函式（`MESSAGE_SEX_SPCOM7` 動画サイト等）等待期間沒有其他 catalog 執行路徑，未發生。

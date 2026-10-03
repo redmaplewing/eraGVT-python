@@ -11,6 +11,8 @@ from __future__ import annotations
 from . import nodes as N
 from .expr import Call, Var, walk
 
+NARRATION_DIRS = ("口上/", "地の文/")  # catalog の対象（ERB からの相対パスの接頭辞）
+
 # 角色變數 → Character 的欄位
 CHARA_ATTR = {
     "BASE": "base", "MAXBASE": "maxbase", "ABL": "abl", "TALENT": "talent", "EXP": "exp", "MARK": "mark",
@@ -31,7 +33,41 @@ TEMP_SCALAR_ATTR = {"EX_COM": "ex_com", "SH_COM": "sh_com", "INSERT": "insert", 
 CLOTH_INDEX = {"CLOTH_NO_INNER": 0, "CLOTH_OUTER_PER": 1, "CLOTH_OUTER_DEF": 2, "CLOTH_INNER_PER": 3, "CLOTH_INNER_DEF": 4}
 STATE_SAVEDATA_ATTR = {"SHIELD": "shield", "MOB_FLAG": "mob_flag"}
 NARR_STORE = {"RESULT", "RESULTS", "COUNT"}  # 読み書きできる一時変数（RESULT／RESULTS は GameState.result／results 共用、COUNT は state.temp.narr）
-READ_ONLY_SPECIAL = {"RAND", "CHARANUM", "LINECOUNT", "NO", "STR", "SAVESTR", "CSTR", "特殊戦闘シチュエーション"}
+# S29：TCVAR（Emuera 内建キャラ変数）は本作の ERB 全体で一度も書かれない（読むのは口上 4 檔と雑魚／クズ市民の触手データのみ。
+# `CSV/VariableSize.csv`:7 で「非使用、代わりに DIM.ERH の TCVARn を使う」）。引擎が書くのは BEGIN TRAIN 時の 0 クリアだけ
+# （`reference/emuera-1824/Emuera/GameData/Variable/VariableEvaluator.cs@UpdateInBeginTrain`:1458–1460）なので値は常に 0。
+# 要素数は既定の 100（`GameData/ConstantData.cs`:168–169）。`test_narration_state.py::test_tcvar_never_written` が「書かれない」を保証。
+READ_ONLY_SPECIAL = {"RAND", "CHARANUM", "LINECOUNT", "NO", "STR", "SAVESTR", "CSTR", "特殊戦闘シチュエーション", "TCVAR"}
+
+# S29：口上／地の文（`NARRATION_DIRS`）の函式の中で、GameState に直接書き込める変数（状態モデルに欄位があるもの）。
+# 書き込みは `runtime.Interp._state_set`（要素数の検査・CSV 名の添字・ジャーナル記録）。
+STATE_WRITABLE = (
+    set(CHARA_ATTR) | set(CHARA_STR_ATTR) | {"CSTR", "CDFLAG"} | set(GLOBAL_ARRAY_ATTR) | {"TENTACLE_SIZE", "TARGET"}
+)
+
+
+def var_length(name: str, data, catalog=None) -> tuple:
+    """配列の要素数（範囲外の添字は引擎エラー）。
+    - 既定値：`reference/emuera-1824/Emuera/GameData/ConstantData.cs`:147–181（一般整数配列 1000、FLAG 10000、文字列配列 100、
+      キャラ整数配列 100・TALENT／CFLAG 1000・JUEL 200、キャラ文字列配列 100、キャラ 2 次元 1×1）。
+    - `CSV/VariableSize.csv` で上書き（本作：EQUIP 1000、CFLAG 2000、CSTR 300、CDFLAG 100×1000、RELATION 9999、TALENT 1300）。
+    - ERH の `#DIM`（TCVARn 300、TENTACLE_SIZE 等）は宣言の要素数。"""
+    if catalog is not None:
+        uv = catalog.user_vars.get(name)
+        if uv is not None:
+            return tuple(uv.dims)
+    vs = getattr(data, "variable_size", {}) or {}
+    if name in vs:
+        return tuple(vs[name])
+    if name == "CDFLAG":
+        return (1, 1)
+    if name in CHARA_ATTR or name == "TCVAR":
+        return ({"TALENT": 1000, "CFLAG": 1000, "JUEL": 200}.get(name, 100),)
+    if name == "CSTR":
+        return (100,)
+    if name == "FLAG":
+        return (10000,)
+    return (1000,)
 NAME_TABLE_OF = {
     "ABLNAME": "ABL", "TALENTNAME": "TALENT", "EXPNAME": "EXP", "MARKNAME": "MARK", "PALAMNAME": "PALAM",
     "TRAINNAME": "TRAIN", "BASENAME": "BASE", "EXNAME": "EX", "ITEMNAME": "ITEM", "CDFLAGNAME1": "CDFLAG1",
@@ -140,6 +176,8 @@ def unsupported_reasons_static(fd: N.FuncDef, catalog) -> list[tuple[int, str]]:
         elif isinstance(s, N.StrLen):
             if not isinstance(s.arg, str):
                 check_expr(ln, s.arg)
+        elif isinstance(s, N.Times):
+            check_expr(ln, s.target)
         elif isinstance(s, N.Split):
             for a in (s.src, s.sep, s.target, s.num):
                 check_expr(ln, a)

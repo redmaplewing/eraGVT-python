@@ -3,7 +3,8 @@
 抽取器遇到下表的 `(函式, 行)` 時，照常解析該行但標為 `Hook`：
 - 代入・SETBIT（FLAG:900、TFLAG:4／21／23、TENTACLE_SIZE、CFLAG:206、TCVARn:12／25）→ 執行器以「可寫入狀態」模式執行。
 - CALL（下表 `HOOK_CALLS` 的函式）→ 呼叫既有的 Python 移植（`gaping`／`syasei`／`ninsin`／`sexcom`）。
-其餘任何對非 LOCAL 變數的代入仍是 unsupported（不會被悄悄吞掉）。
+S29 起口上／地の文函式內的狀態變數代入不需登記也直接寫 GameState（`runtime.Interp._state_set`）；此表的代入行行為不變。
+其他 ERB 的函式內的非 LOCAL 代入仍是 unsupported（不會被悄悄吞掉）。
 
 每一列：`(函式名, ERB 行號): (原文, sexmsg 中對應的 Python 函式, 該函式註解中涵蓋此行的引用)`。
 `tests/test_narration.py::test_hook_table_matches_sexmsg` 檢查：原文與 ERB 一致、引用確實出現在 sexmsg 對應函式的原始碼中、
@@ -368,8 +369,17 @@ HOOK_CALLS = {
     "ENCOUNT_CITIZEN": ("eragvt.game.pastime_nanpa", "hook_encount_citizen"),
 }
 
+# S29：口上（`口上/`）の中の `CALL 名前` は行ごとの登録なしで、名前だけで hook にする（`extract.FuncParser._stmt_inner`）。
+# 「状態を変える非口上函式」のうち Python 移植があるもの。移植の無いもの（口上からは呼ばれていない）は従来どおり unsupported。
+KOJO_CALL_HOOKS = {
+    "LEVELSTATUS": ("eragvt.game.kojo_calls", "hook_levelstatus"),
+    "TRANSFORM": ("eragvt.game.kojo_calls", "hook_transform"),
+    "PERFORM_CHEERS_HATE": ("eragvt.game.kojo_calls", "hook_perform_cheers_hate"),
+}
+HOOK_CALLS.update(KOJO_CALL_HOOKS)
+
 # hook の代入で書き込んでよい変数
-HOOK_WRITABLE = {"FLAG", "TFLAG", "TENTACLE_SIZE", "CFLAG", "TCVARN", "TALENT", "EXP", "TARGET"}
+HOOK_WRITABLE ={"FLAG", "TFLAG", "TENTACLE_SIZE", "CFLAG", "TCVARN", "TALENT", "EXP", "TARGET"}
 
 
 def match_hook(func: str, line: int, text: str) -> Optional[str]:

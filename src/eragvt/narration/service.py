@@ -27,7 +27,7 @@ from pathlib import Path
 from typing import Any, Callable, Optional
 
 from .catalog import Catalog
-from .runtime import Env, ErbRuntimeError, Interp, NeedInput, NotSupported
+from .runtime import Env, ErbRuntimeError, Interp, NeedInput, NotSupported, StateJournal
 from .windowlib import WindowManager
 from .windowlib import py_functions as window_py_functions
 
@@ -40,9 +40,9 @@ _EVENT_STACK = 64 * 1024 * 1024  # run_event_gen のスレッドのスタック�
 
 
 class _Tx:
-    """輸出・亂數・LOCAL 的快照（失敗時回復）。"""
+    """輸出・亂數・LOCAL・RESULT(S) 的快照＋GameState 書き込みのジャーナル区間（S29）。失敗時に `rollback`、成功時に `commit`。"""
 
-    def __init__(self, ctx) -> None:
+    def __init__(self, ctx, journal: Optional[StateJournal] = None) -> None:
         out = ctx.out
         st = ctx.state
         d = dict(out.__dict__)
@@ -59,6 +59,20 @@ class _Tx:
         self.result = st.result.copy()
         self.results = st.results.copy()  # 共用 RESULTS（S22）
         self.ctx = ctx
+        if journal is None:
+            journal = getattr(getattr(ctx, "narration", None), "journal", None) or StateJournal()
+        self.journal = journal
+        self.mark = journal.begin()
+        self.closed = False
+
+    def can_rollback(self) -> bool:
+        """区間内で Python 移植の hook（記録できない状態変化）が走っていなければ True。"""
+        return self.journal.can_rollback(self.mark)
+
+    def commit(self) -> None:
+        if not self.closed:
+            self.closed = True
+            self.journal.commit(self.mark)
 
     def rollback(self) -> None:
         out = self.ctx.out
@@ -70,6 +84,9 @@ class _Tx:
         st.temp.narr = self.narr
         st.result = self.result
         st.results = self.results
+        if not self.closed:
+            self.closed = True
+            self.journal.rollback(self.mark)
 
 
 class CatalogNarrationService:
@@ -79,6 +96,7 @@ class CatalogNarrationService:
         self.catalog = Catalog(erb_dir, data.names)
         self.data = data
         self.failures: list[str] = []  # 実行時に不可執行と判明したもの（診断用）
+        self.journal = StateJournal()  # S29：catalog の GameState 書き込みの記録（入れ子の _Tx が共有）
 
     @classmethod
     def from_csv_dir(cls, csv_dir: Path, data) -> Optional["CatalogNarrationService"]:
@@ -94,27 +112,34 @@ class CatalogNarrationService:
             code = args[1] if len(args) > 1 and args[1] is not None else ""
             force = args[2] if len(args) > 2 and args[2] is not None else 0
             it.side_effects += 1  # FLAG:62／FLAG:900 を書く
+            # S29：kojo_root_full（Python）が書く FLAG:62／FLAG:900 をジャーナルに記録（口上本体の書き込みは入れ子の _Tx が記録）
+            self.journal.touch_item(ctx.state.flag, 62)
+            self.journal.touch_item(ctx.state.flag, 900)
             r = kojo_root_full(ctx, c_no, code, force)
             it._set_result([r])
             return r
 
         py = {"KOJO_ROOT": py_kojo_root}
         py.update(window_py_functions(WindowManager(), ctx.out))
-        env = Env(ctx.state, ctx.data, ctx.out, py, hooks or {}, ctx, inputs)
+        env = Env(ctx.state, ctx.data, ctx.out, py, hooks or {}, ctx, inputs, journal=self.journal)
         return Interp(self.catalog, env)
 
     def _run(self, ctx, fn: Callable[[Interp], Any], what: str, hooks: Optional[dict] = None):
-        tx = _Tx(ctx)
+        tx = _Tx(ctx, self.journal)
         it = self._interp(ctx, hooks)
         try:
-            return True, fn(it)
+            r = fn(it)
+            tx.commit()
+            return True, r
         except (NotSupported, ErbRuntimeError) as e:
-            if it.hooks_fired:
-                # 状態変化（hook）の後に失敗したものは戻せない
+            if not tx.can_rollback():
+                # Python 移植の hook（記録できない状態変化）の後に失敗したものは戻せない
                 raise NotImplementedError(f"{what}：状態変化の後で実行できなくなりました（{e}）") from e
-            tx.rollback()
+            tx.rollback()  # S29：GameState への書き込みもジャーナルで元に戻る
             self.failures.append(f"{what}: {e}")
             return False, None
+        finally:
+            tx.commit()  # 例外（NotImplementedError 等）でも区間は閉じる（rollback／commit 済みなら何もしない）
 
     def can_run(self, name: str) -> bool:
         return self.catalog.unsupported_reason(name) is None
@@ -232,20 +257,25 @@ class CatalogNarrationService:
             return False
         inputs: list[str] = []
         while True:
-            tx = _Tx(ctx)
+            tx = _Tx(ctx, self.journal)
             it = self._interp(ctx, hooks, inputs)
             try:
                 it.call(name, list(args or []))
+                tx.commit()
                 return True
             except NeedInput:
-                if it.hooks_fired or it.side_effects:
+                # S29：GameState の書き込み（KOJO_ROOT の FLAG を含む）はジャーナルで戻せるので再実行できる。
+                # Python 移植の hook が走っていたら戻せない
+                if not tx.can_rollback():
                     raise NotImplementedError(f"{name}：入力待ちより前に状態変化があるため再実行できません") from None
                 value = yield
                 tx.rollback()
                 inputs.append(str(value))
             except (NotSupported, ErbRuntimeError) as e:
-                if it.hooks_fired:  # `_run` と同じ扱い
+                if not tx.can_rollback():  # `_run` と同じ扱い
                     raise NotImplementedError(f"{name}：状態変化の後で実行できなくなりました（{e}）") from e
                 tx.rollback()
                 self.failures.append(f"{name}: {e}")
                 return False
+            finally:
+                tx.commit()  # ジェネレータが閉じられた（GeneratorExit）等でも区間は閉じる

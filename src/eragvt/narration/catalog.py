@@ -18,10 +18,8 @@ from typing import Optional
 from . import nodes as N
 from .extract import ExtractContext, parse_function, read_logical_lines, scan_labels
 from .hooks import match_hook
-from .runtime_support import PY_FUNCTIONS, unsupported_reasons_static
+from .runtime_support import NARRATION_DIRS, PY_FUNCTIONS, unsupported_reasons_static
 from .symbols import UserVar, load_erh
-
-NARRATION_DIRS = ("口上/", "地の文/")
 
 
 def list_erb_files(root: Path, ext: str = ".ERB") -> list[Path]:

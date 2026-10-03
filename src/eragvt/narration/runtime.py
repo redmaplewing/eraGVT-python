@@ -35,9 +35,12 @@ from .runtime_support import (
     CLOTH_INDEX,
     GLOBAL_ARRAY_ATTR,
     NAME_TABLE_OF,
+    NARRATION_DIRS,
     STATE_SAVEDATA_ATTR,
+    STATE_WRITABLE,
     TEMP_ARRAY_ATTR,
     TEMP_SCALAR_ATTR,
+    var_length,
 )
 from .symbols import CSV_NAME_TABLE
 
@@ -86,6 +89,60 @@ def _trunc_mod(a: int, b: int) -> int:
     return a - _trunc_div(a, b) * b
 
 
+class StateJournal:
+    """S29：catalog が GameState に書いた変更の記録（失敗時に完全に戻すため）。
+
+    `begin()` で区間を開き（入れ子可）、`rollback(mark)` はその区間の書き込みを新しい順に元へ戻す。区間が 1 つも開いていない
+    ときは記録しない（外側に戻す人がいない）。最外の区間が閉じたら記録を捨てる。Python 移植を呼ぶ hook（`HOOK_CALLS`）の
+    状態変化は記録できないので `irreversible` を数え、区間内でそれが増えていたら戻せない（`can_rollback`）。"""
+
+    def __init__(self) -> None:
+        self.entries: list = []
+        self.depth = 0
+        self.irreversible = 0
+
+    def begin(self) -> tuple[int, int]:
+        self.depth += 1
+        return (len(self.entries), self.irreversible)
+
+    def _close(self) -> None:
+        self.depth -= 1
+        if self.depth <= 0:
+            self.depth = 0
+            self.entries.clear()
+
+    def commit(self, mark: tuple[int, int]) -> None:
+        self._close()
+
+    def can_rollback(self, mark: tuple[int, int]) -> bool:
+        return self.irreversible == mark[1]
+
+    def rollback(self, mark: tuple[int, int]) -> None:
+        start = mark[0]
+        for kind, obj, key, old in reversed(self.entries[start:]):
+            if kind == "item":
+                obj[key] = old
+            else:
+                setattr(obj, key, old)
+        del self.entries[start:]
+        self._close()
+
+    def touch_item(self, arr: Any, key: Any) -> None:
+        """これから Python 側が書く要素の現在値を記録する（KOJO_ROOT の FLAG:62／FLAG:900 等）。"""
+        if self.depth:
+            self.entries.append(("item", arr, key, arr[key]))
+
+    def set_item(self, arr: Any, key: Any, value: Any) -> None:
+        if self.depth:
+            self.entries.append(("item", arr, key, arr[key]))
+        arr[key] = value
+
+    def set_attr(self, obj: Any, name: str, value: Any) -> None:
+        if self.depth:
+            self.entries.append(("attr", obj, name, getattr(obj, name)))
+        setattr(obj, name, value)
+
+
 @dataclass
 class Frame:
     fd: N.FuncDef
@@ -105,6 +162,7 @@ class Env:
     ctx: Any = None  # action.Ctx（hook／KOJO_ROOT 用）
     inputs: Optional[list] = None  # INPUTS に与える入力（None = INPUTS 不可）
     input_fn: Optional[Callable] = None  # S28c2 run_event_gen：f(yield する値) → 入力値（中断して待つ）
+    journal: Optional[StateJournal] = None  # S29：状態書き込みの記録（None なら記録しない新しいジャーナル）
 
 
 class Interp:
@@ -120,6 +178,9 @@ class Interp:
         self.hooks_fired = 0
         self.side_effects = 0  # py_functions による状態変化（KOJO_ROOT）の回数
         self.input_pos = 0
+        if env.journal is None:
+            env.journal = StateJournal()
+        self.journal = env.journal
 
     # --- 呼び出し ------------------------------------------------------------------
     def call(self, name: str, args: list, as_method: bool = False) -> Any:
@@ -234,6 +295,8 @@ class Interp:
             self._set_result([len(text) if s.unicode else cp932_len(text)])
         elif t is N.Split:
             self._split(s, fr)
+        elif t is N.Times:
+            self._times(s, fr)
         elif t is N.VarSet:
             self._varset(s, fr)
         elif t is N.Return:
@@ -334,6 +397,7 @@ class Interp:
         self.hooks_fired += 1
         if isinstance(inner, N.CallStmt):
             mod, fn = HOOK_CALLS[inner.name]
+            self.journal.irreversible += 1  # Python 移植の状態変化は記録できない（S29：失敗しても戻せない）
             args = [self.eval(a, fr) for a in inner.args if a is not None]
             r = getattr(importlib.import_module(mod), fn)(self.env.ctx, *args)
             if inspect.isgenerator(r):
@@ -737,6 +801,22 @@ class Interp:
         for i, p in enumerate(parts[:size]):
             self._assign_var(fr, Var(name, [Lit(i)]), p)
 
+    def _times(self, s: "N.Times", fr: Frame) -> None:
+        """TIMES（config「TIMESの計算をeramakerにあわせる:NO」：`source/earGVP/emuera.config`:65）：
+        `decimal d = 値 * (decimal)実数` を Int64 へ切り捨て（`Instraction.Child.cs@TIMES_Instruction`:905–916）。
+        実数は `LexicalAnalyzer.ReadDouble` で double になってから `(decimal)` 変換される。"""
+        from decimal import Decimal
+
+        # UNVERIFIED: .NET の double→decimal 変換（有効数字 15 桁に丸める）は reference に無い .NET 実行時の仕様。
+        # 15 桁以下のリテラルなら原文の Decimal と同じ値になる前提（`game.era.times` と同じ）。本作の口上は 0.5／0.20 のみ。
+
+        if len(s.factor.replace(".", "").lstrip("0")) > 15:
+            raise NotSupported("TIMES の実数が有効数字 15 桁を超える")
+        d = Decimal(self._int(s.target, fr)) * Decimal(s.factor)
+        if not (-(2**63) <= d <= 2**63 - 1):
+            raise NotSupported("TIMES の結果が Int64 の範囲外（引擎は double 経由で丸める）")
+        self._assign_var(fr, s.target, int(d))
+
     def _set_result(self, vals: list) -> None:
         """RESULT:0〜 に代入（多値 RETURN 等）。RESULT は Python 移植部分と共用の `GameState.result`（S21）。"""
         self.st.set_result_x(*vals)
@@ -786,7 +866,13 @@ class Interp:
         if name == "CDFLAG":
             if len(args) != 3:
                 raise NotSupported("CDFLAG の引数は 3 つ")
-            return self._chara(args[0]).cdflag[(args[1], args[2])]
+            return self._chara(args[0]).cdflag[self._cdflag_key(args)]
+        if name == "TCVAR":
+            # 常に 0（runtime_support.READ_ONLY_SPECIAL の注記）。添字の検査だけ行う
+            c, i = (st.target, args[0] if args else 0) if len(args) <= 1 else (args[0], args[1])
+            self._chara(c)
+            self._check_index("TCVAR", [i])
+            return 0
         if name in GLOBAL_ARRAY_ATTR:
             return getattr(st, GLOBAL_ARRAY_ATTR[name])[self._idx(args[0], name) if args else 0]
         if name in ("TIME", "MONEY", "TARGET", "ASSI", "MASTER"):
@@ -885,25 +971,78 @@ class Interp:
             args = self._args(fr, v)
             self._set_narr(name, tuple(args) if args else (0,), value)
             return
-        if getattr(self, "_state_write", False):
+        if getattr(self, "_state_write", False) or (fr.fd.file.startswith(NARRATION_DIRS) and name in STATE_WRITABLE):
             self._state_set(v, value, fr)
             return
         raise NotSupported(f"{name} への代入")
 
+    def _check_index(self, name: str, idx: list) -> None:
+        """範囲外の添字は引擎エラー（キャラ変数：`GameData/Variable/VariableToken.cs@CharaVariableToken.CheckElement`:275–283、
+        一般の配列も同様に CodeEE）。要素数は `runtime_support.var_length`。"""
+        sizes = var_length(name, self.data, self.cat)
+        for k, i in enumerate(idx):
+            if k < len(sizes) and (not isinstance(i, int) or not 0 <= i < sizes[k]):
+                raise ErbRuntimeError(f"配列変数 {name} の第{k + 1}添字 {i!r} は範囲外")
+
+    def _cdflag_key(self, args: list) -> tuple:
+        """CDFLAG:キャラ:a:b。文字列の添字は a が CDFLAG1、b が CDFLAG2 の名前（`GameData/ConstantData.cs`:826–844）。"""
+        a, b = args[1], args[2]
+        try:
+            if isinstance(a, str):
+                a = self.data.index_of("CDFLAG1", a)
+            if isinstance(b, str):
+                b = self.data.index_of("CDFLAG2", b)
+        except KeyError as e:
+            raise ErbRuntimeError(str(e)) from e
+        self._check_index("CDFLAG", [a, b])
+        return (a, b)
+
     def _state_set(self, v: Var, value: Any, fr: Frame) -> None:
-        """hook 行のみ：FLAG／TFLAG／CFLAG／TCVARn／TENTACLE_SIZE への書き込み（hooks.HOOK_WRITABLE）。"""
+        """GameState への書き込み（S29：口上／地の文の函式内の代入すべて、および hook 行）。
+
+        キャラ変数の添字を 1 つ省略すると TARGET（`GameData/Variable/VariableParser.cs`:104–135）。書き込みは単なる配列要素への
+        代入で、BASE と MAXBASE の連動などはない（`VariableToken.cs@CharaInt1DVariableToken.SetValue`:1066–1070、
+        `CharaStrVariableToken.SetValue`:1121–1125、`CharaStr1DVariableToken.SetValue`:1150–1154、
+        `CharaInt2DVariableToken.SetValue`:1196–1200）。変更は `StateJournal` に記録し、失敗時に戻す。"""
         st = self.st
         name = v.name
         args = self._args(fr, v)
+        j = self.journal
         if name in GLOBAL_ARRAY_ATTR:
-            getattr(st, GLOBAL_ARRAY_ATTR[name])[args[0] if args else 0] = value
+            if len(args) > 1:
+                raise ErbRuntimeError(f"{name} の引数が多すぎます")
+            i = self._idx(args[0], name) if args else 0
+            self._check_index(name, [i])
+            j.set_item(getattr(st, GLOBAL_ARRAY_ATTR[name]), i, value)
         elif name in CHARA_ATTR:
+            if len(args) > 2:
+                raise ErbRuntimeError(f"キャラクタ変数 {name} の引数が多すぎます")
             c, i = (st.target, args[0] if args else 0) if len(args) <= 1 else (args[0], args[1])
-            getattr(self._chara(c), CHARA_ATTR[name])[self._idx(i, name)] = value
+            ch = self._chara(c)
+            i = self._idx(i, name)
+            self._check_index(name, [i])
+            j.set_item(getattr(ch, CHARA_ATTR[name]), i, value)
+        elif name in CHARA_STR_ATTR:
+            if len(args) > 1:
+                raise ErbRuntimeError(f"キャラクタ変数 {name} の引数が多すぎます")
+            j.set_attr(self._chara(args[0] if args else st.target), CHARA_STR_ATTR[name], value)
+        elif name == "CSTR":
+            if len(args) > 2:
+                raise ErbRuntimeError("キャラクタ変数 CSTR の引数が多すぎます")
+            c, i = (st.target, args[0] if args else 0) if len(args) <= 1 else (args[0], args[1])
+            ch = self._chara(c)
+            self._check_index(name, [i])
+            j.set_item(ch.cstr, i, value)
+        elif name == "CDFLAG":
+            if len(args) != 3:
+                raise ErbRuntimeError("キャラクタ二次元配列変数 CDFLAG の引数は省略できません")
+            ch = self._chara(args[0])
+            j.set_item(ch.cdflag, self._cdflag_key(args), value)
         elif name == "TENTACLE_SIZE" and len(args) == 2:
-            st.temp.tentacle_size[(args[0], args[1])] = value
+            self._check_index(name, args)
+            j.set_item(st.temp.tentacle_size, (args[0], args[1]), value)
         elif name == "TARGET" and not args:  # S28b：`MESSAGE_CITIZEN_TRAIN.ERB`:191／:419 `TARGET=ARG`
-            st.target = value
+            j.set_attr(st, "target", value)
         else:
             raise NotSupported(f"{name} への代入")
 
