@@ -292,14 +292,11 @@ def show_status(ctx: Ctx) -> None:
     単純なバーと文字で表示する（deviations.md「戦闘画面の簡略表示」）。SHOW_STATUS とその下位関数には
     RAND が無く、代入は STATUS_PRINT_CHARGE（CHARA_STATUS.ERB:1477–1489、SHOW_STATUS_BASE_DISPBATTLE:205 から
     毎回無条件に呼ばれる）の TCVARn:206（蓄積ダメージ限度値）だけ（S16 で確認・移植：`status_charge_limit`）。
-    例外は SHOW_TRAIN_PALAM_STATUS（CHARA_STATUS.ERB:1715–1750）→ SHOW_STATUS_PALAM（BATTLE_SHOW_STATUS.ERB:353–）→
-    PRINTFORM_GAPING_NOW（GAPING.ERB:789–：CFLAG:35／36 の初期値代入と V_GAPING／A_GAPING の RAND）で、
-    CONFIG_CHECK_SCREEN_F(5) == 1（FLAG:801 bit 5）のときだけ呼ばれる。既定（FLAG:801 = 1）では呼ばれず、
-    コンフィグ画面が未移植なので到達しないが、到達したら停止する（S11）。
+    S34 補上原作 SHOW_TRAIN_PALAM_STATUS；打開列表可經 PRINTFORM_GAPING_NOW 初始化 CFLAG:35／36 並消耗 RNG。
     """
+    from .palam_display import show_train_palam_status
+
     st, data, out = ctx.state, ctx.data, ctx.out
-    if config_check_screen(st, 5) == 1:
-        raise NotImplementedError("調教ステータス表示（SHOW_TRAIN_PALAM_STATUS、FLAG:801 bit 5）は未移植")
     status_charge_limit(ctx)  # 表示より前に置いても結果は同じ（表示部に代入なし）
     c = tc(ctx)
     v = c.tcvarn
@@ -310,6 +307,7 @@ def show_status(ctx: Ctx) -> None:
     if t(ctx, c, "変身能力") == 1 and c.cflag[1] == 0:
         head += "　<<未変身>>"
     out.printl(head)
+    show_train_palam_status(ctx, "上部")  # CHARA_STATUS.ERB@SHOW_STATUS_BASE_DISPBATTLE:41
     for label, idx in (("体力", 0), ("気力", 1), ("性耐性", 2)):
         _bar(out, label, c.base[idx], c.maxbase[idx])
         out.printl()
@@ -372,6 +370,7 @@ def show_status(ctx: Ctx) -> None:
     out.print("距離　　　")
     print_distance(ctx)
     out.printl()
+    show_train_palam_status(ctx, "下部")  # BATTLE_SHOW_STATUS.ERB@SHOW_STATUS:223
     # :232–242
     lim_ = st.temp.turn_limit
     if lim_ > 0:

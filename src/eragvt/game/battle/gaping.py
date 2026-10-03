@@ -417,7 +417,7 @@ def printform_gaping_now(ctx: Ctx, tar: int = -1, con: int = -1) -> None:
 
     表示だけでなく、CFLAG:35／36 が 0 なら初期値を代入して V_GAPING／A_GAPING（RAND を引く）を呼ぶ（:800–808）。
     呼び出し元（BATTLE_SHOW_STATUS.ERB@SHOW_STATUS_PALAM:357–358、SHOW_STATUS_CHARA_SELECT_PAGE5.ERB:45）は
-    どちらも現状の移植範囲では到達しない（`train.show_status` の docstring 参照）。"""
+    分別在 S34 戰鬥列表與 S25 狀態畫面接通。"""
     from ..chara_common import is_male
 
     st, data, out = ctx.state, ctx.data, ctx.out

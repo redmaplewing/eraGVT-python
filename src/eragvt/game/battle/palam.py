@@ -35,6 +35,8 @@ from .core import (
     abl,
     add_exp,
     get_battle_situation,
+    get_local,
+    set_local,
     message_branch,
     percent_cal,
     print_swoon,
@@ -1088,6 +1090,9 @@ def palam_up(ctx: Ctx) -> None:
                 add = 0
                 if st.flag[700]:
                     message_shield_state(ctx, pc)
+            # @PALAM_UP:74；#DIM 陣列未寫入的項目保留前次值。
+            # reference/emuera-1824/Emuera/GameData/Variable/VariableToken.cs:1847–1875（static 儲存）。
+            set_local(st, "PALAM_UP.BEFORE_PALAM_CVAB", pc, c.palam[pc])
             c.palam[pc] += add
             c.nowex[pc] = calc_ecstasy(ctx, pc, ecs_flag)
             if c.nowex[pc] > 0:
@@ -1183,8 +1188,15 @@ def palam_up(ctx: Ctx) -> None:
     elif tf20 in (8, 9, 12, 1009, 1010, 1013) and (v[12] & KIZETU) and (c.base[0] > 0 or c.base[1] > 0 or c.base[2] > 0):
         v[101] = -999
     palam_personality_adjust(ctx)
-    if any(up[i] for i in range(0, 100)) and config_check_screen(st, 1) > 0:
-        raise NotImplementedError("調教ステータス表示（CONFIG_CHECK_SCREEN_F(1)）は未移植")
+    if sum(value for _, value in up.items()) and config_check_screen(st, 1) > 0:
+        from .palam_display import palam_up_display_calculation
+
+        out.wait()
+        out.printl("―" * 28)  # 汎用関数/PRINT_LINE.ERB@SHORTLINE:3–7
+        before = [get_local(st, "PALAM_UP.BEFORE_PALAM_CVAB", i) for i in range(4)]
+        palam_up_display_calculation(ctx, before, ecs_flag)
+        out.printl("―" * 28)
+        out.printl()
     for pid in BUI_IGAI_PALAM:
         if up[pid] > 0:
             c.palam[pid] += min(up[pid], PALAM_MAX)

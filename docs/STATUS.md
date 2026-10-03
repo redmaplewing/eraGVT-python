@@ -1,6 +1,6 @@
 # 現況（唯一真相，≤120 行）
 
-更新：2026-10-04（S33 完成）
+更新：2026-10-04（S34 完成）
 
 ## 已完成（各階段細節見 git log 與 wiki）
 
@@ -29,29 +29,23 @@
 - **S29** 口上／地の文的狀態書き込み（catalog が非 LOCAL 代入を GameState へ直接書く＋ジャーナルで失敗回復；下節）。
 - **S30** catalog 剩餘的不可執行原因（ループ內 $ラベルへの GOTO・STRDATA・SETCOLORBYNAME・FINDCHARA・GETCOLOR・RANDCHOOSE 系；下節）。
 
-## S33：雜魚戰
+## S34：裏プロフィール與相關狀態顯示
 
-- S32 已手翻 HATUJOU_TO_HAIRAN；S33 接通 16 種雜魚的遭遇、資料、普通／特殊指令、反應、勝利與戰後處理。
-- `mob.py`／`mob_special.py` 採原生 Python；原文顯示由 catalog 執行，701／802 的影片選單等待輸入。
-- TextOutput 背景色與 Web／GETBGCOLOR 共用，補足 COLOR_T_SHAPE；依據見 `docs/wiki/python/mob-battle.md`、`narration.md`。
-- 新增 130 項測試；完整 pytest：`1998 passed, 1 warning in 316.37s (0:05:16)`。
-- 正常 config2／3 各 seed 0–2、10 SHOP，全部先停於既有 MAKESEXUALPROFILE。
-- 人工關閉 805:6／801:5 的 config2／3，各 seed 0–9、40 SHOP（未改原作 preset）：
+- S32 已手翻 HATUJOU_TO_HAIRAN；S33 接通16種雜魚，詳見 `docs/wiki/python/mob-battle.md`。
+- S34 `game.sexual_profile` 手翻 MAKESEXUALPROFILE、由原文抽取字串候選；能力提高時寫入 CSTR:45–48，保留重抽及原亂數順序。
+- `battle.palam_display` 接通801 bit1／5–8的上升計算、上下列表、898／899；原作顯示初始化及一般函式終端 RESULT:0=0 均保留。
+- 依據與邊界：`docs/wiki/python/sexual-profile-status.md`。新增72測試；主代理最終完整 pytest：`2070 passed, 1 warning in 324.26s (0:05:24)`。
+- 正常 config2／3各seed0–9、40 SHOP、actions101–108已完成，無S34停止、catalog失敗0：
 
 | 組別 | 上限 | 回標題 | 既有未移植停止 |
 | --- | ---: | ---: | --- |
-| config2 | 7 | 2 | 子供命名 1 |
-| config3 | 3 | 1 | 市民戰 5、變身後命名 1 |
+| config2 | 5 | 2 | 子供命名3 |
+| config3 | 4 | 1 | 子供命名2、市民戰3 |
 
-- 上述人工模擬均無雜魚系統停止。標準驗收：兩組各 seed 0–249、max-shop 200、actions 101–108，10 個前景批次全部成功。
-
-| 組別 | S32 上限／回標題／未實作停止 | S33 上限／回標題／未實作停止 |
-| --- | --- | --- |
-| 預設 | 246／4／0 | 246／4／0 |
-| 初期セット（tokusou） | 250／0／0 | 250／0／0 |
-
-- 500 局 seed 集合完整、catalog 執行失敗為 0；`source/`、`reference/` 未修改。
-- 沒有自行裁決既有待決事項；跨檔重名依原作設定與引擎排序保留。
+- 標準500局驗收完成：預設／tokusou各seed0–249、max-shop200、actions101–108，10個50局前景批次全部成功。
+- 結果與S33基線一致：預設246上限／4回標題／0停止；tokusou250上限。520局catalog失敗0、seed全集及逐局log／JSONL已核對。
+- `source/`、`reference/`未動；修改檔案皆LF、UTF-8無BOM。
+- 沒有新增UNVERIFIED／DEVIATION；既有裁決與preset保持原作。
 
 ## 口上 catalog 現況
 
@@ -67,16 +61,16 @@ P4 父親 CFLAG:9 指向不存在的ボス／ラスボス／モブ；HEROINE_PRE
 
 ### 設定項打開後會碰到未移植系統（S24，`flow.md` §10；預設 config 1 全 OFF）
 
-[34] 雑魚戦（802 bit4）已於 S33 接通；[78] 裏プロフィール（805 bit6）→ MAKESEXUALPROFILE 停止；[11]／[15]〜[17] 調教ステータス表示
-（801 bit1／5〜7）→ 戰鬥中停止；[54] 返り血（803 bit4）→ SUPART_BLOOD 停止；[72] 触手の子種からも娘 → 命名 INPUTS 停止；
-[35] クズ市民・[55] ラスボス強化 無作用（所在系統未移植）。[10]／[14] 素質表示 S25 起、[79] 有害ブログ S26 起生效。
-`--config-preset 2／3` 目前停止與人工深入結果見 S33 節。
+[34] 雑魚戦（802 bit4）S33接通；[78] 裏プロフィール（805 bit6）與[11]／[15]〜[17]狀態顯示（801 bit1／5〜7）S34接通。
+[54] 返り血（803 bit4）→ SUPART_BLOOD 停止；[72] 触手の子種からも娘 → 命名 INPUTS 停止；
+[35] クズ市民→市民戰仍停止；[55] ラスボス強化 所在系統未移植。[10]／[14] 素質表示 S25 起、[79] 有害ブログ S26 起生效。
+`--config-preset 2／3` 正常設定的驗收結果見 S34 節。
 
 ## 下一步
 
 - **自主推進（使用者指定 2026-10-02，依序）**：~~S22 RESULTS 共用~~ → ~~S23 [反撃]スタイル~~ → ~~S24 設定畫面／プリセット~~ → ~~S25 狀態畫面~~
   → ~~S26 FLASHNEWS~~ → ~~S26b RESULTS:0 殘值~~ → ~~S27 ラスボス～結局~~ → ~~S28 未移植行動（S28a〜S28c2）~~：**指定範圍全部完成**。
-  其他候選：裏プロフィール（MAKESEXUALPROFILE）、クズ市民戰、引き継ぎ（SUCCESSION.ERB，クリア後の停止點）、天使の樹（引き継ぎ後のみ）、ランダム命名畫面、SHOP [112] 衣裝設定、
+  S34完成後停止，其他候選：クズ市民戰、引き継ぎ（SUCCESSION.ERB，クリア後の停止點）、天使の樹（引き継ぎ後のみ）、ランダム命名畫面、SHOP [112] 衣裝設定、
   SHOP 子選單（[111] CHARA_POWERUP：SHOP.ERB:253、[113] DRUG_PREPARATION：:264、[180] TSUIKAYOUSEI_NORMAL（加入引退有り）：:294）。
 - 已裁決（2026-10-02）：名乗り改竄的 RESULTS:2 殘值照原作（S22 實作）；開局デフォルト悪堕ち的輸出丟棄維持現況。
 - 已裁決（2026-10-02）：PALAM_HOSEI 殘值照原作、防衛力負數 D1〜D4（S21 實作）。已裁決（2026-10-01）：S20 的 DEVIATION 6 項＋斜體。
@@ -97,7 +91,7 @@ S23 模擬（含 [反撃] 人工設定）皆無停止。登記但罕見：
 - 自由行動（S28c2）：ナンパ・酒ナンパのレイプで クズ市民 config（CONFIG_CHECK_EVENT_F(5)）ON 時の ENCOUNT_CITIZEN。
 - 夜這い：TS キャラ的 `_ABLUP` 女体受容取得、`%CALLNAME:ARG%` 指向不存在角色（原作也報錯）。
 - 開局：HEROINE_PRESET 的 [30]（相関関係）、2 択畫面的 [300]（ゲームの説明）。狀態畫面內的停止見上節。設定項造成的停止見上表。
-- 戰鬥 PALAM 表示（FLAG:801 bit 5）、觸手服（ACTTENTACLESUIT・運動快感）、クズ市民／部分事件戰／エンドレス、
+- 觸手服（ACTTENTACLESUIT・運動快感）、クズ市民／部分事件戰／エンドレス、
   ボスの返り血（SUPART_BLOOD）、デバッグ模式。
 
 ## 已知問題

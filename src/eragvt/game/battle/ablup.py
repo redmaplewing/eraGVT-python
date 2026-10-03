@@ -209,7 +209,9 @@ def _raise(ctx: Ctx, c: Character, abl_name: str, value: int) -> None:
         idx = ctx.data.index_of("ABL", abl_name)
         ctx.out.printl(f"{ctx.data.names['ABL'].get(idx, '')}が{value}に上がった")
         if idx <= 3 and config_check_other(ctx.state, 6) == 1:
-            raise NotImplementedError("裏プロフィール（MAKESEXUALPROFILE）は未移植")
+            from ..sexual_profile import update_profile
+
+            update_profile(ctx, idx, value)
 
 
 def _talent_message(ctx: Ctx, lines: tuple[str, ...], talent_no: int, verb: str, kojo_code: str) -> None:
