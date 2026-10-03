@@ -321,6 +321,10 @@ def reaction_ref(ctx: Ctx, arg: int = 0) -> int:
     from .sexcom import check_holyvirgin
     st, c = ctx.state, core.tc(ctx)
     n = st.flag[11]
+    if n == 1150:
+        # 呼叫處拼 TENTACLE_MOB_1150_REACTION_REF，原作只有 CITIZEN_1150；
+        # TRYCALLFORM 不發保留 RESULT（reference/emuera-1824/Emuera/GameProc/Function/Instraction.Child.cs:2316–2322）。
+        return st.result[0]
     if n == 901:
         return 0
     if n == 902:
@@ -346,6 +350,7 @@ def reaction_ref(ctx: Ctx, arg: int = 0) -> int:
 
 # 各檔 @SEX_TYPE_MOB_{n}_COM{command} 的存在集合；值見 DIM.ERH:221–224。
 _COMMANDS = {
+    1150:(0,1,3,7,9,11,14),  # CITIZEN_1.ERB@SEX_TYPE_MOB_1150_COM*；COM2 原作為901。
     1:(0,1,3,7,11,14),2:tuple(range(15)),3:(6,7,11,14),101:(0,2,3,14),102:(0,4,5,14,2000),
     201:tuple(range(15)),301:(0,1,10,14),501:(0,1,2,3,7,9,11,14),601:(2,3,8,14),
     701:(0,2,3,4,6,9,10,14),702:(4,5,14),801:tuple(range(15)),802:(0,2,3,4,6,9,10,14),
@@ -373,7 +378,7 @@ def sex_option(ctx: Ctx, command: int) -> int:
     n,rand = st.flag[11],st.rng.rand
     fixed = {(1,0):15,(2,0):1,(2,1):-1,(3,11):8,(101,0):7,(101,2):1,(102,0):5,
              (102,4):1,(201,0):1,(301,10):1,(501,0):15,(701,0):1,(801,0):15,
-             (801,2):15,(802,0):1,(803,3):4,(902,0):14}
+             (801,2):15,(802,0):1,(803,3):4,(902,0):14,(1150,0):15}
     if (n,command) in fixed:
         return fixed[(n,command)]
     if n == 501 and command == 2:

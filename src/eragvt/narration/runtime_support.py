@@ -19,7 +19,7 @@ def is_narration_function(path: str, name: str) -> bool:
     # CITIZEN_1.ERB:408–656 的同名顯示函式先於雜魚檔載入。
     # Config.cs:330–379／LabelDictionary.cs:58–77；emuera.config:40 啟用檔名排序。
     return (path == "ゲーム内_戦闘処理/触手データ/クズ市民/CITIZEN_1.ERB"
-            and name == "MESSAGE_MOB_901_COM2") or path.startswith(NARRATION_DIRS) or (
+            and name.startswith("MESSAGE_")) or path.startswith(NARRATION_DIRS) or (
         path.startswith("ゲーム内_戦闘処理/触手データ/雑魚敵/") and name.startswith("MESSAGE_")
     )
 

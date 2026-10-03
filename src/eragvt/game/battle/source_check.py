@@ -150,7 +150,9 @@ def source_check(ctx: Ctx) -> Generator[None, int, None]:
         cancel_lose = 1
     # :850–1098 敗北
     if st.flag[73] > 0 and c.base[0] == 0 and c.base[1] == 0 and c.base[2] == 0 and v[0] == 0:
-        raise NotImplementedError("クズ市民戦の敗北（監禁）は未移植")
+        from .citizen import defeat
+
+        yield from defeat(ctx)
     lost = c.base[0] == 0 and c.base[1] == 0 and c.base[2] == 0 and st.flag[13] > 0 and (
         enemy_type_check(st, "MOB") == 0 and enemy_type_check(st, "CITIZEN") == 0
     )
@@ -180,9 +182,7 @@ def source_check(ctx: Ctx) -> Generator[None, int, None]:
         from .core import LASTBOSS_NAMES
         from .sexcom import boss_reaction_ref, lastboss_reaction_ref
 
-        if enemy_type_check(st, "CITIZEN") == 1:
-            raise NotImplementedError("クズ市民戰的 REACTION_REF 尚未移植")
-        if enemy_type_check(st, "MOB") == 1:
+        if enemy_type_check(st, "MOB") == 1 or enemy_type_check(st,"CITIZEN") == 1:
             from .mob import reaction_ref
 
             r = reaction_ref(ctx,1)
@@ -855,7 +855,11 @@ def _timeup(ctx: Ctx) -> None:
     if st.tflag[9] == 1:
         raise NotImplementedError("救出の時間切れ（MESSAGE_KYUUSHUTU_TIMEUP）は未移植")
     if st.flag[73] > 0:
-        raise NotImplementedError("クズ市民戦の時間切れは未移植")
+        from .mob import message
+
+        # BATTLE_COM_AFTER.ERB@SOURCE_CHECK:1117–1130。
+        message(ctx,"MESSAGE_BATTLE_END_CITIZEN_TIMEUP")
+        raise BeginAfterTrain()
     # MESSAGE_BATTLE_END_TIMEUP（地の文/MESSAGE_BATTLE.ERB:1873–1906）
     if get_battle_situation(st, "耐久戦"):
         out.printl("何とか襲撃を耐えきったようだ・・・")

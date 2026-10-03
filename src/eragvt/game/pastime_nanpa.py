@@ -96,5 +96,7 @@ def hook_calc_gangbang(ctx: Ctx, situation: str, sao: int, nakadashi: int):
 
 
 def hook_encount_citizen(ctx: Ctx, *args) -> None:
-    """`CALL ENCOUNT_CITIZEN(6001)`（`CONFIG_CHECK_EVENT_F(5) == 1` のときだけ：クズ市民戦は未移植 → 停止）。"""
-    raise NotImplementedError("クズ市民戦（ENCOUNT_CITIZEN、ナンパ／酒ナンパのレイプから）は未移植")
+    """PASTIME_ナンパ.ERB@PASTIME_NANPA_RAPE:3086；酒ナンパ同:1696。"""
+    from .battle.citizen import encount_citizen
+
+    encount_citizen(ctx,*args)

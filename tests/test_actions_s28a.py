@@ -235,15 +235,15 @@ def test_gather_investigate(ctx):
     assert "なんと、紅葉は『コネ：警察関係者』を獲得した！" in t
 
 
-def test_gather_investigate_citizen_halts(ctx):
-    """:350 クズ市民（config FLAG:802 bit5）→ ENCOUNT_CITIZEN（未移植）で停止。"""
+def test_gather_investigate_citizen_encounter(ctx):
+    """ACTION_GATHER_INFORMATION.ERB@MESSAGE_GATHER_INFORMATION:350–416：S36 接通遭遇。"""
     st = ctx.state
     st.flag.set_bit(802, 5)
-    with pytest.raises(NotImplementedError, match="クズ市民戦"):
-        # 事件の捜査：HANTEI 28（RAND:15 = 0）、RAND:3=2・RAND:2=1・RAND:4=2、RAND:4=0 → GATHER 0、知性 +1（RAND:3=1、RAND:3=0）
-        # → :350 RAND:10000 = 9999 > 0*2 + 500、ISHOLE → :356 PRINTDATA RAND:5、:369 RAND:3
-        st.flag[852] = 0
-        _gather(ctx, [0, 2, 1, 2, 0, 1, 0, 9999, 0, 0], [1])
+    # HANTEI28、知性+1 → 遭遇、CASE0、825判定29 < 30。
+    st.flag[852] = 0
+    _gather(ctx, [0, 2, 1, 2, 0, 1, 0, 9999, 0, 0, 29], [1])
+    assert st.flag[45] == 6002 and st.flag[73] == 5
+    assert st.charas[1].cflag[825] == 1
 
 
 def test_gather_buy_money(ctx):
@@ -322,14 +322,15 @@ def test_gather_search_kidnapped(ctx, n71, rng, after, text):
         assert f"紅葉による調査の結果、桃香が{text}" in texts(ctx.out)
 
 
-def test_gather_search_kidnapped_found_citizen_halts(ctx):
-    """:1016–1046：残りが 0 以下 → 場所特定 → ISHOLE（MANIAC 5 既定で真）→ CFLAG:71 = -1 → クズ市民戦（未移植）。"""
+def test_gather_search_kidnapped_found_citizen_encounter(ctx):
+    """ACTION_GATHER_INFORMATION.ERB@MESSAGE_GATHER_INFORMATION:1016–1046：位置特定後遭遇。"""
     st = ctx.state
     _kidnapped(st, n71=15)
-    with pytest.raises(NotImplementedError, match="クズ市民戦"):
-        _gather(ctx, [19, 0, 1], [3, 2])
+    _gather(ctx, [19, 0, 1, 30], [3, 2])
     assert st.charas[2].cflag[71] == -1
-    assert st.temp.battle_situation == "強制発情,,"  # ADDBATTLESITUATION("強制発情,") → ARGS + ","
+    # 特殊シチュエーション.ERB@ADDBATTLESITUATION:43–44 是覆寫，不是附加。
+    assert st.temp.battle_situation == "先制無し,支援無効,レイプなし,,,"
+    assert st.flag[45] == 6002 and st.flag[73] == 5
 
 
 def test_gather_search_list_and_invalid(ctx):

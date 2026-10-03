@@ -75,8 +75,8 @@ def _mob(ctx: Ctx) -> bool:
 
 
 def _need_boss(ctx: Ctx) -> None:
-    if enemy_type_check(ctx.state,"CITIZEN") == 1:
-        raise NotImplementedError("クズ市民戰的拘束中指令尚未移植")
+    # COMABLE.ERB@COM_ABLE103:991–1018：市民共用 MOB 型別與反應分派。
+    pass
 
 
 def _akuoti(ctx: Ctx) -> bool:
@@ -326,6 +326,8 @@ def _com_able_sex(ctx: Ctx, n: int, guard: bool, pink: tuple[int, int, int]) -> 
                 return 0, None
         if n == 103:  # :991–1020
             _need_boss(ctx)
+            if enemy_type_check(st,"CITIZEN") == 1:
+                return 0,None  # COMABLE.ERB:992–995：TRYCCALLFORM MOB_1150 缺函式 → CATCH。
             if _mob(ctx):
                 r = mob.reaction_ref(ctx,2)
             elif enemy_type_check(st, "LASTBOSS") >= 1:  # :996–1000（S27）
@@ -1159,7 +1161,9 @@ def com100(ctx: Ctx) -> ComGen:
     out.printl()
     if g >= 3 and st.rng.rand(100) < 10:  # :52–62
         _need_boss(ctx)
-        if _mob(ctx):
+        if enemy_type_check(st,"CITIZEN") == 1:
+            r = r0  # COMF100.ERB:53–60：MOB_1150 缺函式，保留 TENTACLE_SYASEI_CHECK。
+        elif _mob(ctx):
             r = mob.reaction_ref(ctx,3)
         elif enemy_type_check(st, "LASTBOSS") >= 1:  # COMF100.ERB:55–56（S27）
             r = lastboss_reaction_ref(ctx, st.flag[11], 3)

@@ -542,7 +542,8 @@ class FuncParser:
                 name == "CALL" and isinstance(cs.name, str) and (
                     (self.rel.startswith("口上/") and cs.name in KOJO_CALL_HOOKS)
                     or (self.fd.name.startswith("MESSAGE_") and is_narration_function(self.rel,self.fd.name)
-                        and self.rel.startswith("ゲーム内_戦闘処理/触手データ/雑魚敵/") and cs.name in MOB_CALL_HOOKS)
+                        and self.rel.startswith(("ゲーム内_戦闘処理/触手データ/雑魚敵/", "ゲーム内_戦闘処理/触手データ/クズ市民/"))
+                        and cs.name in MOB_CALL_HOOKS)
                 )
                 and not getattr(self, "_hooking", False)
             ):

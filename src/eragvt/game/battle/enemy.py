@@ -206,7 +206,12 @@ def msg_karamituku(ctx: Ctx) -> None:
             raise NotImplementedError("原作 CALLFORM 的雜魚函式不存在")
         return
     if enemy_type_check(st, "CITIZEN") == 1:
-        raise NotImplementedError("クズ市民的地の文尚未移植")
+        from .mob import message
+
+        message(ctx,"MESSAGE_BATTLE_MOB_1150_KARAMITUKU")
+        kojo_root(ctx,"BATTLE_TENTACLE_KARAMITUKU")
+        ctx.out.printl()
+        return
     _enemy_prefix(ctx)
     if st.tflag[12] == 1:
         ctx.out.print("は触手を伸ばして絡みつこうとしてきた！")
@@ -229,6 +234,13 @@ _KARAMI_SUCCESS = (
 def msg_karamituku_success(ctx: Ctx) -> None:
     """`@MESSAGE_BATTLE_TENTACLE_KARAMITUKU_SUCCESS`:1290–1310。"""
     st = ctx.state
+    if enemy_type_check(st,"CITIZEN") == 1:
+        from .mob import message
+
+        message(ctx,"MESSAGE_BATTLE_MOB_1150_KARAMITUKU_SUCCESS")
+        kojo_root(ctx,"BATTLE_TENTACLE_KARAMITUKU_SUCCESS")
+        ctx.out.printl()
+        return
     ctx.out.printl(_KARAMI_SUCCESS[st.rng.rand(5)])
     ctx.out.printl(f"{print_transcallname(st, st.target)}は触手に拘束されてしまった！")
     kojo_root(ctx, "BATTLE_TENTACLE_KARAMITUKU_SUCCESS")
@@ -1034,13 +1046,18 @@ def int_eval(ctx: Ctx, pc_int: int, en_int: int) -> int:
         local = 50 + rand(25)
     else:
         # どれにも該当しない（クズ市民）→ LOCAL は前回値（静的 LOCAL）
-        raise NotImplementedError("INT_EVAL：クズ市民戦")
+        from .core import get_local
+
+        local = get_local(st,"INT_EVAL",0)
     if game_option(st, GameOption.HARDCORE):
         local = times(local, "1.50")
     if game_option(st, GameOption.EASY):
         local = times(local, "0.75")
     if game_option(st, GameOption.SOLO):
         local = times(local, "0.50")
+    # FORECAST.ERB@INT_EVAL:409–426；LOCAL 屬函式靜態狀態（沿用 core 的 LOCAL 儲存）。
+    from .core import set_local
+    set_local(st,"INT_EVAL",0,local)
     en_int += local
     per = percent_cal(pc_int, en_int)
     rv = [0] * 12

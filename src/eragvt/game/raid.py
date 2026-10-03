@@ -1740,11 +1740,12 @@ _RESCUE_MSG = {2: _rescue_msg, 3: _rescue_msg, 4: _rescue_msg, 5: _rescue_msg}
 _EXEC = {2: _exec_2, 3: _exec_3, 4: _exec_4, 5: _exec_5, 3001: _exec_3001, 3002: _exec_3002, 3003: _exec_3003,
          3004: _exec_3004}
 _CHECKER = {2: _checker_not_lose, 3: _checker_not_lose, 4: _checker_4, 5: _checker_not_lose, 3001: _checker_not_lose,
-            3002: _checker_not_lose, 3003: _checker_idol, 3004: _checker_idol}
+            3002: _checker_not_lose, 3003: _checker_idol, 3004: _checker_idol,
+            6001: _checker_not_lose, 6002: _checker_not_lose}
 _SUCCESS = {2: _success_2, 3: _success_3, 4: _success_4, 5: _success_5, 3001: _nothing, 3002: _nothing,
-            3003: _success_3003, 3004: _success_3004}
+            3003: _success_3003, 3004: _success_3004, 6001: _nothing, 6002: _nothing}
 _FAILURE = {2: _failure_2, 3: _failure_3, 4: _failure_4, 5: _failure_5, 3001: _nothing, 3002: _nothing,
-            3003: _failure_3003, 3004: _failure_3004}
+            3003: _failure_3003, 3004: _failure_3004, 6001: _nothing, 6002: _nothing}
 _TURNEND = {3003: _turnend_3003, 3004: _turnend_3004}
 
 

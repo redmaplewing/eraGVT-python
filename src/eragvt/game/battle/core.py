@@ -586,6 +586,10 @@ def tentacle_access(ctx: Ctx, key: str) -> int | str:
     "NAME" は名前を PRINTFORM して "" を返す、"GETNAME" は名前（RESULTS）を返す。
     """
     st = ctx.state
+    if enemy_type_check(st, "CITIZEN") == 1:
+        from .citizen import access
+
+        return access(ctx, key)
     if enemy_type_check(st, "MOB") == 1:
         from .mob import access
 
@@ -642,6 +646,11 @@ def tentacle_access(ctx: Ctx, key: str) -> int | str:
 def tentacle_palam_hosei(ctx: Ctx) -> tuple[int, ...]:
     """TENTACLE_ACCESS "PALAM_HOSEI"（Ｐ触手は TFLAG:23 が非 0 なら全て /4：TENTACLE_BOSS_6_Ｐ触手.ERB:125–129）。"""
     st = ctx.state
+    if enemy_type_check(st, "CITIZEN") == 1:
+        # CITIZEN_1.ERB@TENTACLE_CITIZEN_1150_PALAM_HOSEI:97–123。
+        r = (100,100,100,100,50,50,50,50,50,50,50,50)
+        st.set_result_x(*r)
+        return r
     if enemy_type_check(st, "MOB") == 1:
         from .mob import PALAM
 

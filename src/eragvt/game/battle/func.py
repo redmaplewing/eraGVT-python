@@ -255,7 +255,15 @@ def check_can_retreat(ctx: Ctx) -> int:
         if c.tcvarn[0] == 0:
             return 0
         if st.flag[73] > 0:
-            raise NotImplementedError("クズ市民戦の撤退判定は未移植")
+            from .core import get_battle_situation
+
+            # COMMON_BATTLE_FUNC.ERB@CHECK_CAN_RETREAT_F:404–414。
+            if config_check_event(st,3) == 0 and st.tflag[0] < 8 and percent_cal(c.base[0],c.maxbase[0]) > 50 and percent_cal(c.base[1],c.maxbase[1]) > 50:
+                return 0
+            if config_check_event(st,3) > 0 and st.flag[70]+st.flag[71] > 0:
+                return 0
+            if get_battle_situation(st,"撤退不可") > 0:
+                return 0
     return 1
 
 

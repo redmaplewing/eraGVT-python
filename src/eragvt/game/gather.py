@@ -6,8 +6,7 @@
 - `特別活動/CALC_CHARM_FEAT.ERB@CALC_CHARM_FEAT_OTHER`:22–59、`汎用関数/コモン関数.ERB@CHARA_LIST`:303–355、
   `汎用関数/CHARANUM.ERB@CHARANUM_PRISON`:50–57。
 
-クズ市民戦（`ENCOUNT_CITIZEN`：`イベントから派生する特殊戦闘/●イベント戦闘_クズ市民共通.ERB`:4）は未移植なので、遭遇した時点で
-NotImplementedError（Web は停止）。事件の捜査からの遭遇は config「クズ市民」（FLAG:802 bit5、基本セット OFF）のときだけ。
+S36：市民遭遇接到 battle.citizen；事件調查由 FLAG:802 bit5 控制，救援遭遇依原作不檢查此設定。
 """
 
 from __future__ import annotations
@@ -111,6 +110,9 @@ def message_gather_information(ctx: Ctx, arg: int) -> InputGen:
         yield from _buy(ctx)
     elif arg == 3:
         yield from _search(ctx)
+    if arg in (1,3) and st.flag[73] > 0:
+        st.result[0] = 0  # @MESSAGE_GATHER_INFORMATION:416/1046 RETURN，略過尾端 PRINTW。
+        return
     out.printw()  # :1074
 
 
@@ -335,8 +337,13 @@ def _investigate(ctx: Ctx) -> InputGen:
     from .battle.core import is_hole
 
     if config_check_event(st, 5) == 1 and rand(10000) > st.flag[852] * 2 + 500 and is_hole(ctx):
-        _citizen_encount_text(ctx, name)
-        raise NotImplementedError("クズ市民戦（ENCOUNT_CITIZEN、情報収集の事件の捜査から）は未移植")
+        from .battle.citizen import encount_citizen
+
+        supplement = _citizen_encount_text(ctx, name)
+        encount_citizen(ctx,6002,supplement)
+        if rand(100) < 30:  # ACTION_GATHER_INFORMATION.ERB@MESSAGE_GATHER_INFORMATION:414–416。
+            c.cflag[825] += 1
+        return
     if c.cflag[121] == 0 and hantei >= 40 and rand(max(10 - div(hantei, 10), 2)) == 0:  # :421–425
         out.printl()
         dot_after(ctx, 2)
@@ -351,7 +358,7 @@ def _investigate(ctx: Ctx) -> InputGen:
         yield from _informant(ctx, name, plain_else=True)
 
 
-def _citizen_encount_text(ctx: Ctx, name: str) -> None:
+def _citizen_encount_text(ctx: Ctx, name: str) -> str:
     """:351–411（ENCOUNT_CITIZEN の直前まで）。"""
     st, out = ctx.state, ctx.out
     c = st.target_chara
@@ -397,6 +404,8 @@ def _citizen_encount_text(ctx: Ctx, name: str) -> None:
         out.print("たった一撃で失神寸前に陥らされる手慣れた「狩り」に、")
     out.printl(f"{name}の全身からたちまち力が抜けてゆく……")
     out.printw(f"……どうやら{name}は危険な場所に足を踏み入れ過ぎていたようだ。")
+    # ACTION_GATHER_INFORMATION.ERB:368 先清空 LOCALS；CASE2 保留空字串。
+    return _set_locals(st,{0:"強制発情",1:"強制麻痺"}.get(local,""))
 
 
 def _buy(ctx: Ctx) -> InputGen:
@@ -802,7 +811,12 @@ def _search(ctx: Ctx) -> InputGen:
                 out.printw(f"……どうやら{h.callname}を助ける以前に、{name}自身が身を守らねばならないようだ。")
                 add_battle_situation(st, "強制発情,")  # :1040
                 h.cflag[71] = -1  # :1041
-                raise NotImplementedError("クズ市民戦（ENCOUNT_CITIZEN、仲間の捜索の救出から）は未移植")
+                from .battle.citizen import encount_citizen
+
+                encount_citizen(ctx,6002)
+                if st.rng.rand(100) < 30:  # ACTION_GATHER_INFORMATION.ERB@MESSAGE_GATHER_INFORMATION:1044–1046。
+                    c.cflag[825] += 1
+                return
             # ISHOLE でなければ CFLAG:71 <= 0 のまま → 次の夜の KIDNAPPING:447 で救出（intimidation.kidnapping）
         else:
             # :1048–1049 探索度の表示だけで RESEARCH_PROGRESS も CFLAG:71 の減少も無い（原作どおり）

@@ -21,7 +21,7 @@ Python：`eragvt.game.action`（ACTION_MAIN／REST／TRAINING）、`eragvt.game.
 | 活動 104 | `ACTION_SEISAN.ERB@SEISAN` → `特別活動/SEISAN_0..8` | 變身選擇（GLOBAL:51–53）→ INPUT 選 9 種（CFLAG:111 スケジュール）→ 各活動（`CALC_SEISAN`：體力・氣力・性耐性減少、MONEY、性經驗）、JUEL、`_ABLUP 1`、變身解除；CFLAG:282／281／283／285／400／825・SAVESTR:21〜26・FLAG:853（人気度） | S28b `eragvt.game.seisan` |
 | 防衛 105 | `ACTION_GUARD.ERB@GUARD` | `FLAG:41++`；`ENCOUNT`（ENCOUNT_BOSS:164–177 防衛時はボス遭遇なし → 只有洗脳／悪堕ちキャラ）＋ MOB_TENTACLE_ENCOUNT（雜魚戰 OFF 時文章のみ・探索度半分）；RESULT ≠ 0 → TRAIN；RESULT == 0：體力・氣力 −12%（SYOUHI_KEIGEN）、`FLAG:852 += 125 + Lv*2 + RAND:26` | S28a `action.guard` |
 | 支援 106 | `ACTION_SUPPORT.ERB@SUPPORT` | 前線 0 人且 `FLAG:41 == 0` → 改休憩、FLAG:43−1；否則體力・氣力 ×0.24／0.18（FLAG:43 = 1／2，3 以上は MAXBASE 全量：原作どおり）×献身的 1.1、修練P 15–25、`GET_EXP((TENTACLE_LEVEL−3)/Lv*10+RAND:5)`、知性基礎 +0–2 | S28a `action.support` |
-| 情報 107 | `ACTION_GATHER_INFORMATION.ERB` | 變身選擇（GLOBAL:54–56）→ 4 種（噂話／事件の捜査／情報を買う／仲間の捜索，CFLAG:112 スケジュール）→ `_ABLUP 1` → 變身解除；探索度、魅了経験、知性、`CFLAG:120–122`（コネ）、MONEY、カラダ（EXP・JUEL・處女・NINSIN_HANTEI）、CFLAG:71（拉致監禁救出）・CFLAG:23（遭遇率）；クズ市民戰 → 停止 | S28a `eragvt.game.gather` |
+| 情報 107 | `ACTION_GATHER_INFORMATION.ERB` | 變身選擇（GLOBAL:54–56）→ 4 種（噂話／事件の捜査／情報を買う／仲間の捜索，CFLAG:112 スケジュール）→ `_ABLUP 1` → 變身解除；探索度、魅了経験、知性、`CFLAG:120–122`（コネ）、MONEY、カラダ（EXP・JUEL・處女・NINSIN_HANTEI）、CFLAG:71（拉致監禁救出）・CFLAG:23（遭遇率）；市民戰 → TRAIN（S36） | S28a `eragvt.game.gather` |
 | 自由 108 | `ACTION_PASTIME.ERB@PASTIME` | 編入（DAY%30）→ 變身選擇（GLOBAL:57–59）→ 學校／街／遠出／運動（INPUT 或排程 `CFLAG:113`）、CFLAG:101（5〜20）・270・310・330〜357、TALENT:学生／交際相手／処女、EXP、FLAG:111；PASTIME_REST、魅了經驗、`_ABLUP 1`；`FLAG:73 > 0` 時 TRAIN | S28c1 `eragvt.game.pastime`（ナンパ・酒ナンパ・痴漢本編は S28c2 `eragvt.game.pastime_nanpa`） |
 
 S28c1 起 101〜108 全部已翻（`action_main` 的最後 `NotImplementedError` 只剩不存在的預約值）。
@@ -88,7 +88,7 @@ S28c1 起 101〜108 全部已翻（`action_main` 的最後 `NotImplementedError`
   状態変化 72 行は `NANPA_HOOK_LINES`：代入（CFLAG:270／206／320／321／325〜328／356／825、TALENT:処女、EXP、FLAG:900）は書き込み許可で
   実行、CALL は既存の Python 移植（COMMON_PRISON・COMMON_PRISON_EXP・_ABLUP・AFTER_PILL〔INPUT〕・NINSIN_HANTEI・CALC_GANGBANG〔INPUT〕）。
   変態プレイ（`MESSAGE_CITIZEN_TRAIN_*`）・口上（KOJO_ROOT）は catalog の通常経路。catalog が無い（Null）と停止。
-- **停止**：レイプで `CONFIG_CHECK_EVENT_F(5) == 1`（クズ市民 config）のとき `ENCOUNT_CITIZEN(6001)`（未移植）。既定 config では起きない。
+- **S36**：`CONFIG_CHECK_EVENT_F(5) == 1` 時的 `ENCOUNT_CITIZEN(6001)` 已接通；原作規則見 [市民戰](citizen.md)。
 - **戻り値**：PASTIME_CHIKAN:455–459 は本編が持ち帰り（:1097 RETURN 1）なら RETURN 1 → 遠出・学校はそこで終わる（`pastime_chikan`）。
   ナンパ・酒ナンパの本編は RESULT を返さない（呼び出し元も読まない）。
 - **原作どおり**：本編の ARG は呼び出し元の ARG（街・遠出・運動・学校の予約値）なので、ナンパの場所分岐（0／1 街・遠出、2 運動、3 学校、

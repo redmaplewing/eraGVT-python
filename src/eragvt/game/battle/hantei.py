@@ -258,7 +258,10 @@ def _hurihodoku(ctx: Ctx) -> tuple[int, int]:
     chisei += calc_chisei_shien(ctx, 1)
     chisei = div(chisei * 2 * (100 - l0), 100)
     if st.flag[73] > 0:
-        raise NotImplementedError("クズ市民戦の振り解く判定は未移植")
+        # COMMON_BATTLE_HANTEI.ERB@ACT_HANTEI_CHARA_TO_TENTACLE:80–88。
+        chisei = div(c.maxbase[13],8)
+        if c.cflag[1] > 0:
+            l2 = min(div(l0,2),50)  # LOCAL = LOCAL:0，照原作。
     l3 = _enemy_binsyou(ctx, "AVOID")  # :115–131
     if st.tflag[2] >= 1 and st.flag[73] == 0:
         l3 = times(l3, "0.25")
@@ -268,7 +271,8 @@ def _hurihodoku(ctx: Ctx) -> tuple[int, int]:
     l5 = div(l0 * l1 * l4, 10000)
     if l5 < 20:  # :232–233
         l5 = 20
-    l5 += min(div(chisei, 15), 30)  # :236–238（FLAG:73 == 0）
+    if st.flag[73] == 0:
+        l5 += min(div(chisei, 15), 30)  # :236–238
     # DEVIATION: :241／:245 の `LOCAL:O`（英字 O）は定義のない識別子で、reference/emuera-1824 では実行時に
     # CodeEE（Process.ScriptProc.cs:38–42 → ArgumentParser.cs:52–58、ExpressionParser.cs:264–269／
     # IdentifierDictionary.cs:645）になり、原作ではこの行に来るとエラーで止まる。LOCAL:0（体力気力の残量）の
@@ -303,7 +307,7 @@ def _hurihodoku(ctx: Ctx) -> tuple[int, int]:
     if koukotsu:
         l5 -= 10
     if st.tflag[2] >= 1 and not koukotsu:
-        l5 = 100  # :293–296（FLAG:73 == 0）
+        l5 = 100 if st.flag[73] == 0 else l5+10  # :293–300
     if l5 < 10:
         l5 = 10
     # :331–365 共通の補正（HURIHODOKU 以外の条件が付いたものを除く）
