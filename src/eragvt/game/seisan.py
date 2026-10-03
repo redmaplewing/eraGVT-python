@@ -173,11 +173,12 @@ def _msg(ctx: Ctx, func: str, *args, fallback=None) -> bool:
 
 
 def _dot_after(ctx: Ctx, arg: int) -> None:
-    """`CALL DOT_AFTER, ARG`（`汎用関数/PRINT_LINE.ERB`:34–53、関数終端 → RESULT:0 = 0）。"""
+    """`CALL DOT_AFTER, ARG`（`汎用関数/PRINT_LINE.ERB`:34–53）。:53 `RETURN RESULT` なので RESULT は変わらない
+    （S28c1 訂正：以前は関数終端と見て RESULT:0 = 0 にしていた。WAIT は RESULT を書かない：
+    `reference/emuera-1824/Emuera/GameView/EmueraConsole.cs@doInputToEmueraProgram`:701–733）。"""
     from .akuoti import dot_after
 
     dot_after(ctx, arg)
-    ctx.state.result[0] = 0
 
 
 def _after_pill(ctx: Ctx, arg1: int, arg2: int) -> InputGen:

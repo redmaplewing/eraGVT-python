@@ -317,7 +317,7 @@ ERB 路徑相對 `source/earGVP/ERB/`。
   - D3：`戦闘イベント.ERB`:65 `PERFORM_CHEERS_FIRST_HANTEI` 的 `SQRT(FLAG:852 + 625)` 括號內為負時以 0 計算（原作 CodeEE：
     `reference/emuera-1824/Emuera/GameData/Function/Creator.Method.cs@SqrtMethod`:1074–1080）。（Python：`battle.cheers.perform_cheers_first_hantei`）
   - D4：`ACTION_GATHER_INFORMATION.ERB`:142 的 `SQRT(FLAG:852)` 在 FLAG:852 < 0 時以 0 計算（S28a 實作：`gather._rumor`，`# DEVIATION:`）；
-    未移植的 `PASTIME_悪堕ち遭遇.ERB`:19 於 S28c 比照。
+    `PASTIME_悪堕ち遭遇.ERB`:19 於 S28c1 比照實作（`pastime.akuoti_encounter`，`# DEVIATION:`）。
 - S21 照原作的怪處（`eragvt.game.corruption`、`battle.source_check`、`battle.restraint`）：
   **悪堕ち容姿**：CORRUPT_CHANGE_LOOKS_MAIN 的 `SETBIT CFLAG:80, n`、CORRUPT_CHANGE_LOOKS 的 `CSTR:1 == CSTR:0`・`CFLAG:42 = 0`、
   RECOVER_CORRUPTION 的 `CFLAG:81 == 0b1111`・`CLEARBIT CFLAG:80, 2` 都寫／讀 TARGET 而非 ARG；變身後名改竄不看 CFLAG:2（未登錄則 CSTR:0 變空）；
@@ -350,3 +350,13 @@ ERB 路徑相對 `source/earGVP/ERB/`。
   `SEISAN_2_PEST_CONTROL.ERB`:70 も AFTER_PILL 後の RESULT:0（＝0）で NINSIN_HANTEI(2, 50, 200)。
 - `SEISAN_8_IDOL_LIVE.ERB`:12–14 CHARM_BASE 等は静的変数：失敗・絶頂失敗では前回値（初回 0）で魅了経験が上がる。
 - `SEISAN_4_PORN_VIDEO.ERB`:46／:50／:82 `\@TALENT:変身能力 == 1?#…\@` は変身能力 1 のとき空文字（変身できない人に「すぷらったー☆」等）。
+
+## S28c1（自由行動；待使用者裁決）
+
+- [ ] **夜間排程全為學校時的迴圈早送り**（`ACTION_PASTIME.ERB`:33–43）：`FOR LOCAL,1,NUM_SCHEDULE_F(113)+1` 的次數是 CFLAG:113 的項目編碼
+  （項目 9 個時約 10^16），原作事實上停住（無回應）。Python 利用 RES_SCHEDULE 的實行番號以項目數為週期，早送り到同一最終狀態後繼續（結果＝學校(0)）。
+  項目 1〜2 個時次數 1／101，與原作相同。（Python：`pastime._schedule_night`）
+- [ ] **catalog 不可時的狀態變化**：本文中心函式（`PASTIME_HOOK_LINES`）在 Null narration 時，Pool 的淫乱分岐水着（CFLAG:270）與授業
+  （Classwork_CL／PE 的 EXP・処女・CFLAG:42）依本文亂數決定 → 停止（NotImplementedError）；其他以 `_FALLBACKS` 照 ERB 更新。Web 預設 catalog 可執行，
+  不會發生。（Python：`pastime._FALLBACKS`）
+- S28c1 照原作的怪處（非偏離，備查）：見 `docs/wiki/era/actions.md`「S28c1 補足」。

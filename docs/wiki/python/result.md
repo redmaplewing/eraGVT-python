@@ -47,6 +47,7 @@ ERB 路徑相對 `source/earGVP/ERB/`。
 | `SHOP_FLASHNEWS.ERB`：:540／:607 `RESULT:1 = RANDCHOOSE_F()`、`@FLASHNEWS_CHOOSEHEROINE`:920／:922（2 値 RETURN）、`@FLASHNEWS_CHOOSEIDOL`:939–987（RESULT:1）・:1000、FLASHNEWS の RETURN／終端（RESULT:0 = 0；S26） | 0〜1 | `flashnews` |
 | `WindowDrawer.ERB`:330 `VARSET RESULT, 0`、:397–400、`TagSetText.ERB`:100／:218 | 全 0 | `narration.windowlib`（WINDOW_* 終了時に全消去） |
 | S28b：`特別活動/CALC_SEISAN.ERB`:137、`SEISAN_0_PART_TIME.ERB@SEISAN_PART_TIME_SHINBUN`:168（2 値 RETURN）、各 SEISAN の単値 RETURN・関数終端・`RESULT:0 = …`（SEISAN_5:30／:51／:73）、呼び出す AFTER_PILL（終端 0）・NINSIN_HANTEI | 0〜1 | `seisan`（後続の読み：SEISAN_2:70・SEISAN_5:56–91） |
+| S28c1：`自由行動中イベント/` の Python 移植（RETURN／関数終端・INPUT の RESULT:0、CLOTH_NO_INNER、NINSIN_HANTEI）、catalog 実行の `MESSAGE_PASTIME_FitnessClub` 等（`RETURN EROEVENT`）。`DOT_AFTER` は `RETURN RESULT`（不変：`seisan._dot_after` も訂正） | 0 | `pastime`／`pastime_school`（運動する:59 が Fitness の RESULT:0 を読む） |
 | 口上・地の文（`SELF_CALL.ERB`:356／:381–425、`KOJO_4_汎用豹変.ERB`:64 ほか） | 各種 | catalog（`narration.runtime` が `GameState.result` を読み書き） |
 
 RESULT:0 だけの書き込み（単値 RETURN・関数終端・INPUT 等）は原則として模型化しない。例外（読む側があるもの）：`PALAM_HOSEI`（:435）・

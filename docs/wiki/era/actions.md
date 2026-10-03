@@ -22,9 +22,9 @@ Python：`eragvt.game.action`（ACTION_MAIN／REST／TRAINING）、`eragvt.game.
 | 防衛 105 | `ACTION_GUARD.ERB@GUARD` | `FLAG:41++`；`ENCOUNT`（ENCOUNT_BOSS:164–177 防衛時はボス遭遇なし → 只有洗脳／悪堕ちキャラ）＋ MOB_TENTACLE_ENCOUNT（雜魚戰 OFF 時文章のみ・探索度半分）；RESULT ≠ 0 → TRAIN；RESULT == 0：體力・氣力 −12%（SYOUHI_KEIGEN）、`FLAG:852 += 125 + Lv*2 + RAND:26` | S28a `action.guard` |
 | 支援 106 | `ACTION_SUPPORT.ERB@SUPPORT` | 前線 0 人且 `FLAG:41 == 0` → 改休憩、FLAG:43−1；否則體力・氣力 ×0.24／0.18（FLAG:43 = 1／2，3 以上は MAXBASE 全量：原作どおり）×献身的 1.1、修練P 15–25、`GET_EXP((TENTACLE_LEVEL−3)/Lv*10+RAND:5)`、知性基礎 +0–2 | S28a `action.support` |
 | 情報 107 | `ACTION_GATHER_INFORMATION.ERB` | 變身選擇（GLOBAL:54–56）→ 4 種（噂話／事件の捜査／情報を買う／仲間の捜索，CFLAG:112 スケジュール）→ `_ABLUP 1` → 變身解除；探索度、魅了経験、知性、`CFLAG:120–122`（コネ）、MONEY、カラダ（EXP・JUEL・處女・NINSIN_HANTEI）、CFLAG:71（拉致監禁救出）・CFLAG:23（遭遇率）；クズ市民戰 → 停止 | S28a `eragvt.game.gather` |
-| 自由 108 | `ACTION_PASTIME.ERB@PASTIME` | 學校／街／遠出／運動（亂數或排程 `CFLAG:113`）、`CFLAG:320–354`、魅了經驗；`FLAG:73 > 0` 時 TRAIN | 未翻 |
+| 自由 108 | `ACTION_PASTIME.ERB@PASTIME` | 編入（DAY%30）→ 變身選擇（GLOBAL:57–59）→ 學校／街／遠出／運動（INPUT 或排程 `CFLAG:113`）、CFLAG:101（5〜20）・270・310・330〜357、TALENT:学生／交際相手／処女、EXP、FLAG:111；PASTIME_REST、魅了經驗、`_ABLUP 1`；`FLAG:73 > 0` 時 TRAIN | S28c1 `eragvt.game.pastime`（ナンパ・酒ナンパ・痴漢本編は S28c2 停止） |
 
-未翻的行動（自由 108：S28c）在 `action_main` 丟 `NotImplementedError`；Web session 捕捉後顯示「未實作のため停止」並停住。
+S28c1 起 101〜108 全部已翻（`action_main` 的最後 `NotImplementedError` 只剩不存在的預約值）。
 
 ## S28a 補足
 
@@ -59,6 +59,25 @@ Python：`eragvt.game.action`（ACTION_MAIN／REST／TRAINING）、`eragvt.game.
 - **地の文**：`MESSAGE_SEISAN_*`（58 函式）と `MESSAGE_CITIZEN_TRAIN_{KANCHO,PIG,DOG}` は catalog で全部実行可能（`narration/hooks.py`
   `SEISAN_HOOK_LINES`：FLAG:900・`TARGET=ARG`・犬プレイの EXP）。写真集タイトルは `#DIMS REF BOOK_TITLE` を実行後に読む。
 - INPUT：変身選択、活動選択、生ハメの回答（SEISAN_3:304–334、想定外は黙って再入力）、AFTER_PILL、AV サンプル（:96–120、想定外は 1 回だけ警告）。
+
+## S28c1 補足（自由行動 `eragvt.game.pastime`／`pastime_school`）
+
+路徑 `自由/` = `ゲーム内_イベント発生/自由行動中イベント/`。
+- **分工**：INPUT・派發・狀態變化為主的函式手翻（PASTIME、PASTIME_REST、SelectSchool、街に出る、遠出する、運動する、SportsPark、KOKURARE、
+  悪堕ち遭遇、淫気応急＋CALC_INKIOKYU、學校本體・Afterschool・SelectClub）；本文中心、無 INPUT 的函式當地の文用 catalog 執行
+  （`pastime._chinobun`）：FASHION、Fitness／Massage／Pool、遠出 8 處、AKUOTI_EVENT、改造制服 4 個、授業（CL／PE）・昼休み（含写真）・部活・
+  ClubString、人気投票。狀態變化行 41 行列在 `narration/hooks.py` 的 `PASTIME_HOOK_LINES`。catalog 不可時（Null）佔位＋`_FALLBACKS`
+  （FASHION／Fitness／Massage／部活可決定；Pool 的淫乱分岐與授業的狀態變化依本文亂數 → `NotImplementedError`）。
+- **S28c2 的前段**：發生判定 `PASTIME_NANPA`／`PASTIME_SAKE_NANPA`、`PASTIME_CHIKAN`（乘車〜抵抗選擇，:4–465）已翻；本編
+  `MESSAGE_PASTIME_NANPA`／`_SAKE_NANPA`／`_CHIKAN` 停止。街・遠出・運動・學校的結尾都呼叫 NANPA 判定，遠出・學校一定經過 CHIKAN。
+- **派發**（ACTION_PASTIME:29–132）：排程 RESULT 0 學校(0)、1 隨機（晝 RAND:4 含學校／夜 1+RAND:3）、2〜4 各類隨機、5〜8 街(R-5)、9〜16 遠出(R-9)、
+  17〜20 運動(R-17)、其他無事。SCHEDULE 畫面的「街：アミューズメント施設」(5) 實際是ショッピングモール（順序不同：原作どおり）。
+  夜間排程到學校 → `FOR LOCAL,1,NUM_SCHEDULE_F(113)+1` 找非學校；全是學校時跑 NUM_SCHEDULE_F 次後仍 0 → 夜也上學（DEVIATION：次數極大時早送り）。
+- **原作どおりの怪處**：PASTIME_CHIKAN 收呼叫端自己的 ARG（遠出 -1／0〜7、學校 -1／0）→ ARG == 1（遠出文）只在排程水族館、ARG == 3（通學混雑・
+  CFLAG:356）只在排程植物園；`DOT_AFTER` 是 `RETURN RESULT`（RESULT 不變，S28c1 也訂正了 `seisan._dot_after`）；FitnessClub 的 `#DIM EROEVENT = 0`
+  靜態 → 初次後一直 1（之後健身房不會有ナンパ）；學校 `#DIM 改造制服` 靜態不歸 0、`目的地` 在學生 0 時沿用前值；Classwork_PE 的 LOCAL（ヒップ形容）
+  與 `SUIEI` 是靜態殘值；SelectClub:1579 只有輸入 0 才算歸宅；PASTIME_REST:170–172 回復遅い 的気力 +5；PASTIME_TSFLAG_OVERWRITE 無呼叫處（不移植）。
+- **D4**：悪堕ち遭遇:19 `SQRT(FLAG:852)` 負數當 0（`pastime.akuoti_encounter`）。
 
 ## 回合結束之後（EVENTTURNEND → BEGIN SHOP → EVENTSHOP）
 

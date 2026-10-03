@@ -285,7 +285,11 @@ def action_main(ctx: Ctx) -> InputGen:
         # GATHER_INFORMATION:88 の BEGIN TURNEND は関数を 1 段戻るだけ（Instraction.Child.cs@BEGIN_Instruction:1681–1689 →
         # Process.State.cs@Return:355–425）で、ここの BEGIN が上書きする（最後の BEGIN が有効：@Return:414–421 → @Begin:263–311）。
         return Step.TRAIN if st.flag[73] > 0 else Step.TURNEND
-    # 自由 PASTIME は未移植（S28c、影響範囲は docs/wiki/era/actions.md）。
+    if plan == ActionPlan.FREE:  # :157–163（PASTIME:153 の BEGIN TURNEND はここで上書き）
+        from .pastime import pastime
+
+        yield from pastime(ctx)
+        return Step.TRAIN if st.flag[73] > 0 else Step.TURNEND
     raise NotImplementedError(f"行動「{ACTION_NAMES[_find_action(plan)]}」は未移植")
 
 

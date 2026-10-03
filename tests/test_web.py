@@ -137,7 +137,9 @@ def test_full_turn_rest_back_to_shop(client):
     assert (st.day[0], st.time, st.money) == (2, 0, 4900)
 
 
-def test_training_input_and_unported_halt(client):
+def test_training_input_and_unported_halt(client, monkeypatch):
+    from eragvt.game import pastime
+
     c, app, _ = client
     c.post("/api/input", json={"value": 0})
     c.post("/api/input", json={"value": 1})  # 初期セット『特装戦隊』
@@ -150,8 +152,16 @@ def test_training_input_and_unported_halt(client):
     s = c.post("/api/input", json={"value": 3}).json()  # 筋トレ
     assert s["phase"] == "shop"
     assert app.state.session.state.charas[1].cflag[101] == 3
-    c.post("/api/input", json={"value": 108})  # 紅葉 → 自由行動（未移植：S28c）
-    s = c.post("/api/input", json={"value": 100}).json()
+    # 紅葉 → 自由行動（スケジュール：街：ショッピングモール）→ ナンパ本編（MESSAGE_PASTIME_NANPA：S28c2 未移植）で停止
+    app.state.session.state.charas[1].cflag[113] = 6
+    monkeypatch.setattr(pastime, "pastime_nanpa", lambda ctx: 1)
+    c.post("/api/input", json={"value": 108})
+    c.post("/api/input", json={"value": 100})
+    s = c.post("/api/input", json={"value": 9}).json()
+    for _ in range(30):
+        if s["phase"] != "turn":
+            break
+        s = c.post("/api/input", json={"value": 1}).json()
     assert s["phase"] == "halted"
     assert any("未實作" in x for x in texts(s))
 

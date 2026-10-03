@@ -1,6 +1,6 @@
 # 現況（唯一真相，≤120 行）
 
-更新：2026-10-03（S28b）
+更新：2026-10-03（S28c1）
 
 ## 已完成（各階段細節見 git log 與 wiki）
 
@@ -24,15 +24,19 @@
 - **S28a** 拠点防衛・戦闘支援・情報収集・スケジュール（SHOP [160]）・戦闘基礎 Lv5 變身能力・拉致監禁表示・ACTION_MAIN 終端（下節）。
 
 - **S28b** 特別活動（`eragvt.game.seisan`：ACTION_SEISAN＋特別活動/ 全部、地の文 catalog；下節）。
+- **S28c1** 自由行動（`eragvt.game.pastime`／`pastime_school`：ACTION_PASTIME＋一般自由行動事件 12 檔；下節）。
 
-## S28a／S28b 內容（`docs/wiki/era/actions.md`「S28a 補足」「S28b 補足」）
+## S28a〜S28c1 內容（`docs/wiki/era/actions.md`「S28a／S28b／S28c1 補足」）
 
 - S28a：`action.guard`／`support`、`eragvt.game.gather`（情報収集 4 種＋ACTION_TRANSFORMATION_SELECT）、`eragvt.game.schedule`（CFLAG:110〜113）、
   SENGIUP Lv5、SHOP_SHOW_SITUATION_LIST:126、`Step.FALLTHROUGH`、`Ctx.globals`。DEVIATION D4（:142 SQRT 負→0）。
 - S28b：`seisan.seisan`（選單・CFLAG:111 スケジュール・週末ライブ）、`calc_seisan`（係数表・LOSEBASE・共用 RESULT:0〜1）、9 活動
   （アルバイト 4 種〜ライブ公演）、AFTER_PILL／NINSIN_HANTEI、CFLAG:282／281／283／285／400／825・SAVESTR:21〜26（FLASHNEWS の AV／写真集）・FLAG:853。
   catalog：VARSIZE（ERH CONST）・`__INT_MAX__`・hook（`SEISAN_HOOK_LINES`：FLAG:900／TARGET／EXP）・REF 引数の読み出し → 地の文 58 函式全部可執行。
-- 測試共 1684 個（S28b：`tests/test_seisan.py` 46）。
+- S28c1：`pastime.pastime`（編入・變身選擇「気晴らし」・選單・CFLAG:113 排程・派發・PASTIME_REST・魅了經驗）、街／遠出／運動／學校、告白、
+  悪堕ち遭遇（D4）、淫気応急＋CALC_INKIOKYU；S28c2 的前段（NANPA／SAKE_NANPA 判定、PASTIME_CHIKAN 乘車〜抵抗）也已翻，本編停止。
+  本文中心的 25 函式走 catalog（hook `PASTIME_HOOK_LINES` 41 行）。`seisan._dot_after` 訂正為 RESULT 不變（DOT_AFTER は `RETURN RESULT`）。
+- 測試共 1745 個（S28c1：`tests/test_pastime.py` 61）。
 
 ### 模擬（seed 0–249，`--max-shop 200`，4 並列分批）
 
@@ -43,6 +47,11 @@
   アイドル活動 303／286（全部レベル 0〜1）、援助交際 6／9、公衆便所 0／1、AV・枕営業・ライブ 0（ランダム方針では欲望・魅了経験が育たない）。
 - `--actions 104 --seisan-unlock`（人工：欲望 3・露出癖 2・マゾっ気 2・魅了経験 100、預設 100 局 `--max-shop 100`）：AV 536、公衆便所 534、
   援助交際 566、枕営業 539、ライブ 106、アイドル 452、妊娠判定 547（受精 57）；停止は既存の HATUJOU 1 のみ、佔位 0。
+
+- S28c1 `--actions 101〜108`：預設 95 上限・120 ナンパ・18 痴漢・16 酒ナンパ（S28c2 停止）・1 タイトル復帰；初期セット 142 上限・97 ナンパ・
+  9 痴漢・2 酒ナンパ。新停止は S28c2 本編のみ、佔位 0、例外 0。次數（預設／初期セット）：街 221／281、遠出 226／268、運動 220／261、
+  學校開始 92／0（完了 59）、淫気応急 90／134（處女喪失 20／24）、悪堕ち遭遇判定 58／75（發生 0：悪堕ちキャラ無し）、KOKURARE 43／66（交際 0）、
+  部活選択 80／0、人気投票 14、写真 16、ナンパ判定 →1 137／109、痴漢乘車 318／268。`--actions 101〜107` 再跑 ＝ S28b と同一。
 
 ### 狀態畫面內仍會停止
 
@@ -59,14 +68,14 @@ P4 父親 CFLAG:9 指向不存在的ボス／ラスボス／モブ；HEROINE_PRE
 ## 下一步
 
 - **自主推進（使用者指定 2026-10-02，依序）**：~~S22 RESULTS 共用~~ → ~~S23 [反撃]スタイル~~ → ~~S24 設定畫面／プリセット~~ → ~~S25 狀態畫面~~
-  → ~~S26 FLASHNEWS~~ → ~~S26b RESULTS:0 殘值~~ → ~~S27 ラスボス～結局~~ → S28 未移植行動（~~S28a 防衛・支援・情報収集等~~ → ~~S28b 特別活動 SEISAN~~ → **S28c 自由行動＋事件**）。
+  → ~~S26 FLASHNEWS~~ → ~~S26b RESULTS:0 殘值~~ → ~~S27 ラスボス～結局~~ → S28 未移植行動（~~S28a 防衛・支援・情報収集等~~ → ~~S28b 特別活動 SEISAN~~ → ~~S28c1 自由行動＋一般事件~~ → **S28c2 ナンパ・酒ナンパ・痴漢本編**）。
   其他候選：引き継ぎ（SUCCESSION.ERB，クリア後の停止點）、天使の樹（引き継ぎ後のみ）、ランダム命名畫面、SHOP [112] 衣裝設定、
   SHOP 子選單（[111] CHARA_POWERUP：SHOP.ERB:253、[113] DRUG_PREPARATION：:264、[180] TSUIKAYOUSEI_NORMAL（加入引退有り）：:294）。
 - 已裁決（2026-10-02）：名乗り改竄的 RESULTS:2 殘值照原作（S22 實作）；開局デフォルト悪堕ち的輸出丟棄維持現況。
 - 已裁決（2026-10-02）：PALAM_HOSEI 殘值照原作、防衛力負數 D1〜D4（S21 實作）。已裁決（2026-10-01）：S20 的 DEVIATION 6 項＋斜體。
 - 已裁決（2026-09-30）：拡張度初期值照原作；S13 苗床出産的 static LOSEDEF 等怪處照原作。
 - 口上 catalog 待擴充：改狀態的口上（hook 化）、入れ子內 $ラベル 的 GOTO（`KOJO_AEGI.ERB` $ＭＡＸ２，199 函式）、STRDATA、未實作式中関数。
-- deviations.md 需裁決：振り解く `LOCAL:O` と同類の SCORE:150 `O`（S27）、口上的狀態副作用、口上 catalog 實行時失敗的回復、S08 以後新增項。
+- deviations.md 需裁決：振り解く `LOCAL:O` と同類の SCORE:150 `O`（S27）、口上的狀態副作用、口上 catalog 實行時失敗的回復、S08 以後新增項、S28c1 的 2 項（夜間排程早送り、Null 時停止）。
 
 ## 仍會停止的分岐（`NotImplementedError` → Web 停止）
 
@@ -78,6 +87,7 @@ S23 模擬（含 [反撃] 人工設定）皆無停止。登記但罕見：
 - 妊娠・子供：TS 変身キャラ妊娠時的女體化、子供名字等的手入力（INPUTS）與ランダム命名畫面、デバッグモード的妊娠確率輸入。
 - 情報収集（S28a）：クズ市民戰（事件の捜査 config 802 bit5／仲間の捜索で監禁場所特定）、デバッグ入力；SENGIUP Lv5 的變身後名設定 [1]。
 - ACTION_MAIN 由 EVENTTURNEND 經 JUMP 而終端（雜魚戰候補なし：原作也錯誤，目前無法到達）。
+- 自由行動（S28c1）：ナンパ／酒ナンパ／痴漢本編（MESSAGE_PASTIME_NANPA／SAKE_NANPA／CHIKAN：S28c2）。
 - 夜這い：TS キャラ的 `_ABLUP` 女体受容取得、`%CALLNAME:ARG%` 指向不存在角色（原作也報錯）。
 - 開局：HEROINE_PRESET 的 [30]（相関関係）、2 択畫面的 [300]（ゲームの説明）。狀態畫面內的停止見上節。設定項造成的停止見上表。
 - 戰鬥 PALAM 表示（FLAG:801 bit 5）、觸手服（ACTTENTACLESUIT・運動快感）、雜魚／クズ市民／事件戰／エンドレス、
@@ -88,7 +98,7 @@ S23 模擬（含 [反撃] 人工設定）皆無停止。登記但罕見：
 - 未決：`docs/wiki/bridge/unresolved.md`；偏離：`docs/wiki/bridge/deviations.md`（整體「暫時維持」，S06 以後新增項待裁決）。
 - 無 BOM 的 7 個角色 CSV 在原版 1.824 會以 Shift-JIS 讀（亂碼）；本程式以 UTF-8 讀，可能是 +v10 差異，待實機確認。
 - 開局：預設（NORMAL＋汎用キャラ 3 名おまかせ）與初期セット「特装戦隊」，HEROINE_PRESET 可選 0〜3；其他初期セット／キャラメイク畫面的手動設定未移植。
-- 可玩範圍：休憩・鍛錬（含スケジュール）・出撃・拠点防衛・戦闘支援・情報収集・特別活動（含拘束戰鬥、拡張度、敗北後幽閉與救出、戰後レイプ、襲撃／救援イベント戰）、夜間いちゃラブ・自慰、
-  妊娠・出産・子供、全滅後的ゲームオーバーモード、ラスボス戰～ENDING_2（引き継ぎで停止）、日數超過 ENDING_3（回標題）。其他行動會進入 Web「停止」畫面。
+- 可玩範圍：休憩・鍛錬（含スケジュール）・出撃・拠点防衛・戦闘支援・情報収集・特別活動・自由行動（ナンパ等本編除外；含拘束戰鬥、拡張度、敗北後幽閉與救出、戰後レイプ、襲撃／救援イベント戰）、夜間いちゃラブ・自慰、
+  妊娠・出産・子供、全滅後的ゲームオーバーモード、ラスボス戰～ENDING_2（引き継ぎで停止）、日數超過 ENDING_3（回標題）。
 - 初期セット選項的角色身體資料為 0（原作同樣不生成），戰鬥中女性敏捷 0・攻擊 2 倍（原作行為，是否偏離待決定）。
 - COUNT 仍未與 Python 共用（catalog 專用暫存，deviations「口上 catalog 的顯示簡化」）；RESULT／RESULTS 已共用。

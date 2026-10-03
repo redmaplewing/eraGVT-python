@@ -221,6 +221,54 @@ SEISAN_HOOK_LINES: dict[tuple[str, int], tuple[str, str]] = {
     ("MESSAGE_CITIZEN_TRAIN_KANCHO", 419): ("TARGET=ARG", "対象キャラ"),
 }
 
+# S28c1：自由行動中イベント（`ゲーム内_イベント発生/自由行動中イベント/`）のうち本文中心の関数（地の文扱い：`eragvt.game.pastime._chinobun`）
+# の状態変化行。(函式名, 行): (原文, 意味)。函式名は catalog の大文字キー。ERB：`PASTIME_ファッション.ERB`、`PASTIME_運動する.ERB`、
+# `PASTIME_学校に行く.ERB`。Python 側の fallback（catalog で実行できないとき）は `eragvt.game.pastime` の `_FALLBACKS`。
+# tests/test_pastime.py::test_pastime_hook_table_matches_erb が原文一致と「表外の代入が無い」（＝catalog で実行可能）ことを確認する。
+PASTIME_HOOK_LINES: dict[tuple[str, int], tuple[str, str]] = {
+    ("PASTIME_FASHION", 346): ("CFLAG:310 += 1", "TS 娘・完全／強制女体化のファッション回数"),
+    ("MESSAGE_PASTIME_FITNESSCLUB", 370): ("CFLAG:335 += 1", "フィットネスクラブ回数（変身時ＴＳ）"),
+    ("MESSAGE_PASTIME_FITNESSCLUB", 372): ("CFLAG:334 += 1", "フィットネスクラブ回数"),
+    ("MESSAGE_PASTIME_MASSAGESALON", 406): ("CFLAG:339 += 1", "マッサージサロン回数（変身時ＴＳ）"),
+    ("MESSAGE_PASTIME_MASSAGESALON", 408): ("CFLAG:338 += 1", "マッサージサロン回数"),
+    ("MESSAGE_PASTIME_POOL", 447): ("CFLAG:270 = 0", "水着の種類"),
+    ("MESSAGE_PASTIME_POOL", 450): ("CFLAG:270 = 1", "水着の種類"),
+    ("MESSAGE_PASTIME_POOL", 453): ("CFLAG:270 = 2", "水着の種類"),
+    ("MESSAGE_PASTIME_POOL", 456): ("CFLAG:270 = 3", "水着の種類"),
+    ("MESSAGE_PASTIME_POOL", 464): ("CFLAG:270 = 99", "水着の種類"),
+    ("MESSAGE_PASTIME_POOL", 467): ("CFLAG:270 = 4", "水着の種類"),
+    ("MESSAGE_PASTIME_POOL", 470): ("CFLAG:270 = 5", "水着の種類"),
+    ("MESSAGE_PASTIME_POOL", 642): ("CFLAG:343 += 1", "プール回数（変身時ＴＳ）"),
+    ("MESSAGE_PASTIME_POOL", 644): ("CFLAG:342 += 1", "プール回数"),
+    ("MESSAGE_SCHOOL_CLASSWORK_CL", 565): ("EXP:自慰経験 += 1", "授業中自慰"),
+    ("MESSAGE_SCHOOL_CLASSWORK_CL", 568): ("EXP:絶頂経験 += 1", "授業中自慰"),
+    ("MESSAGE_SCHOOL_CLASSWORK_PE", 720): ("TALENT:処女 = -1", "処女喪失"),
+    ("MESSAGE_SCHOOL_CLASSWORK_PE", 721): ("CFLAG:206 = 11", "処女喪失の原因"),
+    ("MESSAGE_SCHOOL_CLASSWORK_PE", 747): ("EXP:被姦経験 += 1", "体育の経験"),
+    ("MESSAGE_SCHOOL_CLASSWORK_PE", 754): ("EXP:絶頂経験 += 1", "体育の経験"),
+    ("MESSAGE_SCHOOL_CLASSWORK_PE", 866): ("TALENT:処女 = -1", "処女喪失"),
+    ("MESSAGE_SCHOOL_CLASSWORK_PE", 867): ("CFLAG:206 = 11", "処女喪失の原因"),
+    ("MESSAGE_SCHOOL_CLASSWORK_PE", 915): ("EXP:被姦経験 += 1", "体育の経験"),
+    ("MESSAGE_SCHOOL_CLASSWORK_PE", 922): ("EXP:絶頂経験 += 5", "体育の経験"),
+    ("MESSAGE_SCHOOL_CLASSWORK_PE", 925): ("EXP:フェラ経験 += 3", "体育の経験"),
+    ("MESSAGE_SCHOOL_CLASSWORK_PE", 929): ("EXP:被姦経験 += 1", "体育の経験"),
+    ("MESSAGE_SCHOOL_CLASSWORK_PE", 936): ("EXP:絶頂経験 += 5", "体育の経験"),
+    ("MESSAGE_SCHOOL_CLASSWORK_PE", 942): ("EXP:フェラ経験 += 3", "体育の経験"),
+    ("MESSAGE_SCHOOL_CLASSWORK_PE", 1018): ("EXP:被姦経験 += 1", "体育の経験"),
+    ("MESSAGE_SCHOOL_CLASSWORK_PE", 1025): ("EXP:絶頂経験 += 1", "体育の経験"),
+    ("MESSAGE_SCHOOL_CLASSWORK_PE", 1184): ("EXP:被姦経験 += 1", "体育の経験"),
+    ("MESSAGE_SCHOOL_CLASSWORK_PE", 1191): ("EXP:絶頂経験 += 5", "体育の経験"),
+    ("MESSAGE_SCHOOL_CLASSWORK_PE", 1194): ("EXP:フェラ経験 += 3", "体育の経験"),
+    ("MESSAGE_SCHOOL_CLASSWORK_PE", 1197): ("EXP:射精経験 += 3", "体育の経験"),
+    ("MESSAGE_SCHOOL_CLASSWORK_PE", 1201): ("EXP:被姦経験 += 1", "体育の経験"),
+    ("MESSAGE_SCHOOL_CLASSWORK_PE", 1208): ("EXP:絶頂経験 += 5", "体育の経験"),
+    ("MESSAGE_SCHOOL_CLASSWORK_PE", 1214): ("EXP:フェラ経験 += 3", "体育の経験"),
+    ("MESSAGE_SCHOOL_CLASSWORK_PE", 1217): ("EXP:射精経験 += 1", "体育の経験"),
+    ("MESSAGE_SCHOOL_CLASSWORK_PE", 1317): ("CFLAG:42 = 0", "水泳でインナーを失う"),
+    ("MESSAGE_SCHOOL_CLUBACTIVITIES", 1651): ("CFLAG:355 += 1", "部活動回数（変身中）"),
+    ("MESSAGE_SCHOOL_CLUBACTIVITIES", 1653): ("CFLAG:354 += 1", "部活動回数"),
+}
+
 # hook 化してよい CALL 先 → Python 移植（呼び出し時に import）
 HOOK_CALLS = {
     "SET_TENTACLE_SIZE_BY_MESSAGE": ("eragvt.game.battle.gaping", "set_tentacle_size_by_message"),
@@ -243,6 +291,7 @@ def match_hook(func: str, line: int, text: str) -> Optional[str]:
         or LOVESEX_HOOK_LINES.get((func, line))
         or NINSIN_HOOK_LINES.get((func, line))
         or SEISAN_HOOK_LINES.get((func, line))
+        or PASTIME_HOOK_LINES.get((func, line))
     )
     if prow is not None:
         return f"{func}:{line}" if prow[0] == text.strip() else None

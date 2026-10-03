@@ -41,6 +41,9 @@ S28b：`--actions` に 104（特別活動）を入れると、活動別（アル
 「（佔位）」）・特別活動中の妊娠判定を数える。変身選択の次数は「{行動} 変身して行動」。`--seisan-unlock` は開局直後に全キャラの
 欲望 3・露出癖 2・マゾっ気 2・魅了経験 100 にする**人工的な状態**（援助交際〜枕営業・ライブ公演の分岐を通すため）。
 
+S28c1：`--actions` に 108（自由行動）を入れると、行き先（CFLAG:101）・本文関数（catalog 実行、佔位は「（佔位）」）・学校・告白・
+淫気応急・悪堕ち遭遇・ナンパ／酒ナンパ判定（→1 は S28c2 の停止）・痴漢判定（乗車）の次数を数える。
+
 S25：戦闘中の [800] でステータス画面（5 ページ・EXPORT_CSV 含む）に入るようになった（ランダム方針のまま。SHOP [110] は押さない）。
 """
 
@@ -312,6 +315,92 @@ def install_event_counters() -> Counter:
         return r
 
     seisan_mod._ninsin = sninsin
+
+    # S28c1：自由行動（行き先・本文関数・各イベント・ナンパ／痴漢の判定）
+    from eragvt.game import pastime as pt
+    from eragvt.game import pastime_school as pts
+
+    cur = {"kind": None}
+    for name, label in (("machi", "街"), ("toode", "遠出"), ("undou", "運動")):
+        orig_g = getattr(pt, name)
+
+        def g(ctx, *a, _o=orig_g, _l=label, **k):
+            cur["kind"] = _l
+            return (yield from _o(ctx, *a, **k))
+
+        setattr(pt, name, g)
+    orig_dot = pt._dot_after
+
+    def dot(ctx, *a):
+        if cur["kind"] is not None:
+            counts[f"自由行動 行き先 {cur['kind']} CFLAG:101={ctx.state.target_chara.cflag[101]}"] += 1
+            cur["kind"] = None
+        return orig_dot(ctx, *a)
+
+    pt._dot_after = dot
+    orig_chino = pt._chinobun
+
+    def chino(ctx, func, *a, **k):
+        n0 = len(ctx.out.lines)
+        ok = orig_chino(ctx, func, *a, **k)
+        counts[f"自由行動 本文 {func}" + ("" if ok else "（佔位）")] += 1
+        if func == "Message_School_Lunchbreak" and any("【秘密のオナペット】" in ln.text for ln in ctx.out.lines[n0:]):
+            counts["自由行動 本文 PASTIME_SHASHIN（昼休みの中）"] += 1
+        return ok
+
+    pt._chinobun = chino
+    pts._chinobun = chino
+    wrap(pts, "pastime_school", after=lambda ctx, snap, *a: counts.update(["自由行動 学校（完了）"]))
+    orig_school = pts.pastime_school
+
+    def school(ctx, *a, **k):
+        counts["自由行動 学校（開始）"] += 1
+        return (yield from orig_school(ctx, *a, **k))
+
+    pts.pastime_school = school
+    wrap(pts, "select_club", after=lambda ctx, snap: counts.update(["自由行動 部活選択"]))
+    wrap(pt, "select_school", after=lambda ctx, snap: counts.update(["自由行動 学校途中編入"]))
+
+    def koku_before(ctx):
+        return ctx.state.target_chara.talent[ctx.data.index_of("TALENT", "交際相手")]
+
+    wrap(pt, "kokurare", before=koku_before,
+         after=lambda ctx, snap: counts.update(["自由行動 告白→交際" if koku_before(ctx) != snap else "自由行動 KOKURARE 呼出"]))
+
+    def ink_before(ctx, *a):
+        return ctx.state.target_chara.talent[ctx.data.index_of("TALENT", "処女")]
+
+    wrap(pt, "inkioukyu", before=ink_before,
+         after=lambda ctx, snap, *a: counts.update(["自由行動 淫気応急" + ("（処女喪失）" if ink_before(ctx) != snap else "")]))
+    orig_aku = pt.akuoti_encounter
+
+    def aku(ctx):
+        f111 = ctx.state.flag[111]
+        n0 = len(ctx.out.lines)
+        orig_aku(ctx)
+        hit = any("逢魔の休日" in ln.text for ln in ctx.out.lines[n0:])
+        counts["自由行動 悪堕ち遭遇" + ("（発生）" if hit else "（判定のみ）")] += 1
+        _ = f111
+
+    pt.akuoti_encounter = aku
+    for name, label in (("pastime_nanpa", "ナンパ判定"), ("pastime_sake_nanpa", "酒ナンパ判定")):
+        orig_n = getattr(pt, name)
+
+        def nf(ctx, _o=orig_n, _l=label):
+            r = _o(ctx)
+            counts[f"自由行動 {_l}→{r}"] += 1
+            return r
+
+        setattr(pt, name, nf)
+        setattr(pts, name, nf)
+    orig_ch = pt.pastime_chikan
+
+    def ch(ctx, *a):
+        counts["自由行動 痴漢判定（乗車）"] += 1
+        return (yield from orig_ch(ctx, *a))
+
+    pt.pastime_chikan = ch
+    pts.pastime_chikan = ch
     return counts
 
 
