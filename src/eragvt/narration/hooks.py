@@ -269,6 +269,86 @@ PASTIME_HOOK_LINES: dict[tuple[str, int], tuple[str, str]] = {
     ("MESSAGE_SCHOOL_CLUBACTIVITIES", 1653): ("CFLAG:354 += 1", "部活動回数"),
 }
 
+# S28c2：自由行動中イベントの本編（`ゲーム内_イベント発生/自由行動中イベント/PASTIME_ナンパ.ERB`・`PASTIME_酒ナンパ.ERB`・`PASTIME_痴漢.ERB`）
+# の状態変化行。本編は INPUT を含むので `CatalogNarrationService.run_event_gen`（`eragvt.game.pastime_nanpa`）で実行する。
+# CALL は `eragvt.game.pastime_nanpa` の hook_* へ（既存の Python 移植：COMMON_PRISON・_ABLUP・AFTER_PILL・CALC_GANGBANG）。
+# FLAG:900 は直後の KOJO_ROOT の「ランダム分岐フラグ」（KOJO_ROOT が 0 に戻す）。CFLAG の意味は `●開発者向け資料/●GVTフラグ一覧.txt`。
+# tests/test_pastime_nanpa.py::test_nanpa_hook_table_matches_erb が原文一致と「表外の代入が無い」（＝catalog で実行可能）ことを確認する。
+NANPA_HOOK_LINES: dict[tuple[str, int], tuple[str, str]] = {
+    ("PASTIME_NANPA_DATE", 620): ('CFLAG:270=-1', "コマンド内分岐ログのキャンセル"),
+    ("PASTIME_NANPA_TAKEOUT", 2486): ('CFLAG:206 = 8', "処女喪失の原因（お持ち帰り）"),
+    ("PASTIME_NANPA_TAKEOUT", 2487): ('TALENT:処女 = -1', "処女喪失"),
+    ("PASTIME_NANPA_TAKEOUT", 3003): ('CALL COMMON_PRISON, LOCAL:10, LOCAL:11, LOCAL:12, LOCAL:13, LOCAL:14, LOCAL:15, LOCAL:16, LOCAL:17, LOCAL:18, LOCAL:19, LOCAL:20, LOCAL:21, 1', "幽閉中パラメータ変動共通処理"),
+    ("PASTIME_NANPA_TAKEOUT", 3007): ('CALL COMMON_PRISON_EXP, CCOUNT, LOCAL:CCOUNT', "経験数の増加"),
+    ("PASTIME_NANPA_TAKEOUT", 3012): ('CALL _ABLUP, 1', "珠の取得"),
+    ("PASTIME_NANPA_TAKEOUT", 3016): ('CALL AFTER_PILL, TARGET, 35, 望まない相手', "アフターピル（INPUT）"),
+    ("PASTIME_NANPA_TAKEOUT", 3019): ('CALL NINSIN_HANTEI, 3, 800, 望まない相手', "妊娠判定"),
+    ("PASTIME_NANPA_RAPE", 3039): ('CFLAG:270=-1', "コマンド内分岐ログのキャンセル"),
+    ("PASTIME_NANPA_RAPE", 3086): ('CALL ENCOUNT_CITIZEN(6001)', "クズ市民戦（未移植・停止）"),
+    ("PASTIME_NANPA_RAPE", 3088): ('CFLAG:321 += 1', "ナンパレイプ回数（変身時ＴＳ）"),
+    ("PASTIME_NANPA_RAPE", 3090): ('CFLAG:320 += 1', "ナンパレイプ回数"),
+    ("PASTIME_NANPA_RAPE", 3093): ('CFLAG:825 += 1', "悪い噂"),
+    ("PASTIME_NANPA_RAPE", 3175): ('TALENT:処女 = -1', "処女喪失"),
+    ("PASTIME_NANPA_RAPE", 3176): ('CFLAG:206 = 11', "処女喪失の原因（輪姦）"),
+    ("PASTIME_NANPA_RAPE", 3246): ('CALL CALC_GANGBANG("ナンパ",3,NAKADASHI)', "レイプの計算（INPUT）"),
+    ("PASTIME_SAKE_NANPA_TAKEOUT", 820): ('FLAG:900 = 4', "口上分岐"),
+    ("PASTIME_SAKE_NANPA_TAKEOUT", 864): ('FLAG:900 = 3', "口上分岐"),
+    ("PASTIME_SAKE_NANPA_TAKEOUT", 896): ('FLAG:900 = 2', "口上分岐"),
+    ("PASTIME_SAKE_NANPA_TAKEOUT", 902): ('FLAG:900 = 1', "口上分岐"),
+    ("PASTIME_SAKE_NANPA_TAKEOUT", 908): ('CFLAG:206 = 8', "処女喪失の原因（お持ち帰り）"),
+    ("PASTIME_SAKE_NANPA_TAKEOUT", 909): ('TALENT:処女 = -1', "処女喪失"),
+    ("PASTIME_SAKE_NANPA_TAKEOUT", 1182): ('FLAG:900 = 4', "口上分岐"),
+    ("PASTIME_SAKE_NANPA_TAKEOUT", 1203): ('FLAG:900 = 3', "口上分岐"),
+    ("PASTIME_SAKE_NANPA_TAKEOUT", 1217): ('FLAG:900 = 2', "口上分岐"),
+    ("PASTIME_SAKE_NANPA_TAKEOUT", 1223): ('FLAG:900 = 1', "口上分岐"),
+    ("PASTIME_SAKE_NANPA_TAKEOUT", 1590): ('CALL COMMON_PRISON, LOCAL:10, LOCAL:11, LOCAL:12, LOCAL:13, LOCAL:14, LOCAL:15, LOCAL:16, LOCAL:17, LOCAL:18, LOCAL:19, LOCAL:20, LOCAL:21, 1', "幽閉中パラメータ変動共通処理"),
+    ("PASTIME_SAKE_NANPA_TAKEOUT", 1594): ('CALL COMMON_PRISON_EXP, CCOUNT, LOCAL:CCOUNT', "経験数の増加"),
+    ("PASTIME_SAKE_NANPA_TAKEOUT", 1599): ('CALL _ABLUP, 1', "珠の取得"),
+    ("PASTIME_SAKE_NANPA_TAKEOUT", 1603): ('CALL AFTER_PILL, TARGET, 35, 望まない相手', "アフターピル（INPUT）"),
+    ("PASTIME_SAKE_NANPA_TAKEOUT", 1606): ('CALL NINSIN_HANTEI, 3, 800, 望まない相手', "妊娠判定"),
+    ("PASTIME_SAKE_NANPA_RAPE", 1696): ('CALL ENCOUNT_CITIZEN(6001)', "クズ市民戦（未移植・停止）"),
+    ("PASTIME_SAKE_NANPA_RAPE", 1698): ('CFLAG:321 += 1', "ナンパレイプ回数（変身時ＴＳ）"),
+    ("PASTIME_SAKE_NANPA_RAPE", 1700): ('CFLAG:320 += 1', "ナンパレイプ回数"),
+    ("PASTIME_SAKE_NANPA_RAPE", 1703): ('CFLAG:825 += 1', "悪い噂"),
+    ("PASTIME_SAKE_NANPA_RAPE", 1788): ('TALENT:処女 = -1', "処女喪失"),
+    ("PASTIME_SAKE_NANPA_RAPE", 1789): ('CFLAG:206 = 11', "処女喪失の原因（輪姦）"),
+    ("PASTIME_SAKE_NANPA_RAPE", 1875): ('CALL CALC_GANGBANG("ナンパ",3,NAKADASHI)', "レイプの計算（INPUT）"),
+    ("PASTIME_SAKE_NANPA_DEISUI_RAPE", 2024): ('TALENT:処女 = -1', "処女喪失"),
+    ("PASTIME_SAKE_NANPA_DEISUI_RAPE", 2025): ('CFLAG:206 = 11', "処女喪失の原因（輪姦）"),
+    ("PASTIME_SAKE_NANPA_DEISUI_RAPE", 2081): ('CALL CALC_GANGBANG("ナンパ",3,NAKADASHI)', "レイプの計算（INPUT）"),
+    ("MESSAGE_PASTIME_CHIKAN", 641): ('CFLAG:356 += 1', "通学痴漢の状態"),
+    ("MESSAGE_PASTIME_CHIKAN", 758): ('CFLAG:356 += 1', "通学痴漢の状態"),
+    ("MESSAGE_PASTIME_CHIKAN", 971): ('CFLAG:356 += 1', "通学痴漢の状態"),
+    ("MESSAGE_PASTIME_CHIKAN", 1043): ('CFLAG:356 = 3', "通学痴漢の状態"),
+    ("MESSAGE_PASTIME_CHIKAN", 1045): ('CFLAG:356 = 1', "通学痴漢の状態"),
+    ("MESSAGE_PASTIME_CHIKAN", 1051): ('CFLAG:326 += 1', "痴漢された回数（変身時ＴＳ）"),
+    ("MESSAGE_PASTIME_CHIKAN", 1053): ('CFLAG:325 += 1', "痴漢された回数"),
+    ("MESSAGE_PASTIME_CHIKAN", 1096): ('CFLAG:356 = 2', "通学痴漢の状態"),
+    ("MESSAGE_PASTIME_CHIKAN", 1109): ('EXP:絶頂経験 += 3', "痴漢の経験"),
+    ("MESSAGE_PASTIME_CHIKAN", 1113): ('EXP:露出快楽経験 += 3', "痴漢の経験"),
+    ("MESSAGE_PASTIME_CHIKAN", 1117): ('EXP:奉仕快楽経験 += 2', "痴漢の経験"),
+    ("MESSAGE_PASTIME_CHIKAN", 1121): ('EXP:フェラ経験 += 1', "痴漢の経験"),
+    ("MESSAGE_PASTIME_CHIKAN", 1136): ('EXP:絶頂経験 += 3', "痴漢の経験"),
+    ("MESSAGE_PASTIME_CHIKAN", 1140): ('EXP:露出快楽経験 += 3', "痴漢の経験"),
+    ("MESSAGE_PASTIME_CHIKAN", 1175): ('EXP:自慰経験 += 1', "痴漢の経験"),
+    ("PASTIME_CHIKAN_TAKEOUT", 1223): ('FLAG:900 = 3', "口上分岐"),
+    ("PASTIME_CHIKAN_TAKEOUT", 1229): ('FLAG:900 = 2', "口上分岐"),
+    ("PASTIME_CHIKAN_TAKEOUT", 1235): ('FLAG:900 = 1', "口上分岐"),
+    ("PASTIME_CHIKAN_TAKEOUT", 1241): ('CFLAG:206 = 8', "処女喪失の原因（お持ち帰り）"),
+    ("PASTIME_CHIKAN_TAKEOUT", 1242): ('TALENT:処女 = -1', "処女喪失"),
+    ("PASTIME_CHIKAN_TAKEOUT", 1380): ('FLAG:900 = 3', "口上分岐"),
+    ("PASTIME_CHIKAN_TAKEOUT", 1386): ('FLAG:900 = 2', "口上分岐"),
+    ("PASTIME_CHIKAN_TAKEOUT", 1392): ('FLAG:900 = 1', "口上分岐"),
+    ("PASTIME_CHIKAN_TAKEOUT", 1710): ('CFLAG:328 += 1', "痴漢お持ち帰り回数（変身時ＴＳ）"),
+    ("PASTIME_CHIKAN_TAKEOUT", 1712): ('CFLAG:327 += 1', "痴漢お持ち帰り回数"),
+    ("PASTIME_CHIKAN_TAKEOUT", 1716): ('CALL COMMON_PRISON, LOCAL:10, LOCAL:11, LOCAL:12, LOCAL:13, LOCAL:14, LOCAL:15, LOCAL:16, LOCAL:17, LOCAL:18, LOCAL:19, LOCAL:20, LOCAL:21, 1', "幽閉中パラメータ変動共通処理"),
+    ("PASTIME_CHIKAN_TAKEOUT", 1720): ('CALL COMMON_PRISON_EXP, CCOUNT, LOCAL:CCOUNT', "経験数の増加"),
+    ("PASTIME_CHIKAN_TAKEOUT", 1725): ('CALL _ABLUP, 1', "珠の取得"),
+    ("PASTIME_CHIKAN_TAKEOUT", 1729): ('CALL AFTER_PILL, TARGET, 35, 望まない相手', "アフターピル（INPUT）"),
+    ("PASTIME_CHIKAN_TAKEOUT", 1732): ('CALL NINSIN_HANTEI, 3, 800, 望まない相手', "妊娠判定"),
+    ("PASTIME_CHIKAN_TAKEOUT", 1736): ('CFLAG:825 += 1', "悪い噂"),
+}
+
 # hook 化してよい CALL 先 → Python 移植（呼び出し時に import）
 HOOK_CALLS = {
     "SET_TENTACLE_SIZE_BY_MESSAGE": ("eragvt.game.battle.gaping", "set_tentacle_size_by_message"),
@@ -279,6 +359,13 @@ HOOK_CALLS = {
     "TS_MTOF": ("eragvt.game.prison.event", "ts_change"),
     "TS_NORMAL": ("eragvt.game.prison.event", "ts_change"),
     "TS_FTOM": ("eragvt.game.prison.event", "ts_change"),
+    # S28c2（NANPA_HOOK_LINES）
+    "COMMON_PRISON": ("eragvt.game.pastime_nanpa", "hook_common_prison"),
+    "COMMON_PRISON_EXP": ("eragvt.game.pastime_nanpa", "hook_common_prison_exp"),
+    "_ABLUP": ("eragvt.game.pastime_nanpa", "hook_ablup"),
+    "AFTER_PILL": ("eragvt.game.pastime_nanpa", "hook_after_pill"),
+    "CALC_GANGBANG": ("eragvt.game.pastime_nanpa", "hook_calc_gangbang"),
+    "ENCOUNT_CITIZEN": ("eragvt.game.pastime_nanpa", "hook_encount_citizen"),
 }
 
 # hook の代入で書き込んでよい変数
@@ -292,6 +379,7 @@ def match_hook(func: str, line: int, text: str) -> Optional[str]:
         or NINSIN_HOOK_LINES.get((func, line))
         or SEISAN_HOOK_LINES.get((func, line))
         or PASTIME_HOOK_LINES.get((func, line))
+        or NANPA_HOOK_LINES.get((func, line))
     )
     if prow is not None:
         return f"{func}:{line}" if prow[0] == text.strip() else None

@@ -9,6 +9,9 @@
 - `run_function_gen`（S14）：同上のジェネレータ版。INPUTS に達したら `yield` で入力を受け取り、出力・亂數・LOCAL を開始時に
   戻して入力列を足して最初から再実行する（同じ入力列なら同じ結果になる：亂數は注入 RNG のスナップショットで戻す）。
   入力待ちより前に状態変化（hook・KOJO_ROOT）があった場合は再実行できないので NotImplementedError。
+- `run_event_gen`（S28c2）：自由行動の事件本体（`PASTIME_ナンパ.ERB` 等：INPUT の前に hook の状態変化がある）用。再実行せず、
+  インタプリタを別スレッドで動かして INPUT（と hook の Python 移植が yield する入力待ち）で本当に中断する。スレッドは交互にしか
+  動かない（主側は常に待っている）ので出力・亂數の順序は同期実行と同じ。実行時に不可執行と判明したら戻せないので NotImplementedError。
 - `CALL WINDOW_*`（汎用関数/WindowDrawer.ERB）は `narration.windowlib` の Python 移植を呼ぶ（実行ごとに新しいウィンドウ管理）。
 - 實行時才發現不可執行（動態呼叫先が unsupported、引擎會報錯的狀況）→ 輸出・亂數・LOCAL を開始前に戻し、
   口上は「見つからない」（-1）、地の文は False（呼び出し側が佔位を出す）。
@@ -18,6 +21,8 @@
 from __future__ import annotations
 
 import copy
+import queue
+import threading
 from pathlib import Path
 from typing import Any, Callable, Optional
 
@@ -25,6 +30,13 @@ from .catalog import Catalog
 from .runtime import Env, ErbRuntimeError, Interp, NeedInput, NotSupported
 from .windowlib import WindowManager
 from .windowlib import py_functions as window_py_functions
+
+
+class _Abort(BaseException):
+    """run_event_gen のジェネレータが途中で閉じられた（スレッドを巻き戻して終わらせる）。"""
+
+
+_EVENT_STACK = 64 * 1024 * 1024  # run_event_gen のスレッドのスタック（ERB の入れ子 CALL は Python の再帰になる）
 
 
 class _Tx:
@@ -160,6 +172,58 @@ class CatalogNarrationService:
             return False
         done, _ = self._run(ctx, lambda it: it.call(name, list(args or [])), name, hooks)
         return done
+
+    def run_event_gen(self, ctx, name: str, args: Optional[list] = None):
+        """S28c2（モジュール docstring）。`ok = yield from service.run_event_gen(...)`。yield する値は INPUT なら None、
+        hook の Python 移植（AFTER_PILL 等）が yield した値はそのまま。送られた値が入力。"""
+        if not self.catalog.exists(name) or self.catalog.unsupported_reason(name) is not None:
+            return False
+        to_main: queue.Queue = queue.Queue()
+        to_worker: queue.Queue = queue.Queue()
+
+        def input_fn(y):
+            to_main.put(("yield", y))
+            kind, value = to_worker.get()
+            if kind == "abort":
+                raise _Abort()
+            return value
+
+        it = self._interp(ctx)
+        it.env.input_fn = input_fn
+
+        def work() -> None:
+            try:
+                it.call(name, list(args or []))
+            except _Abort:
+                return
+            except BaseException as e:  # noqa: BLE001 主側で投げ直す
+                to_main.put(("error", e))
+                return
+            to_main.put(("done", None))
+
+        old_size = threading.stack_size()
+        threading.stack_size(_EVENT_STACK)
+        try:
+            th = threading.Thread(target=work, name=f"erb-event-{name}", daemon=True)
+            th.start()
+        finally:
+            threading.stack_size(old_size)
+        try:
+            while True:
+                kind, v = to_main.get()
+                if kind == "yield":
+                    value = yield v
+                    to_worker.put(("value", value))
+                elif kind == "done":
+                    return True
+                else:
+                    if isinstance(v, (NotSupported, ErbRuntimeError)):
+                        raise NotImplementedError(f"{name}：実行中に catalog で実行できなくなりました（{v}）") from v
+                    raise v
+        finally:
+            if th.is_alive():
+                to_worker.put(("abort", None))
+                th.join()
 
     def run_function_gen(self, ctx, name: str, args: Optional[list] = None, hooks: Optional[dict] = None):
         """ジェネレータ版（`ok = yield from service.run_function_gen(...)`）。入力は `str(送られた値)`。

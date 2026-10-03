@@ -42,7 +42,8 @@ S28b：`--actions` に 104（特別活動）を入れると、活動別（アル
 欲望 3・露出癖 2・マゾっ気 2・魅了経験 100 にする**人工的な状態**（援助交際〜枕営業・ライブ公演の分岐を通すため）。
 
 S28c1：`--actions` に 108（自由行動）を入れると、行き先（CFLAG:101）・本文関数（catalog 実行、佔位は「（佔位）」）・学校・告白・
-淫気応急・悪堕ち遭遇・ナンパ／酒ナンパ判定（→1 は S28c2 の停止）・痴漢判定（乗車）の次数を数える。
+淫気応急・悪堕ち遭遇・ナンパ／酒ナンパ判定・痴漢判定（乗車）の次数を数える。S28c2：本編（ナンパ・酒ナンパ・痴漢）と
+catalog の中で呼ばれた子関数（デート・お持ち帰り・レイプ・泥酔レイプ・変態プレイ）・本編中の処女喪失・痴漢お持ち帰りの次数。
 
 S25：戦闘中の [800] でステータス画面（5 ページ・EXPORT_CSV 含む）に入るようになった（ランダム方針のまま。SHOP [110] は押さない）。
 """
@@ -401,6 +402,40 @@ def install_event_counters() -> Counter:
 
     pt.pastime_chikan = ch
     pts.pastime_chikan = ch
+
+    # S28c2：本編（ナンパ・酒ナンパ・痴漢）の次数、catalog の中で呼ばれた子関数（デート・お持ち帰り・レイプ）、処女喪失
+    from eragvt.game import pastime_nanpa as pn
+    from eragvt.narration.runtime import Interp
+
+    sub = {"PASTIME_NANPA_DATE", "PASTIME_NANPA_TAKEOUT", "PASTIME_NANPA_RAPE", "PASTIME_SAKE_NANPA_DATE",
+           "PASTIME_SAKE_NANPA_TAKEOUT", "PASTIME_SAKE_NANPA_RAPE", "PASTIME_SAKE_NANPA_DEISUI_RAPE", "PASTIME_CHIKAN_TAKEOUT",
+           "MESSAGE_CITIZEN_TRAIN_PIG", "MESSAGE_CITIZEN_TRAIN_DOG", "MESSAGE_CITIZEN_TRAIN_KANCHO"}
+    orig_call = Interp.call
+
+    def icall(self, name, args, as_method=False):
+        if name.upper() in sub:
+            counts[f"自由行動 本編 子関数 {name.upper()}"] += 1
+        return orig_call(self, name, args, as_method)
+
+    Interp.call = icall
+    for name, label in (("message_pastime_nanpa", "ナンパ本編"), ("message_pastime_sake_nanpa", "酒ナンパ本編"),
+                        ("message_pastime_chikan", "痴漢本編")):
+        orig_m2 = getattr(pn, name)
+
+        def mf(ctx, *a, _o=orig_m2, _l=label):
+            sj = ctx.data.index_of("TALENT", "処女")
+            v0 = ctx.state.target_chara.talent[sj]
+            r = yield from _o(ctx, *a)
+            counts[f"自由行動 {_l}"] += 1
+            if v0 > 0 and ctx.state.target_chara.talent[sj] < 0:
+                counts[f"自由行動 {_l}（処女喪失）"] += 1
+            if _l == "痴漢本編" and r:
+                counts["自由行動 痴漢本編（お持ち帰り RETURN 1）"] += 1
+            return r
+
+        setattr(pt, name, mf)
+        if hasattr(pts, name):
+            setattr(pts, name, mf)
     return counts
 
 

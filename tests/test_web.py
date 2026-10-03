@@ -152,9 +152,15 @@ def test_training_input_and_unported_halt(client, monkeypatch):
     s = c.post("/api/input", json={"value": 3}).json()  # 筋トレ
     assert s["phase"] == "shop"
     assert app.state.session.state.charas[1].cflag[101] == 3
-    # 紅葉 → 自由行動（スケジュール：街：ショッピングモール）→ ナンパ本編（MESSAGE_PASTIME_NANPA：S28c2 未移植）で停止
+    # 紅葉 → 自由行動（スケジュール：街）→ ナンパ本編。S28c2 で移植済みなので、ここでは未移植の停止を差し込んで停止画面を確認
     app.state.session.state.charas[1].cflag[113] = 6
     monkeypatch.setattr(pastime, "pastime_nanpa", lambda ctx: 1)
+
+    def unported(ctx, arg):
+        raise NotImplementedError("テスト用の未移植")
+        yield  # pragma: no cover
+
+    monkeypatch.setattr(pastime, "message_pastime_nanpa", unported)
     c.post("/api/input", json={"value": 108})
     c.post("/api/input", json={"value": 100})
     s = c.post("/api/input", json={"value": 9}).json()

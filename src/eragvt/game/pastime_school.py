@@ -282,13 +282,13 @@ def pastime_school(ctx: Ctx, arg: int) -> InputGen:
     out.printl("【放課後】")
     yield from afterschool(ctx)
     if pastime_nanpa(ctx) > 0:  # :340–346
-        message_pastime_nanpa(ctx, arg)
+        yield from message_pastime_nanpa(ctx, arg)
     else:
         out.printl(f"{n}は、学業を果たしてきたようだ。")
         out.printw()
     if gakusei == 4:  # :349–354 合コン
         if pastime_sake_nanpa(ctx) > 0:
-            message_pastime_sake_nanpa(ctx, 0)  # :352 `CALL …, ARG`（ARG は学校の ARG）
+            yield from message_pastime_sake_nanpa(ctx, arg)  # :352 `CALL …, ARG`（学校の ARG）
     if t("変身時ＴＳ") > 0 and c.cflag[1] > 0:  # :358–363
         c.cflag[351] += 1
     else:

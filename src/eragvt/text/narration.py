@@ -5,6 +5,7 @@
 （気絶・結界的判定在 `eragvt.game.action.kojo_root_full`），可寫入 TextOutput、讀寫 GameState。
 `run_function` 執行地の文等 ERB 函式（可執行時 True；否則呼叫端輸出佔位）。
 `run_function_gen` 是其 generator 版（S14）：函式內有 INPUTS 時以 `yield` 取得輸入（`value = yield`），回傳值同上。
+`run_event_gen`（S28c2）：事件本體（INPUT・hook 狀態變化・會等輸入的 Python 移植混在一起）用；真的中斷等待輸入，不重新執行。
 實作：`eragvt.narration.service.CatalogNarrationService`（原作 ERB 抽取）、`NullNarrationService`（無 catalog）。
 """
 
@@ -28,6 +29,10 @@ class NarrationService(Protocol):
         """同 `run_function`，但允許 INPUTS（generator；以 `yield from` 呼叫）。"""
         ...
 
+    def run_event_gen(self, ctx: Any, name: str, args: Optional[list] = None) -> Generator[Any, Any, bool]:
+        """S28c2：允許 INPUT／INPUTS 之前有狀態變化（中斷等待，不重新執行）。不可執行時回傳 False（什麼都不做）。"""
+        ...
+
 
 class NullNarrationService:
     """尚無 catalog 時的預設：永遠沒有口上（KOJO_ROOT.ERB:46–90 的「見つからない」路徑）。"""
@@ -45,5 +50,9 @@ class NullNarrationService:
     def run_function_gen(
         self, ctx: Any, name: str, args: Optional[list] = None, hooks: Optional[dict] = None
     ) -> Generator[None, Any, bool]:
+        return False
+        yield  # pragma: no cover
+
+    def run_event_gen(self, ctx: Any, name: str, args: Optional[list] = None) -> Generator[Any, Any, bool]:
         return False
         yield  # pragma: no cover

@@ -17,7 +17,7 @@
 | `runtime_support.py` | 可讀變數（狀態模型有對應欄位者）、已實作式中関数、靜態檢查 |
 | `runtime.py`／`builtins.py` | 執行器、式中関数（`GameData/Function/Creator.Method.cs`） |
 | `hooks.py` | 狀態變化行的 hook 表（下述） |
-| `service.py` | `CatalogNarrationService`：`call_kojo`（KOJO_ROOT 派發）、`run_function`（地の文）、`run_function_gen`（含 INPUTS，S14）、失敗回復 |
+| `service.py` | `CatalogNarrationService`：`call_kojo`（KOJO_ROOT 派發）、`run_function`（地の文）、`run_function_gen`（含 INPUTS，S14）、`run_event_gen`（S28c2）、失敗回復 |
 | `windowlib.py` | `汎用関数/WindowDrawer.ERB`＋`TagSetText.ERB` 的 Python 移植（`CALL WINDOW_*`，S14；只有動画サイト使用） |
 
 產生物不落地：啟動時只掃 label（約 0.5 秒），函式本體第一次用到時解析、快取在記憶體。
@@ -46,7 +46,7 @@ S14：`Label(name)`／`Goto(name)`、`Input`（INPUTS）、`DrawLine(form)`（DR
 - 呼叫：呼叫先（任何 ERB 檔的函式，包含 `汎用関数/` 等）本身也可執行才算可執行（遞迴判定）。
   KOJO_ROOT 以 Python 實作（`action.kojo_root_full`＋`service.call_kojo`）；`WINDOW_CREATE／SETTEXT／DESTROY／DISPLAY` 也是
   （`windowlib.py`，`WINDOW_DISPLAY_EX` 的 REF 配列引數在執行時 unsupported）。
-- GOTO（S14）：只支援定數ラベル、且 `$ラベル` 在函式本體最上層（入れ子內的ラベル → 靜態 unsupported）。FOR 等在引擎是線形跳躍、
+- GOTO（S14）：只支援定數ラベル、且 `$ラベル` 在函式本體最上層（S28c2 起也支援 IF／SELECTCASE 內，見下）。FOR 等在引擎是線形跳躍、
   沒有堆疊（`Instraction.Child.cs@GOTO_Instruction`:2366–2406），所以「從最上層ラベル的下一行重新執行本體」等價。
 - INPUTS（S14，無既定值者）：只有 generator 呼叫端（`run_function_gen`，以 `yield from` 呼叫）可執行；`run_function`／口上派發遇到
   （含靜態呼叫先，`Catalog.needs_input`）視為不可執行。實作是**重放**：到達尚無輸入的 INPUTS 時中斷、`yield` 取得輸入、把輸出・亂數・
@@ -61,7 +61,17 @@ S14：`Label(name)`／`Goto(name)`、`Input`（INPUTS）、`DrawLine(form)`（DR
   `UserDefinedVariable.cs`:287–288）、CONST 初期値の `__INT_MAX__`／`__INT_MIN__`（`VariableToken.cs`:1669–1690）、hook の代入先に
   EXP・TARGET（`SEISAN_HOOK_LINES`）。`#DIMS REF` 引数は値渡しの関数内変数として扱う（呼び出し側が `state.temp.narr` から読む：
   `seisan._gravure_title`）。特別活動の地の文 58 函式はすべて実行可能（覆蓋率 12851／13384）。
-- 不支援：GOTOFORM／TRYGOTO 系、入れ子內的 $ラベル、INPUT（整數）・TINPUT・ONEINPUT 系與有既定值的 INPUTS、BEGIN、JUMP、PRINTV・
+- S28c2 追加：
+  - INPUT（整數、無既定值）→ RESULT:0（`GameProc/Process.cs@InputInteger`:249–252）。同 INPUTS 只在 generator 呼叫端可執行。
+  - 入れ子內的 $ラベル：ラベル的路徑只經過 IF／SELECTCASE 的枝時可執行。引擎的 ELSEIF／ELSE／CASE／CASEELSE 只是跳到 ENDIF／ENDSELECT、
+    ENDIF 什麼都不做（`Instraction.Child.cs@ELSEIF_Instruction`:1805–1821、`ENDIF_Instruction`:1822–1832、`FunctionIdentifier.cs`:231–237），
+    所以「ラベル之後的剩餘 → 外側入れ子文的下一句 → …」等價（`nodes.label_path`、`Interp._exec_body`）。ループ內的ラベル仍 unsupported。
+  - `run_event_gen`（事件本體用：`eragvt.game.pastime_nanpa`）：不重放，直接在另一條執行緒跑直譯器，INPUT（與 hook 的 Python 移植
+    ——AFTER_PILL・CALC_GANGBANG——yield 的輸入等待）時真正中斷；兩邊交替執行，輸出・亂數順序與同步執行相同。所以輸入前有狀態變化也可以。
+    執行中途才發現不可執行 → 無法回復 → NotImplementedError（Web 停止）。generator 被關閉時以 `_Abort` 收掉執行緒。
+  - hook 的 CALL 可回傳 generator（在執行緒中驅動）；新增 HOOK_CALLS：COMMON_PRISON・COMMON_PRISON_EXP・_ABLUP・AFTER_PILL・CALC_GANGBANG・
+    ENCOUNT_CITIZEN（停止）。表 `NANPA_HOOK_LINES` 72 行。
+- 不支援：GOTOFORM／TRYGOTO 系、ループ內的 $ラベル、TINPUT・ONEINPUT 系與有既定值的 INPUT／INPUTS、BEGIN、JUMP、PRINTV・
   PRINT K 系・PRINTC 系、STRDATA、TIMES、SETCOLORBYNAME、`@` 付き変数、未實作的式中関数（覆蓋率報告）。
 
 語意重點（皆有引擎行號，見 `runtime.py` docstring）：`&&`／`||` 短絡；`/`・`%` 先評價右辺；C# 的切り捨て除算；

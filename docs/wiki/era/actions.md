@@ -22,7 +22,7 @@ Python：`eragvt.game.action`（ACTION_MAIN／REST／TRAINING）、`eragvt.game.
 | 防衛 105 | `ACTION_GUARD.ERB@GUARD` | `FLAG:41++`；`ENCOUNT`（ENCOUNT_BOSS:164–177 防衛時はボス遭遇なし → 只有洗脳／悪堕ちキャラ）＋ MOB_TENTACLE_ENCOUNT（雜魚戰 OFF 時文章のみ・探索度半分）；RESULT ≠ 0 → TRAIN；RESULT == 0：體力・氣力 −12%（SYOUHI_KEIGEN）、`FLAG:852 += 125 + Lv*2 + RAND:26` | S28a `action.guard` |
 | 支援 106 | `ACTION_SUPPORT.ERB@SUPPORT` | 前線 0 人且 `FLAG:41 == 0` → 改休憩、FLAG:43−1；否則體力・氣力 ×0.24／0.18（FLAG:43 = 1／2，3 以上は MAXBASE 全量：原作どおり）×献身的 1.1、修練P 15–25、`GET_EXP((TENTACLE_LEVEL−3)/Lv*10+RAND:5)`、知性基礎 +0–2 | S28a `action.support` |
 | 情報 107 | `ACTION_GATHER_INFORMATION.ERB` | 變身選擇（GLOBAL:54–56）→ 4 種（噂話／事件の捜査／情報を買う／仲間の捜索，CFLAG:112 スケジュール）→ `_ABLUP 1` → 變身解除；探索度、魅了経験、知性、`CFLAG:120–122`（コネ）、MONEY、カラダ（EXP・JUEL・處女・NINSIN_HANTEI）、CFLAG:71（拉致監禁救出）・CFLAG:23（遭遇率）；クズ市民戰 → 停止 | S28a `eragvt.game.gather` |
-| 自由 108 | `ACTION_PASTIME.ERB@PASTIME` | 編入（DAY%30）→ 變身選擇（GLOBAL:57–59）→ 學校／街／遠出／運動（INPUT 或排程 `CFLAG:113`）、CFLAG:101（5〜20）・270・310・330〜357、TALENT:学生／交際相手／処女、EXP、FLAG:111；PASTIME_REST、魅了經驗、`_ABLUP 1`；`FLAG:73 > 0` 時 TRAIN | S28c1 `eragvt.game.pastime`（ナンパ・酒ナンパ・痴漢本編は S28c2 停止） |
+| 自由 108 | `ACTION_PASTIME.ERB@PASTIME` | 編入（DAY%30）→ 變身選擇（GLOBAL:57–59）→ 學校／街／遠出／運動（INPUT 或排程 `CFLAG:113`）、CFLAG:101（5〜20）・270・310・330〜357、TALENT:学生／交際相手／処女、EXP、FLAG:111；PASTIME_REST、魅了經驗、`_ABLUP 1`；`FLAG:73 > 0` 時 TRAIN | S28c1 `eragvt.game.pastime`（ナンパ・酒ナンパ・痴漢本編は S28c2 `eragvt.game.pastime_nanpa`） |
 
 S28c1 起 101〜108 全部已翻（`action_main` 的最後 `NotImplementedError` 只剩不存在的預約值）。
 
@@ -78,6 +78,22 @@ S28c1 起 101〜108 全部已翻（`action_main` 的最後 `NotImplementedError`
   靜態 → 初次後一直 1（之後健身房不會有ナンパ）；學校 `#DIM 改造制服` 靜態不歸 0、`目的地` 在學生 0 時沿用前值；Classwork_PE 的 LOCAL（ヒップ形容）
   與 `SUIEI` 是靜態殘值；SelectClub:1579 只有輸入 0 才算歸宅；PASTIME_REST:170–172 回復遅い 的気力 +5；PASTIME_TSFLAG_OVERWRITE 無呼叫處（不移植）。
 - **D4**：悪堕ち遭遇:19 `SQRT(FLAG:852)` 負數當 0（`pastime.akuoti_encounter`）。
+
+## S28c2 補足（自由行動の本編 `eragvt.game.pastime_nanpa`）
+
+- **範囲**：`自由/PASTIME_ナンパ.ERB@MESSAGE_PASTIME_NANPA`＋DATE／TAKEOUT／RAPE、`PASTIME_酒ナンパ.ERB@MESSAGE_PASTIME_SAKE_NANPA`＋DATE／
+  TAKEOUT／RAPE／DEISUI_RAPE、`PASTIME_痴漢.ERB@MESSAGE_PASTIME_CHIKAN`＋TAKEOUT（11 関数・約 6,800 行）。
+- **分工**：本文がほぼ全部で INPUT（選択肢 7 か所）と少数の状態変化が分岐の中に混ざる → 手翻せず S07 catalog で原文を実行
+  （`CatalogNarrationService.run_event_gen`：INPUT で本当に中断して待つ。catalog の拡張は `docs/wiki/python/narration.md`「S28c2 追加」）。
+  状態変化 72 行は `NANPA_HOOK_LINES`：代入（CFLAG:270／206／320／321／325〜328／356／825、TALENT:処女、EXP、FLAG:900）は書き込み許可で
+  実行、CALL は既存の Python 移植（COMMON_PRISON・COMMON_PRISON_EXP・_ABLUP・AFTER_PILL〔INPUT〕・NINSIN_HANTEI・CALC_GANGBANG〔INPUT〕）。
+  変態プレイ（`MESSAGE_CITIZEN_TRAIN_*`）・口上（KOJO_ROOT）は catalog の通常経路。catalog が無い（Null）と停止。
+- **停止**：レイプで `CONFIG_CHECK_EVENT_F(5) == 1`（クズ市民 config）のとき `ENCOUNT_CITIZEN(6001)`（未移植）。既定 config では起きない。
+- **戻り値**：PASTIME_CHIKAN:455–459 は本編が持ち帰り（:1097 RETURN 1）なら RETURN 1 → 遠出・学校はそこで終わる（`pastime_chikan`）。
+  ナンパ・酒ナンパの本編は RESULT を返さない（呼び出し元も読まない）。
+- **原作どおり**：本編の ARG は呼び出し元の ARG（街・遠出・運動・学校の予約値）なので、ナンパの場所分岐（0／1 街・遠出、2 運動、3 学校、
+  他は :409 の ELSE）や DATE の `持ち帰り先`（静的 #DIM、ARG 0〜3 以外では前回値）は予約内容で決まる。学校の合コン（:352）も学校の ARG
+  （S28c1 の Python は 0 を渡していたのを訂正）。NANPA_RAPE:3087 の `CFLAG:1 > 1`（他所は `> 0`）もそのまま。
 
 ## 回合結束之後（EVENTTURNEND → BEGIN SHOP → EVENTSHOP）
 

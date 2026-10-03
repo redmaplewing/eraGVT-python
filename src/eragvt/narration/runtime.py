@@ -13,7 +13,9 @@
 - FOR：`Instraction.Child.cs`:1731–1744、WHILE:1754–1760。
 - GOTO：同名の `$ラベル` の次の行へ（`Instraction.Child.cs@GOTO_Instruction`:2366–2406、ラベル名は ToUpper：
   `GameProc/LogicalLineParser.cs`:305–320）。FOR／REPEAT 等はスタックを持たない線形ジャンプなので、関数本体トップレベルの
-  ラベルへはどの入れ子からでも「本体をラベル位置から再開」で等価。入れ子の中のラベルへの GOTO は静的に unsupported。
+  ラベルへはどの入れ子からでも「本体をラベル位置から再開」で等価。S28c2：IF／SELECTCASE の中のラベルへも、ELSEIF／ELSE／CASE は
+  ENDIF／ENDSELECT へ飛ぶだけ・ENDIF は何もしない（`Instraction.Child.cs@ELSEIF_Instruction`:1805–1821、`ENDIF_Instruction`:1822–1832、
+  `FunctionIdentifier.cs`:231–237）ので「ラベル以降の残り → 外側の入れ子文の次 → …」で等価。ループの中のラベルは静的に unsupported。
 - INPUTS：入力文字列を RESULTS:0 に（`GameProc/Process.cs@InputString`:257–260）。`Env.inputs` が None（通常の呼び出し）なら
   unsupported。ジェネレータ呼び出しでは、まだ無い入力に達したら `NeedInput` で中断し、入力を足して最初から再実行する
   （`service.CatalogNarrationService.run_function_gen`：出力・亂數・LOCAL は開始時に戻すので再実行結果は同一）。
@@ -102,6 +104,7 @@ class Env:
     hooks: dict = field(default_factory=dict)
     ctx: Any = None  # action.Ctx（hook／KOJO_ROOT 用）
     inputs: Optional[list] = None  # INPUTS に与える入力（None = INPUTS 不可）
+    input_fn: Optional[Callable] = None  # S28c2 run_event_gen：f(yield する値) → 入力値（中断して待つ）
 
 
 class Interp:
@@ -167,21 +170,22 @@ class Interp:
     def _exec_body(self, fd: N.FuncDef, fr: Frame) -> None:
         """関数本体。GOTO はトップレベルの $ラベルの次から再開する。"""
         body = fd.body
-        start = 0
+        path: list = [(body, -1)]
         jumps = 0
         while True:
             try:
-                for s in body[start:] if start else body:
-                    self.exec(s, fr)
+                # 最も内側から：ラベルの次の文〜その文リストの終わり、次に一つ外側の「入れ子文の次」から…（S28c2）
+                for stmts, idx in reversed(path):
+                    for s in stmts[idx + 1:]:
+                        self.exec(s, fr)
                 return
             except _Goto as g:
-                idx = next((i for i, s in enumerate(body) if type(s) is N.Label and s.name == g.name), None)
-                if idx is None:
-                    raise NotSupported(f"GOTO 先 ${g.name} がトップレベルにない") from None
+                path = N.label_path(body, g.name)
+                if path is None:
+                    raise NotSupported(f"GOTO 先 ${g.name} が IF／SELECTCASE の外側の経路にない") from None
                 jumps += 1
                 if jumps > self.MAX_GOTO:
                     raise ErbRuntimeError("GOTO の繰り返しが多すぎます（無限ループ）") from None
-                start = idx + 1
 
     # --- 文 --------------------------------------------------------------------------
     def exec_block(self, stmts: list, fr: Frame) -> None:
@@ -258,13 +262,12 @@ class Interp:
         elif t is N.Goto:
             raise _Goto(s.name)
         elif t is N.Input:
-            inputs = self.env.inputs
-            if inputs is None:
-                raise NotSupported("INPUTS（ジェネレータ呼び出しのみ対応）")
-            if self.input_pos >= len(inputs):
-                raise NeedInput()
-            self.st.results[0] = inputs[self.input_pos]  # RESULTS は共用（GameState.results、S22）
-            self.input_pos += 1
+            value = self._input()
+            if s.kind == "I":
+                # INPUT：整数 → RESULT:0（GameProc/Process.cs@InputInteger:249–252）
+                self._set_result([int(value)])
+            else:
+                self.st.results[0] = str(value)  # RESULTS は共用（GameState.results、S22）
         elif t is N.Wait:
             self.out.wait()
         elif t is N.For:
@@ -305,9 +308,23 @@ class Interp:
         else:  # pragma: no cover
             raise NotSupported(f"文 {t.__name__}")
 
+    def _input(self) -> Any:
+        """入力 1 つ。`Env.input_fn`（S28c2 `run_event_gen`：本当に中断して待つ）か、`Env.inputs`（再実行方式）。"""
+        if self.env.input_fn is not None:
+            return self.env.input_fn(None)
+        inputs = self.env.inputs
+        if inputs is None:
+            raise NotSupported("INPUT／INPUTS（ジェネレータ呼び出しのみ対応）")
+        if self.input_pos >= len(inputs):
+            raise NeedInput()
+        v = inputs[self.input_pos]
+        self.input_pos += 1
+        return v
+
     def _hook(self, s: N.Hook, fr: Frame) -> None:
         """hooks.py の状態変化行：CALL は既存の Python 移植へ、代入は状態書き込みを許可して実行。"""
         import importlib
+        import inspect
 
         from .hooks import HOOK_CALLS
 
@@ -318,7 +335,17 @@ class Interp:
         if isinstance(inner, N.CallStmt):
             mod, fn = HOOK_CALLS[inner.name]
             args = [self.eval(a, fr) for a in inner.args if a is not None]
-            getattr(importlib.import_module(mod), fn)(self.env.ctx, *args)
+            r = getattr(importlib.import_module(mod), fn)(self.env.ctx, *args)
+            if inspect.isgenerator(r):
+                # S28c2：INPUT を yield する Python 移植（AFTER_PILL・CALC_GANGBANG）は `Env.input_fn` 経由で駆動する
+                if self.env.input_fn is None:
+                    raise NotSupported(f"hook {inner.name} は入力を待つ（run_event_gen のみ対応）")
+                try:
+                    y = next(r)
+                    while True:
+                        y = r.send(self.env.input_fn(y))
+                except StopIteration:
+                    pass
             return
         self._state_write = True
         try:

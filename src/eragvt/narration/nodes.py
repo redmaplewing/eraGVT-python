@@ -140,8 +140,9 @@ class Goto(Stmt):
 
 @dataclass(slots=True)
 class Input(Stmt):
-    """INPUTS（Instraction.Child.cs@INPUTS_Instruction:642–667；入力文字列 → RESULTS:0）。
-    ジェネレータ呼び出し（`CatalogNarrationService.run_function_gen`）でのみ実行できる。"""
+    """INPUTS（kind "S"：Instraction.Child.cs@INPUTS_Instruction:642–667；入力文字列 → RESULTS:0）／
+    INPUT（kind "I"：S28c2、入力整数 → RESULT:0：GameProc/Process.cs@InputInteger:249–252）。
+    ジェネレータ呼び出し（`CatalogNarrationService.run_function_gen`／`run_event_gen`）でのみ実行できる。"""
 
     kind: str = "S"
 
@@ -282,3 +283,26 @@ def iter_stmts(stmts):
             yield from iter_stmts(s.success)
         elif t in (For, While, Repeat, Loop):
             yield from iter_stmts(s.body)
+
+
+def label_path(body: list, name: str) -> Optional[list]:
+    """`$name` までの経路 [(文リスト, その中の位置), …]（外側から。最後がラベル自身）。経路は IF／SELECTCASE の枝だけを通る
+    （ループの中・見つからない → None）。S28c2：入れ子の中のラベルへの GOTO（runtime.Interp._exec_body）。"""
+
+    def find(stmts: list) -> Optional[list]:
+        for i, s in enumerate(stmts or ()):
+            t = type(s)
+            if t is Label and s.name == name:
+                return [(stmts, i)]
+            subs: list = []
+            if t is If:
+                subs = [b for _, b in s.branches] + [s.orelse]
+            elif t is Select:
+                subs = [b for _, b in s.cases] + [s.orelse]
+            for b in subs:
+                r = find(b)
+                if r is not None:
+                    return [(stmts, i)] + r
+        return None
+
+    return find(body)

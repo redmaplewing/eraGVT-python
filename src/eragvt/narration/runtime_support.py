@@ -181,11 +181,10 @@ def unsupported_reasons_static(fd: N.FuncDef, catalog) -> list[tuple[int, str]]:
     visit(fd.body)
     for v, _ in fd.params:
         check_expr(fd.line, v)
-    # GOTO：飛び先は関数本体トップレベルの $ラベルのみ対応（runtime.Interp.call）
-    top = {s.name for s in fd.body if isinstance(s, N.Label)}
+    # GOTO：飛び先は IF／SELECTCASE の枝だけを通って辿れる $ラベル（runtime.Interp._exec_body、S28c2 で入れ子にも拡張）
     for s in N.iter_stmts(fd.body):
-        if isinstance(s, N.Goto) and s.name not in top:
-            out.append((s.line, f"GOTO 先 ${s.name} がトップレベルにない"))
+        if isinstance(s, N.Goto) and N.label_path(fd.body, s.name) is None:
+            out.append((s.line, f"GOTO 先 ${s.name} が IF／SELECTCASE の外側の経路にない"))
         elif isinstance(s, N.DrawLine) and s.form is not None:
             check_expr(s.line, s.form)
     return out

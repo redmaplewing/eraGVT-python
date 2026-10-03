@@ -308,7 +308,8 @@ def test_chikan_seated_no_event(ctx):
 
 
 def test_chikan_triggered_stops(ctx):
-    """混雑 65 → ドア前（STAND_POS 1）、RAND:80 = 0 <= 判定 → 痴漢；[1]抵抗で RAND:100 = 0 < 失敗率 → 本編（S28c2）で停止。"""
+    """混雑 65 → ドア前（STAND_POS 1）、RAND:80 = 0 <= 判定 → 痴漢；[1]抵抗で RAND:100 = 0 < 失敗率 → 本編（S28c2：catalog が無い
+    NullNarrationService では停止。catalog での本編は tests/test_pastime_nanpa.py）。"""
     _clear(ctx)
     ctx.state.rng = FixedRng([60, 0, 0, 0, 0, 0, 1, 0, 0, 1, 1, 1, 1, 0])
     with pytest.raises(NotImplementedError, match="MESSAGE_PASTIME_CHIKAN"):
@@ -549,9 +550,6 @@ def test_shop_pastime_turnend(data):
             s.input(0)
         st = s.state
         c = st.charas[1]
-        if s.phase == Phase.HALTED:  # ナンパ本編（S28c2）に当たったら停止画面
-            assert any("ナンパ" in ln.text for ln in s.out.lines)
-            return
         assert s.phase == Phase.SHOP
         assert (st.day[0], st.time) == (day, 1)
         assert c.cflag[101] == 18 and c.cflag[334] == 1

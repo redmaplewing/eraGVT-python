@@ -497,6 +497,11 @@ class FuncParser:
             if arg.strip():
                 raise _Unsup("命令 INPUTS（既定値つき）")
             return N.Input(no, "S")
+        if name == "INPUT":
+            # S28c2：整数入力（既定値なしのみ）→ RESULT:0（GameProc/Process.cs@InputInteger:249–252）
+            if arg.strip():
+                raise _Unsup("命令 INPUT（既定値つき）")
+            return N.Input(no, "I")
         if name in ("WAIT", "FORCEWAIT", "WAITANYKEY"):
             return N.Wait(no, name)
         if name == "RETURN":

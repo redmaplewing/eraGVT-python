@@ -6,9 +6,9 @@
 - `自由/PASTIME_学校途中編入.ERB@PASTIME_SelectSchool`、`PASTIME_街に出る`、`PASTIME_遠出する`（＋8 か所の MESSAGE）、
   `PASTIME_運動する`（＋4 か所の MESSAGE）、`PASTIME_告られ`、`PASTIME_悪堕ち遭遇`、`PASTIME_淫気応急`（＋CALC_INKIOKYU）。
   学校は `eragvt.game.pastime_school`。
-- S28c2 の範囲（ナンパ・酒ナンパ・痴漢）のうち、発生判定の `PASTIME_NANPA`（`PASTIME_ナンパ.ERB`:4–69）・`PASTIME_SAKE_NANPA`
-  （`PASTIME_酒ナンパ.ERB`:4–70）・`PASTIME_CHIKAN`（`PASTIME_痴漢.ERB`:4–465：乗車〜抵抗の選択まで）を移植し、本編
-  （`MESSAGE_PASTIME_NANPA`／`MESSAGE_PASTIME_SAKE_NANPA`／`MESSAGE_PASTIME_CHIKAN`）に入るところで NotImplementedError（Web 停止）。
+- ナンパ・酒ナンパ・痴漢の発生判定 `PASTIME_NANPA`（`PASTIME_ナンパ.ERB`:4–69）・`PASTIME_SAKE_NANPA`（`PASTIME_酒ナンパ.ERB`:4–70）・
+  `PASTIME_CHIKAN`（`PASTIME_痴漢.ERB`:4–465：乗車〜抵抗の選択）はここ。本編（`MESSAGE_PASTIME_NANPA` 等）は S28c2 の
+  `eragvt.game.pastime_nanpa`（catalog で実行）。
 
 本文中心の関数（INPUT なし）は地の文扱いで S07 catalog で実行する（`_chinobun`）：`PASTIME_FASHION`、`MESSAGE_PASTIME_FitnessClub`／
 `MassageSalon`／`Pool`、遠出の 8 か所、`PASTIME_AKUOTI_EVENT`、改造制服（`KAIZOU_*`・`SHITAGI_COLOR`）、学校の授業・昼休み・部活
@@ -32,15 +32,12 @@ from ..state import GameState
 from .action import Ctx, print_transcallname
 from .chara_common import is_female, is_male, talent
 from .era import div, limit, mod
+from .pastime_nanpa import message_pastime_chikan, message_pastime_nanpa, message_pastime_sake_nanpa
 
 InputGen = Generator[None, int, None]
 
 # DIM.ERH:257 望まない相手
 NOZOMANAI = -4
-
-_STOP_NANPA = "自由行動：ナンパ（MESSAGE_PASTIME_NANPA、S28c2）は未移植"
-_STOP_SAKE = "自由行動：酒ナンパ（MESSAGE_PASTIME_SAKE_NANPA、S28c2）は未移植"
-_STOP_CHIKAN = "自由行動：痴漢（MESSAGE_PASTIME_CHIKAN、S28c2）は未移植"
 
 
 # --- 小道具 -----------------------------------------------------------------------------
@@ -502,21 +499,6 @@ def pastime_sake_nanpa(ctx: Ctx) -> int:
     return r
 
 
-def message_pastime_nanpa(ctx: Ctx, arg: int) -> None:
-    """`CALL MESSAGE_PASTIME_NANPA, ARG`（`PASTIME_ナンパ.ERB`:73–605）：S28c2。"""
-    raise NotImplementedError(_STOP_NANPA)
-
-
-def message_pastime_sake_nanpa(ctx: Ctx, arg: int) -> None:
-    """`CALL MESSAGE_PASTIME_SAKE_NANPA, ARG`（`PASTIME_酒ナンパ.ERB`:74–263）：S28c2。"""
-    raise NotImplementedError(_STOP_SAKE)
-
-
-def message_pastime_chikan(ctx: Ctx, arg: int, pos: int, naburare: int, aite: str) -> None:
-    """`CALL MESSAGE_PASTIME_CHIKAN, ARG, CHIKAN_POS, NABURARE, 痴漢してきた相手`（`PASTIME_痴漢.ERB`:470–1191）：S28c2。"""
-    raise NotImplementedError(_STOP_CHIKAN)
-
-
 # --- 痴漢の発生判定（自由/PASTIME_痴漢.ERB@PASTIME_CHIKAN:4–465） ------------------------------------
 
 
@@ -534,7 +516,7 @@ def _stand_line(ctx: Ctx, n: str, stand: int, back: bool) -> None:
 
 
 def pastime_chikan(ctx: Ctx, arg: int) -> Generator[None, int, int]:
-    """`@PASTIME_CHIKAN, ARG`:4–465。戻り値 = RESULT（本編で持ち帰られたら 1：S28c2）。
+    """`@PASTIME_CHIKAN, ARG`:4–465。戻り値 = RESULT（本編で持ち帰られたら 1：:455–459）。
 
     呼び出し元は自分の ARG をそのまま渡す（遠出 -1／0〜7、学校 -1／0）ので、ARG == 1（遠出の文）は水族館の予約、
     ARG == 3（通学の混雑・文）は植物園の予約のときだけになる：原作どおり。"""
@@ -820,8 +802,10 @@ def pastime_chikan(ctx: Ctx, arg: int) -> Generator[None, int, int]:
             out.printl(f"{aite}は即座に離れていった・・・")
             teikou = 0
     out.printw()  # :452
-    if teikou > 0:  # :455–460 抵抗失敗 → 本編（S28c2）
-        message_pastime_chikan(ctx, arg, pos, naburare, aite)
+    if teikou > 0:  # :455–460 抵抗失敗 → 本編（S28c2：eragvt.game.pastime_nanpa）
+        if (yield from message_pastime_chikan(ctx, arg, pos, naburare, aite)) > 0:
+            st.result[0] = 1
+            return 1
     out.printl()  # :462–465
     _dot_after(ctx, 1)
     out.printl()
@@ -1157,7 +1141,7 @@ def machi(ctx: Ctx, arg: int) -> InputGen:
             out.printl("噂から想像した以上の美味しさで待った甲斐があったと満足そうだ。")
             out.printl(f"甘いお菓子に舌鼓を打った{n}は幸福そうな顔で店を後にした・・・")
         if pastime_sake_nanpa(ctx) > 0 and st.time > 0:  # :327–331
-            message_pastime_sake_nanpa(ctx, arg)
+            yield from message_pastime_sake_nanpa(ctx, arg)
             st.result[0] = 0
             return
     elif result == 3:  # :332–419
@@ -1198,7 +1182,7 @@ def machi(ctx: Ctx, arg: int) -> InputGen:
                 out.printl("木陰から漏れる日差しとそよ風が心地よい・・・")
     out.printw()  # :421
     if pastime_nanpa(ctx) > 0:  # :423–428
-        message_pastime_nanpa(ctx, arg)
+        yield from message_pastime_nanpa(ctx, arg)
     else:
         out.printl(f"{n}は、{mokuteki}を満喫してきたようだ。")
     st.result[0] = 0  # :429
@@ -1262,7 +1246,7 @@ def toode(ctx: Ctx, arg: int) -> InputGen:
     if (yield from pastime_chikan(ctx, arg)) == 0:  # :67–68
         _chinobun(ctx, _TOODE_FUNC[local])  # :69–93
         if pastime_nanpa(ctx) > 0:  # :97–100
-            message_pastime_nanpa(ctx, arg)
+            yield from message_pastime_nanpa(ctx, arg)
         elif _rand(ctx, 100) > div(st.flag[852], 100):  # :102–103
             yield from inkioukyu(ctx, 0)
         else:
@@ -1324,7 +1308,7 @@ def undou(ctx: Ctx, arg: int = -1) -> InputGen:
     else:
         _chinobun(ctx, "MESSAGE_PASTIME_Pool")
     if pastime_nanpa(ctx) > 0 and eroevent < 1:  # :69–74
-        message_pastime_nanpa(ctx, arg)
+        yield from message_pastime_nanpa(ctx, arg)
     else:
         out.printl(f"{n}は、{_UNDOU[local]}で身体を存分に動かしたようだ。")
     st.result[0] = 0

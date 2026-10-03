@@ -44,7 +44,7 @@ ERB 路徑相對 `source/earGVP/ERB/`。
   模式固定 NORMAL（MODE_SELECT 沒有預設值，[1] 是第一個選項）。（Python：`eragvt.game.opening.event_first_gen`、`session._title_input`）
   開局 `MESSAGE_FIRST` 口上仍不輸出（見下「口上」）。
 
-- [ ] **S04 未翻的行動會停止遊戲**：（出撃已於 S05 接上，戰鬥內的停止見下一項）自由行動（S28c；特別活動 S28b、拠点防衛・戦闘支援・情報収集 S28a 已接上）在 `action_main` 丟 `NotImplementedError`，Web session 捕捉後進入「停止」狀態（只能按「タイトルに戻る」）。同樣停止的還有：（ENDING 於 S27 接上：クリア後只剩引き継ぎ SUCCESSION 停止）、救出直後、妊娠・育兒・幽閉・悪堕ち等 S04 無法產生的狀態、鍛錬排程（CFLAG:110）、戦闘基礎 Lv5 的變身能力獲得。（原作：`ゲーム内_行動実行処理/ACTION.ERB`:74–175 等；Python：`eragvt.game.action`、`eragvt.game.turnend`、`eragvt.game.session._advance_turn`）— 各自屬 S05 以後；影響範圍見 `docs/wiki/era/actions.md`。
+- [ ] **S04 未翻的行動會停止遊戲**：（出撃已於 S05 接上，戰鬥內的停止見下一項）（自由行動 S28c1／S28c2、特別活動 S28b、拠点防衛・戦闘支援・情報収集 S28a 已接上；`action_main` 只剩不存在的預約值會丟 `NotImplementedError`），Web session 捕捉後進入「停止」狀態（只能按「タイトルに戻る」）。同樣停止的還有：（ENDING 於 S27 接上：クリア後只剩引き継ぎ SUCCESSION 停止）、救出直後、妊娠・育兒・幽閉・悪堕ち等 S04 無法產生的狀態、鍛錬排程（CFLAG:110）、戦闘基礎 Lv5 的變身能力獲得。（原作：`ゲーム内_行動実行処理/ACTION.ERB`:74–175 等；Python：`eragvt.game.action`、`eragvt.game.turnend`、`eragvt.game.session._advance_turn`）— 各自屬 S05 以後；影響範圍見 `docs/wiki/era/actions.md`。
 - [x] ~~**襲撃／救援 會被跳過**~~（S20 解決）：`RAID_HANTEI` 成立時照原作 `JUMP RAID_RESCUE／RAID_ATTACK` → イベント戦（`eragvt.game.raid`）。ラスボス出現後（FLAG:100 = 0）の襲来は S27 接上（生存ラスボス 0 で原作無限ループの路だけ停止）。
 - [ ] **未移植的戰鬥分岐會停止遊戲**（S05 新增、S06 更新）：戰鬥中下列情況丟 `NotImplementedError` → Web「停止」。
   S06 接上了拘束後的性攻擊、拘束中指令、絶頂／射精、敗北（→ 幽閉）與指令 6・7・16・17・69・71・72；
@@ -360,3 +360,11 @@ ERB 路徑相對 `source/earGVP/ERB/`。
   （Classwork_CL／PE 的 EXP・処女・CFLAG:42）依本文亂數決定 → 停止（NotImplementedError）；其他以 `_FALLBACKS` 照 ERB 更新。Web 預設 catalog 可執行，
   不會發生。（Python：`pastime._FALLBACKS`）
 - S28c1 照原作的怪處（非偏離，備查）：見 `docs/wiki/era/actions.md`「S28c1 補足」。
+
+## S28c2（自由行動的本編；待使用者裁決）
+
+- [ ] **catalog 不可時停止**：ナンパ・酒ナンパ・痴漢的本編（`PASTIME_ナンパ.ERB` 等 11 函式）只以 catalog 執行（`pastime_nanpa._run`），
+  Null narration（無原作 ERB）時 NotImplementedError → Web 停止（原作不會停）。Web 預設 catalog 可執行（72 行 hook 全部可執行，
+  `tests/test_pastime_nanpa.py::test_nanpa_hook_table_matches_erb`），不會發生。
+- 備查（非偏離）：レイプ中 `CONFIG_CHECK_EVENT_F(5) == 1` 的 `ENCOUNT_CITIZEN(6001)` 是未移植系統 → 停止（既定 config 不發生）。
+  照原作的怪處見 `docs/wiki/era/actions.md`「S28c2 補足」。

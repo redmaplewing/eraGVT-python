@@ -342,7 +342,8 @@ def test_goto_top_level_label(ctx, svc):
 
 
 def test_goto_nested_label_is_unsupported(svc):
-    cat = _Cat("@F\nIF 1\n$L\nENDIF\nGOTO L\n", svc.catalog)
+    # S28c2 から IF／SELECTCASE の中のラベルは対応（runtime.Interp._exec_body）。ループの中は不可のまま
+    cat = _Cat("@F\nFOR LOCAL, 0, 1\n$L\nNEXT\nGOTO L\n", svc.catalog)
     assert any("GOTO 先" in why for _, why in unsupported_reasons_static(cat.fd, cat))
 
 
