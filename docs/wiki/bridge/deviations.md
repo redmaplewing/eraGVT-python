@@ -72,7 +72,8 @@ ERB 路徑相對 `source/earGVP/ERB/`。
   `GameData/IdentifierDictionary.cs`:645），而振り解く的％顯示（`PRINT_COMNAME.ERB`:6–13）每次都會經過這裡，
   也就是原作（1.824）一被拘束就無法繼續。本作當作 `LOCAL:0`（體力氣力殘量％）的筆誤來判定。
   （Python：`eragvt.game.battle.hantei._hurihodoku`）— 替代方案：照 1.824 停止（等同無法玩拘束），或確認 +v10 的行為。
-- [ ] **SCORE 的 `FOR CCOUNT, O, CHARANUM`**（S27 新增，**需裁決**，與上項同類）：`ゲーム内_イベント発生/エンディング/SCORE.ERB`:150 的 `O`
+- [x] **SCORE 的 `FOR CCOUNT, O, CHARANUM`**（S27 新增；**已裁決 2026-10-03：維持當 0**——使用者委由代理裁決：`O` 只能是 `0` 的筆誤，
+  照 1.824 停止等於クリア後無法看到評價，而當 0 與「從 1 開始」結果相同，不改變任何評價值）：`ゲーム内_イベント発生/エンディング/SCORE.ERB`:150 的 `O`
   同樣是全作不存在的識別子（grep：此處與上項 2 處、`CHARA_SIZE.ERB`:423 的 `RESULTS = O`〔字串，非識別子〕），1.824 在クリア時執行到
   該行會報錯停止（同上依據）。本作當 0（MASTER = 0 會被 :151 跳過，結果與從 1 開始相同）。（Python：`eragvt.game.ending.score_values`）
 - [x] ~~**開局身體資料未生成對戰鬥的影響**~~（S09：**不是偏離**，移到下方「原作行為」）。
