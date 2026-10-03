@@ -800,7 +800,7 @@ def _enemy_action_once(ctx: Ctx) -> Generator[None, int, bool]:
     # :933–934 反撃判定（`!(気絶) && 反撃 || ＥＸ反撃`）
     # （`&&`／`||` は同優先度 0x40・左結合：reference/emuera-1824/Emuera/GameData/Expression/OperatorCode.cs:33–34）
     if ((v[12] & KIZETU) == 0 and v[2] == P_HANGEKI) or v[2] == P_EX_HANGEKI:
-        hangeki_to_tentacle(ctx, st.tflag[10], loc.get(0, 0), loc.get(2, 0))
+        yield from hangeki_to_tentacle(ctx, st.tflag[10], loc.get(0, 0), loc.get(2, 0))
     v[200] = 0
     if st.tflag[10] != 4 and loc.get(0, 0) == 0:
         st.tflag[33] = 0

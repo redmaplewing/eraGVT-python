@@ -55,13 +55,23 @@ from .ending import ending_gen
 def run_turn(ctx: Ctx) -> Generator[None, int, Step]:
     """`SHOP.ERB@USERSHOP_ACTION_CONFIRM`:557 の JUMP ACTION_MAIN から BEGIN SHOP まで。
     BEGIN／JUMP は呼び出しスタックを捨てるので、ここでは順に呼び直すだけでよい。
-    戻り値：Step.SHOP（BEGIN SHOP）または Step.TITLE（S27：ENDING_3 後の RESETDATA → BEGIN TITLE）。"""
+    戻り値：Step.SHOP（BEGIN SHOP）、Step.TITLE（S27：ENDING_3 後の RESETDATA → BEGIN TITLE）、
+    Step.FALLTHROUGH（S28a：最初の ACTION_MAIN が BEGIN なしで終わった → @USERSHOP 終了 → @SHOW_SHOP）。"""
     step = yield from action_main(ctx)
+    if step == Step.FALLTHROUGH:
+        # S28a：USERSHOP_ACTION_CONFIRM:558 の JUMP 先が BEGIN なしで終わった → USERSHOP_ACTION_CONFIRM も戻り（JUMP：
+        # reference/emuera-1824/Emuera/GameProc/Process.State.cs@Return:368–377）、@USERSHOP 終了 → @SHOW_SHOP
+        # （Process.SystemProc.cs@endCallEventBuy:737–755 → @endAutoSave:670–680）。EVENTSHOP・オートセーブは無い。
+        return step
     while True:
         if step == Step.TURNEND:
             step = yield from event_turnend(ctx)
         elif step == Step.ACTION_MAIN:
             step = yield from action_main(ctx)
+            if step == Step.FALLTHROUGH:
+                # EVENTTURNEND:16 の JUMP 先が終端 → @EVENTTURNEND も BEGIN なしで終了（SystemState Normal）
+                # → 原作も CodeEE「予期しないスクリプト終端です」（Process.SystemProc.cs@endNormal:993–996）
+                raise NotImplementedError("ACTION_MAIN が BEGIN なしで終了（雑魚戦の候補なし：原作でも予期しないスクリプト終端エラー）")
         elif step in (Step.SHOP, Step.TITLE):
             return step
         elif step == Step.TRAIN:

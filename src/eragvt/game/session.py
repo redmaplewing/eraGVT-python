@@ -219,17 +219,18 @@ class GameSession:
             from .status_screen import show_status_chara_select
 
             st.target = limit(st.target, 1, st.charanum - 1)
-            ctx = Ctx(st, self.data, out, self.narration)
-            self._run_gen(show_status_chara_select(ctx, st.target), self._show_shop)
+            self._run_gen(show_status_chara_select(self._ctx(), st.target), self._show_shop)
             return
         elif value in (111, 112, 113, 120, 150):  # SHOP.ERB:251–278
             if shop.usershop_calls_submenu(st, value):
                 out.printl(f"（未實作：[{value}]）")
         elif value == 160:  # SHOP.ERB:281–285
             if shop.schedule_selectable(st):
-                out.printl(f"（未實作：[{value}]）")
-            else:
-                out.printw("スケジュールを設定するキャラクターが選択されていません")
+                from .schedule import schedule_gen
+
+                self._run_gen(schedule_gen(self._ctx()), self._show_shop)  # CALL SCHEDULE → @USERSHOP 終了 → @SHOW_SHOP
+                return
+            out.printw("スケジュールを設定するキャラクターが選択されていません")
         elif value == 700:  # SHOP.ERB:302–303 CALL CONFIG（FROM = ""）→ @USERSHOP 終了 → @SHOW_SHOP
             self._run_gen(config_gen(st, self.data, out, self.globals), self._show_shop)
             return
@@ -250,7 +251,11 @@ class GameSession:
         assert self.state is not None
         # BEGIN SHOP（EVENTTURNEND 実行中の SystemState は Normal：SystemProc@beginTurnend:609–611）
         # → calledWhenNormal = true（Process.State.cs@Begin:271–273）→ オートセーブあり（SystemProc:633）
-        self._run_gen(run_turn(Ctx(self.state, self.data, self.out, self.narration)), self._after_turn)
+        self._run_gen(run_turn(self._ctx()), self._after_turn)
+
+    def _ctx(self) -> Ctx:
+        assert self.state is not None
+        return Ctx(self.state, self.data, self.out, self.narration, self.globals)
 
     def _after_turn(self) -> None:
         from .action import Step
@@ -258,6 +263,9 @@ class GameSession:
         if self._gen_result == Step.TITLE:  # SHOP_TURNEND.ERB:44–47 RESETDATA → BEGIN TITLE（S27：ENDING_3）
             self.state = None
             self.begin_title()
+            return
+        if self._gen_result == Step.FALLTHROUGH:  # S28a：最初の ACTION_MAIN が BEGIN なしで終了 → @USERSHOP 終了 → @SHOW_SHOP
+            self._show_shop()
             return
         self.begin_shop(called_when_normal=True)
 
@@ -415,7 +423,7 @@ class GameSession:
         if self.state.flag[64] > 0:  # :13–14 JUMP ENDING（S27：クリアデータ → $START_SUCCESSION → 引き継ぎ〔未移植で停止〕）
             from .ending import ending_gen
 
-            self._run_gen(ending_gen(Ctx(self.state, self.data, self.out, self.narration)), self._show_shop)
+            self._run_gen(ending_gen(self._ctx()), self._show_shop)
             return
         # BEGIN なしで終了 → SystemProc@endEventLoad:775–780 → endAutoSave → @SHOW_SHOP（オートセーブなし）
         self._show_shop()

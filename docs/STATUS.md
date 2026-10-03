@@ -1,6 +1,6 @@
 # 現況（唯一真相，≤120 行）
 
-更新：2026-10-02（S27）
+更新：2026-10-03（S28a）
 
 ## 已完成（各階段細節見 git log 與 wiki）
 
@@ -20,26 +20,23 @@
 - **S24** 設定畫面／開局プリセット／GLOBAL（`eragvt.game.config`，`docs/wiki/era/flow.md` §10）。
 - **S25** ステータス畫面（`eragvt.game.status_screen`／`status_talent`／`colorbar`／`export_csv`；5 頁＋頁內指令，入口 SHOP [110]・戰鬥 [800]・HEROINE_PRESET [20]〜；控えメンバー一覧 SHOP_SHOW_STATUS_RESERVE_LIST は未實作表示）。
 - **S26** FLASHNEWS（`eragvt.game.flashnews`，SHOP_FLASHNEWS.ERB 全體）。**S26b** 事件戰ニュースの前回 RESULTS:0 を照原作、3003／3004 MISSION_CHECKER の括弧修正。
-- **S27** ラスボス（Ｋ触手）＋結局（下節、`docs/wiki/era/lastboss.md`）。
+- **S27** ラスボス（Ｋ触手）＋結局（`docs/wiki/era/lastboss.md`；模擬：預設 249 上限＋1 HATUJOU、敗北後 192.92）。
+- **S28a** 拠点防衛・戦闘支援・情報収集・スケジュール（SHOP [160]）・戦闘基礎 Lv5 變身能力・拉致監禁表示・ACTION_MAIN 終端（下節）。
 
-## S27 內容（`docs/wiki/era/lastboss.md`）
+## S28a 內容（`docs/wiki/era/actions.md`「S28a 補足」）
 
-- ラスボス：最後のボス撃破で FLAG:101 = 1（出現メッセージ）→ SHOP の探索状況／状況一覧のラスボス表示 → `ENCOUNT_BOSS`:309–421（襲来含む）→
-  Ｋ触手の全データ（`battle.core.LASTBOSSES`、専用 ATTACK／SEX_ROUTINE・REACTION_REF 4 か所・TENTACLE_SIZE）→ 敗北時の蓄積ダメージ保持、
-  Ｋ触手による幽閉（PALAM_HOSEI は原作どおりＣ触手の値）→ 撃破で FLAG:64 = -1・完全殲滅 → **BEGIN TURNEND**（@EVENTEND を通らない：`BeginTurnend`）。
-- 結局（`eragvt.game.ending`）：`@ENDING` 本体（ジェネレータ `ending_gen`）、ENDING_2、`SCORE`（評価計算・コメント・FLAG:854 +1）、
-  「クリアデータを記録しますか？」→ ジェネレータ内 `SAVEGAME`（`SaveGameRequest` → セーブ畫面 → 続きから）→ 施設資金還元 → 引き継ぎで停止；
-  ENDING_3（日数超過）→ FLAG:999 = -999 → CLEARLINE・RESETDATA・タイトル（`Step.TITLE`）；ENDING_1／3／6 のエンドレス分岐；ENDING_6（呼び出し元なし）；
-  EVENTLOAD の `JUMP ENDING`（クリアデータ読込 → 還元 → 引き継ぎで停止）。
-- 測試共 1572 個（S27：`tests/test_lastboss.py` 40；`test_turnend`／`test_gameover` の ENDING 判定を ending_gen に書き換え）。
+- `action.guard`／`support`、`eragvt.game.gather`（GATHER_INFORMATION 4 種＋ACTION_TRANSFORMATION_SELECT＋CALC_CHARM_FEAT_OTHER＋CHARA_LIST）、
+  `eragvt.game.schedule`（@SCHEDULE／@RES_SCHEDULE；鍛錬 CFLAG:110・情報収集 CFLAG:112）、SENGIUP Lv5（`sengiup`・`hangeki_to_tentacle` 改 generator）、
+  SHOP_SHOW_SITUATION_LIST:126（RESULT:0 追跡）、`Step.FALLTHROUGH`、`Ctx.globals`（GLOBAL:54–56）。DEVIATION D4（:142 SQRT 負→0）。
+- 測試共 1638 個（S28a：`tests/test_actions_s28a.py` 66；`test_hangeki` 改為驅動 generator）。
 
 ### 模擬（seed 0–249，`--max-shop 200`，4 並列分批）
 
-- 預設：上限 249、停止 1（HATUJOU_TO_HAIRAN 地の文）、敗北後 SHOP 192.92、ゲームオーバー後 187.51 ＝ S26b と同一。
-- 初期セット：250 局全部上限、敗北後 192.99、ゲームオーバー後 188.58 ＝ S26b と同一（どちらもボス全滅に届かない：ラスボス戰 0）。
-- 人工 `--bosses-cleared`（開局時 FLAG:100 = 0・FLAG:101 = 1）：上限 248、停止 2（HATUJOU_TO_HAIRAN）、新停止 0。ラスボス遭遇 860（250 局）、
-  敗北 748、勝利 0（Lv.22 のＫ触手に初期キャラは勝てない）。襲撃／救援イベント戦（3001／3002 等）がラスボス出現後も動作。
-  勝利 → ENDING_2 → SCORE → SAVEGAME → 引き継ぎ停止、ENDING_3 → タイトルは整合テストで確認。
+- 基準（`--actions` 既定 101–103）：預設 249 上限＋1 HATUJOU、敗北後 192.92／GO 後 187.51；初期セット 250 上限、192.99／188.58 ＝ S27 と同一。
+- `--actions 101,102,103,105,106,107`：預設 247 上限・2 HATUJOU・1 タイトル復帰（ENDING_3）；初期セット 250 上限。新停止 0。
+  行動次數（預設／初期セット）：拠点防衛 1320／1404（遭遇 0：防衛時ボス遭遇なし）、戦闘支援 640／666、情報収集 噂話 523／564・事件 522／567・
+  情報を買う 15／16・仲間の捜索 147／148、変身して情報収集 375／646、情報屋コネ 62／73、警察コネ 20／12。戦闘基礎 Lv5 0（非戦闘員なし）。
+- `--enable-akuoti --enable-intimidation`（預設 100 局）：防衛→悪堕ちキャラ戦 1、拉致監禁→救出 1、停止 0。
 
 ### 狀態畫面內仍會停止
 
@@ -56,7 +53,7 @@ P4 父親 CFLAG:9 指向不存在的ボス／ラスボス／モブ；HEROINE_PRE
 ## 下一步
 
 - **自主推進（使用者指定 2026-10-02，依序）**：~~S22 RESULTS 共用~~ → ~~S23 [反撃]スタイル~~ → ~~S24 設定畫面／プリセット~~ → ~~S25 狀態畫面~~
-  → ~~S26 FLASHNEWS~~ → ~~S26b RESULTS:0 殘值~~ → ~~S27 ラスボス～結局~~ → **S28 未移植行動**（拆為 S28a 防衛・支援・情報収集等 → S28b 特別活動 → S28c 自由行動＋事件）。
+  → ~~S26 FLASHNEWS~~ → ~~S26b RESULTS:0 殘值~~ → ~~S27 ラスボス～結局~~ → S28 未移植行動（~~S28a 防衛・支援・情報収集等~~ → **S28b 特別活動 SEISAN** → S28c 自由行動＋事件）。
   其他候選：引き継ぎ（SUCCESSION.ERB，クリア後の停止點）、天使の樹（引き継ぎ後のみ）、ランダム命名畫面、SHOP [112] 衣裝設定。
 - 已裁決（2026-10-02）：名乗り改竄的 RESULTS:2 殘值照原作（S22 實作）；開局デフォルト悪堕ち的輸出丟棄維持現況。
 - 已裁決（2026-10-02）：PALAM_HOSEI 殘值照原作、防衛力負數 D1〜D4（S21 實作）。已裁決（2026-10-01）：S20 的 DEVIATION 6 項＋斜體。
@@ -72,9 +69,9 @@ S23 模擬（含 [反撃] 人工設定）皆無停止。登記但罕見：
 - ラスボス・結局（S27）：クリア後の引き継ぎ（SUCCESSION）、天使の樹（裏ボス：遭遇・形態變化・攻撃・幽閉・表示）、ENDING 後の JUMP SHOW_SHOP（原作もエラー）。
 - 幽閉：TS 性別變化。
 - 妊娠・子供：TS 変身キャラ妊娠時的女體化、子供名字等的手入力（INPUTS）與ランダム命名畫面、デバッグモード的妊娠確率輸入。
-- TURNEND：拉致監禁的救出（CFLAG:71）只能經情報収集（未移植）。
+- 情報収集（S28a）：クズ市民戰（事件の捜査 config 802 bit5／仲間の捜索で監禁場所特定）、デバッグ入力；SENGIUP Lv5 的變身後名設定 [1]。
+- ACTION_MAIN 由 EVENTTURNEND 經 JUMP 而終端（雜魚戰候補なし：原作也錯誤，目前無法到達）。
 - 夜這い：TS キャラ的 `_ABLUP` 女体受容取得、`%CALLNAME:ARG%` 指向不存在角色（原作也報錯）。
-- 指令：戰鬥基礎 Lv5 的變身能力獲得（SENGIUP；反撃成功也會經由此處）。
 - 開局：HEROINE_PRESET 的 [30]（相関関係）、2 択畫面的 [300]（ゲームの説明）。狀態畫面內的停止見上節。設定項造成的停止見上表。
 - 戰鬥 PALAM 表示（FLAG:801 bit 5）、觸手服（ACTTENTACLESUIT・運動快感）、雜魚／クズ市民／事件戰／エンドレス、
   ボスの返り血（SUPART_BLOOD）、デバッグ模式、`HATUJOU_TO_HAIRAN` 地の文。
@@ -84,7 +81,7 @@ S23 模擬（含 [反撃] 人工設定）皆無停止。登記但罕見：
 - 未決：`docs/wiki/bridge/unresolved.md`；偏離：`docs/wiki/bridge/deviations.md`（整體「暫時維持」，S06 以後新增項待裁決）。
 - 無 BOM 的 7 個角色 CSV 在原版 1.824 會以 Shift-JIS 讀（亂碼）；本程式以 UTF-8 讀，可能是 +v10 差異，待實機確認。
 - 開局：預設（NORMAL＋汎用キャラ 3 名おまかせ）與初期セット「特装戦隊」，HEROINE_PRESET 可選 0〜3；其他初期セット／キャラメイク畫面的手動設定未移植。
-- 可玩範圍：休憩・鍛錬・出撃（含拘束戰鬥、拡張度、敗北後幽閉與救出、戰後レイプ、襲撃／救援イベント戰）、夜間いちゃラブ・自慰、
+- 可玩範圍：休憩・鍛錬（含スケジュール）・出撃・拠点防衛・戦闘支援・情報収集（含拘束戰鬥、拡張度、敗北後幽閉與救出、戰後レイプ、襲撃／救援イベント戰）、夜間いちゃラブ・自慰、
   妊娠・出産・子供、全滅後的ゲームオーバーモード、ラスボス戰～ENDING_2（引き継ぎで停止）、日數超過 ENDING_3（回標題）。其他行動會進入 Web「停止」畫面。
 - 初期セット選項的角色身體資料為 0（原作同樣不生成），戰鬥中女性敏捷 0・攻擊 2 倍（原作行為，是否偏離待決定）。
 - COUNT 仍未與 Python 共用（catalog 專用暫存，deviations「口上 catalog 的顯示簡化」）；RESULT／RESULTS 已共用。

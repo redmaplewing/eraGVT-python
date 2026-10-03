@@ -11,12 +11,14 @@
 
 from __future__ import annotations
 
+from collections.abc import Generator
+
 from ..action import Ctx, print_transcallname, sengiup
 from .core import BETOBETO, P_EX_HANGEKI, t, tc
 
 
-def hangeki_to_tentacle(ctx: Ctx, arg: int, arg1: int, arg2: int) -> int:
-    """`@HANGEKI_TO_TENTACLE, ARG, ARG:1, ARG:2`。
+def hangeki_to_tentacle(ctx: Ctx, arg: int, arg1: int, arg2: int) -> Generator[None, int, int]:
+    """`@HANGEKI_TO_TENTACLE, ARG, ARG:1, ARG:2`。S28a：SENGIUP の戦闘基礎 Lv5（INPUT あり）のためジェネレータ。
 
     ARG = 敵の選んだコマンド（TFLAG:10）、ARG:1 = 敵コマンドの成否（0 攻撃成功、1 回避／カス当たり、2 範囲外回避）、
     ARG:2 = そのターンに反撃で軽減・無効化したダメージ（ENEMY_ACTION の LOCAL:2）。
@@ -56,10 +58,10 @@ def hangeki_to_tentacle(ctx: Ctx, arg: int, arg1: int, arg2: int) -> int:
         exp_name, kind = {1: ("近距離戦闘経験", 0), 2: ("中距離戦闘経験", 1), 3: ("遠距離戦闘経験", 2)}.get(v[0], (None, None))
         if exp_name is not None:  # SELECTCASE TCVARn:0 に CASEELSE なし
             c.exp[ctx.data.index_of("EXP", exp_name)] += st.rng.rand(5) + 1
-            sengiup(ctx, st.target, kind)
+            yield from sengiup(ctx, st.target, kind)
     else:
         c.exp[ctx.data.index_of("EXP", "戦闘基礎経験")] += st.rng.rand(5) + 1
-        sengiup(ctx, st.target, 3)
+        yield from sengiup(ctx, st.target, 3)
     c.ex[99] += 2  # :91 EX:行動ポイント
     # :94–102 べとべと：ＥＸ反撃による完全防御で確定回復（距離をとる以外）
     if (v[12] & BETOBETO) and v[200] > 0 and st.tflag[10] != 4:

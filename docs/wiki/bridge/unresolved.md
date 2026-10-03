@@ -65,3 +65,7 @@
   停止點解除。測試 `tests/test_results_shared.py`（不成立＋前值非空／空、連續 2 人）。
 - [ ] `.NET string.IndexOf(string, int)`（STRFINDU，`Creator.Method.cs`:2273）是文化相依比較；catalog／corruption 以 Python `str.find`（序數）
   實作。本作用到的字串（假名・漢字・記號）在 CompareOptions.None 下應一致，但 reference 內無法確認 .NET 文化表（S21）。
+- [x] BEGIN 在被 CALL 的函式中（S28a）— 只設定 begintype 並 Return 一層，呼叫端繼續執行，最後一次的 BEGIN 在函式堆疊清空時生效
+  （`GameProc/Function/Instraction.Child.cs@BEGIN_Instruction`:1681–1689、`GameProc/Process.State.cs@SetBegin`:203–228／`@Return`:355–425／`@Begin`:263–311）。
+  `docs/wiki/era/actions.md`「S28a 補足」。
+- [ ] SCHEDULE 畫面（S28a）的 PRINT 行尾空白：原作行尾有半形空白（CRLF 前），Python 省略；只影響顯示寬度，未查 Emuera 是否保留引數行尾空白。

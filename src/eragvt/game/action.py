@@ -7,16 +7,17 @@
 from __future__ import annotations
 
 from collections.abc import Generator
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum
 
 from ..data.csv_loader import GameData
 from ..state import GameState
 from ..state.character import Character
 from ..state.constants import ActionPlan, GameOption
+from ..state.savefile import GlobalStore
 from ..text import NarrationService, TextOutput
 from .chara_common import baseup_cal_shield, level_status, seikaku_check, talent
-from .era import div, limit, times
+from .era import div, limit, mod, power, times
 from .opening import game_option
 from .shop import (
     ACTION_NAMES,
@@ -31,6 +32,7 @@ from .shop import (
     charanum_active,
     is_action_incapable,
     number_on_frontline,
+    syouhi_keigen,
     training_downtairyoku,
 )
 
@@ -45,6 +47,10 @@ class Step(str, Enum):
     SHOP = "shop"  # BEGIN SHOP
     TRAIN = "train"  # BEGIN TRAIN（S05）
     TITLE = "title"  # RESETDATA → BEGIN TITLE（S27：SHOP_TURNEND.ERB:44–47）
+    # S28a：ACTION_MAIN が BEGIN なしで終端に達した（ACTION.ERB:86–96 の RESULT < 0）。JUMP 元の関数もそのまま戻る
+    # （reference/emuera-1824/Emuera/GameProc/Process.State.cs@Return:368–377）ので、USERSHOP からの JUMP なら @USERSHOP 終了
+    # → @SHOW_SHOP（SystemProc@endCallEventBuy:737–755）、EVENTTURNEND からの JUMP ならスクリプト終端エラー（@endNormal:993–996）。
+    FALLTHROUGH = "fallthrough"
 
 
 @dataclass
@@ -53,6 +59,9 @@ class Ctx:
     data: GameData
     out: TextOutput
     narration: NarrationService
+    # GLOBAL（S28a：ACTIONsub_TRANSFORMATION_SELECT.ERB の GLOBAL:51〜59）。Web では GameSession の GlobalStore を渡す。
+    # 省略時はメモリだけの空の GlobalStore（真の初回起動と同じ：GLOBAL は全 0）。
+    globals: GlobalStore = field(default_factory=GlobalStore)
 
 
 # DIM.ERH:173–184 リラクゼーション施設（FLAG:53 のビット）
@@ -222,20 +231,23 @@ def action_main(ctx: Ctx) -> InputGen:
         rest(ctx)
         return Step.TURNEND
     plan = c.cflag[100]
-    if plan == ActionPlan.TRAINING:  # :100–106
+    if plan == ActionPlan.TRAINING:  # :98–104
         if game_option(st, GameOption.SOLO):
             st.flag[41] += 1
         yield from training(ctx)
         return Step.TURNEND
-    if plan == ActionPlan.REST:  # :108–110
+    if plan == ActionPlan.REST:  # :106–108
         rest(ctx)
         return Step.TURNEND
-    if plan == ActionPlan.SUPPORT and number_on_frontline(data, st) == 0 and st.flag[41] == 0:
-        # :133–140 戦闘に参加するキャラが居ない場合は休憩（SUPPORT 本体より前に判定される）
-        out.printl()
-        out.printl("戦闘を行うメンバーが居ないため、休憩にします")
-        rest(ctx)
-        st.flag[43] -= 1
+    if plan == ActionPlan.SUPPORT:  # :132–143
+        if number_on_frontline(data, st) == 0 and st.flag[41] == 0:
+            # :133–140 戦闘に参加するキャラが居ない場合は休憩
+            out.printl()
+            out.printl("戦闘を行うメンバーが居ないため、休憩にします")
+            rest(ctx)
+            st.flag[43] -= 1
+            return Step.TURNEND
+        support(ctx)
         return Step.TURNEND
     if plan == ActionPlan.SORTIE:  # :75–96
         from .battle.encount import encount, mob_tentacle_encount
@@ -249,11 +261,88 @@ def action_main(ctx: Ctx) -> InputGen:
             return Step.TURNEND
         if result > 0:
             return Step.TRAIN
-        # RESULT < 0（MOB_TENTACLE_BATTLE の候補なし）は SELECTCASE を抜けて ACTION_MAIN の末尾へ
-        raise NotImplementedError("雑魚戦の候補なし（MOB_TENTACLE_BATTLE が -1）後の処理は未移植")
-    # 活動 SEISAN／防衛 GUARD／支援 SUPPORT／情報 GATHER_INFORMATION／自由 PASTIME は未移植
-    # （影響範囲は docs/wiki/era/actions.md）。
-    raise NotImplementedError(f"行動「{ACTION_NAMES[_find_action(plan)]}」は未移植（休憩・鍛錬・出撃のみ移植済み）")
+        # RESULT < 0（MOB_TENTACLE_BATTLE の候補なし）は SELECTCASE を抜けて ACTION_MAIN の終端（BEGIN なし）
+        return Step.FALLTHROUGH
+    if plan == ActionPlan.DEFENSE:  # :114–130
+        st.flag[41] += 1
+        if guard(ctx) == 0:
+            out.printl()  # :123 PRINTL（GUARD:27 の PRINTFORM「防衛力が…上昇した」の行を閉じる）
+            if config_check_screen(st, 3) == 0:
+                out.wait()
+            return Step.TURNEND
+        return Step.TRAIN  # :128–129 ELSE（RESULT < 0 も含む）→ BEGIN TRAIN
+    if plan == ActionPlan.INFORMATION:  # :145–155
+        from .gather import gather_information
+
+        if game_option(st, GameOption.SOLO):
+            st.flag[41] += 1
+        yield from gather_information(ctx)
+        # GATHER_INFORMATION:88 の BEGIN TURNEND は関数を 1 段戻るだけ（Instraction.Child.cs@BEGIN_Instruction:1681–1689 →
+        # Process.State.cs@Return:355–425）で、ここの BEGIN が上書きする（最後の BEGIN が有効：@Return:414–421 → @Begin:263–311）。
+        return Step.TRAIN if st.flag[73] > 0 else Step.TURNEND
+    # 活動 SEISAN／自由 PASTIME は未移植（S28b／S28c、影響範囲は docs/wiki/era/actions.md）。
+    raise NotImplementedError(f"行動「{ACTION_NAMES[_find_action(plan)]}」は未移植")
+
+
+# --- @GUARD／@SUPPORT -----------------------------------------------------------------
+
+
+def guard(ctx: Ctx) -> int:
+    """`ゲーム内_行動実行処理/ACTION_GUARD.ERB@GUARD`:3–30（TARGET が対象）。戻り値 = RESULT（遭遇 > 0）。"""
+    from .battle.encount import encount, mob_tentacle_encount
+
+    st, data, out = ctx.state, ctx.data, ctx.out
+    c = st.target_chara
+    c.cflag[101] = -1  # :4
+    out.printl()
+    out.printl(f"{c.callname}はパトロールを行っている……")
+    result = encount(ctx)  # :9
+    if not result and not st.flag[110]:  # :12–13（ENCOUNT_BOSS:144 で FLAG:110 = 0 になるので実質 RESULT だけで決まる）
+        result = mob_tentacle_encount(ctx)
+    if result == 0:  # :16–28
+        local = times(c.maxbase[0], "0.12")
+        c.base[0] = limit(c.base[0] - syouhi_keigen(data, st, st.target, local, 0), 0, c.base[0])
+        local = times(c.maxbase[1], "0.12")
+        c.base[1] = limit(c.base[1] - syouhi_keigen(data, st, st.target, local, 1), 0, c.base[1])
+        local = 125 + c.abl[data.index_of("ABL", "レベル")] * 2 + st.rng.rand(26)
+        st.flag[852] += local
+        out.print(f"防衛力が{local}上昇した")
+    return result
+
+
+def support(ctx: Ctx) -> None:
+    """`ゲーム内_行動実行処理/ACTION_SUPPORT.ERB@SUPPORT`:3–47（TARGET が対象）。
+
+    FLAG:43（支援人数）が 1／2 以外（3 以上）のときは TIMES がかからず MAXBASE がそのまま消費量になる（原作どおり）。
+    """
+    from .turnend import tentacle_level
+
+    st, data, out = ctx.state, ctx.data, ctx.out
+    c = st.target_chara
+    c.cflag[101] = -1  # :4
+    out.printl()
+    out.printl(f"{c.callname}はオペレーション業務に専念している……")
+    for base in (0, 1):  # :8–17（体力）、:19–28（気力）
+        local = c.maxbase[base]
+        if st.flag[43] == 1:
+            local = times(local, "0.24")
+        elif st.flag[43] == 2:
+            local = times(local, "0.18")
+        if talent(data, c, "献身的") > 0:
+            local = times(local, "1.10")
+        c.base[base] = limit(c.base[base] - syouhi_keigen(data, st, st.target, local, base), 0, c.base[base])
+    get_syuren(ctx, 15 + st.rng.rand(11))  # :30
+    r = tentacle_level(st)  # :31 CALL TENTACLE_LEVEL
+    local = div(r - 3, c.abl[data.index_of("ABL", "レベル")]) * 10 + st.rng.rand(5)  # :32（/ と * は同順位・左結合）
+    get_exp(ctx, min(local, 150))  # :33
+    chisei = data.index_of("BASE", "知性")
+    if st.rng.rand(3) == 0:  # :35–41
+        c.base[chisei] += 2
+        out.printl("知性の基礎値が2上がった")
+    elif st.rng.rand(3) < 2:
+        c.base[chisei] += 1
+        out.printl("知性の基礎値が1上がった")
+    _wait_or_line(ctx)  # :43–47
 
 
 def action_ngreason(ctx: Ctx, who: int, action: int) -> str:
@@ -439,11 +528,16 @@ def training(ctx: Ctx) -> Generator[None, int, None]:
         out.print_lc("[10]戦闘基礎訓練")
     out.printl()
     out.drawline()
-    # :66–71
-    if c.cflag[110] > 0:
-        raise NotImplementedError("鍛錬スケジュール（RES_SCHEDULE, CFLAG:110）は未移植")
+    # :66–71（スケジュールは最初の 1 回だけ。不正値の GOTO INPUT_LOOP は ELSE 内の INPUT へ飛ぶ）
+    scheduled = c.cflag[110] > 0
     while True:
-        result = yield  # INPUT
+        if scheduled:
+            from .schedule import res_schedule
+
+            result = res_schedule(c, 110)
+            scheduled = False
+        else:
+            result = yield  # INPUT
         out.printl()  # :72
         c.cflag[101] = result  # :74
         if result in _SIMPLE_TRAININGS:
@@ -470,7 +564,7 @@ def training(ctx: Ctx) -> Generator[None, int, None]:
             baseup(ctx, k2, who, l1)
             c.exp[exp_no] += l2
             out.printl(f"{dist}戦闘が{'少し' if l2 <= 3 + f50 else ''}上達した（＋{l2}）")
-            sengiup(ctx, who, sengi)
+            yield from sengiup(ctx, who, sengi)
             break
         if result == 10 and henshin == -1:  # :252–272
             _message_training(ctx, "戦闘基礎訓練", "BASIS")
@@ -483,7 +577,7 @@ def training(ctx: Ctx) -> Generator[None, int, None]:
             l2 = div(l2 * (150 + c.abl[data.index_of("ABL", "戦闘基礎")] * 50), 100) + st.rng.rand(3)
             c.exp[8] += l2
             out.printl(f"戦闘の基礎が{'少し' if l2 <= 30 + f50 * 2 else ''}上達した（＋{l2}）")
-            sengiup(ctx, who, 3)
+            yield from sengiup(ctx, who, 3)
             break
         # :273–280
         if c.cflag[111] > 0:
@@ -700,8 +794,8 @@ def get_syuren(ctx: Ctx, value: int) -> None:
 _SENGI_NEED = {0: 25, 1: 60, 2: 105, 3: 160, 4: 225, 5: 300, 6: 470, 7: 660, 8: 870}
 
 
-def sengiup(ctx: Ctx, who: int, kind: int) -> None:
-    """`@SENGIUP, ARG:0, ARG:1`（コモン関数.ERB:675–799）。"""
+def sengiup(ctx: Ctx, who: int, kind: int) -> Generator[None, int, None]:
+    """`@SENGIUP, ARG:0, ARG:1`（コモン関数.ERB:675–799）。戦闘基礎 Lv5 の変身能力獲得（:737–790）に INPUT があるのでジェネレータ。"""
     st, data = ctx.state, ctx.data
     c = st.charas[who]
     abl_no, exp_no = {0: (30, 5), 1: (31, 6), 2: (32, 7), 3: (33, 8)}[kind]
@@ -735,9 +829,60 @@ def sengiup(ctx: Ctx, who: int, kind: int) -> None:
         c.abl[abl_no] += 1
         ctx.out.printl(f"{print_transcallname(st, who)}の{data.names['ABL'].get(abl_no, '')}Lvが上がった")
         if t("変身能力") == -1 and c.abl[abl_no] >= 5 and abl_no == 33:
-            raise NotImplementedError("戦闘基礎 Lv5 による変身能力の獲得（SENGIUP:737–790）は未移植")
+            yield from _sengiup_henshin(ctx, who)
         ctx.out.printl()
         get_state_trophy(ctx, who)
+
+
+def _sengiup_henshin(ctx: Ctx, who: int) -> Generator[None, int, None]:
+    """`コモン関数.ERB@SENGIUP`:737–790：戦闘基礎 Lv5 で変身能力が身につく。"""
+    from .body import BUST, HEIGHT, HIP, WAIST, WEIGHT, generate_char_size
+
+    st, data, out = ctx.state, ctx.data, ctx.out
+    c = st.charas[who]
+    ti = lambda n: data.index_of("TALENT", n)  # noqa: E731
+    name = print_transcallname(st, who)
+    out.printl()
+    out.printl(f"{name}は戦闘の基礎を完全にマスターした！")
+    g = c.talent[ti("変身能力獲得")]
+    if g > 0:  # :740–745（TALENT 設定済みなら確認なし）
+        out.printw()
+        result = 1
+    elif g < 0:
+        out.printw()
+        result = 0
+    else:  # :746–751
+        out.printl(f"{name}に変身能力を設定しますか？")
+        out.printl(" [0]いいえ")
+        out.printl(" [1]はい")
+        result = yield
+    while True:
+        if result == 0:  # :752–756
+            c.talent[ti("変身能力")] = 0
+            c.talent[ti("変身時ＴＳ")] = 0
+            out.printl()
+            out.printl(f"{name}に変身能力を設定しませんでした")
+            return
+        if result == 1:  # :757–786
+            c.talent[ti("変身能力")] = 1
+            if st.target_chara.cflag[34]:  # :761 `IF CFLAG:34` は TARGET（ARG ではない：原作どおり）
+                r = generate_char_size(data, c, 1, st.result)
+                for slot, v in zip((HEIGHT, WEIGHT, BUST, WAIST, HIP), r[2:7]):
+                    c.maxbase[slot] = v
+            out.printl()
+            out.printl(f"{name}に変身能力を設定しました")
+            out.printl("変身後名を設定しますか？")
+            out.printl(" [0]いいえ")
+            out.printl(" [1]はい")
+            while True:  # $INPUT_LOOP_1
+                r1 = yield
+                if r1 == 0:
+                    out.printl()
+                    return
+                if r1 == 1:
+                    out.printl()
+                    raise NotImplementedError("変身後名の設定（FIRSTSETTING_CHARA_TRANSAFTERNAME）は未移植")
+        result = yield  # :787–788 GOTO INPUT_LOOP_0
 
 
 def get_state_trophy(ctx: Ctx, who: int) -> None:

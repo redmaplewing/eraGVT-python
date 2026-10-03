@@ -878,6 +878,12 @@ def shop_show_situation_list(state: GameState, data: GameData, out: TextOutput, 
 
     ctx = Ctx(state, data, out, narration)
     f = state.flag
+    # RESULT:0 の追跡（:126 が読む）：@USERSHOP の RESULT（入力値 130：SystemProc@shopWaitInput:727–731）を
+    # :6 LB がそのまま返す（PRINT_LINE.ERB:17–18 `RETURN RESULT`）。:16–38 のループは各回 TENTACLE_SURVIVE_CHECK
+    # （RETURN n か関数終端 0：COMMON_TENTACLE_DATA.ERB:55–122）、生存なら TENTACLE_ACCESS "NAME"（関数終端 0：:198–211）
+    # なので 1 回でも回れば 0。:97 TENTACLE_ACCESS_PRISON "NAME" も 0（:314–320）、:88–94 は見つかった番号か 0。
+    # CHECK_PREGNANT_F 等の #FUNCTION は RESULT を書かない（Process.State.cs@ReturnF:502–525）。
+    result0 = 130
     lb(out)  # :6
     out.printl()
     bit = 1  # :10–39
@@ -893,6 +899,7 @@ def shop_show_situation_list(state: GameState, data: GameData, out: TextOutput, 
                 tentacle_access(ctx, "NAME")
                 out.print("]")
             bit *= 2
+            result0 = 0
     elif get_lastboss_phase(state) >= 1:  # :26–38（S27）：SAVESTR:13 は設定しない、FLAG:11 は戻さない
         out.printl(f"現在活動中の{data.str_defaults.get(2503, '')}")
         out.drawline()
@@ -904,6 +911,7 @@ def shop_show_situation_list(state: GameState, data: GameData, out: TextOutput, 
                 tentacle_access(ctx, "NAME")
                 out.print("]")
             bit *= 2
+            result0 = 0
     out.printl()
     out.drawline()
     others = [i for i in range(1, state.charanum)]
@@ -940,8 +948,10 @@ def shop_show_situation_list(state: GameState, data: GameData, out: TextOutput, 
                 if who:
                     break
             out.print(print_transcallname(state, who))
+            result0 = who
         else:
             tentacle_access_prison(ctx, i, "NAME")
+            result0 = 0
         out.print(f"によって幽閉中 {div(c.cflag[31], 2)}日目　")
         if check_pregnant(data, state, i):
             out.print("[妊娠中]　")
@@ -955,10 +965,23 @@ def shop_show_situation_list(state: GameState, data: GameData, out: TextOutput, 
     # :113–138 拉致監禁中
     out.printl("拉致監禁中のキャラ")
     out.drawline()
-    if any(state.charas[i].cflag[0] == CharaState.KIDNAPPED for i in others):
-        # :126 は直前の RESULT を名前に使う（原作の不具合）。監禁は未移植なので到達しない
-        raise NotImplementedError("拉致監禁中キャラの表示（SHOP_SHOW_SITUATION_LIST:121–134）は未移植")
-    out.printl("なし")
+    n = 0
+    for i in others:
+        c = state.charas[i]
+        if c.cflag[0] != CharaState.KIDNAPPED:
+            continue
+        # :126 `PRINT_TRANSCALLNAME(RESULT)`：添字が CCOUNT ではなく直前の RESULT:0（原作の不具合）。`result0` 参照。
+        if not 0 <= result0 < state.charanum:
+            raise NotImplementedError(f"SHOP_SHOW_SITUATION_LIST:126 PRINT_TRANSCALLNAME({result0})：原作でも添字範囲外エラー")
+        out.print(f"{print_transcallname(state, result0)}：廃ビルに拉致監禁中 {div(c.cflag[70], 2)}日目　")
+        if check_pregnant(data, state, i):
+            out.print("[妊娠中]　")
+        if talent(data, c, "四肢欠損") > 0:
+            out.print("[生オナホ]")
+        out.printl()
+        n += 1
+    if n == 0:
+        out.printl("なし")
     out.drawline()
     # :140–169 洗脳／悪堕ち
     out.printl("洗脳/悪堕ち中のキャラ")

@@ -316,7 +316,8 @@ ERB 路徑相對 `source/earGVP/ERB/`。
     :458／:1603 `FLAG:852 -= DAMAGE` 讓防衛力增加並印「防衛力が-n低下した！」）。（Python：同上）
   - D3：`戦闘イベント.ERB`:65 `PERFORM_CHEERS_FIRST_HANTEI` 的 `SQRT(FLAG:852 + 625)` 括號內為負時以 0 計算（原作 CodeEE：
     `reference/emuera-1824/Emuera/GameData/Function/Creator.Method.cs@SqrtMethod`:1074–1080）。（Python：`battle.cheers.perform_cheers_first_hantei`）
-  - D4：未移植的 `PASTIME_悪堕ち遭遇.ERB`:19、`ACTION_GATHER_INFORMATION.ERB`:142 的同類 SQRT，之後移植時比照（程式尚無）。
+  - D4：`ACTION_GATHER_INFORMATION.ERB`:142 的 `SQRT(FLAG:852)` 在 FLAG:852 < 0 時以 0 計算（S28a 實作：`gather._rumor`，`# DEVIATION:`）；
+    未移植的 `PASTIME_悪堕ち遭遇.ERB`:19 於 S28c 比照。
 - S21 照原作的怪處（`eragvt.game.corruption`、`battle.source_check`、`battle.restraint`）：
   **悪堕ち容姿**：CORRUPT_CHANGE_LOOKS_MAIN 的 `SETBIT CFLAG:80, n`、CORRUPT_CHANGE_LOOKS 的 `CSTR:1 == CSTR:0`・`CFLAG:42 = 0`、
   RECOVER_CORRUPTION 的 `CFLAG:81 == 0b1111`・`CLEARBIT CFLAG:80, 2` 都寫／讀 TARGET 而非 ARG；變身後名改竄不看 CFLAG:2（未登錄則 CSTR:0 變空）；
@@ -329,3 +330,13 @@ ERB 路徑相對 `source/earGVP/ERB/`。
 - [x] **開局的デフォルト悪堕ち**（S21）：`オープニング処理.ERB`:241–250 的 CORRUPT_CHANGE_LOOKS_MAIN 已接上，但 `event_first` 無輸出／narration
   （同「開局 MESSAGE_FIRST」），其畫面輸出丟棄。預設開局不會發生（無悪堕ちキャラ）。（Python：`opening.event_first`）
   **使用者裁決（2026-10-02）**：維持現況。
+
+## S28a 照原作的怪處（非偏離，備查）
+
+- `ACTION_SUPPORT.ERB`:38–58：FLAG:43 ≥ 3 時不乘係數，消費 = MAXBASE 全量（經 SYOUHI_KEIGEN）。
+- `ACTION_GATHER_INFORMATION.ERB`：`#DIM NAKADASHI` 靜態不歸 0（一次中出し後，之後素股都走 AFTER_PILL／NINSIN_HANTEI）；:933 比較 "お調子者の男"
+  但 LOCALS 是 "お調子者な男" → 恆走 ELSE；:52–58 スケジュール「仲間の捜索」不能時印「代わりに事件の捜査」卻設 RESULT 0（噂話）；
+  :1048–1049 只顯示「探索度が上昇」不呼 RESEARCH_PROGRESS；:389 スタンロッド的傷害只顯示不扣；カラダ選單 [1]／[3] 不檢查巨乳／性別。
+- `ACTIONsub_TRANSFORMATION_SELECT.ERB`:37–39 先把 CFLAG:1 設 1 再設 0（與原值無關）；[9]／[10] 只改記憶體 GLOBAL（不 SAVEGLOBAL）。
+- `CALC_CHARM_FEAT.ERB`:34 `TALENT:平凡` 讀 TARGET；`SENGIUP`:761 `IF CFLAG:34` 讀 TARGET。
+- `ACTION_TRAINING.ERB`:274 スケジュール不正時看 CFLAG:111（特別活動）而非 110。

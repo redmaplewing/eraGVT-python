@@ -460,13 +460,12 @@ def com_attack(ctx: Ctx, n: int) -> ComGen:
     exp_name, kind = {1: ("近距離戦闘経験", 0), 2: ("中距離戦闘経験", 1), 3: ("遠距離戦闘経験", 2)}[n]
     if t(ctx, c, "変身能力") != -1:
         c.exp[ctx.data.index_of("EXP", exp_name)] += st.rng.rand(5) + 1
-        sengiup(ctx, st.target, kind)
+        yield from sengiup(ctx, st.target, kind)
     else:
         c.exp[ctx.data.index_of("EXP", "戦闘基礎経験")] += st.rng.rand(5) + 1
-        sengiup(ctx, st.target, 3)
+        yield from sengiup(ctx, st.target, 3)
     c.ex[99] += 2
     return 1
-    yield  # pragma: no cover  （ジェネレータにするため）
 
 
 # COMBO_ATTACK.ERB:155–189 バースト攻撃の説明（LOCALS:2）

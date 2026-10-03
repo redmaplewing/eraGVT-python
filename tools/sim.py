@@ -34,6 +34,9 @@ S27：ラスボス・結局の次数（ラスボス出現・遭遇・勝敗、�
 「タイトル復帰」で終了。`--bosses-cleared` は開局直後に FLAG:100 = 0・FLAG:101 = 1（全ボス撃破済みでラスボス出現中）にする
 **人工的な状態**（撃破までの経緯〔経験・ボス経験・蓄積ダメージ等〕は通らない）。
 
+S28a：`--actions 101,102,103,105,106,107`（既定は従来どおり 101,102,103）で SHOP の行動予約の候補を変える。拠点防衛・戦闘支援・
+情報収集（4 種の内訳、情報屋／コネ獲得、変身選択）・戦闘基礎 Lv5 の変身能力獲得・スケジュールの次数を数える。
+
 S25：戦闘中の [800] でステータス画面（5 ページ・EXPORT_CSV 含む）に入るようになった（ランダム方針のまま。SHOP [110] は押さない）。
 """
 
@@ -174,7 +177,7 @@ def install_event_counters() -> Counter:
 
     def hangeki(ctx, a, b, d):
         ex0 = ctx.state.target_chara.ex[99]
-        r = orig_hangeki(ctx, a, b, d)
+        r = yield from orig_hangeki(ctx, a, b, d)
         counts["反撃 HANGEKI_TO_TENTACLE 呼出"] += 1
         if ctx.state.target_chara.ex[99] >= ex0 + 2:  # 成功時のみ EX:行動ポイント += 2（HANGEKI_STYLE.ERB:91）
             counts[f"反撃 成功（敵行動 {a}・判定 {b}）"] += 1
@@ -243,6 +246,41 @@ def install_event_counters() -> Counter:
         return r
 
     ending_mod.score = sc
+
+    # S28a：拠点防衛・戦闘支援・情報収集
+    from eragvt.game import action as action_mod, gather
+
+    orig_guard = action_mod.guard
+
+    def guard(ctx):
+        r = orig_guard(ctx)
+        counts["拠点防衛（GUARD）" + ("→戦闘" if r else "：遭遇なし")] += 1
+        return r
+
+    action_mod.guard = guard
+    wrap_plain(action_mod, "support", lambda ctx, r: counts.update(["戦闘支援（SUPPORT）"]))
+    names = {0: "噂話の聞き込み", 1: "事件の捜査", 2: "情報を買う", 3: "仲間の捜索"}
+    wrap(gather, "message_gather_information", after=lambda ctx, snap, arg: counts.update([f"情報収集 {names.get(arg, arg)}"]))
+
+    def tf_after(ctx, snap, arg, args):
+        if ctx.state.charas[arg].cflag[1] > 0:
+            counts["情報収集 変身して行動"] += 1
+
+    wrap(gather, "action_transformation_select", after=tf_after)
+    wrap(gather, "_informant", before=lambda ctx, *a: ctx.state.target_chara.cflag[122],
+         after=lambda ctx, snap, *a: counts.update(["情報屋 出現" + ("→コネ獲得" if ctx.state.target_chara.cflag[122] != snap else "")]))
+    orig_inv = gather._investigate
+
+    def inv(ctx):
+        c = ctx.state.target_chara
+        before = c.cflag[121]
+        r = yield from orig_inv(ctx)
+        if c.cflag[121] != before:
+            counts[f"コネ 警察（CFLAG:121 = {c.cflag[121]}）"] += 1
+        return r
+
+    gather._investigate = inv
+    wrap(action_mod, "_sengiup_henshin", after=lambda ctx, snap, who: counts.update(["戦闘基礎 Lv5 変身能力獲得"]))
     return counts
 
 
@@ -278,7 +316,7 @@ def _corrupt(state, data, who: int) -> None:
 
 def run_one(data, narration, seed: int, preset: str, max_shop: int, max_steps: int, save_dir: Path,
             enable_intimidation: bool = False, setup=None, enable_akuoti: bool = False, corrupt: int = 0,
-            style: str = "", config_preset: int = 1, clear_bits: tuple = ()) -> dict:
+            style: str = "", config_preset: int = 1, clear_bits: tuple = (), actions: tuple = (101, 102, 103)) -> dict:
     """`setup(state)`：開局直後に状態を変える（テスト用）。"""
     policy = random.Random(seed)
     s = GameSession(data, save_dir, rng=GameRng(seed), narration=narration)
@@ -325,7 +363,7 @@ def run_one(data, narration, seed: int, preset: str, max_shop: int, max_steps: i
                     break
                 for i in range(1, st.charanum):
                     s.input(i)
-                    s.input(policy.choice((101, 102, 103)))
+                    s.input(policy.choice(actions))
                 mark = len(s.out.lines)
                 s.input(100)
                 continue
@@ -390,6 +428,7 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--corrupt", type=int, default=0, help="開局時に悪堕ちにするキャラ番号（テスト用）")
     p.add_argument("--bosses-cleared", action="store_true", help="開局直後に FLAG:100 = 0・FLAG:101 = 1（人工状態）")
     p.add_argument("--style", choices=tuple(_STYLES), default="", help="開局時に全キャラ・全距離の戦闘スタイルを設定（テスト用）")
+    p.add_argument("--actions", default="101,102,103", help="SHOP で各キャラに予約する行動の候補（S28a）")
     a = p.parse_args(argv)
     if a.load:
         results = []
@@ -409,7 +448,8 @@ def main(argv: list[str] | None = None) -> int:
             r = run_one(data, narration, seed, a.preset, a.max_shop, a.max_steps, Path(tmp), a.enable_intimidation,
                         enable_akuoti=a.enable_akuoti, corrupt=a.corrupt, style=a.style,
                         config_preset=a.config_preset, setup=_bosses_cleared if a.bosses_cleared else None,
-                        clear_bits=tuple(tuple(int(x) for x in t.split(":")) for t in a.clear_bit))
+                        clear_bits=tuple(tuple(int(x) for x in t.split(":")) for t in a.clear_bit),
+                        actions=tuple(int(x) for x in a.actions.split(",")))
             r["events"] = dict(counts - before)
             games_with.update(r["events"].keys())
             results.append(r)

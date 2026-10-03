@@ -120,7 +120,7 @@ def test_hangeki_conditions(ctx, arg, arg1, v200, air, f11, ok):
     st.tflag[11] = f11
     st.tflag[10] = arg
     ex0 = c.ex[99]
-    assert hangeki.hangeki_to_tentacle(ctx, arg, arg1, 77) == 0
+    assert run_gen(hangeki.hangeki_to_tentacle(ctx, arg, arg1, 77)) == 0
     if ok:
         assert v[205] == 87  # :67 TCVARn:205 += ARG:2
         assert c.ex[99] == ex0 + 2  # :91
@@ -137,7 +137,7 @@ def test_hangeki_sets_ex_hangeki_during_attack(ctx, monkeypatch):
     seen = []
     monkeypatch.setattr(commands, "com_attack_common", lambda ctx: seen.append(ctx.state.charas[1].tcvarn[2]) or 1)
     ctx.state.charas[1].tcvarn[2] = P_HANGEKI
-    hangeki.hangeki_to_tentacle(ctx, 1, 0, 0)
+    run_gen(hangeki.hangeki_to_tentacle(ctx, 1, 0, 0))
     assert seen == [P_EX_HANGEKI]
     assert ctx.state.charas[1].tcvarn[2] == P_EX_HANGEKI
 
@@ -153,7 +153,7 @@ def test_hangeki_exp(ctx, data, henshin, exp_name):
     for n in ("中距離戦闘経験", "戦闘基礎経験"):
         c.exp[data.index_of("EXP", n)] = 0
     st.rng = ZeroRng()
-    hangeki.hangeki_to_tentacle(ctx, 1, 0, 0)
+    run_gen(hangeki.hangeki_to_tentacle(ctx, 1, 0, 0))
     assert c.exp[data.index_of("EXP", exp_name)] == 1  # RAND:5 + 1
     other = "戦闘基礎経験" if exp_name == "中距離戦闘経験" else "中距離戦闘経験"
     assert c.exp[data.index_of("EXP", other)] == 0
@@ -170,7 +170,7 @@ def test_hangeki_betobeto(ctx, v200, tflag10, cured):
     v[12] |= BETOBETO
     v[200] = v200
     st.tflag[10] = tflag10
-    hangeki.hangeki_to_tentacle(ctx, 1, 1, 0)
+    run_gen(hangeki.hangeki_to_tentacle(ctx, 1, 1, 0))
     assert bool(v[12] & BETOBETO) is (not cured)
     name = print_transcallname(st, 1)
     assert (f"　 {name}は[べとべと]状態から回復した！" in texts(ctx.out)) is cured
@@ -244,7 +244,12 @@ def test_perfect_guard_hangeki_printdata(ctx, r, text):
 @pytest.fixture
 def recorded(monkeypatch):
     calls = []
-    monkeypatch.setattr(enemy, "hangeki_to_tentacle", lambda ctx, a, b, d: calls.append((a, b, d)) or 0)
+    def fake(ctx, a, b, d):
+        calls.append((a, b, d))
+        return 0
+        yield  # S28a：hangeki_to_tentacle はジェネレータ
+
+    monkeypatch.setattr(enemy, "hangeki_to_tentacle", fake)
     return calls
 
 
@@ -346,7 +351,7 @@ def test_hangeki_style_boss_battle_integration(data, monkeypatch):
 
     def wrapped(ctx, a, b, d):
         ex0 = ctx.state.target_chara.ex[99]
-        r = orig(ctx, a, b, d)
+        r = yield from orig(ctx, a, b, d)
         if ctx.state.target_chara.ex[99] >= ex0 + 2:
             successes.append((a, b, d))
         return r
