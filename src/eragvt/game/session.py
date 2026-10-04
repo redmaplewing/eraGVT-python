@@ -279,7 +279,16 @@ class GameSession:
             if recruitment_allowed(st):
                 self._run_gen(recruitment_gen(self._ctx()), self._show_shop)
                 return
-        elif value in (169, 170, 800):
+        elif value in (169, 170):  # SHOP.ERB@USERSHOP:289–292
+            from .retirement import retirement_allowed, retirement_gen, retirement_list_gen
+            if retirement_allowed(st, value):
+                if value == 169:
+                    self._run_gen(retirement_list_gen(self._ctx()), self._show_shop)
+                    return
+                else:
+                    self._run_gen(retirement_gen(self._ctx()), self._show_shop)
+                    return
+        elif value == 800:
             out.printl(f"（未實作：[{value}]）")
         # @USERSHOP 終了 → SystemProc@endCallEventBuy:737–755 → endAutoSave → @SHOW_SHOP
         self._show_shop()

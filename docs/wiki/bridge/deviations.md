@@ -118,7 +118,7 @@ ERB 路徑相對 `source/earGVP/ERB/`。
 - [ ] **未實作的選單**：`[50]`、`[110]`〜`[180]`、`[700]`、`[800]` 只顯示「（未實作）」。（`[100]` 已於 S04 接上行動執行。）
   S12：`[110]`〜`[160]` 先照 USERSHOP:246–285 的條件判斷（ゲームオーバーモード中 [111]〜[150] 不做任何事、[110] 先 LIMIT TARGET、
   [160] 無可選角色時印原作訊息），條件成立時才顯示「（未實作）」。
-- [ ] **WAIT／PRINTW 不阻塞**：Web 一次顯示到下一個 INPUT 為止，WAIT 位置以虛線標示，不需按鍵繼續。（Python：`eragvt.game.session`、`eragvt.web`）
+- [ ] **WAIT／PRINTW 不阻塞**：Web 一次顯示到下一個 INPUT 為止，WAIT 位置以虛線標示，不需按鍵繼續。（Python：`eragvt.game.session`、`eragvt.web`）S44引退名簿／報告已依原作局部補上PRINTW等待，避免LB遮掉內容；此處其他系統的既有簡化仍保留，見`docs/wiki/era/retirement.md`。
 - [ ] **存檔格式與檔名**：JSON（`saves/saveNN.json`），不是 Emuera 的 `.sav`；存檔說明文字（日時＋`@SAVEINFO`）與一覽格式照原作。
 - [ ] **Web 專用按鈕**：頁尾「タイトルに戻る」（重建 session）是原作沒有的。
 - [ ] **無效輸入訊息**：Emuera 以「刪一行＋暫時行」顯示「無効な値です」，這裡以一般行輸出。

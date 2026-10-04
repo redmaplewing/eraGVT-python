@@ -10,7 +10,7 @@
 - `ERB/インターミッション画面/SHOP.ERB@USERSHOP:288–295`：[180]要求CHARANUM≤登錄上限−1，且加入引退選項開啟。
   `ERB/DIM.ERH:25`登錄上限為30（含MASTER）；`ERB/ゲーム内_イベント発生/オープニング処理_カスタムGAMEMODE.ERB@GAME_OPTION_CHECK_F:89–91`讀FLAG:0對應bit。
   `ERB/DIM.ERH:69`為9；Python沿用GameOption.JOIN_RETIRE=9。資金、遊戲結束旗標不影響這個入口。
-- 同一段的[169]是CHAR_INTAI_LIST、[170]是CHARA_INTAI，都是獨立入口，本階段未接通；不從名稱推定[180]含引退。
+- 同一段的[169]是CHAR_INTAI_LIST、[170]是CHARA_INTAI，都是獨立入口；S44已接通，見`retirement.md`，不從名稱推定[180]含引退。
 - 完整163行沒有扣款或費用判斷；招募免費。
 
 ## 選擇與狀態順序
