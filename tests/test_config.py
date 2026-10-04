@@ -208,8 +208,10 @@ def test_mode_select_200_global_config(data):
     assert "Ｃ　Ｏ　Ｎ　Ｆ　Ｉ　Ｇ" in "".join(_texts(out))
     gen.send(999)  # 戻る → モード選択を再表示
     assert _texts(out)[-1].startswith("[100] タイトルに戻る")
-    with pytest.raises(NotImplementedError, match="TUTORIAL"):
-        gen.send(300)
+    gen.send(300)  # S52：說明接通，退出後回到開局選單。
+    assert "チュートリアルメニュー" in _texts(out)
+    gen.send(999)
+    assert _texts(out)[-1].startswith("[100] タイトルに戻る")
 
 
 # --- CONFIG 画面のビット切り替え ---------------------------------------------------------

@@ -140,7 +140,10 @@ def event_first_gen(
             _show_mode_select(out)  # GOTO MASTER_LOOP（MODE_SELECT:300）
             continue
         if r == 300:  # :403–405 CALL TUTORIAL
-            raise NotImplementedError("ゲームの説明（TUTORIAL）は未移植")
+            from .tutorial import tutorial
+            yield from tutorial(state, out)
+            _show_mode_select(out)  # :405 GOTO MASTER_LOOP
+            continue
         out.clearline(1)
         out.printl("無効な値です")
     state.flag[0] = MODE_OPTIONS[GameMode.NORMAL]  # MODE_SELECT:372–376
