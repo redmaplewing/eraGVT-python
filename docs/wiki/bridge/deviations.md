@@ -15,7 +15,8 @@ ERB 路徑相對 `source/earGVP/ERB/`。
 - [x] ~~**開局：身體資料生成未移植**~~（S09 解決）：`CHARA_MAKE_BASE_PROFILE` 已移植（`eragvt.game.opening.chara_make_base_profile`、
   `eragvt.game.body`）。查證結果：初期セットのキャラは `NO ≠ 0`（:498 條件不成立）→ 原作本來就不生成，BASE:40–48／CFLAG:33–34 為 0
   與原作一致（`docs/wiki/era/body-profile.md`）。S10：汎用キャラ的隨機生成（:507–980）與 AGE_SETTING 的年齢指定（CSTR:204–206）
-  已移植；仍未移植：角色製作／狀態畫面的手動生成（UI）、TOINT 的 16／2 進與指數表記（停止）。
+  已移植；S50 補完原生年齡／色碼的 TOINT／ISNUMERIC 十六／二進位與指數表記（`docs/wiki/python/numeric-input.md`）。
+  完整角色製作的手動生成 UI 仍未移植。
 - [x] ~~**FLASHNEWS 未移植**~~（S26 解決）：`SHOP_FLASHNEWS.ERB` 全體（新聞產生・亂數・SAVESTR:20／FLAG:60・ゲームオーバーモード 10001・
   裏ボス 10000・イベント戦ニュース・CHOOSEIDOL 的 CFLAG:284 加權・static #DIM）已移植（`eragvt.game.flashnews`）。剩下的偏離見下一項。
 - [x] ~~**FLASHNEWS イベント戦ニュースが讀「前回の RESULTS:0」**（S26）~~（S26b 照原作解決）：`TRYCALLFORM EVENT_BATTLE_FLASHNEWS_{n}(ARG)` の後

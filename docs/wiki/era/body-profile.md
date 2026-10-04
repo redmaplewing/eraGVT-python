@@ -60,4 +60,5 @@ GENERATE_BODYLINE:460–544：CFLAG:33 = RAND:535627332240；成長値以權重 
 
 CHARA_MAKE_AGE_SETTING:1336–1444：年齢 = RAND:11+10，學生／交際相手／種族改寫；:1404–1406 把 MAXBASE:年齢 也設成 AGE。
 年齢指定（CSTR:204–206，:1408–1444）S10 移植：`"0"` → 0、`TOINT > 0` → 該值、否則 `RANDOM_AGE_F`（:1448–1497，未知字串 -99）；
-最後「年齢に合わせる」「実年齢に合わせる」覆寫。TOINT 依 `Creator.Method.cs@ToIntMethod`:2357–2387（全角 → 0；16／2 進、指數表記未移植 → 停止）。
+最後「年齢に合わせる」「実年齢に合わせる」覆寫。TOINT 依 `reference/emuera-1824/Emuera/GameData/Function/Creator.Method.cs:2357–2387`；
+S50 補完十六／二進位、指數與 Int64 邊界，無效格式回 0、轉換錯誤照原作拋出，詳見 `../python/numeric-input.md`。

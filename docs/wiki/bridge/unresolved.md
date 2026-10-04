@@ -41,9 +41,9 @@
 - [x] 救出時間切れ `TFLAG:9`（S08）— 只有 `COMF15.ERB@KYUSHUTU_TIMEUP_HANTEI`:64 讀取（由 `BATTLE_COM_AFTER.ERB`:1115 TRYCALL），
   全 ERB（含口上）沒有代入處（`grep -P "TFLAG\s*:\s*9(?![0-9])"` 全 ERB／ERH 僅 1 筆）→ 地の文 `MESSAGE_KYUUSHUTU_TIMEUP` 不會出現。照原作（deviations「原作行為」）。
 - [x] `@SHIFTFOWARD_CHARA`（`ヒロイン関連/SET_PARTYMEMBER.ERB`:48–64）— 全 ERB 沒有呼叫處（grep 只有定義行）→ 不移植。
-- [ ] `TOINT` 對 cp932 無法編碼字元的處理（S10）— `Creator.Method.cs@ToIntMethod`:2363 以 `LangManager.GetStrlenLang`（`_Library/LangManager.cs`:17–20，
-  `Encoding(932).GetByteCount`）判定全角；無法編碼字元的位元組數取決於 .NET 的替換 fallback，reference 內查不到。預設路徑不會遇到
-  （年齢指定 CSTR:204–206 只來自角色 CSV／製作畫面），`eragvt.game.chara_make.toint` 遇到時停止。
+- [x] `TOINT` 對 cp932 無法編碼字元的處理（S10→S50）— `Creator.Method.cs:2363`、`_Library/LangManager.cs:12–20`、
+  `Config/Config.cs:134` 指定 Encoding(932)。已以 .NET Framework 4 實測全 BMP 長度、數字分類及非 BMP 替代；
+  `chara_make.toint` 與 `colorbar.isnumeric` 共用完整數值解析，不再因未移植而停止，原引擎轉換錯誤仍保留；重現步驟見 `python/numeric-input.md`。
 - [ ] `SHOP.ERB@USERSHOP`:288–293 `CASE 169 && GAME_OPTION_CHECK_F(OPTION_加入引退有り)` 等（S12 發現）— CASE 引數整個是式，
   照字面會變成 `RESULT == (169 && …)`（0／1），[169]／[170]／[180] 可能永遠不會命中。未查 `SELECTCASE` 的 CASE 式解析
   （`GameProc/Function/Instraction.Child.cs` 的 CASE 相關處）。INSTANT 模式專用、預設路徑不經過；Python 仍只印「（未實作）」。

@@ -110,35 +110,10 @@ _NAMED_COLORS = (
 
 
 def isnumeric(s: str) -> bool:
-    """`ISNUMERIC(s)`（reference/emuera-1824/Emuera/GameData/Function/Creator.Method.cs@IsNumericMethod:2540–2569）：
-    全角を含まない・先頭が数字か符号＋数字・以降が数字（任意で `.数字列`）。10 進のみ移植（`0x`／`0b`・指数表記の
-    ReadInt64 は本作の到達経路〔手入力の色指定〕が未移植なので扱わない → 該当時は停止）。"""
-    if s == "":
-        return False
-    try:
-        if len(s.encode("cp932")) > len(s):
-            return False
-    except UnicodeEncodeError:
-        raise NotImplementedError(f"ISNUMERIC：cp932 にない文字を含む：{s!r}") from None
-    i = 0
-    if s[0] in "+-":
-        if len(s) < 2 or not s[1].isdigit():
-            return False
-        i = 1
-    elif not s[0].isdigit():
-        return False
-    if s[i:i + 2].lower() in ("0x", "0b"):
-        raise NotImplementedError(f"ISNUMERIC：16／2 進表記は未移植：{s!r}")
-    j = i
-    while j < len(s) and s[j].isdigit():
-        j += 1
-    if j < len(s) and s[j] in "eEpP":
-        raise NotImplementedError(f"ISNUMERIC：指数表記は未移植：{s!r}")
-    if j == len(s):
-        return True
-    if s[j] != ".":
-        return False
-    return all(ch.isdigit() for ch in s[j + 1:])
+    """ISNUMERIC：Creator.Method.cs:2540–2569；與 TOINT 共用相同詞法及錯誤。"""
+    from .numeric import read_numeric
+
+    return read_numeric(s) is not None
 
 
 def setcolor_by_str(out: TextOutput, color: str) -> int:

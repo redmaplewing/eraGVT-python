@@ -458,41 +458,8 @@ def random_age_f(state: GameState, s: str) -> int:
 
 
 def toint(s: str) -> int:
-    """Emuera `TOINT`（reference/emuera-1824/Emuera/GameData/Function/Creator.Method.cs@ToIntMethod:2357–2387）。
+    """TOINT：Creator.Method.cs:2357–2387；進位／指數規則見 game.numeric。"""
+    from .numeric import read_numeric
 
-    空文字 → 0、全角文字（cp932 で 2 バイト）を含む → 0、先頭が数字／符号+数字でない → 0、
-    数字の後に `.`＋数字以外が続く → 0。10 進の整数のみ移植（`0x`／`0b`／指数 `e`・`p` は
-    Sub/LexicalAnalyzer.cs@ReadInt64:133–190 の処理があるが本作の到達経路では使われないので未移植）。
-    """
-    if s == "":
-        return 0
-    try:
-        if len(s.encode("cp932")) > len(s):  # :2363 str.Length < GetStrlenLang(str)
-            return 0
-    except UnicodeEncodeError:
-        # GetStrlenLang は Encoding(932).GetByteCount（_Library/LangManager.cs:17–20）。cp932 にない文字のバイト数は
-        # .NET の置換フォールバック次第で reference からは確定できない。本作の到達経路では使われないので停止にする。
-        raise NotImplementedError(f"TOINT：cp932 にない文字を含む：{s!r}") from None
-    i = 0
-    sign = 1
-    if s[0] in "+-":
-        if len(s) < 2 or not s[1].isdigit():  # :2368
-            return 0
-        sign = -1 if s[0] == "-" else 1
-        i = 1
-    elif not s[0].isdigit():  # :2366
-        return 0
-    if s[i:i + 2].lower() in ("0x", "0b"):
-        raise NotImplementedError(f"TOINT の 16／2 進表記は未移植：{s!r}")
-    j = i
-    while j < len(s) and s[j].isdigit():
-        j += 1
-    value = sign * int(s[i:j])
-    rest = s[j:]
-    if rest == "":
-        return value
-    if rest[0] in "eEpP":
-        raise NotImplementedError(f"TOINT の指数表記は未移植：{s!r}")
-    if rest[0] == "." and all(ch.isdigit() for ch in rest[1:]):  # :2373–2382
-        return value
-    return 0
+    value = read_numeric(s)
+    return 0 if value is None else value
