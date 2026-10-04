@@ -574,14 +574,13 @@ def set_tentacle_size(ctx: Ctx, arg0: int, arg1: int, arg2: int, arg3: int, arg4
         local = isqrt((result * 6 + 35) * 150)
         if config_check_maniac(st, 20) == 0:
             local = isqrt(local * 75)
-        if arg1 != 1:
+        if arg1 == 2:
+            # TENTACLE_LASTBOSS_2_天使の樹.ERB@TENTACLE_LASTBOSS_2_TENTACLE_SIZE:618–631。
+            r = (40,100,100,90,rand(7)+3,rand(3)+1,rand(3)+1,rand(4)+2)
+        elif arg1 == 1:
+            r = (90,120,120,90,rand(5)+1,rand(3)+1,rand(3)+1,rand(5)+1)
+        else:
             raise NotImplementedError(f"TENTACLE_LASTBOSS_{arg1}_TENTACLE_SIZE は未移植")
-        # TENTACLE_LASTBOSS_1_Ｋ触手.ERB:244–257（RAND は記述順：C・V・A・B）
-        l4 = rand(5) + 1
-        l5 = rand(3) + 1
-        l6 = rand(3) + 1
-        l7 = rand(5) + 1
-        r = (90, 120, 120, 90, l4, l5, l6, l7)
         st.set_result_x(*r)  # 8 値 RETURN（:257）
     elif arg0 == 2:  # GAPING.ERB@SET_TENTACLE_SIZE:1137–1156；原作沒有 MOB 專用尺寸函式，走 CATCH。
         local = isqrt((result + 20) * 30)

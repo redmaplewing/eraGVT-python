@@ -607,7 +607,10 @@ def com_attack_common(ctx: Ctx) -> int:
         kind = _RANGE_ARGS[v[0]]
         r, _ = act_hantei_chara_to_tentacle(ctx, kind)
         if enemy_type_check(st, "LASTBOSS") >= 1 and st.flag[11] == 2 and st.flag[21] == 1 and (st.tflag[13] & v[0]) == 0:
-            raise NotImplementedError("ラスボス（天使の樹）戦は未移植")
+            # COM_ATTACK_COMMON.ERB@COM_ATTACK_COMMON:60–64：用距離值本身（遠距離=3），不是 bit4。
+            out.printl("待ち構えていた触手に本体への攻撃を阻まれた……")
+            out.printl()
+            r = st.result[0] = 0
         if r == 0:
             if act_hantei_chara_to_tentacle_guard(ctx, kind):
                 hit_flag = -1

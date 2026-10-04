@@ -92,12 +92,15 @@ def _boss_prison_routine(ctx: Ctx, n: int) -> int:
     return 0
 
 
-def _lastboss_prison_routine(ctx: Ctx) -> int:
+def _lastboss_prison_routine(ctx: Ctx, n: int = 1) -> int:
     """`TENTACLE_LASTBOSS_1_PRISON_ROUTINE`（TENTACLE_LASTBOSS_1_Ｋ触手.ERB:208–239）。"""
     from .commands import prison_comable
 
     r = ctx.state.rng.rand(100)
-    for bound, com in ((10, 100), (20, 101), (30, 102), (40, 103), (50, 200), (60, 201), (70, 300), (75, 104), (85, 105)):
+    # TENTACLE_LASTBOSS_2_天使の樹.ERB@TENTACLE_LASTBOSS_2_PRISON_ROUTINE:579–613。
+    bounds = (((5,100),(10,101),(15,102),(20,103),(28,200),(36,201),(44,300),(52,301),(60,104),(68,105))
+              if n == 2 else ((10,100),(20,101),(30,102),(40,103),(50,200),(60,201),(70,300),(75,104),(85,105)))
+    for bound, com in bounds:
         if r < bound:
             prison_comable(ctx, com)
             return 1
@@ -134,15 +137,17 @@ def tentacle_access_prison(ctx: Ctx, who: int, key: str):
         raise KeyError(key)
     if c.cflag[20] == 1:  # :329–342 ラスボス（S27）
         n = c.cflag[21]
-        if n != 1:
-            raise NotImplementedError(f"TENTACLE_LASTBOSS_{n} による幽閉は未移植（天使の樹は未移植）")
+        if n not in (1,2):
+            raise NotImplementedError(f"TENTACLE_LASTBOSS_{n} による幽閉は未移植")
+        from ..battle.angel_tree import name as angel_name
+        name = angel_name(st) if n == 2 else LASTBOSSES[n].name
         if key == "NAME":
-            ctx.out.print(LASTBOSSES[n].name)
+            ctx.out.print(name)
             return ""
         if key == "GETNAME":
-            return LASTBOSSES[n].name
+            return name
         if key == "PRISON_ROUTINE":
-            return _lastboss_prison_routine(ctx)
+            return _lastboss_prison_routine(ctx,n)
         if key == "PALAM_HOSEI":
             # :338–339 は TENTACLE_**BOSS**_{CFLAG:ARG:21}_PALAM_HOSEI を呼ぶ（原作どおり：Ｋ触手の幽閉はＣ触手の補正値）
             b = BOSSES[n]

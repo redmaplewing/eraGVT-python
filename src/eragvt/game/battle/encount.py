@@ -351,7 +351,9 @@ def message_encount_boss(ctx: Ctx, code: str = "ENCOUNT_BOSS") -> None:
     tentacle_access(ctx, "NAME")
     out.printl(f" Lv.{tentacle_level(st)} と遭遇した！")
     # TENTACLE_BOSS_{n}_DEFENITION／ラスボスは TENTACLE_LASTBOSS_{n}_DEFENITION（MESSAGE_BATTLE.ERB:51–71、S27）
-    for line in (LASTBOSSES if code.endswith("LASTBOSS") else BOSSES)[st.flag[11]].definition:
+    from .core import boss_data
+
+    for line in (boss_data(st) if code.endswith("LASTBOSS") else BOSSES[st.flag[11]]).definition:
         out.printl(line)
     out.printl("・・・・・・・・・・・・・・・")
     kojo_root(ctx, code)

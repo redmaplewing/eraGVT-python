@@ -48,8 +48,6 @@
 
 ## 未移植（停止）
 
-- 天使の樹（`TENTACLE_LASTBOSS_2`）：只在周回（FLAG:854 > 0）且 HARDCORE 的Ｋ触手撃破後出現（:176–180、:270–272），需引き繼ぎ。
-  形態變化（SOURCE_CHECK:40–112）、攻撃時的甲殻判定（COM_ATTACK_COMMON:59）、遭遇・幽閉・SHOP 顯示的 2 號都停止。
-- 引き繼ぎ已於S37接通；周回HARDCORE的天使の樹仍停止。
+- 天使の樹已於S38接通，見 [天使の樹](angel-tree.md)；引き繼ぎ已於S37接通。
 - 襲來事件中生存ラスボス 0 的 `GOTO RAID_LOOP`（原作無限ループ）。
 - ENDING 後 FLAG:64 != 0 的 `JUMP SHOW_SHOP`（原作亦為スクリプト終端錯誤：`GameProc/Process.SystemProc.cs@endNormal`:993–996）。

@@ -434,9 +434,10 @@ def shop_show_boss_info(state: GameState, data: GameData, out: TextOutput) -> No
             if lastboss:
                 from .battle.core import LASTBOSSES
 
-                if no not in LASTBOSSES:  # 天使の樹（_GETNAME が FLAG:21 で変わる）は未移植
+                if no not in (1,2):
                     raise NotImplementedError(f"TENTACLE_LASTBOSS_{no} の表示は未移植")
-                name = LASTBOSSES[no].name  # TENTACLE_ACCESS "NAME" のラスボス分岐（COMMON_TENTACLE_DATA.ERB:258–262）
+                from .battle.angel_tree import name as angel_name
+                name = angel_name(state) if no == 2 else LASTBOSSES[no].name
             else:
                 name = BOSS_NAMES.get(no, "")
             if state.flag.get_bit(803, 1) and f[18] == f[11]:

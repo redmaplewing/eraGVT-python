@@ -81,7 +81,8 @@ def source_check(ctx: Ctx) -> Generator[None, int, None]:
         raise NotImplementedError(f"装備 {c.cflag[43]} の効果（MISC_PATCH.ERB）は未移植")
     # :40–112 裏ボス形態変化
     if enemy_type_check(st, "LASTBOSS") >= 2:
-        raise NotImplementedError("裏ボスの形態変化は未移植")
+        from .angel_tree import change_phase
+        change_phase(ctx)
     # :117–436 勝利
     if st.flag[13] <= 0:
         _victory(ctx)

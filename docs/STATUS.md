@@ -1,6 +1,6 @@
 # 現況（唯一真相，≤120 行）
 
-更新：2026-10-04（S37 完成）
+更新：2026-10-04（S38 完成）
 
 ## 已完成（各階段細節見 git log 與 wiki）
 
@@ -29,16 +29,16 @@
 - **S29** 口上／地の文的狀態書き込み（catalog が非 LOCAL 代入を GameState へ直接書く＋ジャーナルで失敗回復；下節）。
 - **S30** catalog 剩餘的不可執行原因（ループ內 $ラベルへの GOTO・STRDATA・SETCOLORBYNAME・FINDCHARA・GETCOLOR・RANDCHOOSE 系；下節）。
 
-## S37：通關繼承
+## S38：天使の樹
 
-- S32手翻HATUJOU_TO_HAIRAN；S33雜魚；S34裏プロフィール；S35子供／變身命名；S36市民戰（詳見對應wiki）。
-- S37手翻SUCCESSION：三頁點數／角色選擇、確認與模式、資料逐欄保留重置、角色製作預設路徑與HEROINE_PRESET，接回SHOP。
-- 結局通關與通關存檔均接通；BEGIN SHOP中止舊TURNEND，保留原作退款、RELATION／TARGET殘值等怪處。
-- 新增36測試；人工末王前置經實際通關→存檔→讀檔→繼承→SHOP驗證，不冒充自然通關。依據：`docs/wiki/era/succession.md`。
-- 主代理獨立完整pytest：`2211 passed, 1 warning in 264.72s (0:04:24)`（既有Starlette警告）。
-- 標準default／tokusou各seed0–249、200SHOP、actions101–108：default246上限／4回標題、tokusou250上限，與S36一致。
-- 10個50局前景批次全部exit0；500局catalog失敗0、seed全集、逐局log／JSONL一致皆核對。產物留於忽略目錄 `tmp/s37/`。
-- 無新增UNVERIFIED／DEVIATION；天使の樹仍為後續階段，完成S37後停止。
+- S32手翻HATUJOU_TO_HAIRAN；S33雜魚；S34裏プロフィール；S35命名；S36市民戰；S37通關繼承（詳見對應wiki）。
+- S38接通周回HARDCORE天使樹資料、遭遇、四段形態、甲殼、敵方指令、反應、尺寸、幽閉與SHOP顯示。
+- 解鎖門檻、75%／37%／10%切換、70%回復、甲殼mask3及幽閉BOSS_2補正等怪處照原作。
+- 新增68測試，人工前置經實際擊破→結局→存檔→繼承→SHOP；另驗證敗北→幽閉。依據：`docs/wiki/era/angel-tree.md`。
+- 主代理獨立完整pytest：`2279 passed, 1 warning in 290.74s (0:04:50)`（既有Starlette警告）。
+- 標準default／tokusou各seed0–249、200SHOP、actions101–108：default246上限／4回標題、tokusou250上限。
+- 10批全部exit0；500局catalog失敗0，seed全集、log／JSONL及逐局完整結果與S37一致均核對。產物留於 `tmp/s38/`。
+- 無新增UNVERIFIED／DEVIATION；完成S38後停止。
 
 ## 口上 catalog 現況
 
@@ -63,7 +63,7 @@ P4 父親 CFLAG:9 指向不存在的ボス／ラスボス／モブ；HEROINE_PRE
 
 - **自主推進（使用者指定 2026-10-02，依序）**：~~S22 RESULTS 共用~~ → ~~S23 [反撃]スタイル~~ → ~~S24 設定畫面／プリセット~~ → ~~S25 狀態畫面~~
   → ~~S26 FLASHNEWS~~ → ~~S26b RESULTS:0 殘值~~ → ~~S27 ラスボス～結局~~ → ~~S28 未移植行動（S28a〜S28c2）~~：**指定範圍全部完成**。
-  S37完成後停止，下一候選：天使の樹（引き継ぎ後のみ）、SHOP [112] 衣裝設定、
+  S38完成後停止，下一候選：SHOP [112] 衣裝設定、
   SHOP 子選單（[111] CHARA_POWERUP：SHOP.ERB:253、[113] DRUG_PREPARATION：:264、[180] TSUIKAYOUSEI_NORMAL（加入引退有り）：:294）。
 - 已裁決（2026-10-02）：名乗り改竄的 RESULTS:2 殘值照原作（S22 實作）；開局デフォルト悪堕ち的輸出丟棄維持現況。
 - 已裁決（2026-10-02）：PALAM_HOSEI 殘值照原作、防衛力負數 D1〜D4（S21 實作）。已裁決（2026-10-01）：S20 的 DEVIATION 6 項＋斜體。
@@ -76,7 +76,7 @@ P4 父親 CFLAG:9 指向不存在的ボス／ラスボス／モブ；HEROINE_PRE
 S23 模擬（含 [反撃] 人工設定）皆無停止。登記但罕見：
 - 悪堕ち：悪堕ち戰中 TENTACLE_ACCESS 的數值鍵（安全網）。
 - 襲撃／救援：生存ラスボス 0 での襲来（原作無限ループ）、RAID_HANTEI のデバッグ入力、原作でも CodeEE になるエラー路。
-- ラスボス・結局（S27）：天使の樹（裏ボス：遭遇・形態變化・攻撃・幽閉・表示）、ENDING 後の JUMP SHOW_SHOP（原作もエラー）。
+- ラスボス・結局：ENDING 後の JUMP SHOW_SHOP（原作もエラー）。
 - 幽閉：TS 性別變化。
 - 妊娠・子供：TS 変身キャラ妊娠時的女體化、デバッグモード的妊娠確率輸入。
 - 情報収集（S28a）：デバッグ入力。

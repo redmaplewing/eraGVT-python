@@ -2481,6 +2481,9 @@ def boss_sex_routine(ctx: Ctx, boss: int) -> int:
 
 def lastboss_sex_routine(ctx: Ctx, n: int) -> int:
     """`TENTACLE_LASTBOSS_1_SEX_ROUTINE`（TENTACLE_LASTBOSS_1_Ｋ触手.ERB:158–180）。"""
+    if n == 2:
+        from .angel_tree import sex_routine
+        return sex_routine(ctx)
     if n != 1:
         raise NotImplementedError(f"TENTACLE_LASTBOSS_{n}_SEX_ROUTINE は未移植")
     lo = ctx.state.rng.rand(100)
@@ -2492,7 +2495,8 @@ def lastboss_sex_routine(ctx: Ctx, n: int) -> int:
 
 def lastboss_reaction_ref(ctx: Ctx, n: int, arg: int = 0) -> int:
     """`TENTACLE_LASTBOSS_1_REACTION_REF, ARG`（TENTACLE_LASTBOSS_1_Ｋ触手.ERB:187–204）。"""
-    if n != 1:
+    # 末王2同一判定：TENTACLE_LASTBOSS_2_天使の樹.ERB@TENTACLE_LASTBOSS_2_REACTION_REF:558–575。
+    if n not in (1,2):
         raise NotImplementedError(f"TENTACLE_LASTBOSS_{n}_REACTION_REF は未移植")
     if arg == 1:
         lo = ctx.state.rng.rand(6)

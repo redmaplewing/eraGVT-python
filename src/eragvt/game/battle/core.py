@@ -501,7 +501,7 @@ BOSSES: dict[int, BossData] = {
 # ラスボス：`触手データ/ボス触手/TENTACLE_LASTBOSS_{n}_*.ERB`。本作は 1（Ｋ触手）と 2（天使の樹）の 2 個
 # （GET_LASTBOSS_ERB_NUM：COMMON_TENTACLE_DATA.ERB:428–438）。天使の樹は周回（FLAG:854 > 0：SCORE.ERB:749 でのみ増え、
 # 引き継ぎ SUCCESSION.ERBでしか次の周に持ち越せない）かつ HARDCORE でしか出現しない（BATTLE_COM_AFTER.ERB:176、:270）
-# ので未移植（遭遇したら停止）。
+# 。S38 已接通第二隻末王。
 LASTBOSSES: dict[int, BossData] = {
     # TENTACLE_LASTBOSS_1_Ｋ触手.ERB:7–123（ATTACK_ROUTINE／SEX_ROUTINE／REACTION_REF／PRISON_ROUTINE／TENTACLE_SIZE は専用関数）
     1: BossData("Ｋ触手", ("（数十メートルはある巨大な図体をしたラスボス触手）",
@@ -510,12 +510,15 @@ LASTBOSSES: dict[int, BossData] = {
                 (120, 120, 120, 120, 100, 100, 100, 100, 100, 100, 100, 100), (0, 0), (100, 50, 50)),
 }
 LASTBOSS_ERB_NUM = 2
-LASTBOSS_NAMES = {1: "Ｋ触手", 2: "天使の樹"}  # _GETNAME（TENTACLE_LASTBOSS_2_天使の樹.ERB:8–15 は FLAG:21 で変わる：未移植）
+LASTBOSS_NAMES = {1: "Ｋ触手", 2: "天使の樹"}  # _GETNAME（TENTACLE_LASTBOSS_2_天使の樹.ERB:8–15 依 FLAG:21 變化，由 angel_tree.py 提供）
 
 
 def lastboss_attack_routine(ctx: Ctx) -> int:
     """`TENTACLE_LASTBOSS_1_ATTACK_ROUTINE`（TENTACLE_LASTBOSS_1_Ｋ触手.ERB:129–154）。BASE:防御 は TARGET のもの。"""
     st = ctx.state
+    if st.flag[11] == 2:
+        from .angel_tree import attack
+        return attack(ctx)
     c = tc(ctx)
     l1 = st.rng.rand(100)
     l2 = c.base[ctx.data.index_of("BASE", "防御")] - 200
@@ -554,7 +557,8 @@ def boss_data(st: GameState) -> BossData:
     """TENTACLE_ACCESS の分岐（:202）：ボス（SAVESTR:13 == "BOSS"）とラスボス 1（Ｋ触手、S27）。"""
     if _is_lastboss_access(st):
         if st.flag[11] == 2:
-            raise NotImplementedError("裏ボス（TENTACLE_LASTBOSS_2 天使の樹）は未移植")
+            from .angel_tree import data
+            return data(st)
         if st.flag[11] not in LASTBOSSES:
             raise NotImplementedError(f"TENTACLE_LASTBOSS_{st.flag[11]} は存在しない（TRYCALLFORM 不発の RESULT は再現しない）")
         return LASTBOSSES[st.flag[11]]
@@ -603,6 +607,9 @@ def tentacle_access(ctx: Ctx, key: str) -> int | str:
             ctx.out.print(name)
             return ""
         return name
+    if _is_lastboss_access(st) and st.flag[11] == 2:
+        from .angel_tree import access
+        return access(ctx,key)
     b = boss_data(st)
     if key == "NAME":
         ctx.out.print(b.name)
