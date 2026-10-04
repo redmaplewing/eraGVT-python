@@ -274,7 +274,12 @@ class GameSession:
         elif value == 700:  # SHOP.ERB:302–303 CALL CONFIG（FROM = ""）→ @USERSHOP 終了 → @SHOW_SHOP
             self._run_gen(config_gen(st, self.data, out, self.globals), self._show_shop)
             return
-        elif value in (169, 170, 180, 800):
+        elif value == 180:  # SHOP.ERB@USERSHOP:293–294
+            from .recruitment import recruitment_allowed, recruitment_gen
+            if recruitment_allowed(st):
+                self._run_gen(recruitment_gen(self._ctx()), self._show_shop)
+                return
+        elif value in (169, 170, 800):
             out.printl(f"（未實作：[{value}]）")
         # @USERSHOP 終了 → SystemProc@endCallEventBuy:737–755 → endAutoSave → @SHOW_SHOP
         self._show_shop()

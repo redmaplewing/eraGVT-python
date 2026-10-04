@@ -231,10 +231,9 @@ def _choose(ctx,cmd):
 
 def _join_robot(ctx):
     """@DRUG_PREPARATION:280–435；個別編輯依AGENTS走不改設定直接[99]路徑。"""
-    from .opening import chara_make_initialize, chara_make_finalize, decode_weapon_data
-    from .chara_common import baseup_cal_shield, syuzoku_check
+    from .opening import chara_make_finalize
+    from .chara_common import syuzoku_check
     from .firstsetting import feat_select_ui, set_feat_default
-    from .body import generate_char_size, top_under, cup_size
     st,out,data=ctx.state,ctx.out,ctx.data
     lb(out); _say(ctx,286); _shortline(out); _say(ctx,288,289,290,291,292,293)
     while True:
@@ -247,24 +246,8 @@ def _join_robot(ctx):
     for name,value in (('感情乏しい',1),('未熟',2),('口上設定',1),('初期経験設定不可',1),('ロボっ子',1)):
         _set(ctx,c,name,value)
     if sex==1: _set(ctx,c,'オトコ',1); c.name='汎用キャラ(♂)'
-    # FIRSTSETTING_CHARA.ERB@FIRSTSETTING_CHARA_MAIN:9–34／318–353。
-    # DEVIATION: 沿用角色製作UI跳過，狀態走原作[99]預設確認；不提供手動編輯。
-    items={i:st.item[i] for i in range(100,700) if i in data.items and data.items[i].name}
-    for i in items: st.item[i]=1
-    if c.cflag[240]==0: chara_make_initialize(st,data,who)
-    for dist in (1,2,3):
-        if c.cstr[14+dist]: st.result[0]=decode_weapon_data(data,st,who,dist)
-        c.cstr[14+dist]=''
-    # :112–122的顯示呼叫仍產生RESULT:1–7／RESULTS殘值。
-    sizes=generate_char_size(data,c,0,st.result)
-    if sizes[4]>0:
-        difference,under=top_under(data,c,0)
-        st.result[0],st.result[1]=difference,under
-        st.result[0],st.results[0]=cup_size(st.result[0])
-    st.result[0]=99
-    baseup_cal_shield(data,st,who)
-    for i in range(4): st.savestr[i]=''
-    for i in range(100,700): st.item[i]=items.get(i,0)
+    from .character_defaults import confirm_default_character
+    confirm_default_character(ctx,who)
     race=syuzoku_check(c); st.result[0]=race
     _say(ctx,325,326,327,328,c=c)
     while True:

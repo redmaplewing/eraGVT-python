@@ -47,6 +47,8 @@ ERB 路徑相對 `source/earGVP/ERB/`。
   開局 `MESSAGE_FIRST` 口上仍不輸出（見下「口上」）。
   S42延伸至醫療室機器人加入：個別編輯走FIRSTSETTING_CHARA_MAIN不改設定直接[99]，初始化、結界、暫存復原照原作；
   性別與後續特徵選單仍等待玩家選擇。手動個別編輯尚未接通，詳見 `docs/wiki/era/drug-preparation.md`。
+  S43追加招募[0]/[1]沿用同一路徑（共用`character_defaults.confirm_default_character`）；[2]依原作略過個別編輯，
+  特徵選擇後才FINALIZE，不提前初始化種族；詳見 `docs/wiki/era/recruitment.md`。
 
 - [ ] **S04 未翻的行動會停止遊戲**：（出撃已於 S05 接上，戰鬥內的停止見下一項）（自由行動 S28c1／S28c2、特別活動 S28b、拠点防衛・戦闘支援・情報収集 S28a 已接上；`action_main` 只剩不存在的預約值會丟 `NotImplementedError`），Web session 捕捉後進入「停止」狀態（只能按「タイトルに戻る」）。同樣停止的還有：（ENDING 於 S27 接上：クリア後只剩引き継ぎ SUCCESSION 停止）、救出直後、妊娠・育兒・幽閉・悪堕ち等 S04 無法產生的狀態、鍛錬排程（CFLAG:110）、戦闘基礎 Lv5 的變身能力獲得。（原作：`ゲーム内_行動実行処理/ACTION.ERB`:74–175 等；Python：`eragvt.game.action`、`eragvt.game.turnend`、`eragvt.game.session._advance_turn`）— 各自屬 S05 以後；影響範圍見 `docs/wiki/era/actions.md`。
 - [x] ~~**襲撃／救援 會被跳過**~~（S20 解決）：`RAID_HANTEI` 成立時照原作 `JUMP RAID_RESCUE／RAID_ATTACK` → イベント戦（`eragvt.game.raid`）。ラスボス出現後（FLAG:100 = 0）の襲来は S27 接上（生存ラスボス 0 で原作無限ループの路だけ停止）。
