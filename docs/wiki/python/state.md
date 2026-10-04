@@ -38,7 +38,7 @@
   加上 `no name callname nickname mastername`。`tcvarn` **不存檔**（`Character.NOT_SAVED`；讀檔後為 0）。
 - `Character.from_def(CharaDef)` = ADDCHARA 的 CSV 初期化：「基礎」同時設 BASE／MAXBASE。
   **不做**原作 `CHARA_MAKE_FINALIZE` 的補完（CFLAG:240 固有番號、MAXBASE 射精／噴乳 < 1 修正等）——那是 S03 開局流程。
-- RELATION 保持 CSV 原樣（索引 = 對方 CSV 番号），轉換見 unresolved。
+- RELATION 開局保持 CSV 原樣（索引 = 對方 CSV 番号）；S51 接通開局 [30] 的轉換及設定，見 `../era/relation-setting.md`。
 - `CharaDef` 與 `Character` 不共享物件：改角色不影響載入的 CSV 資料。
 
 ## 常數（`state/constants.py`）

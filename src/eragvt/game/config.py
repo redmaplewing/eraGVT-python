@@ -734,7 +734,12 @@ def heroine_preset_gen(state: GameState, data: GameData, out: TextOutput, store:
                 yield from show_status_chara_select(Ctx(state, data, out, NullNarrationService()), r - 19)
                 break
             if r == 30 and state.charanum >= 2:
-                raise NotImplementedError("相関関係設定（CONVERT_RELATION／SET_RELATION）は未移植")
+                from ..text import NullNarrationService
+                from .action import Ctx
+                from .relation_setting import relation_menu
+
+                yield from relation_menu(Ctx(state, data, out, NullNarrationService()))
+                break
             if r < 0 or r > 3:
                 continue
             config_init(state, r, store)  # :756–758

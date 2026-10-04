@@ -163,6 +163,15 @@ def check_all_relation(ctx: Ctx) -> None:
     FOR の終端は開始時の CHARANUM（Instraction.Child.cs:1731–1743）。:593 の PRINTL（空行）は「親が居る」組ごとに出る（原作どおり）。
     """
     st, data, out = ctx.state, ctx.data, ctx.out
+    # S51：原文 CALL GET_RELATION 寫 RESULTS:0；自然終端只清 RESULT:0。
+    # CHARA_RELATION.ERB@CHECK_ALL_RELATION:931、937；
+    # reference/emuera-1824/Emuera/GameProc/Process.ScriptProc.cs:61–67。
+    def describe(a: int, b: int) -> str:
+        st.results[0] = get_relation(ctx, a, b)
+        st.result[0] = 0
+        return st.results[0]
+
+    st.result[0] = 0
     if st.charanum < 3:  # :568–569
         return
     n = st.charanum
@@ -273,11 +282,11 @@ def check_all_relation(ctx: Ctx) -> None:
                 _cb(st, se, ch, GIRI)
             cn = lambda i: st.charas[i].callname  # noqa: E731
             if st.charas[ch].relation[se] > 0 and w[0] > 0:  # :935–946
-                out.printl(f"『{cn(ch)}』にとって『{cn(se)}』は【{get_relation(ctx, ch, se)}】になりました。")
+                out.printl(f"『{cn(ch)}』にとって『{cn(se)}』は【{describe(ch, se)}】になりました。")
             elif w[0] > 0:
                 out.printl(f"『{cn(ch)}』と『{cn(se)}』の相関関係は無くなりました。")
             if st.charas[se].relation[ch] > 0 and w[1] > 0:
-                out.printl(f"『{cn(se)}』にとって『{cn(ch)}』は【{get_relation(ctx, se, ch)}】になりました。")
+                out.printl(f"『{cn(se)}』にとって『{cn(ch)}』は【{describe(se, ch)}】になりました。")
             elif w[1] > 0:
                 out.printl(f"『{cn(se)}』と『{cn(ch)}』の相関関係は無くなりました。")
             if w[0] or w[1]:

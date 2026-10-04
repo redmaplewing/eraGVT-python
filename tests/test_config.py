@@ -149,11 +149,12 @@ def test_heroine_preset_screen(data):
     assert st.flag[802] == 31
 
 
-@pytest.mark.parametrize("value, msg", [(30, "CONVERT_RELATION")])  # [20]〜[29] は S25 で移植（test_status_screen）
-def test_heroine_preset_unported(data, value, msg):
-    _, _, _, gen = _start_heroine_preset(data)
-    with pytest.raises(NotImplementedError, match=msg):
-        gen.send(value)
+def test_heroine_preset_relation_menu(data):
+    _, out, _, gen = _start_heroine_preset(data)
+    gen.send(30)
+    assert "相関関係設定" in _texts(out)
+    gen.send(99)
+    assert "◆ヒロインデータ確認" in _texts(out)
 
 
 def test_heroine_preset_10_config_mainmenu(data):

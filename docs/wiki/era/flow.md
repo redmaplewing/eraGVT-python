@@ -228,7 +228,7 @@ MODE_SELECT（:297）沒有預設值，`[1] NORMAL` 是第一個選項（S03 起
   **注意**：CONFIG 的 [1]／[9999]、性嗜好／雑魚／変身フィルタ的 [200] 只 SAVEGLOBAL、不設 GLOBAL:3 → 初次存下的設定在下一次 UPDATE 會被上述值蓋掉（原作行為）。
 - **CONFIG_INIT(ARG)**（CONFIG_初期設定.ERB:4–61，FLAG:800〜805）：0 = (1, GLOBAL:11〜15)；1 基本 = (0,1,15,263,1,2)；
   2 淫獄 = (0,25,31,391,247,67)；3 クズ市民 = (0,25,63,391,1271,67)。EVENTFIRST:51 先以 1 初始化，HEROINE_PRESET:758 再以選擇值覆寫。
-- **HEROINE_PRESET**（:617–759）：[20+n] ステータス（未移植→停止）、[30] 相関関係設定（未移植→停止）、[10] `CONFIG("mainmenu")`、
+- **HEROINE_PRESET**（:617–759）：[20+n] ステータス（S25）、[30] 相関関係設定（S51，見 [關係設定](relation-setting.md)）、[10] `CONFIG("mainmenu")`、
   [0]〜[3] → CONFIG_INIT；其他值無聲重新輸入。本程式預設輸入仍是 [1]。
 - **MODE_SELECT [200]**（:393–402）：FLAG:801〜805 = GLOBAL:11〜15 → UPDATE_GLOBAL → CONFIG("mainmenu")。FLAG 之後會被 CONFIG_INIT 覆寫，
   留下的只有 GLOBAL（與 :291 UPDATE 讀回的 FLAG:850／MOB_FLAG）。本程式放在開局 2 択畫面（deviations「開局的 UI 跳過」）。

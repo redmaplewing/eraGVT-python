@@ -1,6 +1,6 @@
 # 現況（唯一真相，≤120 行）
 
-更新：2026-10-05（S50數值格式驗收完成）
+更新：2026-10-05（S51關係設定驗收完成）
 
 ## 已完成（各階段細節見 git log 與 wiki）
 
@@ -29,16 +29,16 @@
 - **S29** 口上／地の文的狀態書き込み（catalog が非 LOCAL 代入を GameState へ直接書く＋ジャーナルで失敗回復；下節）。
 - **S30** catalog 剩餘的不可執行原因（ループ內 $ラベルへの GOTO・STRDATA・SETCOLORBYNAME・FINDCHARA・GETCOLOR・RANDCHOOSE 系；下節）。
 
-## S50：色碼與年齡指定的數值格式
+## S51：開局角色關係設定
 
-- S32–S49完成既有擴充，含SHOP衣裝／強化／醫療室／招募／引退／設施／隊伍編成、一人稱與武器自訂。
-- S50以共用原生轉換補完色碼與年齡指定的十六／二進位、指數、正負號、Int64／Int32邊界及Unicode。
-- 色碼由既有CSTR／存檔經狀態P5顯示；沒有新增手動色彩選單，也未改catalog等其他解析器。
-- 格式無效與數值0分開；溢位、非法二進位與缺指數照引擎報錯，RGB超界不裁切。
-- .NET Framework 4實測收斂TOINT的CP932未決項；無新增UNVERIFIED／DEVIATION，見`docs/wiki/python/numeric-input.md`。
-- 新增108案；主代理完整pytest：`3423 passed, 1 warning in 301.12s (0:05:01)`。
-- 標準500局：default246上限／4回標題、tokusou250上限，catalog失敗0；逐seed完整結果與S49一致。
-- 10個50局前景批次exit=0，seed全集、log／JSONL一致；結果與audit位於`tmp/s50/`。
+- S32–S50完成既有擴充，含SHOP衣裝／強化／醫療室／招募／引退／設施／隊伍編成、一人稱與武器自訂、數值格式。
+- S51接通HEROINE_PRESET [30]：CSV關係轉換、角色選擇、單向／雙向關係、互斥與家族限制、確認／取消。
+- 退出列表才執行CHECK_ALL_RELATION；補上其CALL GET_RELATION的共用RESULTS:0，原有父母ID／親屬推導沿用。
+- 保留原作CHARANUM越界、未顯示但可輸入的いとこ、主人反向OR條件；無新增UNVERIFIED／DEVIATION。
+- 詳見`docs/wiki/era/relation-setting.md`；新增68案，涵蓋Web設定→狀態P4顯示→存讀檔及殘值。
+- 主代理完整pytest：`3491 passed, 1 warning in 284.05s (0:04:44)`。
+- 標準500局：default246上限／4回標題、tokusou250上限，catalog失敗0；逐seed完整結果與S50一致。
+- 10個50局前景批次exit=0，seed全集、log／JSONL一致；結果與audit位於`tmp/s51/`。
 
 ## 口上 catalog 現況
 
@@ -62,7 +62,7 @@ P4 父親 CFLAG:9 指向不存在的ボス／ラスボス／モブ；HEROINE_PRE
 
 - **自主推進（使用者指定 2026-10-02，依序）**：~~S22 RESULTS 共用~~ → ~~S23 [反撃]スタイル~~ → ~~S24 設定畫面／プリセット~~ → ~~S25 狀態畫面~~
   → ~~S26 FLASHNEWS~~ → ~~S26b RESULTS:0 殘值~~ → ~~S27 ラスボス～結局~~ → ~~S28 未移植行動（S28a〜S28c2）~~：**指定範圍全部完成**。
-  使用者授權自行挑下一步，已選S50數值格式；完成本階段後停止，下一階段待選定。
+  使用者已授權S51開局角色關係設定；完成本階段後停止，下一階段待選定。
 - 已裁決（2026-10-02）：名乗り改竄的 RESULTS:2 殘值照原作（S22 實作）；開局デフォルト悪堕ち的輸出丟棄維持現況。
 - 已裁決（2026-10-02）：PALAM_HOSEI 殘值照原作、防衛力負數 D1〜D4（S21 實作）。已裁決（2026-10-01）：S20 的 DEVIATION 6 項＋斜體。
 - 已裁決（2026-09-30）：拡張度初期值照原作；S13 苗床出産的 static LOSEDEF 等怪處照原作。
@@ -81,7 +81,7 @@ S23 模擬（含 [反撃] 人工設定）皆無停止。登記但罕見：
 - 情報収集（S28a）：デバッグ入力。
 - ACTION_MAIN 由 EVENTTURNEND 經 JUMP 而終端（雜魚戰候選全部禁用：原作也錯誤）。
 - 夜這い：TS キャラ的 `_ABLUP` 女体受容取得、`%CALLNAME:ARG%` 指向不存在角色（原作也報錯）。
-- 開局：HEROINE_PRESET 的 [30]（相関関係）、2 択畫面的 [300]（ゲームの説明）。狀態畫面內的停止見上節。設定項造成的停止見上表。
+- 開局：2 択畫面的 [300]（ゲームの説明）；關係選單手動輸入CHARANUM越界（原作也報錯）。狀態畫面內的停止見上節。設定項造成的停止見上表。
 - 觸手服（ACTTENTACLESUIT・運動快感）、市民觀眾妨礙（ACT_LIMIT）／部分事件戰／エンドレス、
   ボスの返り血（SUPART_BLOOD）、デバッグ模式。
 
