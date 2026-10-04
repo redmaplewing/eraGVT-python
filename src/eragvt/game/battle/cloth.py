@@ -135,6 +135,35 @@ def figure_split(value: int, n: int) -> int:
     return value - div(value, 10) * 10
 
 
+def _special_hosei(ctx: Ctx, cid: int, mode: str) -> int:
+    """CLOTHDATAアウター_通常.ERB@CLOTH_HOSEI_DEF_106:1124–1140、
+    @CLOTH_HOSEI_DEF_115:2866–2882、@CLOTH_HOSEI_DEF_117:3308–3324、
+    @CLOTH_HOSEI_DEF_153:8516–8532（各含NOINNER）；
+    CLOTHDATAアウター_特殊.ERB@CLOTH_HOSEI_KOUGEKI_199:249–271；
+    CLOTHDATAインナー.ERB@CLOTH_HOSEI_AVOID_397:1993–2001。
+
+    原函式未帶角色參數，故讀 TARGET，不讀外層 CLOTH_HOSEI 的 ARG。
+    """
+    c = ctx.state.target_chara
+    eid = cid - 100 if c.cflag[1] == 0 else cid
+    if cid in (106, 115, 117, 153):
+        noinner = int(figure_split(c.equip[eid], 14) == 1)
+        if mode == "NOINNER":
+            return noinner
+        return DEFAULT_OUTER_DEF - 50 if noinner else DEFAULT_OUTER_DEF + (5 if cid == 117 else 0)
+    if cid == 199:
+        value = 125 + figure_split(c.equip[eid], 2) * 25
+        if figure_split(c.equip[eid], 3) == {"KOUGEKI": 1, "BOUGYO": 2, "BINSYOU": 3}[mode]:
+            value += 25
+        if figure_split(c.equip[eid], 4) == 4:
+            from ..era import times
+            value = times(value, "1.3")
+        return value
+    if cid == 397:
+        return 155 if (c.cflag[1] == 0 and c.cflag[40] == 0) or (c.cflag[1] > 0 and c.cflag[41] == 0) else 100
+    raise ValueError((cid, mode))
+
+
 def cloth_hosei(ctx: Ctx, who: int, cid: int, mode: str, shopr: int = 0) -> int:
     """`CLOTH_衣装カスタマイズ共通処理.ERB@CLOTH_HOSEI(ARG,ID,MODE,SHOPR)`:8–153。"""
     st = ctx.state
@@ -154,12 +183,14 @@ def cloth_hosei(ctx: Ctx, who: int, cid: int, mode: str, shopr: int = 0) -> int:
     if sp > -1:
         sp += len(mode)
         if _find(text, "!", sp) == sp:
-            raise NotImplementedError(f"CLOTH_HOSEI_{mode}_{cid}（個別関数の補正）は未移植")
+            res = _special_hosei(ctx, cid, mode)
         ep = _find(text, "@", sp)
         sep = _find(text, ",", sp)
         if ep > sep:
             ep = -1
-        if ep > -1:
+        if _find(text, "!", sp) == sp:
+            pass
+        elif ep > -1:
             res = _toint(_substring(text, sp, ep - sp))
             if st.charas[who].cflag[1] > 0:
                 sp = ep + 1
@@ -183,7 +214,7 @@ def cloth_hosei(ctx: Ctx, who: int, cid: int, mode: str, shopr: int = 0) -> int:
         return res
     # :132–136 重装・軽装レベル（TARGET の CFLAG:1 を見る）
     local = cid - 100 if st.target_chara.cflag[1] == 0 and 100 <= cid <= 199 else cid
-    eq = st.charas[who].equip[local]
+    eq = st.target_chara.equip[local]  # :140–147 未指定角色的 EQUIP 讀 TARGET。
     if mode == "HP":
         if res != -1:
             res += 5 * (figure_split(eq, 11) - figure_split(eq, 10))
@@ -197,10 +228,12 @@ def cloth_hosei(ctx: Ctx, who: int, cid: int, mode: str, shopr: int = 0) -> int:
 
 def customize_commonparts_cal(ctx: Ctx, value: int, mode: str) -> int:
     """`CLOTHDATAカスタム.ERB@CLOTH_CUSTOMIZE_COMMONPARTS_CAL`:9–18（TARGET の EQUIP:600–699）。"""
+    from ..clothing_text import PARTS
+
     c = ctx.state.target_chara
     for i in range(600, 700):
         if c.equip[i]:
-            raise NotImplementedError(f"カスタムパーツ EQUIP:{i} の補正は未移植")
+            value += PARTS.get(i, {}).get(mode, 0)
     return value
 
 
