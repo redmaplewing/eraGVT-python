@@ -272,7 +272,7 @@ def show_shop_gen(state: GameState, data: GameData, out: TextOutput, narration: 
         out.printl(f"パーティ人数( {charanum_partycheck(state)} / {PARTY_MAX} )")
         shop_show_status_party_list(state, data, out)
         if state.flag[61] and charanum_reserve(state):
-            out.printl("（未實作：控えメンバー一覧 SHOP_SHOW_STATUS_RESERVE_LIST）")
+            shop_show_status_reserve_list(state, data, out)
     # :61–72 一括設定
     if charanum_safe(state) >= 2:
         if state.flag[9] == 1:
@@ -515,7 +515,7 @@ def shop_show_status_target(state: GameState, data: GameData, out: TextOutput) -
     out.printl("――――――――――――――――――――――――――――")  # SHORTLINE（PRINT_LINE.ERB:3–6）
 
 
-def shop_show_status_party_list(state: GameState, data: GameData, out: TextOutput) -> None:
+def shop_show_status_party_list(state: GameState, data: GameData, out: TextOutput, form_mode: bool = False) -> None:
     """`インターミッション画面/SHOP_SHOW_STATUS_LIST.ERB@SHOP_SHOW_STATUS_PARTY_LIST`:9–39。
 
     DEVIATION: 各列の最大幅合わせ（SHOP_SHOW_STATUS_COUNT_MAXLEN）と 2 行目の詳細表示
@@ -526,9 +526,8 @@ def shop_show_status_party_list(state: GameState, data: GameData, out: TextOutpu
         if c.cflag[999] == 0 or c.cflag[0] != CharaState.SAFE:
             continue
         if i == state.target and state.flag[9] == 0:
-            out.set_color((0, 255, 150))
+            out.set_color((250, 180, 50) if form_mode else (0, 255, 150))
             out.print("◆")
-            out.reset_color()
         else:
             out.print("◇")
         out.print(f"[{format_curly(i, 2)}] {c.name} 　　　")
@@ -536,6 +535,30 @@ def shop_show_status_party_list(state: GameState, data: GameData, out: TextOutpu
         out.printl()
         out.print_plain("　　　　 ")
         out.print_plain(f"体力 {c.base[0]}/{c.maxbase[0]}　気力 {c.base[1]}/{c.maxbase[1]}　性耐性 {c.base[2]}/{c.maxbase[2]}")
+        out.reset_color()  # COLORSENTENCE_MINIBAR 終端；顯示細節仍沿用已登記簡化。
+        out.printl()
+
+
+def shop_show_status_reserve_list(state: GameState, data: GameData, out: TextOutput, form_mode: bool = False) -> None:
+    """ERB/インターミッション画面/SHOP_SHOW_STATUS_LIST.ERB@SHOP_SHOW_STATUS_RESERVE_LIST:52–86。
+
+    DEVIATION: 沿用既有隊伍列表的欄寬、數值條與狀態標記簡化，見 bridge/deviations.md。
+    """
+    out.printl()
+    out.printl('<< 控えメンバー >>')
+    for i, c in enumerate(state.charas):
+        if i == state.MASTER or c.cflag[999] != 0 or c.cflag[0] not in (0, 10, 11):
+            continue
+        if i == state.target and state.flag[9] == 0:
+            out.set_color((250, 180, 50) if form_mode else (0, 255, 150))
+            out.print('◆')
+        else:
+            out.print('◇')
+        out.print(f'[{format_curly(i, 2)}]{c.callname} 　')
+        shop_print_actionplan(out, c.cflag[100])
+        out.print(' 　')
+        out.print_plain(f'体力 {c.base[0]}/{c.maxbase[0]}　気力 {c.base[1]}/{c.maxbase[1]}　性耐性 {c.base[2]}/{c.maxbase[2]}')
+        out.reset_color()  # COLORSENTENCE_MINIBAR 終端。
         out.printl()
 
 

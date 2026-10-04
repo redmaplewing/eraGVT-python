@@ -211,7 +211,12 @@ class GameSession:
         if 1 <= value <= st.charanum - 1:
             shop.select_target(st, out, value)
         elif value == 50:
-            out.printl("（未實作：パーティ編成 SHOP_ORGANIZE_PARTY）")
+            if st.charanum > 2 and shop.charanum_safe(st) > 0:  # SHOP.ERB@USERSHOP:208–213
+                from .party_organization import party_organization_gen
+                out.printl("編成モードに移行します")
+                st.target = 0
+                self._run_gen(party_organization_gen(self._ctx()), self._show_shop)
+                return
         elif value == 60:
             shop.toggle_party_view(st, out)
         elif value == 90:

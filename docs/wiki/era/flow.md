@@ -107,7 +107,7 @@ MODE_SELECT（:297）沒有預設值，`[1] NORMAL` 是第一個選項（S03 起
 | 輸入 | 動作 |
 |---|---|
 | 1..CHARANUM-1 | 切換操作角色 `TARGET` |
-| 50 | `SHOP_ORGANIZE_PARTY`（隊伍編成） |
+| 50 | `SHOP_ORGANIZE_PARTY`（S46 已接通；規則與原作反向警告見 `party-organization.md`） |
 | 100 | `USERSHOP_ACTION_CONFIRM`（:503）→ 確認後 **`JUMP ACTION_MAIN`**。確認的 `SELECTCASE` 只有 `CASE 9`，其餘（含 `[1]はい`）都 `RETURN 0` 中斷（:521–532） |
 | 101–108 | `USERSHOP_SET_ACTION, RESULT, FLAG:9`：設定 `CFLAG:100`（行動預約，常數見 variables.md） |
 | 110 / 111 / 112 / 113 / 120 | 狀態、強化、衣裝設定、醫務室、衣裝購入 |

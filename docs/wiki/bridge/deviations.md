@@ -115,10 +115,10 @@ ERB 路徑相對 `source/earGVP/ERB/`。
   S14：`DRAWLINEFORM 文字列` 畫成與 DRAWLINE 相同的區切線（原作以該字串重複到畫面寬：`GameView/EmueraConsole.Print.cs@getStBar`:543–560；
   動画サイト :1335 的 `―`）；動画サイトの `PRINT_TAGSET_TEXT` 的 `@F:` フォント指定不反映（本作未使用），既定色的 `SETCOLOR 0x{GETCOLOR}`
   以「回到呼叫前的顏色」表示（顯示相同）。（Python：`eragvt.narration.runtime`、`eragvt.narration.windowlib`）
-- [ ] **SHOW_SHOP 簡化**：狀態條（`COLOR_BAR` 的色階與長度）以 20 格單色近似；`SHOW_SHOP_STATUS_SIGN`（生理周期・疲勞等標記）、隊伍列表的欄寬對齊與第 2 行詳細、控えメンバー一覽未移植；`SHOP_NG_ACTION_INFO` 的紅字在函式結尾重設顏色（原作不重設）。（Python：`eragvt.game.shop`）
-- [ ] **未實作的選單**：`[50]`、`[110]`〜`[180]`、`[700]`、`[800]` 只顯示「（未實作）」。（`[100]` 已於 S04 接上行動執行。）
-  S12：`[110]`〜`[160]` 先照 USERSHOP:246–285 的條件判斷（ゲームオーバーモード中 [111]〜[150] 不做任何事、[110] 先 LIMIT TARGET、
-  [160] 無可選角色時印原作訊息），條件成立時才顯示「（未實作）」。
+- [ ] **SHOW_SHOP 簡化**：狀態條（`COLOR_BAR` 的色階與長度）以 20 格單色近似；`SHOW_SHOP_STATUS_SIGN`（生理周期・疲勞等標記）、隊伍列表的欄寬對齊與第 2 行詳細未移植；`SHOP_NG_ACTION_INFO` 的紅字在函式結尾重設顏色（原作不重設）。（Python：`eragvt.game.shop`）
+  S46 已接通出場／候補列表與編成選擇，候補列表沿用相同欄寬、數值條與狀態標記簡化；來源 `ERB/インターミッション画面/SHOP_SHOW_STATUS_LIST.ERB@SHOP_SHOW_STATUS_RESERVE_LIST:52–86`。
+- [ ] **未實作的選單**：目前 `game.session._shop_input` 僅 SHOP `[800]` 仍顯示「（未實作）」；`[50]`、`[110]`〜`[180]` 的原作入口與 `[700]` 已接通。
+  此處指 SHOP 的 `[800]`，不含已實作的戰鬥 `[800]` 狀態畫面；各選單內部尚未移植的分支見 STATUS。
 - [ ] **WAIT／PRINTW 不阻塞**：Web 一次顯示到下一個 INPUT 為止，WAIT 位置以虛線標示，不需按鍵繼續。（Python：`eragvt.game.session`、`eragvt.web`）S44引退名簿／報告、S45設施擴充已依原作局部補上PRINTW等待；其他系統的既有簡化仍保留，見`docs/wiki/era/retirement.md`與`facilities.md`。
 - [ ] **存檔格式與檔名**：JSON（`saves/saveNN.json`），不是 Emuera 的 `.sav`；存檔說明文字（日時＋`@SAVEINFO`）與一覽格式照原作。
 - [ ] **Web 專用按鈕**：頁尾「タイトルに戻る」（重建 session）是原作沒有的。

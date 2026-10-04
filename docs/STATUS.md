@@ -1,6 +1,6 @@
 # 現況（唯一真相，≤120 行）
 
-更新：2026-10-04（S45設施擴充驗收完成）
+更新：2026-10-04（S46隊伍編成驗收完成）
 
 ## 已完成（各階段細節見 git log 與 wiki）
 
@@ -18,7 +18,7 @@
 - **S22** 共用 RESULTS（`docs/wiki/python/result.md`）：不存檔、名乗り改竄讀 RESULTS:2、BATTLE_COM_AFTER:1159 同步。
 - **S23** [反撃]スタイル（`battle/hangeki.py`，`--style 反撃` 人工模擬）。
 - **S24** 設定畫面／開局プリセット／GLOBAL（`eragvt.game.config`，`docs/wiki/era/flow.md` §10）。
-- **S25** ステータス畫面（`eragvt.game.status_screen`／`status_talent`／`colorbar`／`export_csv`；5 頁＋頁內指令，入口 SHOP [110]・戰鬥 [800]・HEROINE_PRESET [20]〜；控えメンバー一覧 SHOP_SHOW_STATUS_RESERVE_LIST は未實作表示）。
+- **S25** ステータス畫面（`eragvt.game.status_screen`／`status_talent`／`colorbar`／`export_csv`；5 頁＋頁內指令，入口 SHOP [110]・戰鬥 [800]・HEROINE_PRESET [20]〜；候補列表已於S46接通）。
 - **S26** FLASHNEWS（`eragvt.game.flashnews`，SHOP_FLASHNEWS.ERB 全體）。**S26b** 事件戰ニュースの前回 RESULTS:0 を照原作、3003／3004 MISSION_CHECKER の括弧修正。
 - **S27** ラスボス（Ｋ触手）＋結局（`docs/wiki/era/lastboss.md`；模擬：預設 249 上限＋1 HATUJOU、敗北後 192.92）。
 - **S28a** 拠点防衛・戦闘支援・情報収集・スケジュール（SHOP [160]）・戦闘基礎 Lv5 變身能力・拉致監禁表示・ACTION_MAIN 終端（下節）。
@@ -29,18 +29,18 @@
 - **S29** 口上／地の文的狀態書き込み（catalog が非 LOCAL 代入を GameState へ直接書く＋ジャーナルで失敗回復；下節）。
 - **S30** catalog 剩餘的不可執行原因（ループ內 $ラベルへの GOTO・STRDATA・SETCOLORBYNAME・FINDCHARA・GETCOLOR・RANDCHOOSE 系；下節）。
 
-## S45：SHOP設施擴充
+## S46：SHOP隊伍編成
 
-- S32–S44完成既有擴充，含SHOP衣裝／強化／醫療室／追加招募／引退；醫療室未完成支線仍依裁決提示並截斷。
-- S45接通SHOP [150]：鍛錬、休憩、防衛設備與研究等級升級，以及12種放鬆設備購入。
-- 原作資源費用、0/1確認、999主選單返回／99子選單返回、Lv5上限、前置bit與重複購入檢查完整接通。
-- 鍛錬／休憩／自動回復／防衛／研究解鎖等效果沿用既有實際呼叫者，並以購入後效果測試驗證。
-- 各PRINTW局部等待Enter；防衛設備資金不足原作是PRINTL，不額外等待；CLEARLINE沿用已登記顯示偏離。
-- 定向104項：`104 passed, 1 warning in 3.56s`，含插值、GameSession.screen、Web空白Enter與存讀檔；既有Starlette/httpx警告。
-- 主代理獨立完整pytest：`2979 passed, 1 warning in 358.92s (0:05:58)`。
-- 標準500局：default246上限／4回標題、tokusou250上限，catalog失敗0；逐seed完整結果與S44一致。
-- 10個50局獨立前景批次exit=0，seed全集與log／JSONL一致；模擬與audit留在`tmp/s45/`。
-- 無新增UNVERIFIED；沿用CLEARLINE偏離，WAIT在此局部補完，詳見`docs/wiki/era/facilities.md`。
+- S32–S45完成既有擴充，含SHOP衣裝／強化／醫療室／招募／引退／設施；醫療室未完成支線依裁決提示並截斷。
+- S46接通SHOP [50]：角色選擇／取消、位置交換、加入／退出、候補休憩排程重設與返回。
+- RELATION欄先交換，再交換出場旗標及角色本體；SWAPCHARA不修正ASSI等角色索引。
+- 候補列表接回編成及一般SHOP；編成選色、實際GameSession.screen、Web按鈕與存讀檔已驗證。
+- 保留原作滿員警告的反向比較與狀態4可手打選擇；欄寬／數值條／狀態標記沿用已登記顯示簡化。
+- 定向及SHOP回歸：`92 passed, 1 warning in 3.46s`（新增79案）；既有Starlette/httpx警告。
+- 主代理獨立完整pytest：`3058 passed, 1 warning in 369.66s (0:06:09)`。
+- 標準500局：default246上限／4回標題、tokusou250上限，catalog失敗0；逐seed完整結果與S45一致。
+- 10個50局前景批次exit=0，seed全集、log／JSONL一致；結果與audit位於`tmp/s46/`。
+- 無新增UNVERIFIED或需立即裁決事項；原作與引擎依據見`docs/wiki/era/party-organization.md`。
 
 ## 口上 catalog 現況
 
@@ -65,7 +65,7 @@ P4 父親 CFLAG:9 指向不存在的ボス／ラスボス／モブ；HEROINE_PRE
 
 - **自主推進（使用者指定 2026-10-02，依序）**：~~S22 RESULTS 共用~~ → ~~S23 [反撃]スタイル~~ → ~~S24 設定畫面／プリセット~~ → ~~S25 狀態畫面~~
   → ~~S26 FLASHNEWS~~ → ~~S26b RESULTS:0 殘值~~ → ~~S27 ラスボス～結局~~ → ~~S28 未移植行動（S28a〜S28c2）~~：**指定範圍全部完成**。
-  使用者授權S45設施擴充，完成本階段後停止；下一階段待使用者選定。
+  使用者授權自行挑下一步，已選S46隊伍編成；完成本階段後停止，下一階段待選定。
 - 已裁決（2026-10-02）：名乗り改竄的 RESULTS:2 殘值照原作（S22 實作）；開局デフォルト悪堕ち的輸出丟棄維持現況。
 - 已裁決（2026-10-02）：PALAM_HOSEI 殘值照原作、防衛力負數 D1〜D4（S21 實作）。已裁決（2026-10-01）：S20 的 DEVIATION 6 項＋斜體。
 - 已裁決（2026-09-30）：拡張度初期值照原作；S13 苗床出産的 static LOSEDEF 等怪處照原作。
