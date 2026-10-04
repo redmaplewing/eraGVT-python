@@ -263,7 +263,9 @@ class GameSession:
                 return
         elif value == 150:  # SHOP.ERB:275–278
             if shop.usershop_calls_submenu(st, value):
-                out.printl(f"（未實作：[{value}]）")
+                from .facilities import facilities_gen
+                self._run_gen(facilities_gen(self._ctx()), self._show_shop)
+                return
         elif value == 160:  # SHOP.ERB:281–285
             if shop.schedule_selectable(st):
                 from .schedule import schedule_gen

@@ -1,6 +1,6 @@
 # 現況（唯一真相，≤120 行）
 
-更新：2026-10-04（S44引退名簿／主動引退驗收完成）
+更新：2026-10-04（S45設施擴充驗收完成）
 
 ## 已完成（各階段細節見 git log 與 wiki）
 
@@ -29,18 +29,18 @@
 - **S29** 口上／地の文的狀態書き込み（catalog が非 LOCAL 代入を GameState へ直接書く＋ジャーナルで失敗回復；下節）。
 - **S30** catalog 剩餘的不可執行原因（ループ內 $ラベルへの GOTO・STRDATA・SETCOLORBYNAME・FINDCHARA・GETCOLOR・RANDCHOOSE 系；下節）。
 
-## S44：SHOP引退名簿／主動引退
+## S45：SHOP設施擴充
 
-- S32–S43完成既有擴充，含SHOP衣裝／強化／醫療室／追加招募；醫療室未完成支線仍依裁決提示並截斷。
-- S44接通SHOP [169]名簿／[170]主動引退；加入引退選項開啟，170另要求至少一名非MASTER角色。
-- 依原作角色資格、999取消與雙重確認；INPUT_ROOP上界包含2，輸入2保留原作不執行行為。
-- 手翻引退報告與分類計數，SAVESTR:50保存HTML原字串；DELCHARA壓縮列表、TARGET=0，其餘索引不自行修正。
-- 名簿／報告PRINTW局部等待Enter，避免返回SHOP的LB遮掉內容；等待不寫RESULT／RESULTS，最後報告確認後才刪除角色。
-- 定向102項：`102 passed, 1 warning in 7.51s`；含GameSession.screen與Web空白Enter實測，警告是既有Starlette/httpx。
-- 主代理獨立完整pytest：`2875 passed, 1 warning in 369.55s (0:06:09)`。
-- 標準500局：default246上限／4回標題、tokusou250上限，catalog失敗0；逐seed完整結果與S43一致。
-- 10個50局獨立前景批次exit=0，seed全集與log／JSONL一致；模擬與audit留在`tmp/s44/`。
-- 無新增UNVERIFIED／規則偏離；既有WAIT簡化在此局部補完。詳見`docs/wiki/era/retirement.md`。
+- S32–S44完成既有擴充，含SHOP衣裝／強化／醫療室／追加招募／引退；醫療室未完成支線仍依裁決提示並截斷。
+- S45接通SHOP [150]：鍛錬、休憩、防衛設備與研究等級升級，以及12種放鬆設備購入。
+- 原作資源費用、0/1確認、999主選單返回／99子選單返回、Lv5上限、前置bit與重複購入檢查完整接通。
+- 鍛錬／休憩／自動回復／防衛／研究解鎖等效果沿用既有實際呼叫者，並以購入後效果測試驗證。
+- 各PRINTW局部等待Enter；防衛設備資金不足原作是PRINTL，不額外等待；CLEARLINE沿用已登記顯示偏離。
+- 定向104項：`104 passed, 1 warning in 3.56s`，含插值、GameSession.screen、Web空白Enter與存讀檔；既有Starlette/httpx警告。
+- 主代理獨立完整pytest：`2979 passed, 1 warning in 358.92s (0:05:58)`。
+- 標準500局：default246上限／4回標題、tokusou250上限，catalog失敗0；逐seed完整結果與S44一致。
+- 10個50局獨立前景批次exit=0，seed全集與log／JSONL一致；模擬與audit留在`tmp/s45/`。
+- 無新增UNVERIFIED；沿用CLEARLINE偏離，WAIT在此局部補完，詳見`docs/wiki/era/facilities.md`。
 
 ## 口上 catalog 現況
 
@@ -65,7 +65,7 @@ P4 父親 CFLAG:9 指向不存在的ボス／ラスボス／モブ；HEROINE_PRE
 
 - **自主推進（使用者指定 2026-10-02，依序）**：~~S22 RESULTS 共用~~ → ~~S23 [反撃]スタイル~~ → ~~S24 設定畫面／プリセット~~ → ~~S25 狀態畫面~~
   → ~~S26 FLASHNEWS~~ → ~~S26b RESULTS:0 殘值~~ → ~~S27 ラスボス～結局~~ → ~~S28 未移植行動（S28a〜S28c2）~~：**指定範圍全部完成**。
-  使用者授權S44引退名簿／主動引退，完成本階段後停止；下一階段待使用者選定。
+  使用者授權S45設施擴充，完成本階段後停止；下一階段待使用者選定。
 - 已裁決（2026-10-02）：名乗り改竄的 RESULTS:2 殘值照原作（S22 實作）；開局デフォルト悪堕ち的輸出丟棄維持現況。
 - 已裁決（2026-10-02）：PALAM_HOSEI 殘值照原作、防衛力負數 D1〜D4（S21 實作）。已裁決（2026-10-01）：S20 的 DEVIATION 6 項＋斜體。
 - 已裁決（2026-09-30）：拡張度初期值照原作；S13 苗床出産的 static LOSEDEF 等怪處照原作。
