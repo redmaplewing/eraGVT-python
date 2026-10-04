@@ -256,7 +256,12 @@ class GameSession:
                 from .character_powerup import character_powerup_gen
                 self._run_gen(character_powerup_gen(self._ctx()), self._show_shop)
                 return
-        elif value in (113, 150):  # SHOP.ERB:261–278
+        elif value == 113:  # SHOP.ERB@USERSHOP:261–264
+            if shop.usershop_calls_submenu(st, value):
+                from .drug_preparation import drug_preparation_gen
+                self._run_gen(drug_preparation_gen(self._ctx()), self._show_shop)
+                return
+        elif value == 150:  # SHOP.ERB:275–278
             if shop.usershop_calls_submenu(st, value):
                 out.printl(f"（未實作：[{value}]）")
         elif value == 160:  # SHOP.ERB:281–285

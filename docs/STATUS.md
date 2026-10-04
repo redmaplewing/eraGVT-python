@@ -1,6 +1,6 @@
 # 現況（唯一真相，≤120 行）
 
-更新：2026-10-04（S41 完成）
+更新：2026-10-04（S42完成）
 
 ## 已完成（各階段細節見 git log 與 wiki）
 
@@ -29,16 +29,17 @@
 - **S29** 口上／地の文的狀態書き込み（catalog が非 LOCAL 代入を GameState へ直接書く＋ジャーナルで失敗回復；下節）。
 - **S30** catalog 剩餘的不可執行原因（ループ內 $ラベルへの GOTO・STRDATA・SETCOLORBYNAME・FINDCHARA・GETCOLOR・RANDCHOOSE 系；下節）。
 
-## S41：SHOP角色強化
+## S42：SHOP藥品調製／醫療室
 
-- S32手翻HATUJOU_TO_HAIRAN；S33雜魚；S34裏プロフィール；S35命名；S36市民戰；S37通關繼承；S38天使樹；S39衣裝設定；S40衣裝購入（詳見對應wiki）。
-- S41接通SHOP [111]角色強化：七項基礎值、五種刻印消除、四部位結界重建與部位／避妊結界取得。
-- 分配預覽後[100]確認才扣修練P／資金；取消、角色切換、資格、上限與原作TARGET暫存怪處均接通。
-- 新增99項原文推導測試；S39＋S40＋S41定向：`343 passed in 10.98s`。主代理獨立完整pytest：`2622 passed, 1 warning in 219.96s (0:03:39)`（既有Starlette警告）。
-- 標準500局：default246上限＋4標題返回、tokusou250上限；catalog失敗0，逐seed完整結果與S40相同。
-- default／tokusou各seed0–249、200 SHOP、actions101–108；10個50局獨立前景批次exit=0，seed全集與log／JSONL一致，產物留在`tmp/s41/`。
-- 無新增UNVERIFIED；沿用共用CLEARLINE的既有顯示偏離，已補記本入口影響；依據：`docs/wiki/era/character-powerup.md`。
-- 完成S41後停止。
+- S32–S40完成既有擴充；S41接通SHOP [111]角色強化（詳見各階段wiki與git log）。
+- S42接通SHOP [113]醫療室：素質治療、檢查／手術、藥品購買／處方、機器人維修、成長狀態及加入。
+- 保留列表／手輸入條件差異、精密檢查入口500實扣250、完整維修鍵值0、入院手術疲勞寫索引0等原作怪處。
+- 機器人個別編輯暫走原作不改設定直接[99]；性別與後續特徵仍正常等待選擇。未宣稱完整手動角色製作已完成。
+- 定向112項：`112 passed in 2.59s`；[51]修復先紅後綠。主代理獨立完整pytest：`2734 passed, 1 warning in 199.78s (0:03:19)`（既有Starlette警告）。
+- 標準500局：default246上限／4回標題、tokusou250上限、catalog失敗0；逐seed完整結果與S41一致。
+- default／tokusou各seed0–249、200 SHOP、actions101–108；10個50局獨立前景批次exit=0，seed全集與log／JSONL一致，產物留在`tmp/s42/`。
+- [51]確認死循環依使用者授權修復：0原手術、1拒絕返回不扣費、其他值重讀；維持隱藏及作者停用的NPC／AMPUTEE，詳見wiki與已授權DEVIATION。
+- 無新增UNVERIFIED；個別編輯UI略過沿用既有偏離；依據：`docs/wiki/era/drug-preparation.md`。
 
 ## 口上 catalog 現況
 
@@ -63,8 +64,7 @@ P4 父親 CFLAG:9 指向不存在的ボス／ラスボス／モブ；HEROINE_PRE
 
 - **自主推進（使用者指定 2026-10-02，依序）**：~~S22 RESULTS 共用~~ → ~~S23 [反撃]スタイル~~ → ~~S24 設定畫面／プリセット~~ → ~~S25 狀態畫面~~
   → ~~S26 FLASHNEWS~~ → ~~S26b RESULTS:0 殘值~~ → ~~S27 ラスボス～結局~~ → ~~S28 未移植行動（S28a〜S28c2）~~：**指定範圍全部完成**。
-  S41完成後停止；下一候選：SHOP 子選單（[113] DRUG_PREPARATION：SHOP.ERB:264、
-  [180] TSUIKAYOUSEI_NORMAL（加入引退有り）：:294）。
+  S42完成後停止；[51]已依授權修復並通過完整驗收。下一候選：SHOP [180] TSUIKAYOUSEI_NORMAL（加入引退有り）：SHOP.ERB:294。
 - 已裁決（2026-10-02）：名乗り改竄的 RESULTS:2 殘值照原作（S22 實作）；開局デフォルト悪堕ち的輸出丟棄維持現況。
 - 已裁決（2026-10-02）：PALAM_HOSEI 殘值照原作、防衛力負數 D1〜D4（S21 實作）。已裁決（2026-10-01）：S20 的 DEVIATION 6 項＋斜體。
 - 已裁決（2026-09-30）：拡張度初期值照原作；S13 苗床出産的 static LOSEDEF 等怪處照原作。
