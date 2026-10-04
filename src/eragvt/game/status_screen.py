@@ -709,7 +709,10 @@ def _cmd_page3(ctx: Ctx, arg: int, cmd: int, sc: _Screen) -> Gen:
     """`@CMD_STATUS_CHARA_SELECT_PAGE3, ARG, INPUT_CMD`:39–46。"""
     st = ctx.state
     if cmd == 0 and st.charas[arg].cflag[0] == 0 and st.flag[700] == 0:
-        raise NotImplementedError("武器カスタマイズ画面（WEAPON_CUSTOMIZE）は未移植")
+        from .weapon_customize import customize
+        yield from customize(ctx, arg)
+        st.result[0] = 1
+        return 1
     return 0
     yield  # pragma: no cover
 

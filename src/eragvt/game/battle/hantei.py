@@ -553,17 +553,18 @@ def act_hantei_tettai_tentacle(ctx: Ctx) -> int:
     return 0
 
 
-def fstyle_attack(ctx: Ctx, who: int, dist: int) -> int:
+def fstyle_attack(ctx: Ctx, who: int, dist: int, making: int = 0) -> int:
     """`武器と衣装/武器カスタマイズ関連/FIGHT_STYLE.ERB@FSTYLE_ATTACK, ARG, ARG:1`:42–111。
 
     :67–74 の小柄・長身は TARGET の素質を見る（原作どおり）。
     """
     st = ctx.state
     c = st.charas[who]
-    l10 = div(c.maxbase[10] * cloth_battle_hosei(ctx, "KOUGEKI", who), 100)
-    l11 = div(c.maxbase[11] * cloth_battle_hosei(ctx, "BOUGYO", who), 100)
-    l12 = div(c.maxbase[12] * cloth_battle_hosei(ctx, "BINSYOU", who), 100)
-    l13 = div(c.maxbase[13] * cloth_battle_hosei(ctx, "CHISEI", who), 100)
+    # FIGHT_STYLE.ERB@FSTYLE_ATTACK:53–58：自訂畫面傳 1，加入未結算獎勵。
+    l10 = div((c.maxbase[10] + (c.cflag[53] if making > 0 else 0)) * cloth_battle_hosei(ctx, "KOUGEKI", who), 100)
+    l11 = div((c.maxbase[11] + (c.cflag[54] if making > 0 else 0)) * cloth_battle_hosei(ctx, "BOUGYO", who), 100)
+    l12 = div((c.maxbase[12] + (c.cflag[55] if making > 0 else 0)) * cloth_battle_hosei(ctx, "BINSYOU", who), 100)
+    l13 = div((c.maxbase[13] + (c.cflag[56] if making > 0 else 0)) * cloth_battle_hosei(ctx, "CHISEI", who), 100)
     tgt = st.target_chara
     if t(ctx, tgt, "小柄") == 1:
         l10 = times(l10, "0.95")

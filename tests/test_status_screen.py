@@ -358,8 +358,9 @@ def test_page3_fstyle_results(data):
     assert st.results[2] == "BURST性能 ：戦闘中に反撃を成功させて蓄積したダメージを一撃に加える"
     set_fstyle_info(ctx, 1, 1)
     assert st.results[0] == "威力影響度：攻撃*1.00"
-    with pytest.raises(NotImplementedError, match="WEAPON_CUSTOMIZE"):
-        gen.send(0)
+    gen.send(0)
+    assert any("ＷＥＡＰＯＮ" in line for line in _last_page(out))
+    gen.send(999)
 
 
 def test_page4_relations_parents(data):
