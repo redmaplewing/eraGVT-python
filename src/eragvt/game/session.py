@@ -246,7 +246,12 @@ class GameSession:
                 from .clothing import cloth_wear_gen
                 self._run_gen(cloth_wear_gen(self._ctx()), self._show_shop)
                 return
-        elif value in (111, 113, 120, 150):  # SHOP.ERB:251–278
+        elif value == 120:  # SHOP.ERB@USERSHOP:267–269
+            if shop.usershop_calls_submenu(st, value):
+                from .clothing_inventory import inventory_gen
+                self._run_gen(inventory_gen(self._ctx(), purchase=True), self._show_shop)
+                return
+        elif value in (111, 113, 150):  # SHOP.ERB:251–278
             if shop.usershop_calls_submenu(st, value):
                 out.printl(f"（未實作：[{value}]）")
         elif value == 160:  # SHOP.ERB:281–285

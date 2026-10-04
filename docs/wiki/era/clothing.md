@@ -1,9 +1,9 @@
-# 衣裝設定（S39）
+# 衣裝設定與購買（S39／S40）
 
 ## 入口與範圍
 
 `ERB/インターミッション画面/SHOP.ERB@USERSHOP:257–259`：非遊戲結束模式且有活動角色時呼叫衣裝設定。
-Python 入口為 `GameSession → clothing.cloth_wear_gen`。本階段不開放 SHOP [120] 購買入口。
+Python 入口為 `GameSession → clothing.cloth_wear_gen`。SHOP [120] 購買入口於S40接通，詳見下節。
 
 `ERB/武器と衣装/衣装関連/CLOTH_WEAR.ERB@CLOTH_WEAR:3–245`：
 
@@ -74,3 +74,22 @@ EQUIP未指定角色，讀TARGET；基礎變身分岐仍讀ARG。此處修正先
 - 定向測試 `tests/test_clothing_menu.py`：212項通過；含57件非零編碼矩陣、57個選單來回、相依修正、條件、部件、GameSession與瀏覽。
 - 主代理獨立完整 pytest：2491 passed, 1 warning；500 局標準模擬 default 246 上限＋4 標題返回、tokusou 250 上限，catalog_failure 0。
 - 10 批前景程序 exit=0；逐 seed 完整結果與 S38 相同，log／JSONL／exit／audit 留在 `tmp/s39/`。抽取器重跑前後 clothing_text.py SHA256 相同。
+
+## 衣裝購買（S40）
+
+入口 `ERB/インターミッション画面/SHOP.ERB@USERSHOP:267–269`：非遊戲結束模式且FLAG:63=0。
+Python 呼叫 `GameSession → clothing_inventory.inventory_gen(purchase=True)`，和持有品模式共用頁面。
+
+- 商品：`ERB/インターミッション画面/SHOP_CLOTH.ERB@LIST_CLOTH_NOTHAVE:584–611`、`@ISCHECK_CLOTH:757–763`；分類範圍內名稱非空、價格正數、ITEM恰為0。名稱與價格直接讀既有CSV資料。
+- 操作：同檔 `@SHOW_CLOTH:172–198`；列表／簡易資訊先進說明，單體／目錄再次輸入ID便付款，沒有額外確認。檢查整個篩選後列表，允許手動輸入非當頁商品ID；不在列表的ID不付款、選取位置留下-1（之後切顯示回第0頁），已持有／零價輸入則顯示預期外值。
+- 付款：同檔 `@BUY_CLOTH:768–781`；餘額不足不改狀態，足額扣CSV價格並寫ITEM=1；未增加研究／角色／類別條件。詳情的不足金額「買う」顯示為非按鈕，但手動ID輸入仍會走不足訊息。
+- 頁碼：同檔 `@SHOW_CLOTH:187–191`；成功後重建未持有清單，若原位置為最後一件，先以前一位置計算頁碼，否則保持原位置；最後一件買完回第0頁。[98]依舊只清篩選。
+- 返回：同檔 `@SHOW_CLOTH:76–92`；單體／目錄先回列表，再返回SHOP並留下RESULT:0=1；返回時計算ITEM:100–399的值總和（排除100／200／300），10／30門檻呼叫實績269／274。
+- 實績沿用既有 `battle.core.unlock_achievement` 空操作，故不顯示達成訊息、不寫GLOBAL／SAVEGLOBAL；這是既有「全域資料（GLOBAL）」偏離的新增入口，已補記 `bridge/deviations.md`，未擴展實績系統。
+- INPUT只改RESULT:0，其他RESULT格與RESULTS保留：`reference/emuera-1824/Emuera/GameProc/Process.cs:249–260`。畫面重繪的 `@SHOW_CLOTH_FOOTER:395` 最後RETURN 1，所以等待下一輸入時RESULT:0=1，包括購買不足後。
+
+新增32項 `tests/test_clothing_purchase.py`：價格邊界、持有值、不可售品、分類、翻頁／末頁購入、篩選、手動非當頁輸入、空列表、RESULT(S)、實績呼叫門檻；實際GameSession購入後返回SHOP，再進衣裝設定裝備購入物品。S39＋S40定向共244項通過。
+
+主代理獨立完整pytest：`2523 passed, 1 warning in 317.79s (0:05:17)`（既有Starlette警告）。
+
+S40標準500局：default246上限＋4標題返回，tokusou250上限；catalog失敗0，逐seed完整結果與S39相同。10個50局前景批次退出碼均0，seed0–249全集及log／JSONL一致；audit與各批log／JSONL／exit保留於`tmp/s40/`。

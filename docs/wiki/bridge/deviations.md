@@ -28,6 +28,7 @@ ERB 路徑相對 `source/earGVP/ERB/`。
   `state.savefile.GlobalStore`、`saves/global.json`；`docs/wiki/era/flow.md` §10）。仍不做的是成就／紀錄類：（原作：下列各處；Python：見各行）
   キャラメイク畫面的 [170]／[180] 共通設定存讀（GLOBAL:5〜9・20〜23、GLOBALS:15〜17，UI 未移植 → 永遠是 0／空）也尚未移植。
   S05 起戰鬥中的 `UNLOCK_ACHIEVEMENT`（タクティカルオーダー、絶体絶命ヒロイン等）與 `GET_STATE_ABLUP` 同樣不執行（`eragvt.game.battle.core.unlock_achievement`）。
+  S40 衣裝購買返回亦沿用此共用空操作：`ERB/インターミッション画面/SHOP_CLOTH.ERB@SHOW_CLOTH:76–92` 累計 ITEM:100–399（排除100／200／300），達10／30時呼叫269／274；`ERB/インターミッション画面/SHOP_TROPHY.ERB@UNLOCK_ACHIEVEMENT:6–20` 原會顯示達成訊息、寫 GLOBAL:269／274 並 SAVEGLOBAL，現皆不執行。付款、持有狀態與返回RESULT:0=1不受影響。
   S30 起地の文 catalog 內的 `CALL UNLOCK_ACHIEVEMENT`（MESSAGE_BATTLE.ERB:355／368 等）也同樣什麼都不做、RESULT = 0（`eragvt.narration.pyfuncs`）。
   S04 起同理不執行：`SHOP_TURNEND.ERB@UPDATE_STATUS_RECORD`:263–349（歷代最高紀錄 GLOBAL:103–131／GLOBALS、SAVEGLOBAL）與 `SHOP_TROPHY.ERB@GET_STATE_TROPHY`:398–441→`UNLOCK_ACHIEVEMENT`（成就達成訊息不會顯示）。（Python：`eragvt.game.turnend.recalc_partymember`、`eragvt.game.action.get_state_trophy`）
   S27 起同理不執行：`SCORE.ERB`:695–698／:740–747 的 GLOBAL:110（最高總合評價）・GLOBAL:100〜102（各模式クリア回數）與 SAVEGLOBAL、

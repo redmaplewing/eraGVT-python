@@ -10,11 +10,16 @@ RANGES = ((100,300),(600,700),(300,400),(500,600))
 COUNTS = (44,1,4,22)
 
 
-def inventory_items(ctx, category, filters):
+def inventory_items(ctx, category, filters, *, purchase=False):
     """@LIST_CLOTH_HAVE:616–642、@FILTER_CLOTH_HOSEI:678–759：所有篩選必須同時符合。"""
     result = []
     for cid in range(*RANGES[category]):
-        if not ctx.state.item[cid]:
+        if purchase:
+            # @LIST_CLOTH_NOTHAVE:584–611／@ISCHECK_CLOTH:757–763。
+            item = ctx.data.items.get(cid)
+            if ctx.state.item[cid] != 0 or not item or not item.name or item.price <= 0:
+                continue
+        elif not ctx.state.item[cid]:
             continue
         accepted = True
         for i, mode in enumerate(MODES):
@@ -73,32 +78,54 @@ def _marks(ctx, cid, category):
     st.target_chara.cflag[1] = keep
 
 
-def inventory_gen(ctx):
-    """@SHOW_CLOTH:13–252，限定原入口的 SHOW_TYPE=表示画面，不包含購買。"""
+def inventory_gen(ctx, *, purchase=False):
+    """@SHOW_CLOTH:13–252：所持品與購買共用的分類、頁碼與篩選。
+
+    購買詳情直接付款，沒有額外 INPUT 確認；PRINTW 沿用文字層等待標記。
+    """
     from .clothing import _name, description
 
     st, out = ctx.state, ctx.out
     category = page = selected = filters = kind = 0
     catalog = simple = False
     while True:
-        items = inventory_items(ctx,category,filters)
+        items = inventory_items(ctx,category,filters,purchase=purchase)
         maximum = max(len(items)-1,0)//COUNTS[kind]
         out.drawline()
-        out.printl("所持衣装一覧")
+        if purchase:
+            out.printl(("アウターを購入します", "カスタマイズパーツを購入します(注意：変身コスチューム専用)", "インナーを購入します", "その他装備を購入します")[category])
+            out.printl(f"資金：{st.money}＄")
+        else:
+            out.printl("所持衣装一覧")
         out.drawline()
         if kind == 3:
             out.printl("　|"+"|".join(LABELS)+"|")
-        if not items:
+        if not items and not purchase:
             out.printl("未所持")
         for cid in items[page*COUNTS[kind]:(page+1)*COUNTS[kind]]:
             if kind in (0,3):
                 out.print(f"[{cid}] {_name(ctx,cid)}")
+                if purchase:
+                    if kind == 0 and st.money < ctx.data.items[cid].price:
+                        out.set_color((128,128,128))
+                    out.print(f"({ctx.data.items[cid].price}＄)")
+                    out.reset_color()
                 if kind == 3:
                     out.print("|")
                     _marks(ctx,cid,category)
                 out.printl()
             else:
-                out.printl(_name(ctx,cid))
+                out.print(_name(ctx,cid))
+                if purchase:
+                    price = ctx.data.items[cid].price
+                    out.print(f" {price}＄　")
+                    if price <= st.money:
+                        out.button(f"[{cid}]買う",cid)
+                    else:
+                        out.set_color((128,128,128))
+                        out.print_plain(f"[{cid}]買う")
+                        out.reset_color()
+                out.printl()
                 description(ctx,cid)
                 out.drawline()
         if maximum:
@@ -130,6 +157,14 @@ def inventory_gen(ctx):
         r = yield from input_number(ctx)
         if r == 99:
             if kind in (0,3):
+                if purchase:
+                    from .battle.core import unlock_achievement
+                    count = sum(st.item[cid] for cid in range(100,400) if cid not in (100,200,300))
+                    # @SHOW_CLOTH:76–92；沿用共用實績函式的既有 DEVIATION（全域成就）。
+                    if count >= 10:
+                        unlock_achievement(ctx,269,"バトルレイヤー")
+                    if count >= 30:
+                        unlock_achievement(ctx,274,"ファッションリーダー")
                 st.result[0] = 1
                 return
             kind, page, selected = (3 if simple else 0), 0, 0
@@ -166,14 +201,28 @@ def inventory_gen(ctx):
         elif 50 <= r <= 68 and kind in (0,3):
             filters ^= 1 << (r-50)
             page = selected = 0
-        elif 100 <= r <= 1000:
-            if r in items:
-                selected = items.index(r)
+        elif 100 <= r <= 1000 and (not purchase or (st.item[r] == 0 and r in ctx.data.items and ctx.data.items[r].price > 0)):
+            selected = items.index(r) if r in items else -1  # @SHOW_CLOTH:173–176。
+            if selected != -1:
                 if kind in (0,3):
                     kind = 2 if catalog else 1
                     simple = False
                     page = selected//COUNTS[kind]
+                elif purchase:
+                    # @BUY_CLOTH:768–781：先確認仍在列表，再比金額；ITEM 寫1而非累加。
+                    price = ctx.data.items[r].price
+                    if st.money < price:
+                        st.result[0] = 0
+                        out.printl("お金が足りません")
+                    else:
+                        st.money -= price
+                        st.item[r] = 1
+                        st.result[0] = 1
+                        out.printl(f"{_name(ctx,r)}を買いました")
+                        position = selected-1 if selected == len(items)-1 else selected
+                        page = max(position,0)//COUNTS[kind]
+                    out.printw()
         elif r == 98:
             filters = 0
-        else:
+        elif r != -1:
             out.printw("想定外の値が入力されました")

@@ -1,6 +1,6 @@
 # 現況（唯一真相，≤120 行）
 
-更新：2026-10-04（S39 完成）
+更新：2026-10-04（S40 完成）
 
 ## 已完成（各階段細節見 git log 與 wiki）
 
@@ -29,16 +29,16 @@
 - **S29** 口上／地の文的狀態書き込み（catalog が非 LOCAL 代入を GameState へ直接書く＋ジャーナルで失敗回復；下節）。
 - **S30** catalog 剩餘的不可執行原因（ループ內 $ラベルへの GOTO・STRDATA・SETCOLORBYNAME・FINDCHARA・GETCOLOR・RANDCHOOSE 系；下節）。
 
-## S39：SHOP衣裝設定
+## S40：SHOP衣裝購入
 
-- S32手翻HATUJOU_TO_HAIRAN；S33雜魚；S34裏プロフィール；S35命名；S36市民戰；S37通關繼承；S38天使樹（詳見對應wiki）。
-- S39接通SHOP [112]選角、四類裝備、改名、57種衣裝自訂、變身部件與持有品瀏覽；依據：`docs/wiki/era/clothing.md`。
-- 自訂／部件效果接既有戰鬥；CLOTH_HOSEI的未索引EQUIP修正為讀TARGET，保留原作保存數值與文字不一致等怪處。
-- 新增212測試：57件非零保存矩陣、57個選單來回、條件／連動／部件／實際GameSession；原文資料抽取可重現。
-- 主代理獨立完整pytest：`2491 passed, 1 warning in 309.14s (0:05:09)`（既有Starlette警告）。
-- 標準模擬 500 局：default 246 上限＋4 標題返回、tokusou 250 上限；catalog_failure 0，逐 seed 完整結果與 S38 相同。
-- default／tokusou 各 seed 0–249、200 SHOP、actions 101–108；10 個 50 局前景批次 exit=0，log／JSONL／exit／audit 留於 `tmp/s39/`。
-- 目前無新增UNVERIFIED／DEVIATION；完成S39後停止。
+- S32手翻HATUJOU_TO_HAIRAN；S33雜魚；S34裏プロフィール；S35命名；S36市民戰；S37通關繼承；S38天使樹；S39衣裝設定（詳見對應wiki）。
+- S40接通SHOP [120]衣裝購入，共用S39分類／翻頁／篩選／說明；原作無額外確認，詳情輸入商品ID直接付款。
+- 商品限名稱非空、價格>0、持有值恰為0；購入寫ITEM=1，重建列表及末頁回退；可返回SHOP並於衣裝設定裝備。
+- 新增32項原作推導測試；S39＋S40定向：`244 passed in 5.29s`。主代理獨立完整pytest：`2523 passed, 1 warning in 317.79s (0:05:17)`（既有Starlette警告）。
+- 標準500局：default246上限＋4標題返回、tokusou250上限；catalog失敗0，逐seed完整結果與S39相同。
+- default／tokusou各seed0–249、200 SHOP、actions101–108；10個50局前景批次exit=0，seed全集與log／JSONL一致，產物留在`tmp/s40/`。
+- 無新增UNVERIFIED；實績269／274沿用既有GLOBAL成就空操作偏離，已於`deviations.md`補記影響；依據：`docs/wiki/era/clothing.md`。
+- 完成S40後停止。
 
 ## 口上 catalog 現況
 
@@ -63,8 +63,8 @@ P4 父親 CFLAG:9 指向不存在的ボス／ラスボス／モブ；HEROINE_PRE
 
 - **自主推進（使用者指定 2026-10-02，依序）**：~~S22 RESULTS 共用~~ → ~~S23 [反撃]スタイル~~ → ~~S24 設定畫面／プリセット~~ → ~~S25 狀態畫面~~
   → ~~S26 FLASHNEWS~~ → ~~S26b RESULTS:0 殘值~~ → ~~S27 ラスボス～結局~~ → ~~S28 未移植行動（S28a〜S28c2）~~：**指定範圍全部完成**。
-  S39完成後停止；下一候選：SHOP 子選單（[111] CHARA_POWERUP：SHOP.ERB:253、[113] DRUG_PREPARATION：:264、
-  [120] 衣裝購入：:269、[180] TSUIKAYOUSEI_NORMAL（加入引退有り）：:294）。
+  S40完成後停止；下一候選：SHOP 子選單（[111] CHARA_POWERUP：SHOP.ERB:253、[113] DRUG_PREPARATION：:264、
+  [180] TSUIKAYOUSEI_NORMAL（加入引退有り）：:294）。
 - 已裁決（2026-10-02）：名乗り改竄的 RESULTS:2 殘值照原作（S22 實作）；開局デフォルト悪堕ち的輸出丟棄維持現況。
 - 已裁決（2026-10-02）：PALAM_HOSEI 殘值照原作、防衛力負數 D1〜D4（S21 實作）。已裁決（2026-10-01）：S20 的 DEVIATION 6 項＋斜體。
 - 已裁決（2026-09-30）：拡張度初期值照原作；S13 苗床出産的 static LOSEDEF 等怪處照原作。
