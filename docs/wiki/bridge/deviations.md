@@ -101,6 +101,7 @@ ERB 路徑相對 `source/earGVP/ERB/`。
   **S31 裁決（2026-10-04）**：TURNEND／SHOP 口上遇到 INPUT 依原作顯示選項並等待，選完續行，不再回復為「找不到」。
   輸入後才發現不可執行內容時停止；其他同步呼叫的失敗回復仍待裁決。詳見 narration wiki 的 S31 節。
 - [ ] **口上 catalog 的顯示簡化**（S07 新增，只影響顯示）：`SETFONT`（字型名）不反映（`FONTITALIC` 斜體 S20 起反映：`TextOutput.set_italic`）；`CLEARLINE` 只刪已完成的行；
+  S41角色強化重繪沿用共用CLEARLINE（`ERB/インターミッション画面/SHOP_CHARA_POWERUP.ERB@CHARA_POWERUP:343–346`）；不影響分配、扣款及共享RESULT(S)。
   COUNT 放在口上專用的暫存（`state.temp.narr`），與 Python 移植部分不共用（原作是全域變數；Python 未模型化 COUNT）。RESULT（S21）・RESULTS（S22）
   已改為共用（`GameState.result`／`results`，`docs/wiki/python/result.md`）；Python 移植部分只同步寫 RESULT:1／RESULTS:1 以後的來源與「之後有人讀
   呼叫前值」的 RESULT:0／RESULTS:0。S22 全件確認：RESULTS:0 沒有讀呼叫前值的地方；RESULT:0 只有不發的 TRYCALL(FORM) 之後會讀，已移植者全部同步
