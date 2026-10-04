@@ -154,7 +154,7 @@ ERB 路徑相對 `source/earGVP/ERB/`。
   （Python：`eragvt.game.firstsetting.selfcall_default`／`size_setting_default`／`feat_select_ui`）
   S25：ステータス畫面 PAGE5 [20]（`SHOW_STATUS_CHARA_SELECT_PAGE5.ERB`:73–79）也同樣：GENERATE_BODYLINE／CHARA_MAKE_AGE_SETTING／
   CHARA_SIZE_DEFAULT 照原文執行後，SIZE_SETTING 以「直接按 [99]」的狀態變化代替（`status_screen._cmd_page5`，`# DEVIATION`）。
-  玩家無法在此手動改身長等（原作可以）。PAGE1 [12] 一人称設定畫面則是**停止**（玩家明示要改，不以預設代替）。
+  玩家無法在此手動改身長等（原作可以）。PAGE1 [12] 一人稱設定畫面已於 S47 完整接通；上述子供加入與身體資料的預設路徑不變（`era/self-call-setting.md`）。
 - [ ] **Web 停止狀態**：遇到未移植處理時顯示「（未實作のため停止しました：…）」並停住，是原作沒有的畫面（見上「S04 未翻的行動」）。
   （S08 的全滅／ソロ結局後停止已於 S12 解除：照原作進入ゲームオーバーモード繼續。）
 

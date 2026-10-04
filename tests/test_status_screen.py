@@ -276,7 +276,7 @@ def test_page1_kojo_cycle_and_subjective(data):
 
 
 def test_page1_rename_and_battle_lock(data):
-    """[11]：FIRSTSETTING_CHARA_CALLNAME（[0] で CSTR:200 を呼び名に）。戦闘中は RETURN 0（:197–198）。[12] は一人称設定画面で停止。"""
+    """[11]：FIRSTSETTING_CHARA_CALLNAME（[0] で CSTR:200 を呼び名に）。戦闘中は RETURN 0（:197–198）。S47：[12] 接通一人稱設定畫面。"""
     st, out, ctx, gen = _open(data)
     c = st.charas[1]
     c.cstr[200] = "テスト名"
@@ -289,8 +289,9 @@ def test_page1_rename_and_battle_lock(data):
     gen.send(11)
     assert "正しい値を入力してください" in _texts(out.lines[k:])
     st.flag[700] = 0
-    with pytest.raises(NotImplementedError, match="一人称設定画面"):
-        gen.send(12)
+    gen.send(12)
+    assert any("一人称を設定してください" in line for line in _texts(out.lines))
+    gen.send(98)
 
 
 def test_page1_noncombatant_quirk(data):

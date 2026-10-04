@@ -302,7 +302,9 @@ def _cmd_page1(ctx: Ctx, arg: int, cmd: int, sc: _Screen) -> Gen:
             yield from chara_callname(ctx, arg)
             return 1
         if cmd == 12:
-            raise NotImplementedError("一人称設定画面（FIRSTSETTING_CHARA_SELFCALL）は未移植")
+            from .self_call_setting import selfcall_gen
+            yield from selfcall_gen(ctx, arg)
+            return 1
         if t(ctx, c, "変身能力") != 1:
             return 0
         lcount = out.linecount  # :210
