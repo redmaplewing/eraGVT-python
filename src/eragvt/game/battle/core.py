@@ -500,7 +500,7 @@ BOSSES: dict[int, BossData] = {
 
 # ラスボス：`触手データ/ボス触手/TENTACLE_LASTBOSS_{n}_*.ERB`。本作は 1（Ｋ触手）と 2（天使の樹）の 2 個
 # （GET_LASTBOSS_ERB_NUM：COMMON_TENTACLE_DATA.ERB:428–438）。天使の樹は周回（FLAG:854 > 0：SCORE.ERB:749 でのみ増え、
-# 引き継ぎ SUCCESSION.ERB〔未移植〕でしか次の周に持ち越せない）かつ HARDCORE でしか出現しない（BATTLE_COM_AFTER.ERB:176、:270）
+# 引き継ぎ SUCCESSION.ERBでしか次の周に持ち越せない）かつ HARDCORE でしか出現しない（BATTLE_COM_AFTER.ERB:176、:270）
 # ので未移植（遭遇したら停止）。
 LASTBOSSES: dict[int, BossData] = {
     # TENTACLE_LASTBOSS_1_Ｋ触手.ERB:7–123（ATTACK_ROUTINE／SEX_ROUTINE／REACTION_REF／PRISON_ROUTINE／TENTACLE_SIZE は専用関数）

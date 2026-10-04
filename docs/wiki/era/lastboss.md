@@ -32,7 +32,7 @@
    @EVENTTURNEND:16 若還有未行動角色先回 ACTION_MAIN（FLAG:49 = 1 不會再遭遇），之後 :42 `CALL ENDING`。
 6. **ENDING**（`ENDING.ERB@ENDING`:3–88）：FLAG:100 ≤ 0 且 FLAG:101 ≤ 0 且非ゲームオーバー → ENDING_2 → SCORE → FLAG:64 = 總合評價 →
    「クリアデータを記録しますか？」[0] → `SAVEGAME`（セーブ畫面；EVENTTURNEND 中 SystemState = Normal，含 __CAN_SAVE__：
-   `GameProc/Process.State.cs`:76）→ 施設資金還元（:30–68）→ `JUMP SUCCESSION`（引き繼ぎ，**未移植 → 停止**）。
+   `GameProc/Process.State.cs`:76）→ 施設資金還元（:30–68）→ `JUMP SUCCESSION`（S37接通，見 `succession.md`）。
    讀取 FLAG:64 > 0 的存檔：`オープニング処理.ERB@EVENTLOAD`:13–14 `JUMP ENDING` → :4–5 直接到還元與引き繼ぎ。
 7. **日數超過**（:74–85）：ボス期は `(FLAG:3 − 生存 + 1) × FLAG:2 − DAY + DAY:1 ≤ 0`、ラスボス期は `FLAG:1 − DAY + DAY:1 == 0`，
    且 TIME == 1（夜）→ ENDING_3 → FLAG:999 = -999 → SHOP_TURNEND:44–47 `CLEARLINE LINECOUNT`・`RESETDATA`・`BEGIN TITLE`。
@@ -50,6 +50,6 @@
 
 - 天使の樹（`TENTACLE_LASTBOSS_2`）：只在周回（FLAG:854 > 0）且 HARDCORE 的Ｋ触手撃破後出現（:176–180、:270–272），需引き繼ぎ。
   形態變化（SOURCE_CHECK:40–112）、攻撃時的甲殻判定（COM_ATTACK_COMMON:59）、遭遇・幽閉・SHOP 顯示的 2 號都停止。
-- 引き繼ぎ `SUCCESSION.ERB`（約 1640 行）。
+- 引き繼ぎ已於S37接通；周回HARDCORE的天使の樹仍停止。
 - 襲來事件中生存ラスボス 0 的 `GOTO RAID_LOOP`（原作無限ループ）。
 - ENDING 後 FLAG:64 != 0 的 `JUMP SHOW_SHOP`（原作亦為スクリプト終端錯誤：`GameProc/Process.SystemProc.cs@endNormal`:993–996）。

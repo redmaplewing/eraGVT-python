@@ -2,7 +2,7 @@
 
 @ENDING_1（全滅）、@ENDING_4（ソロモードで洗脳／悪堕ち）、@ENDING_5（ソロモードで取り込まれ）。
 S27：@ENDING 本体（`ending_gen`）、@ENDING_2（クリア）、@ENDING_3（日数制限超過）、@ENDING_6（呼び出し元なし）、`SCORE.ERB@SCORE`、
-エンドレス分岐。クリア後の引き継ぎ（`SUCCESSION.ERB`）は未移植で停止（`start_succession`）。
+エンドレス分岐。S37：通關繼承由 `succession.py` 接續，完成後 BEGIN SHOP。
 いずれも最後に `CALL CHANGE_GAMEOVER_MODE` → `FLAG:999 = -998` → `FORCEWAIT` で呼び出し元へ戻り、
 ゲームオーバーモード（FLAG:0 = 0：全キャラが陵辱され続けるモード）でそのまま続行する（S12、`docs/wiki/era/flow.md` §9）。
 FLAG:999 = -998 は次の `@PRISON`（PRISON.ERB:5–8）で 0 に戻る目印（PRISON のループを :32–33 で打ち切る）。
@@ -271,7 +271,7 @@ _FACILITY_SCORE = _FACILITY_REFUND[:9]  # SCORE.ERB:392–409（風景画・オ�
 
 
 def ending_gen(ctx: Ctx) -> Generator[object, int, None]:
-    """`@ENDING`:3–88。ENDING_2（クリア）→ SCORE →「クリアデータを記録しますか？」→ 施設資金の還元 → `JUMP SUCCESSION`（未移植で停止）。
+    """`@ENDING`:3–88。ENDING_2（クリア）→ SCORE →「クリアデータを記録しますか？」→ 施設資金の還元 → `JUMP SUCCESSION`（S37 繼承選單）。
     ENDING_3（日数制限超過）は FLAG:999 = -999 にして戻る（呼び出し側 SHOP_TURNEND.ERB:44–47 がタイトルへ）。"""
     from .opening import game_option
     from .shop import check_gameover
@@ -280,10 +280,10 @@ def ending_gen(ctx: Ctx) -> Generator[object, int, None]:
     st = ctx.state
     f = st.flag
     if f[64] > 0:  # :4–5 GOTO START_SUCCESSION
-        start_succession(ctx)
+        return (yield from start_succession(ctx))
     if f[100] <= 0 and f[101] <= 0 and not check_gameover(st):  # :9–70
         ending_2(ctx)
-        yield from _start_score(ctx)
+        return (yield from _start_score(ctx))
     # :74–85 日数制限超過
     if f[999] == 0 and not check_gameover(st) and not game_option(st, GameOption.NO_TIME_LIMIT):
         alive = tentacle_survive_num(st)
@@ -294,7 +294,7 @@ def ending_gen(ctx: Ctx) -> Generator[object, int, None]:
             if (f[1] - st.day[0] + st.day[1]) == 0 and st.time == 1:
                 ending_3(ctx)
     if f[999] == -997:  # :86–87 GOTO START_SCORE
-        yield from _start_score(ctx)
+        return (yield from _start_score(ctx))
 
 
 def _start_score(ctx: Ctx) -> Generator[object, int, None]:
@@ -315,11 +315,11 @@ def _start_score(ctx: Ctx) -> Generator[object, int, None]:
         if r == 1:
             out.printl()
             break
-    start_succession(ctx)
+    return (yield from start_succession(ctx))
 
 
-def start_succession(ctx: Ctx) -> None:
-    """ENDING.ERB:29–69 $START_SUCCESSION：施設関係の資金を還元してから `JUMP SUCCESSION, FLAG:64`（引き継ぎ：未移植 → 停止）。
+def start_succession(ctx: Ctx):
+    """ENDING.ERB:29–69 $START_SUCCESSION：施設関係の資金を還元してから `JUMP SUCCESSION, FLAG:64`（引き継ぎ：S37）。
     REPEAT の COUNT は 0 から（Instraction.Child.cs@REPEAT_Instruction）。"""
     st = ctx.state
     f = st.flag
@@ -336,7 +336,8 @@ def start_succession(ctx: Ctx) -> None:
     for bit, yen in _FACILITY_REFUND:  # :45–68
         if f[53] & bit:
             st.money += yen
-    raise NotImplementedError("引き継ぎ（JUMP SUCCESSION：SUCCESSION.ERB）は未移植")
+    from .succession import succession_gen
+    return (yield from succession_gen(ctx, f[64]))
 
 
 def ending_2(ctx: Ctx) -> None:

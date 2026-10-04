@@ -1,6 +1,6 @@
 # 現況（唯一真相，≤120 行）
 
-更新：2026-10-04（S36 完成）
+更新：2026-10-04（S37 完成）
 
 ## 已完成（各階段細節見 git log 與 wiki）
 
@@ -29,17 +29,16 @@
 - **S29** 口上／地の文的狀態書き込み（catalog が非 LOCAL 代入を GameState へ直接書く＋ジャーナルで失敗回復；下節）。
 - **S30** catalog 剩餘的不可執行原因（ループ內 $ラベルへの GOTO・STRDATA・SETCOLORBYNAME・FINDCHARA・GETCOLOR・RANDCHOOSE 系；下節）。
 
-## S36：市民戰
+## S37：通關繼承
 
-- S32手翻HATUJOU_TO_HAIRAN；S33雜魚；S34裏プロフィール；S35子供／變身命名與共用文字輸入（詳見對應wiki）。
-- S36接通市民遭遇6001／6002、情報調查／救援／自由行動入口、敵方資料與指令、時間切れ／敗北及TRAIN→TURNEND。
-- 顯示沿用原文catalog；規則由 `game.battle.citizen` 與既有共用戰鬥模組手翻。依據：`docs/wiki/era/citizen.md`。
-- 保留原作COM2誤編號、MOB/CITIZEN反應函式缺失、RESULT殘值、INT_EVAL靜態LOCAL及ADDBATTLESITUATION覆寫。
-- 新增68測試、更新2個原停止案例；完整pytest：`2175 passed, 1 warning in 227.52s (0:03:47)`。
-- 正常config2／3各seed0–9、40SHOP、actions101–108：config2維持8上限／2回標題；config3為9上限／1回標題，原4次市民戰停止全部消除。
-- 標準預設／tokusou各seed0–249、200SHOP、actions101–108，10個50局前景批次全部exit0；預設246上限／4回標題、tokusou250上限，與S35一致。
-- 520局catalog失敗0，12批退出碼／seed全集／逐局log與JSONL一致均核對；模擬檔案留於忽略目錄 `tmp/s36/`。
-- 無新增UNVERIFIED／DEVIATION；`source/`、`reference/`未動。完成S36後停止。
+- S32手翻HATUJOU_TO_HAIRAN；S33雜魚；S34裏プロフィール；S35子供／變身命名；S36市民戰（詳見對應wiki）。
+- S37手翻SUCCESSION：三頁點數／角色選擇、確認與模式、資料逐欄保留重置、角色製作預設路徑與HEROINE_PRESET，接回SHOP。
+- 結局通關與通關存檔均接通；BEGIN SHOP中止舊TURNEND，保留原作退款、RELATION／TARGET殘值等怪處。
+- 新增36測試；人工末王前置經實際通關→存檔→讀檔→繼承→SHOP驗證，不冒充自然通關。依據：`docs/wiki/era/succession.md`。
+- 主代理獨立完整pytest：`2211 passed, 1 warning in 264.72s (0:04:24)`（既有Starlette警告）。
+- 標準default／tokusou各seed0–249、200SHOP、actions101–108：default246上限／4回標題、tokusou250上限，與S36一致。
+- 10個50局前景批次全部exit0；500局catalog失敗0、seed全集、逐局log／JSONL一致皆核對。產物留於忽略目錄 `tmp/s37/`。
+- 無新增UNVERIFIED／DEVIATION；天使の樹仍為後續階段，完成S37後停止。
 
 ## 口上 catalog 現況
 
@@ -58,13 +57,13 @@ P4 父親 CFLAG:9 指向不存在的ボス／ラスボス／モブ；HEROINE_PRE
 [34] 雑魚戦（802 bit4）S33接通；[78] 裏プロフィール（805 bit6）與[11]／[15]〜[17]狀態顯示（801 bit1／5〜7）S34接通。
 [54] 返り血（803 bit4）→ SUPART_BLOOD 停止；[72] 触手の子種からも娘的命名S35已接通；
 [35] クズ市民→S36已接通；[55] ラスボス強化 所在系統未移植。[10]／[14] 素質表示 S25 起、[79] 有害ブログ S26 起生效。
-`--config-preset 2／3` 正常設定的驗收結果見 S36 節。
+`--config-preset 2／3` 正常設定已於S36驗收（原市民戰停止消除）。
 
 ## 下一步
 
 - **自主推進（使用者指定 2026-10-02，依序）**：~~S22 RESULTS 共用~~ → ~~S23 [反撃]スタイル~~ → ~~S24 設定畫面／プリセット~~ → ~~S25 狀態畫面~~
   → ~~S26 FLASHNEWS~~ → ~~S26b RESULTS:0 殘值~~ → ~~S27 ラスボス～結局~~ → ~~S28 未移植行動（S28a〜S28c2）~~：**指定範圍全部完成**。
-  S36完成後停止，其他候選：引き継ぎ（SUCCESSION.ERB，クリア後の停止點）、天使の樹（引き継ぎ後のみ）、SHOP [112] 衣裝設定、
+  S37完成後停止，下一候選：天使の樹（引き継ぎ後のみ）、SHOP [112] 衣裝設定、
   SHOP 子選單（[111] CHARA_POWERUP：SHOP.ERB:253、[113] DRUG_PREPARATION：:264、[180] TSUIKAYOUSEI_NORMAL（加入引退有り）：:294）。
 - 已裁決（2026-10-02）：名乗り改竄的 RESULTS:2 殘值照原作（S22 實作）；開局デフォルト悪堕ち的輸出丟棄維持現況。
 - 已裁決（2026-10-02）：PALAM_HOSEI 殘值照原作、防衛力負數 D1〜D4（S21 實作）。已裁決（2026-10-01）：S20 的 DEVIATION 6 項＋斜體。
@@ -77,7 +76,7 @@ P4 父親 CFLAG:9 指向不存在的ボス／ラスボス／モブ；HEROINE_PRE
 S23 模擬（含 [反撃] 人工設定）皆無停止。登記但罕見：
 - 悪堕ち：悪堕ち戰中 TENTACLE_ACCESS 的數值鍵（安全網）。
 - 襲撃／救援：生存ラスボス 0 での襲来（原作無限ループ）、RAID_HANTEI のデバッグ入力、原作でも CodeEE になるエラー路。
-- ラスボス・結局（S27）：クリア後の引き継ぎ（SUCCESSION）、天使の樹（裏ボス：遭遇・形態變化・攻撃・幽閉・表示）、ENDING 後の JUMP SHOW_SHOP（原作もエラー）。
+- ラスボス・結局（S27）：天使の樹（裏ボス：遭遇・形態變化・攻撃・幽閉・表示）、ENDING 後の JUMP SHOW_SHOP（原作もエラー）。
 - 幽閉：TS 性別變化。
 - 妊娠・子供：TS 変身キャラ妊娠時的女體化、デバッグモード的妊娠確率輸入。
 - 情報収集（S28a）：デバッグ入力。
@@ -93,6 +92,6 @@ S23 模擬（含 [反撃] 人工設定）皆無停止。登記但罕見：
 - 無 BOM 的 7 個角色 CSV 在原版 1.824 會以 Shift-JIS 讀（亂碼）；本程式以 UTF-8 讀，可能是 +v10 差異，待實機確認。
 - 開局：預設（NORMAL＋汎用キャラ 3 名おまかせ）與初期セット「特装戦隊」，HEROINE_PRESET 可選 0〜3；其他初期セット／キャラメイク畫面的手動設定未移植。
 - 可玩範圍：休憩・鍛錬（含スケジュール）・出撃・拠点防衛・戦闘支援・情報収集・特別活動・自由行動（含ナンパ等本編；含拘束戰鬥、拡張度、敗北後幽閉與救出、戰後レイプ、襲撃／救援イベント戰）、夜間いちゃラブ・自慰、
-  妊娠・出産・子供、全滅後的ゲームオーバーモード、ラスボス戰～ENDING_2（引き継ぎで停止）、日數超過 ENDING_3（回標題）。
+  妊娠・出産・子供、全滅後的ゲームオーバーモード、ラスボス戰～ENDING_2～引き継ぎ續行、日數超過 ENDING_3（回標題）。
 - 初期セット選項的角色身體資料為 0（原作同樣不生成），戰鬥中女性敏捷 0・攻擊 2 倍（原作行為，是否偏離待決定）。
 - COUNT 仍未與 Python 共用（catalog 專用暫存，deviations「口上 catalog 的顯示簡化」）；RESULT／RESULTS 已共用。

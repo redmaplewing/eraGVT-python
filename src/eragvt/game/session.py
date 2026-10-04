@@ -447,10 +447,10 @@ class GameSession:
             self.out.set_bgcolor((0,0,40))
         else:
             self.out.reset_bgcolor()
-        if self.state.flag[64] > 0:  # :13–14 JUMP ENDING（S27：クリアデータ → $START_SUCCESSION → 引き継ぎ〔未移植で停止〕）
+        if self.state.flag[64] > 0:  # :13–14 JUMP ENDING（S27：クリアデータ → $START_SUCCESSION → 引き継ぎ選單）
             from .ending import ending_gen
 
-            self._run_gen(ending_gen(self._ctx()), self._show_shop)
+            self._run_gen(ending_gen(self._ctx()), self._after_turn)
             return
         # BEGIN なしで終了 → SystemProc@endEventLoad:775–780 → endAutoSave → @SHOW_SHOP（オートセーブなし）
         self._show_shop()

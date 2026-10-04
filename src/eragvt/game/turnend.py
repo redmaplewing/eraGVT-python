@@ -109,7 +109,8 @@ def event_turnend(ctx: Ctx) -> Generator[None, int, Step]:
                 break
     else:
         st.target = st.flag[798]
-    yield from ending_gen(ctx)  # :42（S27：ENDING_2 → SCORE の INPUT・SAVEGAME のためジェネレータ）
+    if (yield from ending_gen(ctx)) == Step.SHOP:  # SUCCESSION:1622 BEGIN SHOP 中止舊 TURNEND。
+        return Step.SHOP
     # :43–52（ENDING が戻ってきた場合のみ到達）
     if st.flag[999] == -999:  # :44–47 CLEARLINE LINECOUNT → RESETDATA → BEGIN TITLE（呼び出し側 GameSession が行う）
         out.clearline(out.linecount)

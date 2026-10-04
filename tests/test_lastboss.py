@@ -332,13 +332,15 @@ def test_score_hikan_and_popularity(ctx):
     assert r[4] == 1
 
 
-def test_start_succession_refund_then_halt(ctx):
-    """ENDING.ERB:29–69：施設 Lv（FLAG:50／51：REPEAT の COUNT 1 から）と FLAG:52・FLAG:53 を資金に還元して JUMP SUCCESSION（停止）。"""
+def test_start_succession_refund_then_menu(ctx):
+    """ENDING.ERB:29–69：施設 Lv（FLAG:50／51：REPEAT の COUNT 1 から）と FLAG:52・FLAG:53 を資金に還元して JUMP SUCCESSION（等待選單）。"""
     st = ctx.state
     st.flag[50], st.flag[51], st.flag[52], st.flag[53] = 3, 2, 1, 1 | 2048
     money = st.money
-    with pytest.raises(NotImplementedError, match="SUCCESSION"):
-        ending.start_succession(ctx)
+    gen = ending.start_succession(ctx)
+    next(gen)
+    assert any("データ引き継ぎ" in ln.text for ln in ctx.out.lines)
+    gen.close()
     assert st.money == money + (10000 + 15000) + 2000 + 10000 + 500 + 100000
 
 
@@ -394,7 +396,7 @@ def test_session_ending_3_returns_to_title(data):
 
 def test_session_lastboss_clear_score_savegame(data):
     """全ボス撃破済み（人工）→ Ｋ触手（蓄積ダメージ 100％ → FLAG:13 = 1）を撃破 → 完全殲滅 → BEGIN TURNEND →
-    ENDING_2 → SCORE → [0]はい → SAVEGAME（5 番）→ 施設資金還元 → 引き継ぎ（未移植）で停止。"""
+    ENDING_2 → SCORE → [0]はい → SAVEGAME（5 番）→ 施設資金還元 → 引き継ぎ選單→SHOP。"""
     with tempfile.TemporaryDirectory() as tmp:
         s = _session(data, tmp, seed=4)  # 遭遇判定（:333）が成立し先制攻撃が命中する系列
         st = s.state
@@ -410,7 +412,7 @@ def test_session_lastboss_clear_score_savegame(data):
             s.input(9)
         saved = False
         for _ in range(3000):
-            if s.phase == Phase.HALTED:
+            if any("データ引き継ぎ" in ln.text for ln in s.out.lines[-30:]):
                 break
             lines = [ln.text for ln in s.out.lines[-6:]]
             if s.phase == Phase.SAVE_SELECT:
@@ -422,16 +424,26 @@ def test_session_lastboss_clear_score_savegame(data):
                 continue
             btn = [v for ln in s.out.lines[-30:] for (_, v) in ln.buttons]
             s.input(1 if 1 in btn else 0)
-        assert saved and s.phase == Phase.HALTED
+        assert saved and s.phase == Phase.TURN
         t = [ln.text for ln in s.out.lines]
         assert "*** クリアスコア ***" in t
-        assert any("SUCCESSION" in x for x in t)
+        assert any("データ引き継ぎ" in x for x in t)
         st2, _ = load_from_file(Path(tmp) / "save05.json")
         assert 1 <= st2.flag[64] <= 6 and st2.flag[854] == 1
         assert st2.flag[101] == 0 and st2.flag[100] == 0
-        # オープニング処理.ERB@EVENTLOAD:13–14：FLAG:64 > 0 のデータをロード → JUMP ENDING → :4–5 $START_SUCCESSION → 停止
+        # オープニング処理.ERB@EVENTLOAD:13–14：FLAG:64 > 0 のデータをロード → JUMP ENDING → :4–5 $START_SUCCESSION → 繼承選單
         s2 = GameSession(data, Path(tmp), rng=GameRng(0))
         s2.input(1)
         s2.input(5)
-        assert s2.phase == Phase.HALTED
-        assert "SUCCESSION" in s2.out.lines[-1].text
+        assert s2.phase == Phase.TURN
+        assert any("データ引き継ぎ" in ln.text for ln in s2.out.lines[-30:])
+        # 人工配置的末王致死傷害經實際通關／存檔入口，再走零角色預設繼承。
+        s2.input(999)
+        s2.input(0)
+        s2.input(1)  # NORMAL
+        s2.input(0)  # 周回人數預設
+        s2.input(1)  # HEROINE_PRESET 基本設定
+        assert s2.phase == Phase.SHOP
+        assert (s2.state.flag[64], s2.state.day[0], s2.state.time) == (0, 1, 0)  # EVENTSHOP 清除繼承標記。
+        s2.close()
+        s.close()
