@@ -170,6 +170,9 @@ def selfcall_gen(ctx: Ctx, who: int) -> Generator[None | TextInputRequest, int |
     key="FIRSTSETTING_CHARA_SELFCALL:"
     pron=div(c.cflag[8],5)%20
     style=c.cflag[8]%5
+    # DEVIATION: S48 修復自訂重入；保留原碼而非重析顯示文字（CHAR_LIB 非完全可逆）。
+    # FIRSTSETTING_CHARA_SELFCALL:1216–1219、1466–1475；SELF_CALL_SUBSTRING:161–165。
+    existing_custom=c.cflag[8] if pron==19 and style in (3,4) else None
     reading=_reading(ctx,who)
     display=self_call(ctx,who)
     mode="top"
@@ -222,22 +225,27 @@ def selfcall_gen(ctx: Ctx, who: int) -> Generator[None | TextInputRequest, int |
         if mode=="menu":
             r=yield from _number(ctx)
             if 0<=r<=8:
+                existing_custom=None
                 pron=r
                 if style>2:
                     style=0
                 reading=self_call_list(pron,1)
                 display=self_call_list(pron,style)
             elif 30<=r<=32:
+                existing_custom=None
                 style=r-30
                 if pron>8:
                     pron=0
                 reading=self_call_list(pron,1)
                 display=self_call_list(pron,style)
             elif r==50:
-                if not 0<=pron<=20:
+                # DEVIATION: S48 依首次自訂後切回預設的 :1304–1305 重設字形。
+                if existing_custom is not None or not 0<=pron<=20:
                     style=0
+                existing_custom=None
                 pron=_default(ctx,c)
-                # :1304–1322 只依 pron 決定重設；自訂碼重入的 style=3/4 因而越界。
+                # :1304–1322 原作自訂重入未重設字形而越界；上方已修復自訂碼。
+                # 此處僅保留其他不合法原始字形的原作越界停止。
                 # reference/emuera-1824/Emuera/GameData/Variable/VariableToken.cs:2049–2076。
                 if not 0 <= style < 3:
                     raise NotImplementedError("FIRSTSETTING_CHARA_SELFCALL：原作 CALL_LIST 第二維越界（性格預設）")
@@ -258,6 +266,7 @@ def selfcall_gen(ctx: Ctx, who: int) -> Generator[None | TextInputRequest, int |
                     display=value
                 else:
                     display=c.callname
+                existing_custom=None
                 pron=style=r
                 if analyze(ctx,display)>=0:
                     reading=display
@@ -275,7 +284,9 @@ def selfcall_gen(ctx: Ctx, who: int) -> Generator[None | TextInputRequest, int |
                 if not reading or not display:
                     out.clearline(1)
                     continue
-                if 0<=pron<=20:
+                if existing_custom is not None:
+                    c.cflag[8]=existing_custom
+                elif 0<=pron<=20:
                     c.cflag[8]=pron*5+style
                 else:
                     c.cflag[8]=sum(mem.get((key+"PRN_VAR",i),0)*1000**i for i in range(4))*100+99-mem.get((key+"CHR_VAR",0),0)

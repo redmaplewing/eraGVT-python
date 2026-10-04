@@ -129,13 +129,14 @@ def test_list_results_and_static(ctx):
     assert not loaded.temp.locals
 
 
-def test_reenter_custom_original_truncates_packed_code(ctx):
-    # :1216 的 /5%20 使自訂碼成19；[99]走:1466正常分支，原作因此截去高位。
-    drive(sc.selfcall_gen(ctx,1),[22,"キャ",99])
-    g=sc.selfcall_gen(ctx,1); next(g)
-    assert any("読み：キャ" in line.text for line in ctx.out.lines)
-    with pytest.raises(StopIteration):g.send(99)
-    assert ctx.state.charas[1].cflag[8]==98
+@pytest.mark.parametrize("packed,kind,display",[(22031086,0,"私"),(22031086,1,"ワタシ"),(4003002001,0,"あいうえ"),(104130128126,1,"キャキュキョイェ"),(111,0,"ヴぁ"),(114,0,"ヴぇ")])
+def test_reenter_custom_preserves_packed_code(ctx,packed,kind,display):
+    # S48：:1469–1475自訂編碼；SELF_CALL_SUBSTRING:161–165直接取高位，不從顯示字串反推。
+    c=ctx.state.charas[1]; code=packed*100+99-kind
+    c.cflag[8]=code; c.cstr[4]=display
+    for _ in range(3):
+        assert drive(sc.selfcall_gen(ctx,1),[99])==99
+        assert (c.cflag[8],c.cstr[4])==(code,display)
 
 
 def test_reading_six_codes_and_catalog_static(ctx):
@@ -189,11 +190,33 @@ def test_default_after_custom_resets_style(ctx):
     assert ctx.state.charas[1].cflag[8]%5==0
 
 @pytest.mark.parametrize("suffix",[98,99])
-def test_reentered_custom_default_has_original_array_error(ctx,suffix):
-    # FIRSTSETTING_CHARA_SELFCALL:1304–1305只看pron範圍，19保留style3/4；:1322越界。
-    ctx.state.charas[1].cflag[8]=126*100+suffix
-    ctx.state.charas[1].cstr[4]="キャ"
-    g=sc.selfcall_gen(ctx,1);next(g)
-    with pytest.raises(NotImplementedError,match="CALL_LIST"):
-        g.send(50)
-    assert ctx.state.charas[1].cflag[8]==126*100+suffix
+@pytest.mark.parametrize("talents,pron,display",[((),0,"私"),(("かるい性格",),2,"私"),(("古風","かるい性格"),4,"妾"),(("オトコ",),5,"僕"),(("オトコ","乱暴者","古風"),6,"俺")])
+def test_reentered_custom_default_matches_fresh_custom(ctx,suffix,talents,pron,display):
+    # :1324–1326／:1399–1400首次自訂將種類設21/22；:1304–1322切回性格預設重設字形0。
+    c=ctx.state.charas[1]
+    for name in ("オトコ","乱暴者","古風","かるい性格"): c.talent[ctx.data.index_of("TALENT",name)]=int(name in talents)
+    c.cflag[8]=126*100+suffix; c.cstr[4]="キャ"
+    drive(sc.selfcall_gen(ctx,1),[50,99])
+    assert (c.cflag[8],c.cstr[4])==(pron*5,display)
+
+@pytest.mark.parametrize("values,expected",[([98],(12698,"キャ")),([50,98],(12698,"キャ")),([6,99],(30,"俺")),([31,99],(1,"わたし")),([22,"あい",99],(200199,"あい")),([21,99],(2205599,"ほし")),([22,"99","",99],(12698,"キャ"))])
+def test_reentry_choice_or_cancel(ctx,values,expected):
+    c=ctx.state.charas[1];c.cflag[8]=12698;c.cstr[4]="キャ";c.callname="ほし"
+    drive(sc.selfcall_gen(ctx,1),values)
+    assert (c.cflag[8],c.cstr[4])==expected
+
+
+def test_web_reentry_and_saved_reentry(data,tmp_path):
+    from fastapi.testclient import TestClient
+    from eragvt.web import create_app
+    app=create_app(data,tmp_path,narration=None);client=TestClient(app)
+    def send(v): return client.post("/api/input",json={"value":v}).json()
+    for v in (0,0,1,1,110,12,22,"星","キャキュキョイェ",99): send(v)
+    session=app.state.session;code=104130128126*100+98
+    assert session.state.charas[1].cflag[8]==code
+    for v in (12,99,999,200,0,300,0,110,12,99):send(v)
+    assert (session.state.charas[1].cflag[8],session.state.charas[1].cstr[4])==(code,"星")
+    c=session.state.charas[1]
+    for name in ("オトコ","乱暴者","古風","かるい性格"):c.talent[data.index_of("TALENT",name)]=0
+    for v in (12,50,99):send(v)
+    assert (c.cflag[8],c.cstr[4])==(0,"私")
