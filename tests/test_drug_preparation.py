@@ -1,4 +1,6 @@
 """S42：expected 取自 ACTIONsub_DRUG_PREPARATION.ERB，不由實作回推。"""
+from copy import deepcopy
+
 import pytest
 
 from test_clothing_menu import data, ctx
@@ -177,7 +179,7 @@ def test_hidden_repair(ctx):
 @pytest.mark.parametrize('invalid', [(), (2, -1, 999)])
 @pytest.mark.parametrize('answer', [0, 1])
 def test_hidden_confirmation_repair(ctx,invalid,answer):
-    """已授權修復：@DRUG_PREPARATION:229–276；否拒絕手術，錯值重問，不啟用停用分支。"""
+    """已授權修復：@DRUG_PREPARATION:229–276；否依後續裁決提示未完成並停止，錯值重問，不執行支線。"""
     st=ctx.state; st.flag[54]=5; st.flag[200]=40; st.money=25000
     put(ctx,'四肢欠損',1)
     gen=begin(ctx,51); ctx.out.drain()
@@ -185,8 +187,13 @@ def test_hidden_confirmation_repair(ctx,invalid,answer):
         gen.send(value)
         assert '正しい値を入力してください' in '\n'.join(line.text for line in ctx.out.drain())
         assert (st.money,st.flag[200],_talent(ctx,'四肢欠損'),_talent(ctx,'共生'))==(25000,40,1,0)
-    gen.send(answer)
-    if answer==0: gen.send(1)
+    before=deepcopy(st.charas)
+    if answer==1:
+        with pytest.raises(NotImplementedError, match="AMPUTEE.*原作移植未完成.*本支線停止且未執行"):
+            gen.send(answer)
+        assert st.charas==before
+    else:
+        gen.send(answer); gen.send(1)
     assert (st.money,st.flag[200],_talent(ctx,'四肢欠損'),_talent(ctx,'共生'))==((0,0,0,1) if answer==0 else (25000,40,1,0))
     assert not any('少女研究者' in line.text for line in ctx.out.lines)
     with pytest.raises(StopIteration): gen.send(999)
@@ -205,16 +212,22 @@ def test_hidden_confirmation_resources_and_character_cancel(ctx,money,parts,mess
 
 
 @pytest.mark.parametrize('answer,expected',[(0,(0,0,0,1)),(1,(25000,40,1,0))])
-def test_web_hidden_confirmation_keeps_interacting(data,tmp_path,answer,expected):
+def test_web_hidden_confirmation_halts_unfinished_branch(data,tmp_path,answer,expected):
     s=GameSession(data,tmp_path,rng=GameRng(0),narration=NullNarrationService())
     for value in (0,0,1): s.input(value)
     st=s.state; st.money=25000; st.flag[200]=40; st.flag[54]=5
     missing=data.index_of('TALENT','四肢欠損'); symbiosis=data.index_of('TALENT','共生')
     st.charas[1].talent[missing]=1
+    before=deepcopy(st.charas)
     for value in (113,51,2,-1,answer): s.input(value)
-    if answer==0: s.input(1)
-    s.input(999)
-    assert s.phase==Phase.SHOP
+    if answer==0:
+        s.input(1); s.input(999)
+        assert s.phase==Phase.SHOP
+    else:
+        assert s.phase==Phase.HALTED
+        assert st.charas==before
+        assert any("AMPUTEE 原作移植未完成；本支線停止且未執行" in line.text for line in s.out.lines)
+        assert not any("少女研究者" in line.text for line in s.out.lines)
     assert (st.money,st.flag[200],st.charas[1].talent[missing],st.charas[1].talent[symbiosis])==expected
 
 

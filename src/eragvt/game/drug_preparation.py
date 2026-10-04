@@ -327,13 +327,14 @@ def drug_preparation_gen(ctx):
             if cmd==51:
                 if st.flag[54]<5: _say(ctx,221,222); break
                 _say(ctx,225,226,227,228,229,230,231)
-                # DEVIATION: 已授權修復:232–276的確認死循環；1拒絕手術返回，錯值重讀。
-                # :245–266明示替代NPC提案尚未移植，維持停用；不宣稱返回是作者最終設計。
+                # DEVIATION: 使用者後續裁決：:232–276錯值重讀；1提示未完成並截斷。
+                # :245–266明示替代NPC提案尚未移植，不執行草稿事件或結算。
                 while True:
                     answer=yield from input_number(ctx)
                     if answer in (0,1): break
                     _say(ctx,275)
-                if answer==1: break
+                if answer==1:
+                    raise NotImplementedError("AMPUTEE 原作移植未完成；本支線停止且未執行")
                 if st.money<25000: _say(ctx,236)
                 elif st.flag[200]<40: _say(ctx,239)
                 else: st.result[0]=yield from _choose(ctx,51)
