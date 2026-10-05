@@ -39,10 +39,11 @@ def _set(data: GameData, c: Character, name: str, value: int = 1) -> None:
     c.talent[data.index_of("TALENT", name)] = value
 
 
-def initialize_race(state: GameState, data: GameData, sel: int) -> None:
+def initialize_race(state: GameState, data: GameData, sel: int, *, ctx=None) -> None:
     """DEFAULT:8–72：種族が未設定（SYUZOKU_CHECK "GET_SYUZOKU_VALUE" == 0）なら自動設定。"""
     c = state.charas[sel]
-    if syuzoku_check(c) != 0:
+    state.result[0] = syuzoku_check(c)  # DEFAULT:9 CALL SYUZOKU_CHECK。
+    if state.result[0] != 0:
         return
     rng = state.rng
     if state.flag[823] > 0:  # :12–35
@@ -59,25 +60,62 @@ def initialize_race(state: GameState, data: GameData, sel: int) -> None:
         for name in names:
             _set(data, c, name)
     # :68–71 フィートの自動設定（FLAG:824 = 共通設定「フィート自動割り当て」、既定 0＝なし）
+    state.result[0] = syuzoku_check(c)  # DEFAULT:69 再取生成後種族。
     if state.flag[824] == 1:
-        raise NotImplementedError("SET_FEAT_DEFAULT（DEFAULT:1500、FLAG:824 == 1）は未移植")
+        from .action import Ctx
+        from .firstsetting import set_feat_default
+        from ..text import NullNarrationService, TextOutput
+        set_feat_default(ctx or Ctx(state, data, TextOutput(), NullNarrationService()), sel, state.result[0])
 
 
-def initialize_personality(state: GameState, data: GameData, sel: int) -> None:
+def initialize_personality(state: GameState, data: GameData, sel: int, *, ctx=None) -> None:
     """DEFAULT:74–165：性格が未設定（SEIKAKU_CHECK_F == 0）なら性格ガチャ・BASE の性格補正・一人称。"""
     from .action import seikaku_hosei  # action → opening の循環を避ける
 
     c = state.charas[sel]
     if seikaku_check(data, c) != 0:
         return
+    if state.flag[825] != 0 and (ctx is None or ctx.narration is None):
+        # 非互動開局也使用原作 catalog；Web 則由 GameSession 傳入既有服務與輸出。
+        from ..data import default_csv_dir
+        from ..narration.service import CatalogNarrationService
+        from ..text import TextOutput
+        from .action import Ctx
+        service = CatalogNarrationService.from_csv_dir(default_csv_dir(), data)
+        if service is None:
+            raise NotImplementedError("限定口上性格需要原作 catalog")
+        if ctx is None:
+            ctx = Ctx(state, data, TextOutput(), service)
+        else:
+            ctx.narration = service
     if state.flag[825] != 0:
-        # :129–138 口上あり限定（TRYCCALLFORM KOJO_0_COLOR_{LOCAL}）。既定の FLAG:825（GLOBAL:23）は 0。
-        raise NotImplementedError("性格ガチャの口上あり限定（FLAG:825 == 1）は未移植")
-    # :77–140 WHILE の 1 周目：RAND:18 + 10 の素質を立てる。他キャラとの被りチェック（:118–124）は local:1 を
-    # 進めるだけで、FLAG:825 == 0 なら :126–127 で BREAK するので結果に影響しない。
-    _set(data, c, PERSONALITIES[state.rng.rand(18)])
+        from ..text import NullNarrationService
+        if isinstance(ctx.narration, NullNarrationService):
+            raise NotImplementedError("限定口上性格需要原作 catalog")
+    attempts = 1
+    while attempts <= 100:  # DEFAULT:76–139。
+        local = state.rng.rand(18) + 10
+        _set(data, c, PERSONALITIES[local - 10])
+        # :118–123 CONTINUE 只續內層 FOR，不清除先前抽出的素質。
+        # reference/emuera-1824/Emuera/GameProc/ErbLoader.cs:1040–1059。
+        for prior in range(1, sel):
+            if seikaku_check(data, state.charas[prior]) == seikaku_check(data, c):
+                attempts += 1
+        if state.flag[825] == 0:
+            break
+        # TRYCCALLFORM 會執行函式；缺函式才走 CATCH，不是查傳回值。
+        # reference/emuera-1824/Emuera/GameProc/Function/Instraction.Child.cs:2297–2332。
+        name = f"KOJO_0_COLOR_{local}"
+        if ctx.narration.run_function(ctx, name):
+            ctx.out.reset_color()
+            break
+        catalog = getattr(ctx.narration, "catalog", None)
+        if catalog is not None and catalog.exists(name):
+            raise NotImplementedError(f"{name} 存在但無法執行，不能當成缺少口上重抽")
+        attempts += 1
     # :141–153 体力などの BASE を性格補正（SEIKAKU_HOSEI_F）し、MAXBASE にも
     seikaku = seikaku_check(data, c)
+    state.result[0] = seikaku  # DEFAULT:142 CALL SEIKAKU_CHECK。
     for k in range(7):
         b = k if k <= 2 else k + 7
         c.base[b] = seikaku_hosei(seikaku, b, c.base[b])

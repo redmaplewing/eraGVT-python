@@ -59,13 +59,14 @@ def event_first(
     config_preset: int = 1,
     store: GlobalStore | None = None,
     out: TextOutput | None = None,
+    narration=None,
 ) -> None:
     """`event_first_gen` を固定の入力で最後まで実行する（テスト・模擬用）。
 
     入力：開局経路の 2 択（`preset` が None なら [0] おまかせ、番号なら [1] 初期セット）→ HEROINE_PRESET `[config_preset]`。
     `store` 省略時は空のメモリ上グローバル（ファイルなし＝真の初回起動）。
     """
-    gen = event_first_gen(state, data, out or TextOutput(), store or GlobalStore(identity=GameIdentity.from_data(data)))
+    gen = event_first_gen(state, data, out or TextOutput(), store or GlobalStore(identity=GameIdentity.from_data(data)), narration)
     inputs = [0 if preset is None else 1, config_preset]
     try:
         next(gen)
@@ -93,7 +94,7 @@ def _show_mode_select(out: TextOutput) -> None:
 
 
 def event_first_gen(
-    state: GameState, data: GameData, out: TextOutput, store: GlobalStore
+    state: GameState, data: GameData, out: TextOutput, store: GlobalStore, narration=None
 ) -> Generator[None, int, bool]:
     """`ゲーム内_イベント発生/オープニング処理.ERB@EVENTFIRST`:19–292（最後の BEGIN SHOP の直前まで）。
 
@@ -160,12 +161,15 @@ def event_first_gen(
         state.add_chara(data, 0)
         state.flag[8] += 1
     # :127 CALL CHARA_MAKE_MAIN, 0
+    from .action import Ctx
+    # 保留同一輸出與口上服務；非互動 helper 未提供時，由性格初始化按需載入 catalog。
+    generation_ctx = Ctx(state, data, out, narration, store)
     if preset is None:
-        chara_make_main_default(state, data, store)
+        chara_make_main_default(state, data, store, ctx=generation_ctx)
     else:
-        chara_make_main_preset(state, data, preset, store)
+        chara_make_main_preset(state, data, preset, store, ctx=generation_ctx)
     # :135 キャラメイク完了処理（CHARA_MAKE_MAIN の [1000] に続いて 2 回目）
-    chara_make_finalize(state, data)
+    chara_make_finalize(state, data, ctx=generation_ctx)
     # :143–166 口上番号・行動予定
     kojo_setting = data.index_of("TALENT", "口上設定")
     robot = data.index_of("TALENT", "ロボっ子")
@@ -313,14 +317,14 @@ def _chara_make_load_global(state: GameState, store: GlobalStore) -> None:
         state.savestr[k] = gs[k + 5]
 
 
-def chara_make_main_default(state: GameState, data: GameData, store: GlobalStore | None = None) -> None:
+def chara_make_main_default(state: GameState, data: GameData, store: GlobalStore | None = None, *, ctx=None) -> None:
     """`CHARA_MAKE.ERB@CHARA_MAKE_MAIN`:5 で何も設定せず [1000] を押した場合の状態変化。"""
     _chara_make_load_global(state, store or GlobalStore())
     # :206–209 [1000] キャラメイクを完了する → CHARA_MAKE_FINALIZE（未設定のキャラは INITIALIZE でおまかせ生成）
-    chara_make_finalize(state, data)
+    chara_make_finalize(state, data, ctx=ctx)
 
 
-def chara_make_main_preset(state: GameState, data: GameData, preset: int, store: GlobalStore | None = None) -> None:
+def chara_make_main_preset(state: GameState, data: GameData, preset: int, store: GlobalStore | None = None, *, ctx=None) -> None:
     """`CHARA_MAKE.ERB@CHARA_MAKE_MAIN`:5 で [200] → 初期セット → [1000] と進んだ場合の状態変化。"""
     if preset != PRESET_TOKUSOU:
         raise NotImplementedError("初期セットは 0_特捜戦隊 のみ移植")
@@ -332,7 +336,7 @@ def chara_make_main_preset(state: GameState, data: GameData, preset: int, store:
     shokiset_select_0(state, data)
     shokiset_csvfix(state, data)  # SHOKISET.ERB:45
     # :206–209 [1000] キャラメイクを完了する
-    chara_make_finalize(state, data)
+    chara_make_finalize(state, data, ctx=ctx)
 
 
 def shokiset_select_0(state: GameState, data: GameData) -> None:
@@ -413,13 +417,13 @@ def decode_weapon_data(data: GameData, state: GameState, index: int, dist: int) 
     return 0
 
 
-def chara_make_finalize(state: GameState, data: GameData, arg: int = 0) -> None:
+def chara_make_finalize(state: GameState, data: GameData, arg: int = 0, *, ctx=None) -> None:
     """`SYSTEM/キャラメイキング関連/CHARA_MAKE_DEFAULT.ERB@CHARA_MAKE_FINALIZE`:221–487。"""
     level = data.index_of("ABL", "レベル")
     for sel in range(1, state.charanum):
         if arg != 0 and sel != arg:
             continue
-        chara_make_initialize(state, data, sel)
+        chara_make_initialize(state, data, sel, ctx=ctx)
         c = state.charas[sel]
         if c.maxbase[Base.EJACULATION] < 1:
             c.maxbase[Base.EJACULATION] = 10000
@@ -557,11 +561,11 @@ def _set_basic_values(data: GameData, c) -> None:
             store[93] = 0
 
 
-def chara_make_initialize(state: GameState, data: GameData, sel: int) -> None:
+def chara_make_initialize(state: GameState, data: GameData, sel: int, *, ctx=None) -> None:
     """`CHARA_MAKE_DEFAULT.ERB@CHARA_MAKE_INITIALIZE`:5–211。"""
     c = state.charas[sel]
-    initialize_race(state, data, sel)  # :8–72
-    initialize_personality(state, data, sel)  # :74–164
+    initialize_race(state, data, sel, ctx=ctx)  # :8–72
+    initialize_personality(state, data, sel, ctx=ctx)  # :74–164
     # :166 CALL CHARA_MAKE_BASE_PROFILE(SELECT)
     chara_make_base_profile(state, data, sel)
     # 変身名のロード（:166–209）

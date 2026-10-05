@@ -80,15 +80,12 @@ def test_initialize_race_random(data, rolls, expected):
 
 
 def test_initialize_race_setting_and_feat(data):
-    """FLAG:823 = 10 → ヴァンパイア＋夜魔の貴族（:30–32、乱数なし）。FLAG:824 == 1 は SET_FEAT_DEFAULT（未移植）。"""
+    """FLAG:823 = 10 → ヴァンパイア＋夜魔の貴族（:30–32、乱数なし）。FLAG:824 == 1 的自動分配見 S54 測試。"""
     st, c, sel = fresh(data, [])
     st.flag[823] = 10
     initialize_race(st, data, sel)
     assert talents_of(data, c) == {"ヴァンパイア": 1, "夜魔の貴族": 1}
-    st, c, sel = fresh(data, [0])
-    st.flag[824] = 1
-    with pytest.raises(NotImplementedError):
-        initialize_race(st, data, sel)
+
 
 
 # --- 性格ガチャ・性格補正・一人称（DEFAULT:74–164、ヒロイン関連/CHARA_SEIKAKU.ERB@SEIKAKU_HOSEI_F）---------
@@ -116,11 +113,6 @@ def test_initialize_personality(data, roll, name, bases, cflag8):
     assert c.cflag[8] == cflag8
 
 
-def test_personality_gacha_kojo_only_not_ported(data):
-    st, c, sel = fresh(data, [0])
-    st.flag[825] = 1
-    with pytest.raises(NotImplementedError):
-        initialize_personality(st, data, sel)
 
 
 # --- CHARA_MAKE_STATUS_TALENT（DEFAULT:985–1058）---------------------------------------------------

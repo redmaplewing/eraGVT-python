@@ -155,7 +155,7 @@ class GameSession:
             self.state = GameState.new(self.data, rng=self.rng)
             self.out.drawline()
             self.out.printl()
-            gen = event_first_gen(self.state, self.data, self.out, self.globals)
+            gen = event_first_gen(self.state, self.data, self.out, self.globals, self.narration)
             self._run_gen(gen, self._after_event_first, phase=Phase.NEW_GAME)
         elif value == 1:
             self._load_from_title = True

@@ -1,6 +1,6 @@
 # 現況（唯一真相，≤120 行）
 
-更新：2026-10-05（S53主題隨機命名驗收完成）
+更新：2026-10-05（S54角色自動生成設定驗收完成）
 
 ## 已完成（各階段細節見 git log 與 wiki）
 
@@ -29,16 +29,17 @@
 - **S29** 口上／地の文的狀態書き込み（catalog が非 LOCAL 代入を GameState へ直接書く＋ジャーナルで失敗回復；下節）。
 - **S30** catalog 剩餘的不可執行原因（ループ內 $ラベルへの GOTO・STRDATA・SETCOLORBYNAME・FINDCHARA・GETCOLOR・RANDCHOOSE 系；下節）。
 
-## S53：主題隨機命名
+## S54：角色自動生成設定
 
-- S32–S52完成既有擴充，含SHOP各子選單、隊伍編成、一人稱與武器自訂、數值格式、開局關係與遊戲說明。
-- S53接通RANDOMNAMING_FROMGENRE與兩個角色初始化caller：8主題／隨機主題、空字重抽、最多10次避重重抽。
-- 直接使用既有CSV資料；尾端中點處理、RESULT／RESULTS與LOCALS靜態殘值照原作，無新增UNVERIFIED／DEVIATION。
-- GLOBAL:8經既有全域檔案載入FLAG:820；未新增開局輸入，主題手動UI留待完整角色製作階段。
-- 詳見`docs/wiki/era/genre-naming.md`；新增49案，含兩條caller、兩種開局Web及存讀檔。
-- 主代理完整pytest：`3563 passed, 1 warning in 297.70s (0:04:57)`。
-- 標準500局：default246上限／4回標題、tokusou250上限，catalog失敗0；逐seed完整結果與S52一致。
-- 10個50局前景批次exit=0，seed全集、log／JSONL一致；結果與audit位於`tmp/s53/`。
+- S32–S53完成既有擴充，含SHOP各子選單、隊伍編成、一人稱與武器自訂、數值格式、開局關係、遊戲說明與主題命名。
+- S54接通FLAG:824自動分配フィート、FLAG:825限定有口上性格；GLOBAL:22／23沿既有載入流程生效。
+- 復用既有SET_FEAT_DEFAULT；性格抽選實際執行catalog COLOR並保留副作用，開局共用原輸出／服務。
+- 原作全部候選取得、重抽累積性格與內層計數特性均保留；無新增UNVERIFIED／DEVIATION。
+- 手動設定UI仍留待完整角色製作；詳見`docs/wiki/era/generation-settings.md`。
+- 新增71案並移除1個舊停止案；定向驗證`231 passed, 1 warning in 7.64s`。
+- 主代理完整pytest：`3633 passed, 1 warning in 286.88s (0:04:46)`。
+- 標準500局：default246上限／4回標題、tokusou250上限，catalog失敗0；逐seed完整結果與S53一致。
+- 10個50局前景批次exit=0，seed全集、log／JSONL一致；結果與audit位於`tmp/s54/`。
 
 ## 口上 catalog 現況
 
@@ -62,7 +63,7 @@ P4 父親 CFLAG:9 指向不存在的ボス／ラスボス／モブ；HEROINE_PRE
 
 - **自主推進（使用者指定 2026-10-02，依序）**：~~S22 RESULTS 共用~~ → ~~S23 [反撃]スタイル~~ → ~~S24 設定畫面／プリセット~~ → ~~S25 狀態畫面~~
   → ~~S26 FLASHNEWS~~ → ~~S26b RESULTS:0 殘值~~ → ~~S27 ラスボス～結局~~ → ~~S28 未移植行動（S28a〜S28c2）~~：**指定範圍全部完成**。
-  使用者已授權選定下一步並推進S53主題隨機命名；完成本階段後停止，下一階段待選定。
+  使用者已授權選定下一步並推進S54角色自動生成設定；完成本階段後停止，下一階段待選定。
 - 已裁決（2026-10-02）：名乗り改竄的 RESULTS:2 殘值照原作（S22 實作）；開局デフォルト悪堕ち的輸出丟棄維持現況。
 - 已裁決（2026-10-02）：PALAM_HOSEI 殘值照原作、防衛力負數 D1〜D4（S21 實作）。已裁決（2026-10-01）：S20 的 DEVIATION 6 項＋斜體。
 - 已裁決（2026-09-30）：拡張度初期值照原作；S13 苗床出産的 static LOSEDEF 等怪處照原作。
