@@ -288,6 +288,7 @@ def test_session_default_opening_reaches_shop(data):
     s.input(0)
     assert s.phase == Phase.NEW_GAME
     s.input(0)  # おまかせで開始
+    s.input(1000)
     assert s.phase == Phase.NEW_GAME  # HEROINE_PRESET の入力待ち（S24）
     s.input(1)  # [1]「基本セット」
     assert s.phase == Phase.SHOP

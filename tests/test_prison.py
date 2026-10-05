@@ -657,6 +657,7 @@ def test_e2e_defeat_prison_shop_save_load(data):
     s = GameSession(data, tmp, rng=GameRng(0))
     s.input(0)
     s.input(1)  # 初期セット『特装戦隊』で開始
+    s.input(1000)  # CHARA_MAKE_MAIN 完成
     s.input(1)  # HEROINE_PRESET [1] 基本セット
     for _ in range(400):
         st = s.state
@@ -738,6 +739,7 @@ def test_session_halts_on_eventshop_stop(data, monkeypatch):
     s = GameSession(data, Path(tempfile.mkdtemp()), rng=GameRng(1))
     s.input(0)
     s.input(1)  # 初期セット『特装戦隊』で開始
+    s.input(1000)  # CHARA_MAKE_MAIN 完成
     s.input(1)  # HEROINE_PRESET [1] 基本セット
 
     def boom(*a, **k):

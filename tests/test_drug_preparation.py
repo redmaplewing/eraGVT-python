@@ -84,7 +84,7 @@ def test_maintenance_original_keys(ctx,fatigue,key,cost,remaining):
 
 def test_web_purchase_return(data,tmp_path):
     s=GameSession(data,tmp_path,rng=GameRng(0),narration=NullNarrationService())
-    for value in (0,0,1): s.input(value)
+    for value in (0,0, 1000,1): s.input(value)
     s.state.money=250
     for value in (113,13,2,0,999): s.input(value)
     assert s.phase==Phase.SHOP
@@ -214,7 +214,7 @@ def test_hidden_confirmation_resources_and_character_cancel(ctx,money,parts,mess
 @pytest.mark.parametrize('answer,expected',[(0,(0,0,0,1)),(1,(25000,40,1,0))])
 def test_web_hidden_confirmation_halts_unfinished_branch(data,tmp_path,answer,expected):
     s=GameSession(data,tmp_path,rng=GameRng(0),narration=NullNarrationService())
-    for value in (0,0,1): s.input(value)
+    for value in (0,0, 1000,1): s.input(value)
     st=s.state; st.money=25000; st.flag[200]=40; st.flag[54]=5
     missing=data.index_of('TALENT','四肢欠損'); symbiosis=data.index_of('TALENT','共生')
     st.charas[1].talent[missing]=1

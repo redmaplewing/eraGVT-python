@@ -125,7 +125,7 @@ def _start_heroine_preset(data, store=None, chara=1):
     out = TextOutput()
     store = store or GlobalStore()
     gen = event_first_gen(st, data, out, store)
-    done, _ = _drive(gen, [chara])
+    done, _ = _drive(gen, [chara, 1000])
     assert not done
     return st, out, store, gen
 
@@ -524,6 +524,7 @@ def test_session_inyoku_set_and_shop_config(data):
         c = TestClient(app)
         c.post("/api/input", json={"value": 0})
         c.post("/api/input", json={"value": 0})  # おまかせ
+        c.post("/api/input", json={"value": 1000})
         s = c.post("/api/input", json={"value": 2}).json()  # [2]「淫獄セット」
         assert s["phase"] == "shop"
         st = app.state.session.state
@@ -550,6 +551,7 @@ def test_session_global_autoload_on_load(data):
         s = GameSession(data, Path(tmp), rng=GameRng(2), now=lambda: datetime(2026, 10, 2))
         s.input(0)
         s.input(1)
+        s.input(1000)  # CHARA_MAKE_MAIN 完成
         s.input(0)  # [0] グローバルコンフィグを引き継いで開始（初回起動 → 全 0）
         assert s.phase == Phase.SHOP
         assert tuple(s.state.flag[k] for k in FLAGS) == (1, 0, 0, 0, 0, 0)
@@ -587,5 +589,6 @@ def test_session_mode_select_back_to_title(data):
     assert s.phase == Phase.TITLE and s.state is None
     s.input(0)
     s.input(0)
+    s.input(1000)  # CHARA_MAKE_MAIN 完成
     s.input(1)
     assert s.phase == Phase.SHOP

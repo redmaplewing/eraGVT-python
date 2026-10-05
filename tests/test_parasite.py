@@ -428,6 +428,7 @@ def test_session_eventshop_input(data):
     s = GameSession(data, Path(tempfile.mkdtemp()), rng=GameRng(1))
     s.input(0)
     s.input(1)
+    s.input(1000)  # CHARA_MAKE_MAIN 完成
     s.input(1)  # HEROINE_PRESET [1] 基本セット
     st = s.state
     c = st.charas[2]

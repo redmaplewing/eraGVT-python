@@ -79,6 +79,10 @@ MODE_SELECT（:297）沒有預設值，`[1] NORMAL` 是第一個選項（S03 起
   直接開始遊戲時維持 CSV 原值。
 - `CFLAG:240`（固有番號）= 登錄 index（CHARA_MAKE_DEFAULT.ERB:242–243）。
 
+S55 已接通 `CHARA_MAKE_MAIN` 的主選單與共通設定、全域存讀、完成與返回；詳見
+`creation-menu.md`。既有二擇開局後先顯示製作畫面，按 `[1000]` 才繼續 HEROINE_PRESET；
+非互動 helper 與標準模擬只多送這個直接確定步驟。
+
 初期セット（**不是**預設，是キャラメイク畫面的 `[200]` 選項；本程式 `event_first(preset=PRESET_TOKUSOU)`）：`SYSTEM/キャラメイキング関連/初期セット/*.ERB@SHOKISET_SELECT_n` 以
 `ADDCHARA <CSV番号>` 加入 CSV 角色，例如 `0_特捜戦隊.ERB@SHOKISET_SELECT_0` 加 301/302/303，
 之後 `CALL SHOKISET_CSVFIX`（`SHOKISET.ERB`:96）。由 `SHOKISET.ERB@CHARA_MAKE_FINALIZE_KAI` 選單呼叫。

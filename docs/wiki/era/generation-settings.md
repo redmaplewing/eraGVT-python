@@ -5,7 +5,7 @@
 - `ERB/SYSTEM/キャラメイキング関連/CHARA_MAKE_DEFAULT.ERB@CHARA_MAKE_INITIALIZE:8–164`。
 - `ERB/SYSTEM/キャラメイキング関連/CHARA_MAKE.ERB@CHARA_MAKE_MAIN:9–21`：
   `GLOBAL:22 → FLAG:824` 自動分配フィート；`GLOBAL:23 → FLAG:825` 限定有口上的性格。
-- 沿用全域設定載入；未開啟時不增加輸入。手動設定 UI 留待完整角色製作階段。
+- S55 接通角色製作主選單 [1008]／[1009] 切換與 [170]／[180] 全域存讀；見 `creation-menu.md`。
 - 原作 `CHARA_MAKE_INITIALIZE` 呼叫者：同檔 `@CHARA_MAKE_FINALIZE:232` 與
   `ERB/SYSTEM/キャラメイキング関連/FIRSTSETTING_CHARA.ERB@FIRSTSETTING_CHARA_MAIN:22`。
   Python 已接通開局的 finalize；後者完整手動 UI 仍未移植。

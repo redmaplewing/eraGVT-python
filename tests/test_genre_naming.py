@@ -145,7 +145,7 @@ def test_web_global_genre_and_save_load(data,tmp_path,preset):
         response=client.post("/api/input",json={"value":value})
         assert response.status_code==200
         return response.json()
-    send(0);send(preset)
+    send(0);send(preset);send(1000)
     assert send(1)["phase"]=="shop"
     st=app.state.session.state
     assert st.flag[820]==3

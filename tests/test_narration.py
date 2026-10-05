@@ -343,6 +343,7 @@ def test_web_shop_shows_hitokuti(data, tmp_path):
     client = TestClient(app)
     client.post("/api/input", json={"value": 0})
     client.post("/api/input", json={"value": 1})  # 初期セット『特装戦隊』
+    client.post("/api/input", json={"value": 1000})  # CHARA_MAKE_MAIN 完成
     client.post("/api/input", json={"value": 1})  # HEROINE_PRESET [1] 基本セット
     lines = [ln["parts"] for ln in client.get("/api/screen").json()["lines"]]
     text = ["".join(s["text"] for p in parts for s in p["segments"]) for parts in lines]

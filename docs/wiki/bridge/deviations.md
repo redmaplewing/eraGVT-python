@@ -27,7 +27,7 @@ ERB 路徑相對 `source/earGVP/ERB/`。
 - [ ] **全域資料（GLOBAL）：成就・歷代紀錄不讀不寫**（S24 縮小範圍）：config 相關的 GLOBAL（LOADGLOBAL／UPDATE／UPDATE_GLOBAL、
   GLOBAL:4・11〜15・51〜59、MOB_GLOBAL、CONFIG 畫面的 SAVEGLOBAL、CHARA_MAKE_MAIN:9–21 的讀取）已照原作移植（`eragvt.game.config`、
   `state.savefile.GlobalStore`、`saves/global.json`；`docs/wiki/era/flow.md` §10）。仍不做的是成就／紀錄類：（原作：下列各處；Python：見各行）
-  キャラメイク畫面的 [170]／[180] 共通設定存讀（GLOBAL:5〜9・20〜23、GLOBALS:15〜17，UI 未移植 → 永遠是 0／空）也尚未移植。
+  S55 已接通角色製作 [170]／[180] 共通設定存讀（GLOBAL:5〜9・20〜23、GLOBALS:15〜17），見 `docs/wiki/era/creation-menu.md`。
   S05 起戰鬥中的 `UNLOCK_ACHIEVEMENT`（タクティカルオーダー、絶体絶命ヒロイン等）與 `GET_STATE_ABLUP` 同樣不執行（`eragvt.game.battle.core.unlock_achievement`）。
   S40 衣裝購買返回亦沿用此共用空操作：`ERB/インターミッション画面/SHOP_CLOTH.ERB@SHOW_CLOTH:76–92` 累計 ITEM:100–399（排除100／200／300），達10／30時呼叫269／274；`ERB/インターミッション画面/SHOP_TROPHY.ERB@UNLOCK_ACHIEVEMENT:6–20` 原會顯示達成訊息、寫 GLOBAL:269／274 並 SAVEGLOBAL，現皆不執行。付款、持有狀態與返回RESULT:0=1不受影響。
   S30 起地の文 catalog 內的 `CALL UNLOCK_ACHIEVEMENT`（MESSAGE_BATTLE.ERB:355／368 等）也同樣什麼都不做、RESULT = 0（`eragvt.narration.pyfuncs`）。
@@ -41,9 +41,9 @@ ERB 路徑相對 `source/earGVP/ERB/`。
   `battle.source_check._rescue_captives`、`narration/hooks.py` PRISON_HOOK_LINES）
 - [ ] **開局的 UI 跳過**（S10 改寫、S24 縮小）：狀態已照原作預設路徑（NORMAL → キャラメイク不設定直接 `[1000]`＝汎用キャラ 3 名おまかせ生成
   → HEROINE_PRESET `[1]` 基本セット → 序章 `[0]`，`docs/wiki/era/flow.md` §1）。**S24**：HEROINE_PRESET 畫面照原文顯示並接受 [0]〜[3]・[10]
-  （[20+]／[30] 未移植 → 停止）。剩下的偏離只有**畫面**：模式選擇／キャラメイク／序章畫面不顯示，改為 `@EVENTFIRST` 中 MODE_SELECT 位置的
-  2 択「[0] おまかせで開始（原作既定）／[1] 初期セット『特装戦隊』で開始」（後者＝キャラメイクで `[200]`→`[0]`→`[1]はい`→`[1000]`），
-  其下照 MODE_SELECT:360–368 附 [100] タイトルに戻る／[200] グローバルコンフィグの編集（照原作）／[300] ゲームの説明（未移植 → 停止）。
+  （[20+]／[30] 已於 S25／S51 接通）。S55 已接通角色製作主選單與共通設定。仍略過模式選擇／序章畫面，保留 `@EVENTFIRST` 中 MODE_SELECT 位置的
+  2 択「[0] おまかせで開始（原作既定）／[1] 初期セット『特装戦隊』で開始」（後者先載入原作 `[200]`→`[0]`→`[1]はい` 的角色，再進製作主選單；兩者均需按 `[1000]` 完成），
+  其下照 MODE_SELECT:360–368 附 [100] タイトルに戻る／[200] グローバルコンフィグの編集（照原作）／[300] ゲームの説明（S52 已接通）。
   模式固定 NORMAL（MODE_SELECT 沒有預設值，[1] 是第一個選項）。（Python：`eragvt.game.opening.event_first_gen`、`session._title_input`）
   開局 `MESSAGE_FIRST` 口上仍不輸出（見下「口上」）。
   S42延伸至醫療室機器人加入：個別編輯走FIRSTSETTING_CHARA_MAIN不改設定直接[99]，初始化、結界、暫存復原照原作；

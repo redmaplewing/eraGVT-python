@@ -139,7 +139,7 @@ def test_append_and_persistence(ctx):
 @pytest.mark.parametrize('menu,enabled',[(169,False),(169,True),(170,False),(170,True)])
 def test_session_entry(data,tmp_path,menu,enabled):
     s=GameSession(data,tmp_path,rng=GameRng(0),narration=NullNarrationService())
-    for v in (0,0,1): s.input(v)
+    for v in (0,0, 1000,1): s.input(v)
     s.state.flag[0]=512 if enabled else 0
     count=s.state.charanum; s.input(menu)
     if enabled and menu==170:
@@ -218,7 +218,7 @@ def test_retire_all_then_roster(ctx):
 def test_session_roster_visible_until_enter(data,tmp_path,record):
     """INTAI:348、360 PRINTW必須在下一個LB前等確認，不能回SHOP把名簿遮掉。"""
     s=GameSession(data,tmp_path,rng=GameRng(0),narration=NullNarrationService())
-    for v in (0,0,1): s.input(v)
+    for v in (0,0, 1000,1): s.input(v)
     st=s.state; st.flag[0]=512; st.savestr[50]=record; st.result[0]=83; st.results[0]='保留'
     s.input(169)
     assert s.phase==Phase.TURN and s.input_kind=='text'
@@ -232,7 +232,7 @@ def test_session_roster_visible_until_enter(data,tmp_path,record):
 def test_report_visible_before_deletion(data,tmp_path,answer):
     """INTAI:335、342等待先於OLD_GIRL:34–37刪除；EnterKey不寫RESULT/RESULTS。"""
     s=GameSession(data,tmp_path,rng=GameRng(0),narration=NullNarrationService())
-    for v in (0,0,1): s.input(v)
+    for v in (0,0, 1000,1): s.input(v)
     st=s.state; st.flag[0]=512; st.flag.set_bit(801,3,False)
     count=st.charanum; st.result[5]=78; st.results[0]='保留'
     for v in (170,1,0,1): s.input(v)
@@ -253,7 +253,7 @@ def test_web_empty_enter(data,tmp_path):
     from eragvt.web import create_app
     app=create_app(data,tmp_path,rng_factory=lambda:GameRng(0),narration=NullNarrationService())
     client=TestClient(app)
-    for v in (0,0,1): client.post('/api/input',json={'value':v})
+    for v in (0,0, 1000,1): client.post('/api/input',json={'value':v})
     app.state.session.state.flag[0]=512
     client.post('/api/input',json={'value':169})
     html=client.get('/').text

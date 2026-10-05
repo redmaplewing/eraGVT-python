@@ -6,9 +6,9 @@
 - 呼叫者：`ERB/SYSTEM/キャラメイキング関連/CHARA_MAKE_DEFAULT.ERB@CHARA_MAKE_INITIALIZE:169–210`，
   以及同檔 `@CHARA_MAKE_BASE_PROFILE:919–960`。前者處理已有普通名字的角色，後者處理汎用角色生成。
 - 共通設定由 `ERB/SYSTEM/キャラメイキング関連/CHARA_MAKE.ERB@CHARA_MAKE_MAIN:9–21`
-  的 `GLOBAL:8 → FLAG:820` 讀入。Python 沿用既有 `GlobalStore` 載入流程，不新增開局輸入。
+  的 `GLOBAL:8 → FLAG:820` 讀入。Python 沿用既有 `GlobalStore` 載入流程；S55 接通主選單 [1003] 與全域存讀。
 - 主題手動選單位於 `ERB/SYSTEM/キャラメイキング関連/FIRSTSETTING_CROWNNAME.ERB@FIRSTSETTING_transnamegenre:76–136`，
-  仍留待完整角色製作 UI 階段；S53 不增加無呼叫者的選單函式。
+  已於 S55 接通；詳見 `creation-menu.md`。
 
 ## 抽選規則
 
@@ -53,4 +53,5 @@
 
 `tests/test_genre_naming.py` 覆蓋 8 主題與隨機主題、空字重抽、Regex 尾端、無效主題靜態殘值、
 10 次避重上限、排除主角／自己、兩條實際 caller、CSV 全區間重讀、9 類全域設定、兩種 Web 開局與存讀檔。
-主題手動 UI 仍未移植；沒有新增 UNVERIFIED／DEVIATION。完整 pytest 與標準 500 局摘要見 STATUS。
+S55 已接通主題手動 UI 與全域存讀，相關測試見 `tests/test_creation_menu.py`。
+沒有新增 UNVERIFIED／DEVIATION；完整 pytest 與標準 500 局摘要見 STATUS。

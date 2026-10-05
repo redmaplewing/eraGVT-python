@@ -63,11 +63,11 @@ def event_first(
 ) -> None:
     """`event_first_gen` を固定の入力で最後まで実行する（テスト・模擬用）。
 
-    入力：開局経路の 2 択（`preset` が None なら [0] おまかせ、番号なら [1] 初期セット）→ HEROINE_PRESET `[config_preset]`。
+    輸入：開局二擇（None 為 [0]、初期セット為 [1]）→ CHARA_MAKE_MAIN [1000] → HEROINE_PRESET [config_preset]。
     `store` 省略時は空のメモリ上グローバル（ファイルなし＝真の初回起動）。
     """
     gen = event_first_gen(state, data, out or TextOutput(), store or GlobalStore(identity=GameIdentity.from_data(data)), narration)
-    inputs = [0 if preset is None else 1, config_preset]
+    inputs = [0 if preset is None else 1, 1000, config_preset]
     try:
         next(gen)
         for v in inputs:
@@ -81,7 +81,7 @@ MODE_SELECT_FOOTER = ("[100] タイトルに戻る　　　　　　　　", "[2
 
 
 def _show_mode_select(out: TextOutput) -> None:
-    # DEVIATION: モード選択・キャラメイク画面は未移植。代わりに開局経路を 2 択で選ばせる
+    # DEVIATION: 模式選擇仍由既有開局二擇代替；S55 已接通後續角色製作主選單。
     # （[0] が原作の既定＝何も変えずに確定した場合、[1] はキャラメイクで初期セットを読み込んだ場合）。
     # 末尾の [100]／[200]／[300] は MODE_SELECT:360–368 の原文。
     out.drawline()
@@ -121,53 +121,57 @@ def event_first_gen(
     state.swap_chara(0, 1)
     state.del_chara(1)
     # :73–87 モード選択（ボスフラグ・防衛力のリセット → MODE_SELECT で NORMAL）
-    state.flag[100] = 0
-    state.flag[101] = 0
-    state.flag[852] = 5000
-    preset: int | None = None
-    _show_mode_select(out)
-    while True:  # MODE_SELECT:369 $INPUT_LOOP_MODE
-        r = yield
-        if r in (0, 1):
-            preset = None if r == 0 else PRESET_TOKUSOU
-            break
-        if r == 100:  # :391–392 RETURN 999 → :82–85 RESETDATA・BEGIN TITLE
-            return False
-        if r == 200:  # :393–402（引継ぎフラグ == 0）
-            for i in range(5):
-                state.flag[801 + i] = store.mem.global_[11 + i]
-            update_global(state, store, out, version)
-            yield from config_gen(state, data, out, store, "mainmenu")
-            _show_mode_select(out)  # GOTO MASTER_LOOP（MODE_SELECT:300）
+    while True:
+        state.flag[100] = 0
+        state.flag[101] = 0
+        state.flag[852] = 5000
+        preset: int | None = None
+        _show_mode_select(out)
+        while True:  # MODE_SELECT:369 $INPUT_LOOP_MODE
+            r = yield
+            if r in (0, 1):
+                preset = None if r == 0 else PRESET_TOKUSOU
+                break
+            if r == 100:  # :391–392 RETURN 999 → :82–85 RESETDATA・BEGIN TITLE
+                return False
+            if r == 200:  # :393–402（引継ぎフラグ == 0）
+                for i in range(5):
+                    state.flag[801 + i] = store.mem.global_[11 + i]
+                update_global(state, store, out, version)
+                yield from config_gen(state, data, out, store, "mainmenu")
+                _show_mode_select(out)  # GOTO MASTER_LOOP（MODE_SELECT:300）
+                continue
+            if r == 300:  # :403–405 CALL TUTORIAL
+                from .tutorial import tutorial
+                yield from tutorial(state, out)
+                _show_mode_select(out)  # :405 GOTO MASTER_LOOP
+                continue
+            out.clearline(1)
+            out.printl("無効な値です")
+        state.flag[0] = MODE_OPTIONS[GameMode.NORMAL]  # MODE_SELECT:372–376
+        # :90–105
+        state.flag[50] = 1
+        state.flag[51] = 1
+        state.flag[3] = BOSS_ERB_NUM
+        state.flag[4] = 1
+        for i in range(state.flag[3]):
+            state.flag.set_bit(100, i)
+        state.flag[101] = 0
+        # :111–122 モードに応じたデフォルト人数の汎用キャラ
+        for _ in range(1 if game_option(state, GameOption.SOLO) else 3):
+            state.add_chara(data, 0)
+            state.flag[8] += 1
+        # :127 CALL CHARA_MAKE_MAIN, 0
+        from .action import Ctx
+        # 保留同一輸出與口上服務；非互動 helper 未提供時，由性格初始化按需載入 catalog。
+        generation_ctx = Ctx(state, data, out, narration, store)
+        from .creation_menu import creation_menu
+        result = yield from creation_menu(generation_ctx, preset)
+        if result == -1:  # EVENTFIRST:128–132：清除角色但不歸零 FLAG:8。
+            for _ in range(state.charanum - 1):
+                state.del_chara(1)
             continue
-        if r == 300:  # :403–405 CALL TUTORIAL
-            from .tutorial import tutorial
-            yield from tutorial(state, out)
-            _show_mode_select(out)  # :405 GOTO MASTER_LOOP
-            continue
-        out.clearline(1)
-        out.printl("無効な値です")
-    state.flag[0] = MODE_OPTIONS[GameMode.NORMAL]  # MODE_SELECT:372–376
-    # :90–105
-    state.flag[50] = 1
-    state.flag[51] = 1
-    state.flag[3] = BOSS_ERB_NUM
-    state.flag[4] = 1
-    for i in range(state.flag[3]):
-        state.flag.set_bit(100, i)
-    state.flag[101] = 0
-    # :111–122 モードに応じたデフォルト人数の汎用キャラ
-    for _ in range(1 if game_option(state, GameOption.SOLO) else 3):
-        state.add_chara(data, 0)
-        state.flag[8] += 1
-    # :127 CALL CHARA_MAKE_MAIN, 0
-    from .action import Ctx
-    # 保留同一輸出與口上服務；非互動 helper 未提供時，由性格初始化按需載入 catalog。
-    generation_ctx = Ctx(state, data, out, narration, store)
-    if preset is None:
-        chara_make_main_default(state, data, store, ctx=generation_ctx)
-    else:
-        chara_make_main_preset(state, data, preset, store, ctx=generation_ctx)
+        break
     # :135 キャラメイク完了処理（CHARA_MAKE_MAIN の [1000] に続いて 2 回目）
     chara_make_finalize(state, data, ctx=generation_ctx)
     # :143–166 口上番号・行動予定
@@ -308,7 +312,7 @@ def research_quota(state: GameState) -> None:
 def _chara_make_load_global(state: GameState, store: GlobalStore) -> None:
     """`CHARA_MAKE.ERB@CHARA_MAKE_MAIN`:9–21：LOADGLOBAL 後、メモリ上の GLOBAL から共通設定を読む（成否は見ない）。
     GLOBAL:5〜9・20〜23／GLOBALS:15〜17 由既有全域檔案讀入；不存在時為 0／空。
-    S53 支援 GLOBAL:8 的主題命名；角色製作 [1003] 選擇與 [170] 儲存 UI 仍未移植。"""
+    S55 的互動選單位於 creation_menu，這裡保留直接完成的相容 helper。"""
     store.load()
     g, gs = store.mem.global_, store.mem.globals_
     for k, gk in ((5, 5), (6, 6), (7, 7), (820, 8), (821, 9), (822, 20), (823, 21), (824, 22), (825, 23)):

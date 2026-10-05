@@ -566,6 +566,7 @@ def run_one(data, narration, seed: int, preset: str, max_shop: int, max_steps: i
     s = GameSession(data, save_dir, rng=GameRng(seed), narration=narration)
     s.input(0)
     s.input(0 if preset == "default" else 1)
+    s.input(1000)  # CHARA_MAKE_MAIN：不改設定、直接完成。
     s.input(config_preset)  # HEROINE_PRESET（S24）
     for f, b in clear_bits:
         s.state.flag.set_bit(f, b, False)

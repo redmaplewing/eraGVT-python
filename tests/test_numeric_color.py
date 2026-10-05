@@ -144,7 +144,7 @@ def test_saved_color_codes_reach_web_status_page(data, tmp_path):
         assert response.status_code == 200
         return response.json()
 
-    for value in (0, 0, 1, 1):
+    for value in (0, 0, 1000, 1, 1):
         send(value)
     chara = app.state.session.state.charas[1]
     code = "0xFF//0b10000000//25e1"

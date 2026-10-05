@@ -123,7 +123,7 @@ def test_selection_eligibility(ctx,state,member):
 
 def test_session_shop_strengthening_and_return(data,tmp_path):
     s=GameSession(data,tmp_path,rng=GameRng(0),narration=NullNarrationService())
-    for value in (0,0,1): s.input(value)
+    for value in (0,0, 1000,1): s.input(value)
     c=s.state.charas[1]; c.juel[20]=50; before=c.base[50]
     for value in (111,1,2,100,999): s.input(value)
     assert s.phase==Phase.SHOP

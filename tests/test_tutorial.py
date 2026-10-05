@@ -131,5 +131,6 @@ def test_web_opening_continue(data,tmp_path,preset):
     send(300)
     send(999)
     send(preset)
+    send(1000)
     send(1)
     assert app.state.session.phase.name == "SHOP"

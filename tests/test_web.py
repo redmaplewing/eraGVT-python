@@ -46,6 +46,7 @@ def test_new_game_default_opening_to_shop_and_save(client):
     c, app, _ = client
     c.post("/api/input", json={"value": 0})
     c.post("/api/input", json={"value": 0})
+    shop = c.post("/api/input", json={"value": 1000})  # CHARA_MAKE_MAIN 完成
     shop = c.post("/api/input", json={"value": 1}).json()  # HEROINE_PRESET [1] 基本セット
     assert shop["phase"] == "shop"
     st = app.state.session.state
@@ -71,7 +72,8 @@ def test_new_game_shop_action_save_load(client):
     # 2 択（DEVIATION）＋ MODE_SELECT:360–368 の [100]／[200]／[300]
     assert new_game["phase"] == "new_game" and set(buttons(new_game)) == {0, 1, 100, 200, 300}
     assert any("おまかせで開始" in x for x in texts(new_game))
-    hp = c.post("/api/input", json={"value": 1}).json()  # 初期セット『特装戦隊』
+    c.post("/api/input", json={"value": 1})  # 初期セット
+    hp = c.post("/api/input", json={"value": 1000}).json()  # 完成『特装戦隊』
     assert hp["phase"] == "new_game"  # HEROINE_PRESET（オープニング処理.ERB:617–）
     assert {0, 1, 2, 3, 10, 20, 21, 22, 30}.issubset(buttons(hp))
     shop = c.post("/api/input", json={"value": 1}).json()  # [1]「基本セット」
@@ -110,6 +112,7 @@ def test_html_page_renders_buttons(client):
     c, _, _ = client
     c.post("/input", data={"value": 0})
     c.post("/input", data={"value": 1})
+    c.post("/input", data={"value": 1000})
     c.post("/input", data={"value": 1})
     html = c.get("/").text
     assert 'name="value" value="100"' in html
@@ -130,6 +133,7 @@ def test_full_turn_rest_back_to_shop(client):
     c, app, save_dir = client
     c.post("/api/input", json={"value": 0})
     c.post("/api/input", json={"value": 1})  # 初期セット『特装戦隊』
+    c.post("/api/input", json={"value": 1000})  # CHARA_MAKE_MAIN 完成
     c.post("/api/input", json={"value": 1})  # HEROINE_PRESET [1] 基本セット
     s = c.post("/api/input", json={"value": 100}).json()  # USERSHOP_ACTION_CONFIRM の確認
     assert s["phase"] == "action_confirm"
@@ -152,6 +156,7 @@ def test_training_input_and_unported_halt(client, monkeypatch):
     c, app, _ = client
     c.post("/api/input", json={"value": 0})
     c.post("/api/input", json={"value": 1})  # 初期セット『特装戦隊』
+    c.post("/api/input", json={"value": 1000})  # CHARA_MAKE_MAIN 完成
     c.post("/api/input", json={"value": 1})  # HEROINE_PRESET [1] 基本セット
     c.post("/api/input", json={"value": 102})  # 紅葉 → 鍛錬
     c.post("/api/input", json={"value": 100})
@@ -186,6 +191,7 @@ def test_sortie_battle_retreat_back_to_shop(client):
     c, app, save_dir = client
     c.post("/api/input", json={"value": 0})
     c.post("/api/input", json={"value": 1})  # 初期セット『特装戦隊』
+    c.post("/api/input", json={"value": 1000})  # CHARA_MAKE_MAIN 完成
     c.post("/api/input", json={"value": 1})  # HEROINE_PRESET [1] 基本セット
     st = app.state.session.state
     st.flag[47] = st.flag[46]  # ENCOUNT.ERB:159 のボス遭遇条件（探索度 >= ノルマ）
@@ -230,6 +236,7 @@ def test_sortie_restraint_battle_save_load(tmp_path, data):
     c = TestClient(app)
     c.post("/api/input", json={"value": 0})
     c.post("/api/input", json={"value": 1})  # 初期セット『特装戦隊』
+    c.post("/api/input", json={"value": 1000})  # CHARA_MAKE_MAIN 完成
     c.post("/api/input", json={"value": 1})  # HEROINE_PRESET [1] 基本セット
     app.state.session.state.flag[47] = app.state.session.state.flag[46]  # ENCOUNT.ERB:159
     c.post("/api/input", json={"value": 101})
@@ -270,6 +277,7 @@ def test_shop_status_screen_web(client):
     c, app, _ = client
     c.post("/api/input", json={"value": 0})
     c.post("/api/input", json={"value": 0})
+    c.post("/api/input", json={"value": 1000})
     c.post("/api/input", json={"value": 1})
     s = c.post("/api/input", json={"value": 110}).json()
     assert s["phase"] == "turn"

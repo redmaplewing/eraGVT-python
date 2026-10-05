@@ -43,6 +43,7 @@ def _session(data, preset=0, seed=0):
     s = GameSession(data, Path(tempfile.mkdtemp()), rng=GameRng(seed), narration=NullNarrationService())
     s.input(0)
     s.input(preset)
+    s.input(1000)  # CHARA_MAKE_MAIN 完成
     s.input(1)
     assert s.phase == Phase.SHOP
     return s
@@ -465,7 +466,8 @@ def test_heroine_preset_status(data):
     out = TextOutput()
     gen = event_first_gen(st, data, out, GlobalStore())
     next(gen)
-    gen.send(1)  # 初期セット → HEROINE_PRESET
+    gen.send(1)  # 初期セット
+    gen.send(1000)  # CHARA_MAKE_MAIN → HEROINE_PRESET
     gen.send(21)
     assert any(t.endswith("PAGE(1/5)") for t in _texts(out.lines))
     gen.send(999)

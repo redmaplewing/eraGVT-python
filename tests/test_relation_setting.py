@@ -216,7 +216,7 @@ def test_web_and_save(data,tmp_path):
     client=TestClient(app)
     def send(value):
         return client.post("/api/input",json={"value":value}).json()
-    for value in (0,0,30,1,2,30,200,""):
+    for value in (0,0,1000,30,1,2,30,200,""):
         send(value)
     st=app.state.session.state
     assert st.charas[1].relation[2] & (1<<30)

@@ -369,6 +369,7 @@ def _session(data, tmp, seed=3):
     s = GameSession(data, Path(tmp), rng=GameRng(seed))
     s.input(0)
     s.input(1)  # 初期セット
+    s.input(1000)  # CHARA_MAKE_MAIN 完成
     s.input(1)  # HEROINE_PRESET 基本セット
     assert s.phase == Phase.SHOP
     return s

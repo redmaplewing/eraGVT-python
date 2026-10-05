@@ -596,6 +596,7 @@ def test_shop_seisan_turnend_news(data):
         s = GameSession(data, Path(tmp), rng=GameRng(7), narration=NullNarrationService())
         s.input(0)
         s.input(1)  # 初期セット『特装戦隊』
+        s.input(1000)  # CHARA_MAKE_MAIN 完成
         s.input(1)  # HEROINE_PRESET [1] 基本セット
         assert s.phase == Phase.SHOP
         st = s.state

@@ -362,6 +362,7 @@ def test_hangeki_style_boss_battle_integration(data, monkeypatch):
         s = GameSession(data, Path(tmp), rng=GameRng(3), narration=NullNarrationService())
         s.input(0)
         s.input(1)
+        s.input(1000)  # CHARA_MAKE_MAIN 完成
         s.input(1)  # HEROINE_PRESET [1] 基本セット
         for i in range(1, s.state.charanum):
             for dist in (1, 2, 3):

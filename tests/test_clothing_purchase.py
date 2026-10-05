@@ -100,7 +100,7 @@ def test_categories_purchase(ctx,category,cid):
 
 def test_session_purchase_then_equip(data,tmp_path):
     s = GameSession(data,tmp_path,rng=GameRng(0),narration=NullNarrationService())
-    for v in (0,0,1):
+    for v in (0,0, 1000,1):
         s.input(v)
     s.state.item[101] = 0
     s.state.money = 2000
@@ -115,7 +115,7 @@ def test_session_purchase_then_equip(data,tmp_path):
 def test_shop_entry_gate(data,tmp_path,gameover,blocked):
     """ERB/インターミッション画面/SHOP.ERB@USERSHOP:267–269。"""
     s = GameSession(data,tmp_path,rng=GameRng(0),narration=NullNarrationService())
-    for v in (0,0,1):
+    for v in (0,0, 1000,1):
         s.input(v)
     if gameover:
         s.state.flag[0] = 0
