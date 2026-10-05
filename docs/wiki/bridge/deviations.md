@@ -25,9 +25,9 @@ S56現況歸屬：各未勾選項的W編號指向`docs/PLAN.md`；仍待實作�
   代入もコメントで到達しない；S26 の「102／87 回」は 3001／3002 の戰鬥回数で、この路の回数ではなかった）。戰後の BEGIN SHOP では
   @EVENTSHOP 後のオートセーブが @SAVEINFO を呼び、:604 `SUBSTRING` が RESULTS:0 = "408" を書く → 原作どおり「FLASH NEWS：《408》」を表示
   （`shop.save_info` が共用 RESULTS:0 を書く。詳細と書き込み元一覧は `docs/wiki/python/result.md`「事件戰ニュースの前回値」）。
-- [ ] `W01` **全域資料（GLOBAL）：紀錄已接通，原作缺陷待裁決**（S58縮小）：設定與角色製作GLOBAL存讀、共用成就取得／等待／保存、GET_STATE三組判定及SHOP[800]已接通，見[成就](../era/achievements.md)。
-  S58已接通：`ERB/インターミッション画面/SHOP_TURNEND.ERB@UPDATE_STATUS_RECORD`；`ERB/ゲーム内_イベント発生/エンディング/SCORE.ERB@SCORE:695–698／740–747`的GLOBAL:110最高總評與GLOBAL:100–102模式通關數；`ERB/ゲーム内_イベント発生/エンディング/ENDING.ERB@ENDING_1／ENDING_3／ENDING_6`的GLOBAL:114 ENDLESS最高擊破紀錄。20欄紀錄及結算寫入已接通。另`ERB/ゲーム内_戦闘処理/BATTLE_COM_AFTER.ERB@SOURCE_CHECK`原先整段省略的救援271／273與全boss259／260／261／265六處成就已補齊。待裁決的首次全域版本與GLOBAL:110碰撞仍不能視為解決，詳見成就wiki。
-  既有角色製作權限／引繼解鎖消費端已核對；未移植互動端由W02接續驗收。首次全域檔的GLOBAL:3原作問題見本頁S24怪處；GLOBAL:110碰撞見成就wiki，兩項待本次裁決，W01尚未結案。
+- [x] `W01` **全域資料（GLOBAL）：成就／紀錄接通，兩項原作缺陷已修正**（S59；使用者2026-10-05同意）：設定與角色製作GLOBAL存讀、共用成就取得／等待／保存、GET_STATE三組判定及SHOP[800]已接通，見[成就](../era/achievements.md)。
+  S58已接通：`ERB/インターミッション画面/SHOP_TURNEND.ERB@UPDATE_STATUS_RECORD`；`ERB/ゲーム内_イベント発生/エンディング/SCORE.ERB@SCORE:695–698／740–747`的GLOBAL:110最高總評與GLOBAL:100–102模式通關數；`ERB/ゲーム内_イベント発生/エンディング/ENDING.ERB@ENDING_1／ENDING_3／ENDING_6`的GLOBAL:114 ENDLESS最高擊破紀錄。20欄紀錄及結算寫入已接通。另`ERB/ゲーム内_戦闘処理/BATTLE_COM_AFTER.ERB@SOURCE_CHECK`原先整段省略的救援271／273與全boss259／260／261／265六處成就已補齊。S59最高總評已改讀寫113，魅了維持110，不拆分回填舊110；對應程式均標DEVIATION。
+  既有角色製作權限／引繼解鎖消費端已核對；未移植互動端由W02接續驗收。首次全域檔的GLOBAL:3原作問題見本頁S24怪處；GLOBAL:110碰撞見成就wiki，兩項已於2026-10-05獲使用者「好，依建議」批准；W01最終驗收見STATUS。
 - [ ] `W02／W04／W06` **開局的 UI 跳過**（S10 改寫、S24 縮小）：狀態已照原作預設路徑（NORMAL → キャラメイク不設定直接 `[1000]`＝汎用キャラ 3 名おまかせ生成
   → HEROINE_PRESET `[1]` 基本セット → 序章 `[0]`，`docs/wiki/era/flow.md` §1）。**S24**：HEROINE_PRESET 畫面照原文顯示並接受 [0]〜[3]・[10]
   （[20+]／[30] 已於 S25／S51 接通）。S55 已接通角色製作主選單與共通設定。仍略過模式選擇／序章畫面，保留 `@EVENTFIRST` 中 MODE_SELECT 位置的
@@ -260,9 +260,9 @@ S56現況歸屬：各未勾選項的W編號指向`docs/PLAN.md`；仍待實作�
   **GLOBAL:3 未設定的覆寫**：初次啟動（無 global 檔）時從 CONFIG [1]／[9999] 或 フィルタ [200] 存下的 GLOBAL，其 GLOBAL:3（全域資料版本）仍是 0
   （只有 UPDATE_GLOBAL 會設 408）→ 下一次 UPDATE（新遊戲開局・讀檔）的 UPDATE_GLOBAL:21–31／:32–36／:56–66 把 GLOBAL:11〜14 改成 4／31／88／5、
   GLOBAL:15 = 0、GLOBAL:4 反轉 9 個 bit，玩家第一次存的設定被蓋掉（第二次起正常）。CONFIG [2] 或 MODE_SELECT [200] 先跑過 UPDATE_GLOBAL 就不會發生。
-  **S57新增影響（本次裁決待答覆）**：成就也會首次建立版本0的global；`ERB/バージョン間互換処理.ERB@UPDATE_GLOBAL:44–53`將111–170搬到211–270，會覆寫剛取得的成就。已補版本0／408測試與完整入口查證，見[成就](../era/achievements.md)。建議僅在確定不存在全域檔時初始化現行版本，既有檔仍遷移；未獲裁決前不改產品。
+  **S57新增影響／S59已裁決修正**：成就也會首次建立版本0的global；`ERB/バージョン間互換処理.ERB@UPDATE_GLOBAL:44–53`將111–170搬到211–270，會覆寫剛取得的成就。已補版本0／408測試與完整入口查證，見[成就](../era/achievements.md)。使用者2026-10-05同意：僅確定不存在全域檔時以GameIdentity.version初始化GLOBAL:3；既有檔仍遷移，已有損毀檔不當新檔。上述首次設定覆寫因此只保留為原作／既有版本0檔行為。
   **性嗜好フィルタ的初期值**：無 global 檔時 FLAG:850 = 0（全部 ○）；一旦有 global 檔，UPDATE 一律 FLAG:850 = GLOBAL:4，而 GLOBAL:4 經上述反轉後
-  是「淫紋サブ 5 項・拡張度表示・極端な拡張・極端な膨乳・極端な太さ」為 ×。MOB_FLAG 也一律 = MOB_GLOBAL（從未存過雑魚フィルタ時只有 MOB_GLOBAL:0:1 = 100，其餘雑魚 0%）。
+  （既有版本0檔遷移後）是「淫紋サブ 5 項・拡張度表示・極端な拡張・極端な膨乳・極端な太さ」為 ×。MOB_FLAG 也一律 = MOB_GLOBAL（從未存過雑魚フィルタ時只有 MOB_GLOBAL:0:1 = 100，其餘雑魚 0%）。
   **CONFIG_F [22]**（CONFIG_GLOBAL_MANIAC.ERB:195–196）：Wingdings 設為 × 時清除的是 bit 1（ふたなり）而非 bit 11。
   **CONFIG("mainmenu")**：[999]／[9999] 不顯示但可輸入（:417–436 只控制顯示）；開局時在此改的 FLAG:800〜805 會被之後的 CONFIG_INIT 覆寫。
   **TENTACLE_MOB_901_GETNAME**：雑魚フィルタ畫面顯示名稱時也會把 TFLAG:17 的 3／5 改成 -1（:9–13）。

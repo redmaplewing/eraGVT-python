@@ -699,8 +699,8 @@ def score_values(ctx: Ctx) -> tuple[int, int, int, int, int, int, int]:
 
 
 def score(ctx: Ctx) -> int:
-    """`@SCORE`:3–750。`RETURN LOCAL`（総合評価 1〜6）。GLOBAL:110（最高評価）・GLOBAL:100〜102（モード別クリア回数）の
-    保存依原文時機；GLOBAL:110 與魅了經驗紀錄共用亦保留。FLAG:854（周回数）+1。"""
+    """`@SCORE`:3–750。`RETURN LOCAL`（総合評価 1〜6）。GLOBAL:113（最高評価）・GLOBAL:100〜102（モード別クリア回数）の
+    保存依原文時機；S59已批准總評113與魅了110分離。FLAG:854（周回数）+1。"""
     from .action import _shortline
     from .opening import game_option
 
@@ -735,8 +735,9 @@ def score(ctx: Ctx) -> int:
     wait = getattr(out, "achievement_wait", None)
     if wait is not None:
         wait(None)  # SCORE:694 PRINTW，保存之前確認
-    if local > ctx.globals.mem.global_[110]:  # SCORE:695–698
-        ctx.globals.mem.global_[110] = local
+    # DEVIATION: S59 已批准總評改113，依 ERB/バージョン間互換処理.ERB@UPDATE_GLOBAL:52 的遷移意圖；不回填110。
+    if local > ctx.globals.mem.global_[113]:  # SCORE:695–698
+        ctx.globals.mem.global_[113] = local
         ctx.globals.save()
     last = st.temp.last_load_version == -1  # LASTLOAD_VERSION == -1（新規開始からセーブ＆ロードなし）
     if local == 1:  # :699–709

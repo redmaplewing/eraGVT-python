@@ -229,7 +229,7 @@ S55 已接通 `CHARA_MAKE_MAIN` 的主選單與共通設定、全域存讀、完
   （GLOBAL:0+1+2 ≠ 0 才印訊息）→ **一律** FLAG:850 = GLOBAL:4、MOB_FLAG = MOB_GLOBAL（不存在的雑魚番號 = 0）。呼叫處：EVENTFIRST:32／:291、EVENTLOAD:7。
 - **`@UPDATE_GLOBAL`**（:12–91）：依 GLOBAL:3（全域資料版本）逐版修正，最後 `GLOBAL:3 = 408` 並 SAVEGLOBAL。GLOBAL:3 = 0 時：
   GLOBAL:11〜14 = 4／31／88／5、GLOBAL:15 = 0、GLOBAL:4 反轉 bit 7・8・9・11・12・16・17・19・20、MOB_FLAG／MOB_GLOBAL:0:1 = 100 等。
-  **注意**：CONFIG 的 [1]／[9999]、性嗜好／雑魚／変身フィルタ的 [200] 只 SAVEGLOBAL、不設 GLOBAL:3 → 初次存下的設定在下一次 UPDATE 會被上述值蓋掉（原作行為）。
+  **注意**：CONFIG 的 [1]／[9999]、性嗜好／雑魚／変身フィルタ的 [200] 只 SAVEGLOBAL、不設 GLOBAL:3 → 初次存下的設定在下一次 UPDATE 會被上述值蓋掉（原作行為；S59已裁決僅新GlobalStore初始化版本，既有版本0檔仍遷移，詳見[成就](achievements.md)）。
 - **CONFIG_INIT(ARG)**（CONFIG_初期設定.ERB:4–61，FLAG:800〜805）：0 = (1, GLOBAL:11〜15)；1 基本 = (0,1,15,263,1,2)；
   2 淫獄 = (0,25,31,391,247,67)；3 クズ市民 = (0,25,63,391,1271,67)。EVENTFIRST:51 先以 1 初始化，HEROINE_PRESET:758 再以選擇值覆寫。
 - **HEROINE_PRESET**（:617–759）：[20+n] ステータス（S25）、[30] 相関関係設定（S51，見 [關係設定](relation-setting.md)）、[10] `CONFIG("mainmenu")`、

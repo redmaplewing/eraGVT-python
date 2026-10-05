@@ -7,7 +7,7 @@ from .achievements_data import NAMES, PAGES, GET_STATE_ABLUP, GET_STATE_EXPUP
 def update_status_record(ctx, who):
     """ERB/インターミッション画面/SHOP_TURNEND.ERB@UPDATE_STATUS_RECORD:263–348。
 
-    GLOBAL:110 同時是魅了經驗及 SCORE 總評；保留原作共用欄位。
+    GLOBAL:110 保留魅了經驗；S59 已裁決將最高總評獨立至113。
     """
     from .era import format_percent
     c, g = ctx.state.charas[who], ctx.globals.mem
@@ -105,7 +105,8 @@ def show_trophy(ctx):
         elif page == 1:
             out.printl(" プレイの記録")
             _shortline(out)
-            rank = g.global_[110]
+            # DEVIATION: S59 已批准總評改113，依 ERB/バージョン間互換処理.ERB@UPDATE_GLOBAL:52 的遷移意圖。
+            rank = g.global_[113]
             out.printl("　　総合ランク最高記録　　　　　　　　　" + ("ＥＤＣＢＡＳ"[rank-1]+"ランク" if 1 <= rank <= 6 else "なし"))
             out.printl(f"　　周回数累計　　　　　　　　　　　　　 {st.flag[854]} 回")
             if g.global_[114] > 0:

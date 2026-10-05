@@ -32,7 +32,7 @@ def test_score_counts(ctx,monkeypatch,mode,slot):
     ctx.state.flag[0]=MODE_OPTIONS[mode]
     old=ctx.state.flag[854]
     assert ending.score(ctx)==3
-    assert ctx.globals.mem.global_[110]==3
+    assert ctx.globals.mem.global_[113]==3
     assert [ctx.globals.mem.global_[i] for i in (100,101,102)]==[int(i==slot) for i in (100,101,102)]
     assert ctx.globals.exists()
     assert ctx.state.flag[854]==old+1
@@ -109,13 +109,20 @@ def test_each_record_field(ctx,kind,name,slot,textslot,suffix):
     assert ctx.state.rng.snapshot()==before
 
 
-def test_source_rank_charm_collision(ctx,monkeypatch):
-    # UPDATE_STATUS_RECORD:293–295與SCORE:695–698共用110，原作缺陷不擅修。
+@pytest.mark.parametrize("old,expected", [(2,3),(3,3),(5,5)])
+def test_rank_charm_independent(ctx,monkeypatch,old,expected):
+    # S59已裁決：SCORE與SHOW_TROPHY改用113；魅了仍110，不猜回填。
+    ctx.globals.mem.global_[113]=old
     ctx.state.charas[1].exp[ctx.data.index_of("EXP","魅了経験")]=77
     achievements.update_status_record(ctx,1)
     monkeypatch.setattr(ending,"score_values",lambda ctx:(3,3,3,3,3,3,3))
     ending.score(ctx)
     assert ctx.globals.mem.global_[110]==77
+    assert ctx.globals.mem.global_[113]==expected
+    gen=achievements.show_trophy(ctx)
+    next(gen)
+    assert any("総合ランク最高記録" in line.text and "ＥＤＣＢＡＳ"[expected-1]+"ランク" in line.text for line in ctx.out.lines)
+    gen.close()
     assert ctx.globals.mem.globals_[14].endswith("　77")
 
 
@@ -154,7 +161,7 @@ def test_score_confirm_before_writes(ctx,monkeypatch):
     assert next(gen) is None  # SCORE:694 PRINTW
     assert not ctx.globals.exists()
     assert gen.send(0) is None  # SCORE:738 PRINTW
-    assert ctx.globals.mem.global_[110]==3
+    assert ctx.globals.mem.global_[113]==3
     assert ctx.globals.mem.global_[101]==0
     assert gen.send(0)=="done"
     assert ctx.globals.mem.global_[101]==1

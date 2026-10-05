@@ -224,6 +224,11 @@ class GlobalStore:
         self.path = path
         self.identity = identity
         self._bytes: bytes | None = None
+        # DEVIATION: S59 使用者批准，僅全新資料初始化現行遊戲版本。
+        # ERB/ゲーム内_イベント発生/オープニング処理.ERB@EVENTFIRST:29–44 未設版本，
+        # 會令下一次 ERB/バージョン間互換処理.ERB@UPDATE_GLOBAL:44–53 覆寫新成就；既有（含損毀）檔不改。
+        if not self.exists():
+            self.mem.global_[3] = identity.version
 
     @classmethod
     def in_dir(cls, save_dir: Path, identity: GameIdentity = GameIdentity()) -> GlobalStore:

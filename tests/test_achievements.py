@@ -142,7 +142,7 @@ def test_all_source_thresholds(ctx,fn,array,name,threshold,num,delta):
 
 @pytest.mark.parametrize('version,retained',[(0,0),(408,1)])
 def test_original_global_version_migration(ctx,version,retained):
-    """ERB/バージョン間互換処理.ERB@UPDATE_GLOBAL:44–53；不擅修首次存檔版本0。"""
+    """ERB/バージョン間互換処理.ERB@UPDATE_GLOBAL:44–53；既有版本0檔仍照原作遷移。"""
     from eragvt.game.config import update
     ctx.globals.mem.global_[3]=version
     unlock_achievement(ctx,220,'腕力自慢')

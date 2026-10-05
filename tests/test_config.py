@@ -295,6 +295,7 @@ def test_config_global_save_load(data):
     """[1] SAVE GLOBAL（:442–452）・[2] LOAD GLOBAL（:453–462）・[9999]（:430–436）。"""
     with tempfile.TemporaryDirectory() as tmp:
         store = GlobalStore.in_dir(Path(tmp), GameIdentity.from_data(data))
+        store.mem.global_[3] = 0  # 既有舊版前態；S59 全新資料已初始化現行版。
         st = _base_state()
         out = TextOutput()
         gen = config_gen(st, data, out, store)
@@ -542,11 +543,7 @@ def test_session_inyoku_set_and_shop_config(data):
 
 
 def test_session_global_autoload_on_load(data):
-    """FLAG:800 bit0 のセーブをロード → EVENTLOAD:7 UPDATE で GLOBAL:11〜15 を反映（:105–113）。
-
-    原作どおりの癖：初回起動のまま CONFIG [9999] で保存すると GLOBAL:3（グローバルのバージョン）が 0 のまま
-    （UPDATE_GLOBAL を一度も通っていない）→ 次の UPDATE で UPDATE_GLOBAL:21–31 が走り、GLOBAL:11〜15 が
-    4／31／88／5／0（:27–30、:40）に上書きされてから FLAG に写される。"""
+    """S59全新版本避免舊版遷移覆寫；UPDATE仍載入已保存全域設定。"""
     with tempfile.TemporaryDirectory() as tmp:
         s = GameSession(data, Path(tmp), rng=GameRng(2), now=lambda: datetime(2026, 10, 2))
         s.input(0)
@@ -561,24 +558,24 @@ def test_session_global_autoload_on_load(data):
         s.input(13)  # FLAG:801 bit3
         s.input(9999)  # GLOBAL に保存して戻る
         assert s.phase == Phase.SHOP and s.globals.mem.global_[11] == 8
-        assert "3" not in json.loads((Path(tmp) / "global.json").read_text(encoding="utf-8"))["global"]["global"]
+        assert json.loads((Path(tmp) / "global.json").read_text(encoding="utf-8"))["global"]["global"]["3"] == s.identity.version
         s.input(300)
-        s.input(3)  # ロード → UPDATE：UPDATE_GLOBAL（GLOBAL:3 = 0）→ FLAG:801〜805 = GLOBAL:11〜15
+        s.input(3)  # UPDATE 載入已保存設定，不再誤判舊版。
         assert s.phase == Phase.SHOP
-        assert tuple(s.state.flag[k] for k in range(801, 806)) == (4, 31, 88, 5, 0)
+        assert tuple(s.state.flag[k] for k in range(801, 806)) == (8, 0, 0, 0, 0)
         assert s.globals.mem.global_[3] == 408
-        # 2 回目からは GLOBAL:3 = 408 なので保存した値がそのまま入る
+        # 第二次保存／載入仍維持同一行為。
         s.input(700)
-        s.input(13)  # 4 → 12
+        s.input(13)  # 8 → 0
         s.input(9999)
         s.input(300)
         s.input(3)
-        assert s.state.flag[801] == 12
+        assert s.state.flag[801] == 0
         # 別セッション（プロセス再起動相当）でも global.json から読む
         s2 = GameSession(data, Path(tmp), rng=GameRng(2))
         s2.input(1)
         s2.input(3)
-        assert s2.state.flag[801] == 12
+        assert s2.state.flag[801] == 0
 
 
 def test_session_mode_select_back_to_title(data):
