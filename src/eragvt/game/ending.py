@@ -462,8 +462,7 @@ _ENDING_2_DATA = (
 def _endless_record(ctx: Ctx, _unused: bool = False) -> bool:
     """ENDING_1:263–293／ENDING_3:459–489／ENDING_6:707–739 のエンドレス分岐の共通部分。撃破数 >= 8 なら
     `CALL LB`・FLAG:999 = -997 にして True。
-    DEVIATION: GLOBAL:114（エンドレス撃破数の歴代記録）の LOADGLOBAL／比較・新記録表示／SAVEGLOBAL は行わない
-    （deviations.md「全域資料（GLOBAL）：成就・歷代紀錄不讀不寫」）。ENDLESS はモード選択未移植のため現状到達しない。"""
+    LOADGLOBAL 後比較紀錄，確認新紀錄通知後才保存。"""
     from .shop import lb
     from .tentacle import tentacle_survive_num
 
@@ -471,6 +470,18 @@ def _endless_record(ctx: Ctx, _unused: bool = False) -> bool:
     local = st.flag[3] - tentacle_survive_num(st)
     out.printl(_DOTS)
     out.printl(f"ボス撃破記録　　{local} 体")
+    # reference/emuera-1824/Emuera/GameProc/Function/Instraction.Child.cs:1293–1299。
+    st.result[0] = int(ctx.globals.load())
+    if ctx.globals.mem.global_[114] < local:
+        out.printl()
+        out.printl("ボス撃破の新記録を達成しました！")
+        out.printw(f"　{ctx.globals.mem.global_[114]}体 → {local}体")
+        wait = getattr(out, "achievement_wait", None)
+        if wait is not None:
+            wait(None)
+        out.printl()
+        ctx.globals.mem.global_[114] = local
+        ctx.globals.save()
     if local >= 8:
         out.printw()
         for w in ("…", "……", "………"):
@@ -689,7 +700,7 @@ def score_values(ctx: Ctx) -> tuple[int, int, int, int, int, int, int]:
 
 def score(ctx: Ctx) -> int:
     """`@SCORE`:3–750。`RETURN LOCAL`（総合評価 1〜6）。GLOBAL:110（最高評価）・GLOBAL:100〜102（モード別クリア回数）の
-    歷代紀錄 SAVEGLOBAL 留待 W01 後續成果；成就211–213已接共用取得。FLAG:854（周回数）+1。"""
+    保存依原文時機；GLOBAL:110 與魅了經驗紀錄共用亦保留。FLAG:854（周回数）+1。"""
     from .action import _shortline
     from .opening import game_option
 
@@ -721,6 +732,12 @@ def score(ctx: Ctx) -> int:
             out.printw()
         else:
             out.printl(line)
+    wait = getattr(out, "achievement_wait", None)
+    if wait is not None:
+        wait(None)  # SCORE:694 PRINTW，保存之前確認
+    if local > ctx.globals.mem.global_[110]:  # SCORE:695–698
+        ctx.globals.mem.global_[110] = local
+        ctx.globals.save()
     last = st.temp.last_load_version == -1  # LASTLOAD_VERSION == -1（新規開始からセーブ＆ロードなし）
     if local == 1:  # :699–709
         out.printl("ついに…　ついに総合Ｅ評価が出てしまいましたか…")
@@ -759,6 +776,14 @@ def score(ctx: Ctx) -> int:
     if last:
         unlock(ctx, 211, "覇者の証")
     out.printw()  # :738
+    if wait is not None:
+        wait(None)
+    from .shop import game_mode_check
+    from ..state.constants import GameMode
+    slot = {GameMode.SOLO:100, GameMode.NORMAL:101, GameMode.HARDCORE:102}.get(game_mode_check(st))
+    if slot is not None:
+        ctx.globals.mem.global_[slot] += 1
+    ctx.globals.save()
     st.flag[854] += 1  # :749
     return local
 

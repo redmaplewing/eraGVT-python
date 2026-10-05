@@ -1,4 +1,4 @@
-# 成就取得、保存與查看（S57／W01）
+# 成就取得、保存與查看（S57–S58／W01）
 
 ## 已接通
 
@@ -16,7 +16,7 @@
 |---|---:|---|
 | `ERB/インターミッション画面/SHOP_TROPHY.ERB@GET_STATE_TROPHY／GET_STATE_ABLUP／GET_STATE_EXPUP` | 34 | `achievements`三組判定 |
 | `ERB/インターミッション画面/SHOP_CLOTH.ERB@SHOW_CLOTH` | 2 | `clothing_inventory` |
-| `ERB/ゲーム内_戦闘処理/BATTLE_COM_AFTER.ERB@SOURCE_CHECK` | 12 | `battle.source_check` 既有6處已接共用入口；救援271／273與全boss259／260／261／265原先整段省略，仍待W01 |
+| `ERB/ゲーム内_戦闘処理/BATTLE_COM_AFTER.ERB@SOURCE_CHECK` | 12 | `battle.source_check` 12處全部已接共用入口；S58補救援271／273與全末王259／260／261／265 |
 | `ERB/ゲーム内_戦闘処理/BATTLE_TRAIN.ERB@EVENTTRAIN` | 1 | `battle.train` |
 | `ERB/ゲーム内_戦闘処理/BATTLE_TRAIN_AFTER.ERB@EVENTEND` | 1 | `battle.after` |
 | `ERB/ゲーム内_戦闘処理/TENTACLE_SYASEI.ERB@TENTACLE_SAKUSEI` | 1 | `battle.syasei` |
@@ -66,4 +66,27 @@
 - 首輪標準模擬發現驗收工具兩個問題：成就等待會從40行舊按鈕抽策略RNG；同批seed共用全域目錄，新增SAVEGLOBAL讓後續seed不再是乾淨新局。`tools/sim.py`已改為握手標記辨識純確認並固定輸入0、每seed獨立目錄；2個工具測試覆蓋RNG不變與單獨／正逆序批次隔離。
 - 差異定位：default seed0首次新增等待在輸入步74／SHOP15，舊按鈕為`[0,1,9,10,0,1,2,6]`、通知「女性の宿命」。僅移除確認抽樣後，seed0完整摘要與S55一致；seed1仍受共享全域檔影響，改為乾淨目錄後完整摘要亦與S55一致（含敗北／gameover時間及所有events）。診斷產物`tmp/s57/neutral-default*.jsonl`與log。
 - 修正後正式500局：default250局中246到上限／4回標題，tokusou250局全到上限，catalog失敗0；兩開局各seed0–249、max-shop200、actions101–108，以50局前景批次執行。逐seed完整摘要（含events）與S55一致；正式產物`tmp/s57/final/`，`audit.json`核對每批退出碼、50筆／seed全集、log與JSONL一致及基線比較。
-- W01下一完整成果：`ERB/インターミッション画面/SHOP_TURNEND.ERB@UPDATE_STATUS_RECORD`的歷代紀錄寫入、`ERB/ゲーム内_イベント発生/エンディング/SCORE.ERB@SCORE`最高總評／模式通關數，以及`ERB/ゲーム内_イベント発生/エンディング/ENDING.ERB`各結局ENDLESS最高紀錄；補齊`ERB/ゲーム内_戦闘処理/BATTLE_COM_AFTER.ERB@SOURCE_CHECK`原先省略的救援271／273與全boss259／260／261／265六處，再核對角色製作／引繼解鎖消費端。W01未結案，不換W02。
+
+## S58 紀錄與解鎖消費端
+
+- `ERB/インターミッション画面/SHOP_TURNEND.ERB@RECALC_PARTYMEMBER:251–255`先更新紀錄，再判成就；`@UPDATE_STATUS_RECORD:263–348`共20個欄位，嚴格大於才替換數值／姓名／等級，每次呼叫均SAVEGLOBAL。沒有禁用模式條件。Python已接回角色重算。
+- `ERB/ゲーム内_イベント発生/エンディング/SCORE.ERB@SCORE:694–750`確認後保存最高總評，再處理成就；最後確認後依完整模式值加SOLO／NORMAL／HARDCORE次數並SAVEGLOBAL，再加FLAG:854。其他模式不加次數，但仍保存。兩處保存前等待沿用S57握手。
+- `ERB/ゲーム内_イベント発生/エンディング/ENDING.ERB@ENDING_1:263–293／ENDING_3:459–489／ENDING_6:707–739`共用ENDLESS紀錄：先LOADGLOBAL，嚴格破紀錄才通知、等待並保存114。LOADGLOBAL寫RESULT成敗依`reference/emuera-1824/Emuera/GameProc/Function/Instraction.Child.cs:1293–1299`；SAVEGLOBAL不寫RESULT同檔:1279–1281。
+- `ERB/ゲーム内_戦闘処理/BATTLE_COM_AFTER.ERB@SOURCE_CHECK:209–241／283–304`補六處觸發；救援成就在角色狀態變更前取得，全殲滅依序260、261、259、265。259看單人最大修練P而非合計；265看非MASTER角色CFLAG:231>0至少3名，原文未另檢查SOLO（說明文字與條件不同，照條件）。
+- 全ERB精確GLOBAL存取308行；解鎖消費端：`ERB/ゲーム内_イベント発生/エンディング/SUCCESSION.ERB@SUCCESSION:31–268／353／606／1452`的周回點數、213等級繼承、人數限制已有實作，直接讀同一GlobalStore，未發現永遠未解鎖占位。`ERB/SYSTEM/キャラメイキング関連/CHARA_MAKE.ERB@CHARA_MAKE_MAIN:131／323`人數權限已有條件，但編輯本體未移植；:151–191初始狀態切換及`ERB/SYSTEM/キャラメイキング関連/CHARA_SIZE_UI.ERB@SIZE_SETTING`身體解鎖介面屬W02。`ERB/SYSTEM/キャラメイキング関連/EXPORT_CSV.ERB`262輸出屬既有除錯／匯出盤點W08。
+- W01驗收資料及已有消費端；W02完成未移植互動端與B02解鎖選擇複驗，不能把目前顯示權限當整套編輯可玩。這是消除W01依賴尚未開始W02的循環驗收，不是略過UI成果。
+
+### 最高總評與魅了經驗共用110（原作缺陷，待裁決）
+
+- 直接GLOBAL:110共13處：UPDATE_STATUS_RECORD:293–295三處；SHOP_TROPHY@SHOW_TROPHY:42–52六處；UPDATE_GLOBAL:52–53兩處；SCORE:695–696兩處。
+- `ERB/バージョン間互換処理.ERB@UPDATE_GLOBAL:44–53`註明「歴代最高ランクの移動」並110→113，但現行SCORE／SHOW_TROPHY仍用110。魅了經驗>6後最高總評顯示「なし」，1–6則誤顯示評級；總評也可能壓住較小魅了經驗。忠實保留此碰撞，測試77魅了後總評3不改110。
+- 113只有上述遷移直接寫入；動態索引完整分類為成就num（呼叫211–280）、變身設定51–59、舊版111–170搬至211–270，不另讀寫現行110／113。沒有GLOBAL全陣列清空指令。
+- 建議最小修法：SCORE寫與SHOW_TROPHY讀改113，魅了留110，保留原作已有113遷移。既有受污染110無法可靠分辨總評／魅了，不能猜回填。尚未獲准，不實作。
+
+### S58 驗收
+
+- 主代理獨立全pytest：`3832 passed, 1 warning in 431.06s (0:07:11)`。紀錄新增44案；連同成就與引繼定向：`175 passed, 1 warning in 8.95s`。涵蓋20欄、相等不替換、全模式計數、禁用成就既有測試、GLOBAL其他資料／RESULT其他格／RNG保留與保存前等待。
+- 真瀏覽器：`python -m eragvt --port 8058 --save-dir tmp/s58/browser`。人工前態GLOBAL:3=408、角色姓名S58記錄測試／V經驗88；讀槽0→休息回合→SHOP[800]兩頁，紀錄姓名、Lv1與88回正確。停PID58912後新程序PID58672，重新讀槽0（尚未再次行動）→SHOP[800]第二頁仍88回；檔案GLOBAL:120=88／GLOBALS:20吻合。不是自然累積經驗或乾淨版本0存檔驗證。
+- 另人工全殲滅槽1→休息→結算B。第一次等待前磁碟110=0、101=0；確認後110=4、101=0；第二次確認後101=1，再拒絕結局存檔進周回選單，顯示NORMAL+5、B+3、合計8點，213未取得時等級繼承仍顯示？？？。B06完整自然通關仍屬W06/W09。
+- default seed0–1診斷JSONL與S57完整相同；診斷最後摘要輸出因cp950退出1，不是遊戲錯。正式500另由父以UTF-8獨立前景批次驗收，不拿這2局替代。
+- S58主代理正式500：default246到上限／4回標題、tokusou250全到上限；catalog失敗0，逐seed全部欄位與S57一致。10批退出0，50筆／批及完整seed全集、日誌／JSONL一致檢查通過；產物`tmp/s58/final/`與`audit.json`。

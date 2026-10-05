@@ -318,7 +318,7 @@ def _all_bosses_cleared(ctx: Ctx) -> None:
     """:265–308 ボス全滅かつラスボス不在：ラスボス（裏ボス）出現、または完全殲滅 → `BEGIN TURNEND`（S27）。
 
     完全殲滅は @EVENTEND（BATTLE_TRAIN_AFTER.ERB）を通らずに @EVENTTURNEND へ行く（原作どおり：経験・報酬・FLAG:700 = 0 等なし）。
-    :283–304 の実績（260／261／259／265）は GLOBAL のみ（deviations.md「全域資料」）：判定の副作用は無いので省略。"""
+    :283–304 的四項成就在 BEGIN TURNEND 前依序取得。"""
     st, out, data = ctx.state, ctx.out, ctx.data
     f = st.flag
     if f[64] != -1:  # :268
@@ -340,6 +340,16 @@ def _all_bosses_cleared(ctx: Ctx) -> None:
     out.printl()
     kojo_root(ctx, "BATTLE_END_PERFECT")
     out.printw()
+    c = tc(ctx)
+    if game_option(st, GameOption.SOLO) and all(t(ctx,c,name) for name in ("Ｃ敏感","Ｖ敏感","Ａ敏感","Ｂ敏感")):
+        unlock_achievement(ctx,260,"触手なんかに負けない！")
+    if game_option(st, GameOption.SOLO) and c.exp[data.index_of("EXP","幽閉経験")] >= 1:
+        unlock_achievement(ctx,261,"不屈の闘志")
+    party = st.charas[1:]
+    if max((ch.juel[data.index_of("JUEL","修練P")] for ch in party), default=0) >= 1000:
+        unlock_achievement(ctx,259,"もったいないお化け")
+    if sum(ch.cflag[231] > 0 for ch in party) >= 3:
+        unlock_achievement(ctx,265,"NEXT GENERATION")
     raise BeginTurnend()  # :306
 
 
@@ -437,7 +447,7 @@ def _victory_akuoti(ctx: Ctx) -> None:
 def _rescue_captives(ctx: Ctx) -> None:
     """`BATTLE_COM_AFTER.ERB@SOURCE_CHECK`:203–262：撃破したボス（FLAG:10／FLAG:11）に洗脳・幽閉されていたキャラの救出。
 
-    実績（UNLOCK_ACHIEVEMENT 273／271）は GLOBAL のみ（deviations.md「全域資料」）。地の文は catalog。
+    成就273／271在救出狀態變更前取得。地の文は catalog。
     :214／:245 は救出状態（状態_救出直後 = -1：CSV定数定義/CFLAG.ERH:13）にするだけで、AFTER_RESCUED は
     ターン終了時の RECALC_PARTYMEMBER（SHOP_TURNEND.ERB:235–244）が行う。
     """
@@ -452,6 +462,7 @@ def _rescue_captives(ctx: Ctx) -> None:
                 continue
             o = st.charas[i]
             if o.cflag[0] == state_no and o.cflag[20] == st.flag[10] and o.cflag[21] == st.flag[11]:
+                unlock_achievement(ctx,273 if state_no == 2 else 271,"わたくしは何を…？" if state_no == 2 else "いま助けるわ！")
                 if shown == 0:
                     run_chinobun(ctx, msg)
                 o.cflag[0] = -1

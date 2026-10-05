@@ -1,6 +1,6 @@
 # 完整遊玩現況盤點
 
-停止點與搜尋統計基線：S55 `8a77ee8`；系統現況已更新至S57。下一工作與順序只看[PLAN](PLAN.md)，本頁不另排優先序。
+停止點與搜尋統計基線：S55 `8a77ee8`；系統現況已更新至S58。下一工作與順序只看[PLAN](PLAN.md)，本頁不另排優先序。
 範圍是本機瀏覽器與原作已完成、可達功能；「已接通」表示有實作與測試，**不等於全瀏覽器驗收完成**。沒有完成比例。
 
 ## 系統現況與證據
@@ -14,7 +14,7 @@ Python路徑以下相對`src/eragvt/`；測試相對`tests/`。原作路徑相�
 | 角色製作 | 主題命名、生成設定、姓名／變身命名、一人稱、武器、關係；各同名測試 | 個別角色、初始狀態／人數、SIZE_SETTING；子供／招募／醫療／引繼仍代按預設；`creation_menu.py:259–263`、`status_screen.py:963–970`、`succession.py:515` | W02 |
 | 套組 | 0_特捜戦隊；`opening.py:334`、`test_opening.py` | 其餘1–11與14（12套）、6／7／8動態說明；不能由缺號推測待實作12／13 | W04 |
 | SHOP／日常 | 8類行動、編成／排程、衣裝購買／穿戴、強化／醫療／設施／招募引退；`session.py:214–302`、各模組／測試 | 決策資訊、各子選單預設代按與特殊條件（SHOP[800]已於S57接通） | W01–W03、W07 |
-| 成就／紀錄 | S57共用取得／保存、GET_STATE判定、catalog／原生呼叫者、SHOP[800]六頁；[證據](wiki/era/achievements.md) | 歷代紀錄寫入、模式通關數、ENDLESS紀錄與其餘解鎖消費端；首次全域版本缺陷待裁決 | W01 |
+| 成就／紀錄 | S57共用取得／保存、GET_STATE判定、catalog／原生呼叫者、SHOP[800]六頁；S58的20欄紀錄、模式通關數、ENDLESS紀錄與六觸發；[證據](wiki/era/achievements.md) | 首次全域版本／GLOBAL110碰撞待裁決；未移植解鎖互動端屬W02 | W01 |
 | 戰鬥／事件 | 普通戰、雜魚／市民／悪堕ち、襲擊／救援；`test_battle.py`／`test_mob_battle.py`／`test_citizen_battle.py`／`test_raid.py` | 觀眾妨礙、返り血、裝備零件／觸手服、部分救出、ISGIRLY、動態敵方安全網與模式分支 | W03、W05、W06 |
 | 末王／終局 | Ｋ触手、天使の樹、SCORE、結局1–6函式及引繼；`test_lastboss.py`／`test_angel_tree.py`／`test_succession.py` | 不等於六結局全能自然到達；原作ENDING_6前置停用。末王強化已有HP／回合回復，敵行動回復待核對；全模式終局待驗 | W05、W06、W08 |
 | 身體／生命週期 | 身體／裏プロフィール、妊娠出産／子供、幽閉／救出、寄生／悪堕ち、夜間與強制事件；對應測試 | TS_MtoF／TS_NORMAL／TS_FtoM、女體受容、加入時編輯、特殊裝備後續；不能把TS選項關閉當完成 | W02、W03、W05 |
@@ -51,7 +51,7 @@ Python路徑以下相對`src/eragvt/`；測試相對`tests/`。原作路徑相�
 
 ## 無操作與略過：不能被停止點統計遮住
 
-- 真缺口：歷代紀錄寫入／剩餘解鎖與首次全域版本缺陷→W01（S57取得／查看已接通）；`character_defaults.confirm_default_character`、`firstsetting.size_setting_default`、子供一人稱預設／`succession.py:515`→W02；模式／序章／MESSAGE_FIRST→W04、W06；資訊與WAIT／圖樣→W07。
+- 真缺口：首次全域版本缺陷與GLOBAL110碰撞→W01（S58紀錄／六觸發已接通；新UI消費端→W02）；`character_defaults.confirm_default_character`、`firstsetting.size_setting_default`、子供一人稱預設／`succession.py:515`→W02；模式／序章／MESSAGE_FIRST→W04、W06；資訊與WAIT／圖樣→W07。
 - AST找到的`pass`多為原作空分支、條件不改值、例外捕捉與標記類別。例如`body.py:94,108`保持成長值，`input_request.py:7`請求標記，`narration/nodes.py:241,246`節點類別，`battle/train.py:1007`捕捉流程轉移；不計作待翻功能。
 - `battle/restraint.py@_need_boss:79`是雜魚／市民接通後的空守衛；不能據此重做整套戰鬥。`battle/sexmsg.py`多處空分支只保留狀態fallback，原文顯示已有catalog；W07檢查fallback與缺資料行為。
 - `narration/runtime.py:203`對CALL方法型別的空分支與註解不一致→W08核對合法呼叫與引擎規則，不在本次擅自定義修正。

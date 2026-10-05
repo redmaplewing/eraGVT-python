@@ -4,6 +4,28 @@ from .opening import game_option
 from .achievements_data import NAMES, PAGES, GET_STATE_ABLUP, GET_STATE_EXPUP
 
 
+def update_status_record(ctx, who):
+    """ERB/インターミッション画面/SHOP_TURNEND.ERB@UPDATE_STATUS_RECORD:263–348。
+
+    GLOBAL:110 同時是魅了經驗及 SCORE 總評；保留原作共用欄位。
+    """
+    from .era import format_percent
+    c, g = ctx.state.charas[who], ctx.globals.mem
+    rows = [("maxbase", "BASE", name, 103+i, slot, "") for i,(name,slot) in enumerate(
+        (("体力",0),("気力",1),("性耐性",2),("攻撃",10),("防御",11),("敏捷",12),("知性",13)))]
+    rows.append(("exp","EXP","魅了経験",110,14,""))
+    rows.extend(("exp","EXP",name,120+i,20+i,"回") for i,name in enumerate(
+        ("Ｖ経験","Ａ経験","自慰経験","フェラ経験","精液経験","絶頂経験","出産経験","近親交配経験","射精経験","噴乳経験","放尿経験","寄生経験")))
+    for array, kind, name, number, slot, suffix in rows:
+        value = getattr(c,array)[ctx.data.index_of(kind,name)]
+        if value > g.global_[number]:
+            g.global_[number] = value
+            g.globals_[slot] = f"{format_percent(c.name,40,True)}（Lv{c.abl[ctx.data.index_of('ABL','レベル')]}）　{value}{suffix}"
+    ctx.globals.save()
+    # 自然回傳：reference/emuera-1824/Emuera/GameProc/Process.ScriptProc.cs:61–67。
+    ctx.state.result[0] = 0
+
+
 def _thresholds(ctx, who, rows):
     c = ctx.state.charas[who]
     for array,name,threshold,num in rows:

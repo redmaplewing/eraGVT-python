@@ -25,9 +25,9 @@ S56現況歸屬：各未勾選項的W編號指向`docs/PLAN.md`；仍待實作�
   代入もコメントで到達しない；S26 の「102／87 回」は 3001／3002 の戰鬥回数で、この路の回数ではなかった）。戰後の BEGIN SHOP では
   @EVENTSHOP 後のオートセーブが @SAVEINFO を呼び、:604 `SUBSTRING` が RESULTS:0 = "408" を書く → 原作どおり「FLASH NEWS：《408》」を表示
   （`shop.save_info` が共用 RESULTS:0 を書く。詳細と書き込み元一覧は `docs/wiki/python/result.md`「事件戰ニュースの前回値」）。
-- [ ] `W01` **全域資料（GLOBAL）：歷代紀錄寫入尚未接通**（S57縮小）：設定與角色製作GLOBAL存讀、共用成就取得／等待／保存、GET_STATE三組判定及SHOP[800]已接通，見[成就](../era/achievements.md)。
-  剩餘：`ERB/インターミッション画面/SHOP_TURNEND.ERB@UPDATE_STATUS_RECORD`；`ERB/ゲーム内_イベント発生/エンディング/SCORE.ERB@SCORE:695–698／740–747`的GLOBAL:110最高總評與GLOBAL:100–102模式通關數；`ERB/ゲーム内_イベント発生/エンディング/ENDING.ERB@ENDING_1／ENDING_3／ENDING_6`的GLOBAL:114 ENDLESS最高擊破紀錄。紀錄頁可讀已有值，不代表更新紀錄已移植。另`ERB/ゲーム内_戦闘処理/BATTLE_COM_AFTER.ERB@SOURCE_CHECK`原先整段省略的救援271／273與全boss259／260／261／265六處成就，仍待W01補齊。
-  角色製作／引繼解鎖消費端仍須W01逐項核對；S57不宣稱整包W01完成。首次全域檔的GLOBAL:3原作問題見本頁S24怪處，正在等待本次裁決。
+- [ ] `W01` **全域資料（GLOBAL）：紀錄已接通，原作缺陷待裁決**（S58縮小）：設定與角色製作GLOBAL存讀、共用成就取得／等待／保存、GET_STATE三組判定及SHOP[800]已接通，見[成就](../era/achievements.md)。
+  S58已接通：`ERB/インターミッション画面/SHOP_TURNEND.ERB@UPDATE_STATUS_RECORD`；`ERB/ゲーム内_イベント発生/エンディング/SCORE.ERB@SCORE:695–698／740–747`的GLOBAL:110最高總評與GLOBAL:100–102模式通關數；`ERB/ゲーム内_イベント発生/エンディング/ENDING.ERB@ENDING_1／ENDING_3／ENDING_6`的GLOBAL:114 ENDLESS最高擊破紀錄。20欄紀錄及結算寫入已接通。另`ERB/ゲーム内_戦闘処理/BATTLE_COM_AFTER.ERB@SOURCE_CHECK`原先整段省略的救援271／273與全boss259／260／261／265六處成就已補齊。待裁決的首次全域版本與GLOBAL:110碰撞仍不能視為解決，詳見成就wiki。
+  既有角色製作權限／引繼解鎖消費端已核對；未移植互動端由W02接續驗收。首次全域檔的GLOBAL:3原作問題見本頁S24怪處；GLOBAL:110碰撞見成就wiki，兩項待本次裁決，W01尚未結案。
 - [ ] `W02／W04／W06` **開局的 UI 跳過**（S10 改寫、S24 縮小）：狀態已照原作預設路徑（NORMAL → キャラメイク不設定直接 `[1000]`＝汎用キャラ 3 名おまかせ生成
   → HEROINE_PRESET `[1]` 基本セット → 序章 `[0]`，`docs/wiki/era/flow.md` §1）。**S24**：HEROINE_PRESET 畫面照原文顯示並接受 [0]〜[3]・[10]
   （[20+]／[30] 已於 S25／S51 接通）。S55 已接通角色製作主選單與共通設定。仍略過模式選擇／序章畫面，保留 `@EVENTFIRST` 中 MODE_SELECT 位置的

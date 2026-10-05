@@ -209,8 +209,8 @@ def recalc_partymember(ctx: Ctx) -> Generator[None, int, None]:
             inmon_recovery(ctx, cc)
         if cc > st.charanum - 1:  # :248–249
             break
-        # :251–253 UPDATE_STATUS_RECORD 留在 W01 下一個成果。
-        from .achievements import get_state_trophy
+        from .achievements import get_state_trophy, update_status_record
+        update_status_record(ctx, cc)  # :251–253
         get_state_trophy(ctx, cc)  # :255
         cc += 1
     st.target = saved
