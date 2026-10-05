@@ -2,7 +2,7 @@
 
 - 承接 W02／B02、B08；保留未提交 S60，不宣稱整包已驗收。
 - 使用者指定以成年參數重新驗證；建立全新人工角色，實年齡與外見年齡皆 25。
-- 僅驗姓名、稱呼、子頁返回、主頁確認與重入；不新增性屬性或敘事內容。
+- 初批驗姓名、稱呼、子頁返回、主頁確認與重入；後續一般子選單依下方接續授權驗證，不新增性屬性或敘事內容。
 - 不使用先前 11 歲角色、不讀寫使用者存檔、不改原作年齡生成規則。
 - 以 tmp 下測試啟動器載入真實 create_app、GameSession、模板及 character_editor。
 - 人工前態直接設定既有初始化旗標 CFLAG:240；不執行開局／角色初始化。
@@ -27,3 +27,21 @@
 - 三條Web定向路徑皆核對每步BASE:40／41為25、RNG未變、模板200及最終姓名／稱呼；未修改產品程式。
 - 父代理真瀏覽器8766：姓名改為「驗證成人」、稱呼改為「成年稱呼」；取消排列後清除子頁、返回主頁、99確認及重入均正常，重入保留兩值，年齡25。
 - 父代理獨立定向：`9 passed, 1 warning in 1.85s`；全pytest／遊戲模擬未執行，不將此次樣本等同完整S60驗收。
+
+## 接續驗收（使用者已授權）
+- 沿用成年人工前態，補其餘已接入的一般子選單：一人稱、口上開關、變身姓名／稱呼／喊聲／自介、一般衣裝與武器自訂。
+- 不執行敘事；衣裝使用一般服裝。所有參與測試角色為全新人工成年資料，不改產品年齡規則。
+- 核對確認時ITEM還原、CSTR/TARGET/RESULT/RESULTS及RNG，並以人工成年生成依賴驗開局／招募／醫療／引繼到編輯器的呼叫契約；清楚區分人工依賴與自然流程。
+- 已驗姓名／稱呼不重跑，除非相關產品修改；新增失敗先由原文推導expected後修正。
+- 父代理獨立定向與真瀏覽器驗剩餘一般互動；未通過全回歸不宣稱整包S60完成，不提交未驗收產品。
+
+## 接續定向成果
+- `python -m pytest -q tmp/s60d/test_adult_editor_remaining.py`：`28 passed, 1 warning in 6.36s`。未修改產品碼；沒有以實作輸出反推expected，亦未執行舊有全年齡fixture或完整遊戲模擬。
+- 同一Web啟動器已改人工前態為變身能力1、普通衣裝119與訓練劍；`/fixture/state`新增一人稱、口上／主觀、變身文字／旗標、衣裝、武器及TARGET，供真瀏覽器核對。
+- 一人稱確認／取消再入、口上六選項／主觀開關四案、變身名／稱呼／喊聲／自介（空字、999保留、停用連動）、三欄普通衣裝取消／確認、三距離武器名／風格／取消均通過。只設定口上，未執行敘事。
+- 普通衣裝選118ライダースーツ與308スパッツ；變身衣裝變更清EQUIP:600–699，取消保留；確認主頁還原ITEM、清SAVESTR:0–3，保留TARGET與RESULT(S)尾格；壓縮武器解碼清CSTR:15–17再入不覆蓋。手動編輯RNG不變，每步角色實／外見年齡均25。
+- 入口契約：真實creation_menu的1／101與bonus傳遞；招募／醫療到真實editor並返回、醫療restricted=1；引繼真實選單→修練P先扣20加10→creation_menu→editor確認不重加。ADDCHARA、FINALIZE及引繼reset_data依需要替代成年人工依賴，不是自然完整流程。
+- 依據：`ERB/SYSTEM/キャラメイキング関連/FIRSTSETTING_CHARA.ERB@FIRSTSETTING_CHARA_MAIN`、`@FIRSTSETTING_CHARA_KOJO`、`@FIRSTSETTING_CHARA_SELFCALL`；同目錄`FIRSTSETTING_CHARA_TRANSFORMATION.ERB@FIRSTSETTING_CHARA_TRANSAFTERNAME`／`@FIRSTSETTING_CHARA_TRANSAFTERCALLNAME`／`@FIRSTSETTING_CHARA_TRANSCALL`／`@FIRSTSETTING_CHARA_NANORI`。
+- 衣裝／武器依據：`ERB/武器と衣装/衣装関連/CLOTH_WEAR.ERB@CLOTH_SETTING_OUTER`／`@CLOTH_SETTING_OUTER2`／`@CLOTH_SETTING_INNER`；`ERB/武器と衣装/武器カスタマイズ関連/WEAPON_CUSTOMIZE.ERB@SETTING_WEAPON_NAME`／`@SETTING_FSTYLE`、`WEAPON_ARCHIVE.ERB@DECODE_WEAPON_DATA`。各入口與殘值精確依據列於測試註解。
+- 父代理獨立新增28案全綠；真瀏覽器完成一人稱、口上設定、四變身文字、三衣裝欄與近距離武器名／風格，99確認後重入保留值、年齡25。16欄預覽取消保留119，確認後改118；17=118、18=308。
+- 全回歸、自然開局／招募／醫療／引繼、未移植子選單、舊PRINTW等待遷移均不算通過。此次沒有新增UNVERIFIED／DEVIATION。
