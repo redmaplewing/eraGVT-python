@@ -1212,7 +1212,8 @@ def palam_up(ctx: Ctx) -> None:
     for mark_id, pid in ((0, 13), (1, 16), (2, 14), (3, 17), (4, 15)):
         got_sex_mark_check(ctx, mark_id, up[pid])
     message_branch_faith_down(ctx)
-    # :352 GET_STATE_EXPUP：実績のみ（UNLOCK_ACHIEVEMENT、deviations「全域資料」）
+    from ..achievements import get_state_expup
+    get_state_expup(ctx, st.target)  # PALAM_UP.ERB@PALAM_UP:352
     if st.flag[13] <= 0 and st.flag[700] == 1:  # :355–356 JUMP SOURCE_CHECK
         source_check_jump(ctx)
         return

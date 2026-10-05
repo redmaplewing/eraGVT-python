@@ -212,7 +212,8 @@ def yobai(ctx: Ctx) -> Generator[None, int, None]:
                     out.printl(f"{st.target_chara.callname} = -999 / REROLL")
                     out.reset_color()
                 continue
-            # :88 GET_STATE_EXPUP：実績のみ（deviations.md「全域資料」）
+            from .achievements import get_state_expup
+            get_state_expup(ctx, st.target)  # FORCE_夜這い.ERB@YOBAI:88
             for i in range(st.charanum):  # :90–95 全キャラの変身を解除
                 if i == GameState.MASTER:
                     continue

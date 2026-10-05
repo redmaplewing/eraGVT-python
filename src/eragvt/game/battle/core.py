@@ -148,11 +148,9 @@ def add_battle_situation(st: GameState, name: str) -> None:
 
 
 def unlock_achievement(ctx: Ctx, num: int, name: str) -> None:
-    """`インターミッション画面/SHOP_TROPHY.ERB@UNLOCK_ACHIEVEMENT`:6–20。
-
-    DEVIATION: 実績は GLOBAL のみに記録される。本作は GLOBAL を読み書きしない（deviations.md「全域資料」）ので
-    何もしない（達成メッセージも出ない）。SAVEDATA への影響はない。
-    """
+    """ERB/インターミッション画面/SHOP_TROPHY.ERB@UNLOCK_ACHIEVEMENT:6–20。"""
+    from ..achievements import unlock
+    unlock(ctx, num, name)
 
 
 def is_penis(ctx: Ctx, who: int | None = None) -> bool:

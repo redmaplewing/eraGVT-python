@@ -4,8 +4,7 @@
 - `汎用関数/RANDCHOOSE.ERB`：ADDRANDCHOOSE・CLEARRANDCHOOSE（ARG = 0 のみ）・RANDCHOOSE_F・CHOICECOUNT_F。
   候補リスト RANDCHOOSE_NUM（`DIM.ERH`:13、SAVEDATA なし）は Python 移植と共用の `GameState.temp.randchoose`
   （`eragvt.game.battle.core.add_randchoose` 等と同じ配列）。
-- `インターミッション画面/SHOP_TROPHY.ERB@UNLOCK_ACHIEVEMENT`：実績は GLOBAL のみ → 何もしない
-  （既存の DEVIATION「全域資料（GLOBAL）」：`eragvt.game.battle.core.unlock_achievement`）。
+- `ERB/インターミッション画面/SHOP_TROPHY.ERB@UNLOCK_ACHIEVEMENT`：共用成就取得與保存。
 """
 
 from __future__ import annotations
@@ -82,9 +81,18 @@ def py_choicecount_f(it, args: list) -> int:
 
 
 def py_unlock_achievement(it, args: list) -> int:
-    """`SHOP_TROPHY.ERB@UNLOCK_ACHIEVEMENT(num, achiname)`:6–20。
-    DEVIATION: 実績は GLOBAL:num と SAVEGLOBAL のみ。本作は GLOBAL を読み書きしない（deviations.md「全域資料（GLOBAL）」）ので
-    何もしない（達成メッセージ :15–16 も出ない）。どの経路も RETURN／流れ落ち → RESULT = 0。"""
+    """ERB/インターミッション画面/SHOP_TROPHY.ERB@UNLOCK_ACHIEVEMENT:6–20。
+    首次取得包含持久化副作用，標記不可回滾，不能因後續 catalog 錯誤偷偷重放或撤銷。
+    """
+    from ..game.achievements import unlock
+    from ..game.opening import game_option
+    from ..state.constants import GameOption
+    ctx = it.env.ctx
+    num = _arg(args, 0)
+    if not game_option(ctx.state, GameOption.NO_ACHIEVEMENT_END) and ctx.globals.mem.global_[num] == 0:
+        it.journal.irreversible += 1
+        it.side_effects += 1
+    unlock(ctx, num, _arg(args, 1, ""))
     it._set_result([0])
     return 0
 

@@ -328,11 +328,13 @@ def test_randchoose_rolled_back_on_failure(svc, ctx):
     assert (st.temp.randchoose[0], st.temp.randchoose[1]) == (1, 8)
 
 
-def test_unlock_achievement_does_nothing(svc, ctx):
-    """`SHOP_TROPHY.ERB@UNLOCK_ACHIEVEMENT`:6–20 は GLOBAL のみ（deviations「全域資料」）→ 何もしない、RESULT = 0。"""
+def test_unlock_achievement_persists(svc, ctx):
+    """S57：SHOP_TROPHY.ERB@UNLOCK_ACHIEVEMENT:6–20，取得後保存並回傳0。"""
     ctx.state.result[0] = 7
     _run(svc, ctx, "@F\nCALL UNLOCK_ACHIEVEMENT(276,\"絶体絶命ヒロイン\")\nPRINTFORML {RESULT}\n", "地の文/t.ERB")
-    assert texts(ctx.out) == ["0"]
+    assert texts(ctx.out) == ["【実績：絶体絶命ヒロイン】を達成しました！", "", "0"]
+    assert ctx.globals.mem.global_[276] == 1
+    assert ctx.globals.exists()
     assert svc.catalog.unsupported_reason("MESSAGE_BATTLE_CHARA_TRANSRELEASE") is None
 
 

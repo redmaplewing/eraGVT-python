@@ -227,6 +227,8 @@ def _msg_first(ctx: Ctx) -> None:
     c = tc(ctx)
 
     def fallback() -> None:
+        from ..achievements import unlock
+        unlock(ctx, 275, "女性の宿命")
         if c.cflag[6] == -1:
             return  # :12–64 娘キャラの地の文（口上呼び出しなし）
         if (charatalent(data, c, 0, "オトコ") > 0 or charatalent(data, c, 1, "オトコ") > 0) and config_check_prison(st, 0) > 0:

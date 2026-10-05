@@ -468,5 +468,8 @@ def event_end(ctx: Ctx) -> Generator[None, int, Step]:
         from ..ending import ending_1
 
         ending_1(ctx)  # :528（ゲームオーバーモードに移行して戻る → :536 BEGIN TURNEND）
-    # :531–532 実績のみ（deviations.md「全域資料」）
+    from .core import is_manly, unlock_achievement
+    manly = sum(is_manly(ctx,i) for i in range(1,st.charanum))
+    if enslaved == st.charanum - 1 - manly:  # @EVENTEND:531–532；CHARANUM.ERB@CHARANUM_MANLY
+        unlock_achievement(ctx,278,"所詮はハメ穴に過ぎない")
     return Step.TURNEND

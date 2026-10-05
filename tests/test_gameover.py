@@ -463,6 +463,13 @@ def test_e2e_annihilation_to_gameover_mode(data):
     day2 = st.day[2]
     assert day2 > 0
     # 存讀檔往返（FLAG:0・DAY:2 は SAVEDATA）
+    # S57：此案隔離舊版 GLOBAL 遷移；首次全域檔版本0問題另有定向測試。
+    s.globals.mem.global_[3] = 408
+    s.globals.mem.global_[4] = st.flag[850]
+    for i in range(5):
+        s.globals.mem.global_[11+i] = st.flag[801+i]
+    s.globals.mem.mob_global = st.mob_flag.copy()
+    s.globals.save()
     snap = st.to_json()
     s.input(200)
     s.input(1)

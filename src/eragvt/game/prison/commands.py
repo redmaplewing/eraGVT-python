@@ -77,8 +77,7 @@ def common_prison_exp_sh(ctx: Ctx, a0: int, a1: int, a2: int, a3: int) -> tuple[
 def common_prison_exp(ctx: Ctx, arg0: int, arg1: int) -> None:
     """`@COMMON_PRISON_EXP, ARG:0, ARG:1`:75–87。
 
-    :87 GET_STATE_EXPUP（SHOP_TROPHY.ERB:506–）は実績（UNLOCK_ACHIEVEMENT → GLOBAL）のみ。
-    DEVIATION: GLOBAL は読み書きしない（deviations.md「全域資料」）ので実行しない。
+    :87 GET_STATE_EXPUP 接共用成就條件與 GLOBAL 保存。
     """
     c = tc(ctx)
     local = arg0 - 100
@@ -90,6 +89,8 @@ def common_prison_exp(ctx: Ctx, arg0: int, arg1: int) -> None:
         return
     c.exp[local] += arg1
     ctx.out.printl(f"{name}：＋{arg1}")
+    from ..achievements import get_state_expup
+    get_state_expup(ctx, ctx.state.target)  # COMMON_PRISON.ERB@COMMON_PRISON_EXP:87
 
 
 def prison_gaping(ctx: Ctx, a0: int, a1: int, a2: int, a3: int, locs: tuple[int, int, int, int] = (0, 0, 0, 0)) -> tuple[int, int]:

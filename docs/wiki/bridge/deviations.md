@@ -25,21 +25,9 @@ S56現況歸屬：各未勾選項的W編號指向`docs/PLAN.md`；仍待實作�
   代入もコメントで到達しない；S26 の「102／87 回」は 3001／3002 の戰鬥回数で、この路の回数ではなかった）。戰後の BEGIN SHOP では
   @EVENTSHOP 後のオートセーブが @SAVEINFO を呼び、:604 `SUBSTRING` が RESULTS:0 = "408" を書く → 原作どおり「FLASH NEWS：《408》」を表示
   （`shop.save_info` が共用 RESULTS:0 を書く。詳細と書き込み元一覧は `docs/wiki/python/result.md`「事件戰ニュースの前回値」）。
-- [ ] `W01` **全域資料（GLOBAL）：成就・歷代紀錄不讀不寫**（S24 縮小範圍）：config 相關的 GLOBAL（LOADGLOBAL／UPDATE／UPDATE_GLOBAL、
-  GLOBAL:4・11〜15・51〜59、MOB_GLOBAL、CONFIG 畫面的 SAVEGLOBAL、CHARA_MAKE_MAIN:9–21 的讀取）已照原作移植（`eragvt.game.config`、
-  `state.savefile.GlobalStore`、`saves/global.json`；`docs/wiki/era/flow.md` §10）。仍不做的是成就／紀錄類：（原作：下列各處；Python：見各行）
-  S55 已接通角色製作 [170]／[180] 共通設定存讀（GLOBAL:5〜9・20〜23、GLOBALS:15〜17），見 `docs/wiki/era/creation-menu.md`。
-  S05 起戰鬥中的 `UNLOCK_ACHIEVEMENT`（タクティカルオーダー、絶体絶命ヒロイン等）與 `GET_STATE_ABLUP` 同樣不執行（`eragvt.game.battle.core.unlock_achievement`）。
-  S40 衣裝購買返回亦沿用此共用空操作：`ERB/インターミッション画面/SHOP_CLOTH.ERB@SHOW_CLOTH:76–92` 累計 ITEM:100–399（排除100／200／300），達10／30時呼叫269／274；`ERB/インターミッション画面/SHOP_TROPHY.ERB@UNLOCK_ACHIEVEMENT:6–20` 原會顯示達成訊息、寫 GLOBAL:269／274 並 SAVEGLOBAL，現皆不執行。付款、持有狀態與返回RESULT:0=1不受影響。
-  S30 起地の文 catalog 內的 `CALL UNLOCK_ACHIEVEMENT`（MESSAGE_BATTLE.ERB:355／368 等）也同樣什麼都不做、RESULT = 0（`eragvt.narration.pyfuncs`）。
-  S04 起同理不執行：`SHOP_TURNEND.ERB@UPDATE_STATUS_RECORD`:263–349（歷代最高紀錄 GLOBAL:103–131／GLOBALS、SAVEGLOBAL）與 `SHOP_TROPHY.ERB@GET_STATE_TROPHY`:398–441→`UNLOCK_ACHIEVEMENT`（成就達成訊息不會顯示）。（Python：`eragvt.game.turnend.recalc_partymember`、`eragvt.game.action.get_state_trophy`）
-  S27 起同理不執行：`SCORE.ERB`:695–698／:740–747 的 GLOBAL:110（最高總合評價）・GLOBAL:100〜102（各模式クリア回數）與 SAVEGLOBAL、
-  實績 211〜213・259〜261・265・270（`BATTLE_COM_AFTER.ERB`:185／:283–304、SCORE:709／:722／:736）——判定沒有其他副作用、不影響畫面；
-  ENDING_1／3／6 エンドレス分岐的 GLOBAL:114（撃破數歷代記錄）不讀不寫 → **不顯示「ボス撃破の新記録を達成しました！」**（ENDLESS 模式
-  新局入口尚未接通，但S37引繼已可選SURVIVAL，不能視為不可達）。（Python：`eragvt.game.ending.score`／`_endless_record`、`battle.source_check._all_bosses_cleared`）
-  S08 起同理不執行：幽閉的 `COMMON_PRISON.ERB@COMMON_PRISON_EXP`:87 `GET_STATE_EXPUP`、救出時的 `UNLOCK_ACHIEVEMENT`（271／273：
-  `BATTLE_COM_AFTER.ERB`:209／240）、`MESSAGE_PRISON_PRISENTENCE_FIRST`:9（hook 為無動作）。（Python：`eragvt.game.prison.commands.common_prison_exp`、
-  `battle.source_check._rescue_captives`、`narration/hooks.py` PRISON_HOOK_LINES）
+- [ ] `W01` **全域資料（GLOBAL）：歷代紀錄寫入尚未接通**（S57縮小）：設定與角色製作GLOBAL存讀、共用成就取得／等待／保存、GET_STATE三組判定及SHOP[800]已接通，見[成就](../era/achievements.md)。
+  剩餘：`ERB/インターミッション画面/SHOP_TURNEND.ERB@UPDATE_STATUS_RECORD`；`ERB/ゲーム内_イベント発生/エンディング/SCORE.ERB@SCORE:695–698／740–747`的GLOBAL:110最高總評與GLOBAL:100–102模式通關數；`ERB/ゲーム内_イベント発生/エンディング/ENDING.ERB@ENDING_1／ENDING_3／ENDING_6`的GLOBAL:114 ENDLESS最高擊破紀錄。紀錄頁可讀已有值，不代表更新紀錄已移植。另`ERB/ゲーム内_戦闘処理/BATTLE_COM_AFTER.ERB@SOURCE_CHECK`原先整段省略的救援271／273與全boss259／260／261／265六處成就，仍待W01補齊。
+  角色製作／引繼解鎖消費端仍須W01逐項核對；S57不宣稱整包W01完成。首次全域檔的GLOBAL:3原作問題見本頁S24怪處，正在等待本次裁決。
 - [ ] `W02／W04／W06` **開局的 UI 跳過**（S10 改寫、S24 縮小）：狀態已照原作預設路徑（NORMAL → キャラメイク不設定直接 `[1000]`＝汎用キャラ 3 名おまかせ生成
   → HEROINE_PRESET `[1]` 基本セット → 序章 `[0]`，`docs/wiki/era/flow.md` §1）。**S24**：HEROINE_PRESET 畫面照原文顯示並接受 [0]〜[3]・[10]
   （[20+]／[30] 已於 S25／S51 接通）。S55 已接通角色製作主選單與共通設定。仍略過模式選擇／序章畫面，保留 `@EVENTFIRST` 中 MODE_SELECT 位置的
@@ -102,9 +90,8 @@ S56現況歸屬：各未勾選項的W編號指向`docs/PLAN.md`；仍待實作�
   以「回到呼叫前的顏色」表示（顯示相同）。（Python：`eragvt.narration.runtime`、`eragvt.narration.windowlib`）
 - [ ] `W07` **SHOW_SHOP 簡化**：狀態條（`COLOR_BAR` 的色階與長度）以 20 格單色近似；`SHOW_SHOP_STATUS_SIGN`（生理周期・疲勞等標記）、隊伍列表的欄寬對齊與第 2 行詳細未移植；`SHOP_NG_ACTION_INFO` 的紅字在函式結尾重設顏色（原作不重設）。（Python：`eragvt.game.shop`）
   S46 已接通出場／候補列表與編成選擇，候補列表沿用相同欄寬、數值條與狀態標記簡化；來源 `ERB/インターミッション画面/SHOP_SHOW_STATUS_LIST.ERB@SHOP_SHOW_STATUS_RESERVE_LIST:52–86`。
-- [ ] `W01` **未實作的選單**：目前 `game.session._shop_input` 僅 SHOP `[800]` 仍顯示「（未實作）」；`[50]`、`[110]`〜`[180]` 的原作入口與 `[700]` 已接通。
-  此處指 SHOP 的 `[800]`，不含已實作的戰鬥 `[800]` 狀態畫面；各選單內部尚未移植的分支見 STATUS。
-- [ ] `W07` **WAIT／PRINTW 不阻塞**：Web 一次顯示到下一個 INPUT 為止，WAIT 位置以虛線標示，不需按鍵繼續。（Python：`eragvt.game.session`、`eragvt.web`）S44引退名簿／報告、S45設施擴充、S49武器自訂已依原作局部補上PRINTW／WAIT等待；其他系統的既有簡化仍保留，見`docs/wiki/era/retirement.md`與`facilities.md`。
+- [x] **SHOP[800]未實作**（S57解決）：成就4頁／紀錄2頁、切換、循環換頁、返回均接通；紀錄寫入仍見W01上項。
+- [ ] `W07` **WAIT／PRINTW 不阻塞**：Web 一次顯示到下一個 INPUT 為止，WAIT 位置以虛線標示，不需按鍵繼續。（Python：`eragvt.game.session`、`eragvt.web`）S44引退名簿／報告、S45設施擴充、S49武器自訂已依原作局部補上PRINTW／WAIT等待；S57成就PRINTW亦已真正等待並在確認後保存，但仍沿用Web的required數字欄（`web/templates/index.html:32`）：須輸入0等數字提交，並非原引擎ReadAnyKey的任意鍵確認，且無[0]提示；此輸入差異仍屬W07。其他系統的既有簡化仍保留，見`docs/wiki/era/retirement.md`與`facilities.md`。
 - [ ] `W08` **存檔格式與檔名**：JSON（`saves/saveNN.json`），不是 Emuera 的 `.sav`；存檔說明文字（日時＋`@SAVEINFO`）與一覽格式照原作。
 - [ ] `W08` **Web 專用按鈕**：頁尾「タイトルに戻る」（重建 session）是原作沒有的。
 - [ ] `W07` **無效輸入訊息**：Emuera 以「刪一行＋暫時行」顯示「無効な値です」，這裡以一般行輸出。
@@ -191,7 +178,7 @@ S56現況歸屬：各未勾選項的W編號指向`docs/PLAN.md`；仍待實作�
   （`Sub/LexicalAnalyzer.cs`:954–966），實際條件是 `TALENT:TARGET:0`（TARGET 的処女，`VariableParser.cs`:107–119）→ 變身能力なし
   且 TARGET 是処女時顯示【非戦闘員】、非戦闘員本人反而不顯示；性格素質なし時 PAGE1 的性格欄顯示 `TALENTNAME:0`（処女）與其說明；
   PAGE1 アウター（變身能力あり）有名稱時不印「┏」；PAGE4 父親為不存在的ボス／ラスボス番號時 TRYCALLFORM 不發、印前一個 RESULTS
-  （Python 停止）；EXPORT_CSV 的 `GLOBAL:262`（成就）節因成就未移植永遠不輸出（見「全域資料（GLOBAL）」）；`PRINT_TALENT_CATEGORY`
+  （Python 停止）；EXPORT_CSV 的 `GLOBAL:262`（成就）消費端仍待W01核對（見「全域資料（GLOBAL）」）；`PRINT_TALENT_CATEGORY`
   的 `SUB_STR:0` 是靜態變數，CFLAG:0 為 -1／5 等時沿用前一個素質名（照移植）。（Python：`eragvt.game.status_screen`、`status_talent`、`export_csv`）
 - S13 妊娠・子供照原作的怪處（詳見 `docs/wiki/era/pregnancy.md`「照原作移植的怪處」）：**苗床出産的 `LOSEDEF` 是 static**
   （`BIRTH_AUTO_RANDOM`:607），每次呼叫都累加並以累計值扣防衛力，ゲームオーバーモード中防衛力下降會越來越快；
@@ -273,6 +260,7 @@ S56現況歸屬：各未勾選項的W編號指向`docs/PLAN.md`；仍待實作�
   **GLOBAL:3 未設定的覆寫**：初次啟動（無 global 檔）時從 CONFIG [1]／[9999] 或 フィルタ [200] 存下的 GLOBAL，其 GLOBAL:3（全域資料版本）仍是 0
   （只有 UPDATE_GLOBAL 會設 408）→ 下一次 UPDATE（新遊戲開局・讀檔）的 UPDATE_GLOBAL:21–31／:32–36／:56–66 把 GLOBAL:11〜14 改成 4／31／88／5、
   GLOBAL:15 = 0、GLOBAL:4 反轉 9 個 bit，玩家第一次存的設定被蓋掉（第二次起正常）。CONFIG [2] 或 MODE_SELECT [200] 先跑過 UPDATE_GLOBAL 就不會發生。
+  **S57新增影響（本次裁決待答覆）**：成就也會首次建立版本0的global；`ERB/バージョン間互換処理.ERB@UPDATE_GLOBAL:44–53`將111–170搬到211–270，會覆寫剛取得的成就。已補版本0／408測試與完整入口查證，見[成就](../era/achievements.md)。建議僅在確定不存在全域檔時初始化現行版本，既有檔仍遷移；未獲裁決前不改產品。
   **性嗜好フィルタ的初期值**：無 global 檔時 FLAG:850 = 0（全部 ○）；一旦有 global 檔，UPDATE 一律 FLAG:850 = GLOBAL:4，而 GLOBAL:4 經上述反轉後
   是「淫紋サブ 5 項・拡張度表示・極端な拡張・極端な膨乳・極端な太さ」為 ×。MOB_FLAG 也一律 = MOB_GLOBAL（從未存過雑魚フィルタ時只有 MOB_GLOBAL:0:1 = 100，其餘雑魚 0%）。
   **CONFIG_F [22]**（CONFIG_GLOBAL_MANIAC.ERB:195–196）：Wingdings 設為 × 時清除的是 bit 1（ふたなり）而非 bit 11。

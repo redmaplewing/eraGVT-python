@@ -161,7 +161,7 @@ HOOK_LINES: dict[tuple[str, int], tuple[str, str, str]] = {
 # S08：幽閉の地の文（`地の文/MESSAGE_PRISON.ERB`）の状態変化行。(函式名, 行): (原文, 意味)。
 # FLAG:900 は直後の KOJO_ROOT の「ランダム分岐フラグ」（KOJO_ROOT が 0 に戻す）。TALENT:膨乳改造値 は膨乳化の地の文で加算。
 # TS_* は幽閉時の性別変化（TS オプション ON かつオトコのキャラのみ）で未移植 → 実行時に停止（eragvt.game.prison.event.ts_change）。
-# UNLOCK_ACHIEVEMENT は実績（GLOBAL）のみ＝何もしない（deviations.md「全域資料」）。
+# UNLOCK_ACHIEVEMENT 接共用成就取得與 GLOBAL 保存。
 # tests/test_prison.py::test_prison_hook_table_matches_erb が原文一致と「表外の代入が無い」ことを確認する。
 PRISON_HOOK_LINES: dict[tuple[str, int], tuple[str, str]] = {
     ("MESSAGE_PRISON_PRISENTENCE_FIRST", 9): ('CALL UNLOCK_ACHIEVEMENT(275,"女性の宿命")', "実績のみ"),

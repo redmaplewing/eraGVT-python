@@ -209,8 +209,9 @@ def recalc_partymember(ctx: Ctx) -> Generator[None, int, None]:
             inmon_recovery(ctx, cc)
         if cc > st.charanum - 1:  # :248–249
             break
-        # :251–255 UPDATE_STATUS_RECORD（GLOBAL:103–131／GLOBALS と SAVEGLOBAL）と GET_STATE_TROPHY（GLOBAL の実績）。
-        # DEVIATION: GLOBAL は読み書きしない（deviations.md「全域資料」）ので実行しない。SAVEDATA への影響はない。
+        # :251–253 UPDATE_STATUS_RECORD 留在 W01 下一個成果。
+        from .achievements import get_state_trophy
+        get_state_trophy(ctx, cc)  # :255
         cc += 1
     st.target = saved
 

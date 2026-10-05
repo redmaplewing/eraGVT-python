@@ -262,7 +262,8 @@ def ablup(ctx: Ctx, arg: int) -> None:
     for i, name in enumerate(("Ｃ感覚", "Ｖ感覚", "Ａ感覚", "Ｂ感覚")):
         _raise(ctx, c, name, lv[i])
     _talents(ctx, c)
-    # :482 GET_STATE_ABLUP（SHOP_TROPHY.ERB:443–：UNLOCK_ACHIEVEMENT のみ。実績は GLOBAL＝deviations.md「全域資料」）
+    from ..achievements import get_state_ablup
+    get_state_ablup(ctx, st.target)  # ABL_UP_CHECK.ERB@ABL_UP_CHECK:482
 
 
 def message_gettalent(ctx: Ctx, code: str) -> None:

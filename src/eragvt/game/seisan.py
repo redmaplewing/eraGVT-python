@@ -1436,4 +1436,5 @@ def idol_live(ctx: Ctx) -> None:
         out.printl(f"人気度が{local2}上がった")
     if _exp(ctx, "魅了経験") < 100:  # :96–97
         c.exp[ctx.data.index_of("EXP", "魅了経験")] = 100
-    # :100 GET_STATE_EXPUP は実績（UNLOCK_ACHIEVEMENT）のみ：`インターミッション画面/SHOP_TROPHY.ERB`:506–533
+    from .achievements import get_state_expup
+    get_state_expup(ctx, st.target)  # SEISAN_8_IDOL_LIVE.ERB@SEISAN_IDOL_LIVE:100

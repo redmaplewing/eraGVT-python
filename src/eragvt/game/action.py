@@ -911,9 +911,6 @@ def _sengiup_henshin(ctx: Ctx, who: int) -> Generator[None, int, None]:
 
 
 def get_state_trophy(ctx: Ctx, who: int) -> None:
-    """`インターミッション画面/SHOP_TROPHY.ERB@GET_STATE_TROPHY`:398–441。
-
-    DEVIATION: 実績は GLOBAL（UNLOCK_ACHIEVEMENT:6–20、GLOBAL:num と SAVEGLOBAL）にのみ記録され、本作の
-    GLOBAL は読み書きしない（deviations.md「全域資料」）。そのため達成判定と「【実績：…】を達成しました！」の
-    表示を行わない（SAVEDATA への影響はない）。
-    """
+    """ERB/インターミッション画面/SHOP_TROPHY.ERB@GET_STATE_TROPHY:398–441。"""
+    from .achievements import get_state_trophy as check
+    check(ctx, who)

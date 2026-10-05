@@ -676,7 +676,8 @@ def test_e2e_defeat_prison_shop_save_load(data):
         else:
             assert s.phase == Phase.TURN, s.phase
             b = _buttons(s)
-            s.input(next(n for n in (11, 10, 1) if n in b))
+            # S57 成就 PRINTW 先確認，才回到原戰鬥指令。
+            s.input(next((n for n in (11, 10, 1) if n in b), 0))
     st = s.state
     assert [c.callname for c in st.charas[1:]] == ["桃香", "蒼美", "紅葉"]  # SHIFTBACK_CHARA
     k = st.charas[3]
@@ -689,6 +690,13 @@ def test_e2e_defeat_prison_shop_save_load(data):
     s.input(130)
     assert any("紅葉：" in ln.text and "によって幽閉中 0日目" in ln.text for ln in s.out.lines)
     # 幽閉中の存読檔
+    # S57：此案隔離舊版 GLOBAL 遷移；首次全域檔版本0問題另有定向測試。
+    s.globals.mem.global_[3] = 408
+    s.globals.mem.global_[4] = st.flag[850]
+    for i in range(5):
+        s.globals.mem.global_[11+i] = st.flag[801+i]
+    s.globals.mem.mob_global = st.mob_flag.copy()
+    s.globals.save()
     snap = st.to_json()
     s.input(200)
     s.input(1)

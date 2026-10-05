@@ -689,7 +689,7 @@ def score_values(ctx: Ctx) -> tuple[int, int, int, int, int, int, int]:
 
 def score(ctx: Ctx) -> int:
     """`@SCORE`:3–750。`RETURN LOCAL`（総合評価 1〜6）。GLOBAL:110（最高評価）・GLOBAL:100〜102（モード別クリア回数）の
-    SAVEGLOBAL と実績 211〜213 は行わない（DEVIATION 既存項「全域資料（GLOBAL）」：表示には影響しない）。FLAG:854（周回数）+1。"""
+    歷代紀錄 SAVEGLOBAL 留待 W01 後續成果；成就211–213已接共用取得。FLAG:854（周回数）+1。"""
     from .action import _shortline
     from .opening import game_option
 
@@ -751,6 +751,13 @@ def score(ctx: Ctx) -> int:
     else:
         out.printl("以上、コメントコーナーでした。役に立つヒントはありましたか？")
         out.printl("ぜひとも次のプレイでまたお会いしましょう！")
+    from .achievements import unlock
+    if local == 1:
+        unlock(ctx, 212, "へっぽこ大魔王")
+    elif local == 6:
+        unlock(ctx, 213, "eraGVTマスター")
+    if last:
+        unlock(ctx, 211, "覇者の証")
     out.printw()  # :738
     st.flag[854] += 1  # :749
     return local

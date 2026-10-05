@@ -211,14 +211,17 @@ def event_shop(state: GameState, data: GameData, out: TextOutput, narration: Nar
         raise RuntimeError("@EVENTSHOP が INPUT を要求した（GameSession.begin_shop で駆動すること）")
 
 
-def event_shop_gen(state: GameState, data: GameData, out: TextOutput, narration: NarrationService):
+def event_shop_gen(state: GameState, data: GameData, out: TextOutput, narration: NarrationService, globals_store=None):
     """`インターミッション画面/SHOP_TURNEND.ERB@EVENTSHOP`:141–。通常ターン（DAY != 0）は `turnend.event_shop_normal`
     （S17：寄生触手のイベントが INPUT を使うのでジェネレータ）。"""
     if state.day[0] != 0:
         from .action import Ctx
         from .turnend import event_shop_normal
 
-        yield from event_shop_normal(Ctx(state, data, out, narration))
+        ctx = Ctx(state, data, out, narration)
+        if globals_store is not None:
+            ctx.globals = globals_store
+        yield from event_shop_normal(ctx)
         return
     state.day[0] = 1
     state.time = 0

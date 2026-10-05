@@ -98,7 +98,8 @@ def parasite(ctx: Ctx) -> Generator[None, int, None]:
                 yield from synbiosis_event(ctx)
             else:
                 parasite_event(ctx)
-        # :64 GET_STATE_EXPUP（SHOP_TROPHY.ERB:506–）：実績のみ（deviations.md「全域資料」）
+        from .achievements import get_state_expup
+        get_state_expup(ctx, st.target)  # FORCE_深夜の寄生触手暴走.ERB@PARASITE:64
 
 
 # --- @PARASITE_EVENT（:72–104）・@PARASITE_ACTION（:108–283）----------------------------------

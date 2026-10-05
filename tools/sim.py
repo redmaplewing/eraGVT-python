@@ -558,6 +558,14 @@ def _corrupt(state, data, who: int) -> None:
     c.exp[data.index_of("EXP", "陥落経験")] += 1
 
 
+def _input_choice(session, policy, buttons):
+    """成就 PRINTW 僅確認；不得以舊選項額外消耗策略 RNG。"""
+    if getattr(session.out, "achievement_wait", None) is not None:
+        session.input(0)
+    else:
+        session.input(policy.choice(buttons) if buttons else 0)
+
+
 def run_one(data, narration, seed: int, preset: str, max_shop: int, max_steps: int, save_dir: Path,
             enable_intimidation: bool = False, setup=None, enable_akuoti: bool = False, corrupt: int = 0,
             style: str = "", config_preset: int = 1, clear_bits: tuple = (), actions: tuple = (101, 102, 103)) -> dict:
@@ -617,7 +625,7 @@ def run_one(data, narration, seed: int, preset: str, max_shop: int, max_steps: i
             if not buttons:
                 buttons = [v for ln in s.out.lines[-40:] for (_, v) in ln.buttons]
             mark = len(s.out.lines)
-            s.input(policy.choice(buttons) if buttons else 0)
+            _input_choice(s, policy, buttons)
         except Exception as exc:  # noqa: BLE001（例外も停止原因として集計）
             reason = f"例外: {type(exc).__name__}: {exc}"
             break
@@ -692,7 +700,7 @@ def main(argv: list[str] | None = None) -> int:
         for seed in _parse_seeds(a.seeds):
             before = Counter(counts)
             nfail = len(narration.failures)
-            r = run_one(data, narration, seed, a.preset, a.max_shop, a.max_steps, Path(tmp), a.enable_intimidation,
+            r = run_one(data, narration, seed, a.preset, a.max_shop, a.max_steps, Path(tmp) / str(seed), a.enable_intimidation,
                         enable_akuoti=a.enable_akuoti, corrupt=a.corrupt, style=a.style,
                         config_preset=a.config_preset,
                         setup=(_bosses_cleared if a.bosses_cleared

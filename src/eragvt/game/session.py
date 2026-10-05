@@ -177,7 +177,7 @@ class GameSession:
         """@EVENTSHOP はジェネレータ（S17：寄生触手のイベントが INPUT を使う）。INPUT 待ちの間は Phase.TURN。"""
         assert self.state is not None
         try:
-            gen = shop.event_shop_gen(self.state, self.data, self.out, self.narration)
+            gen = shop.event_shop_gen(self.state, self.data, self.out, self.narration, self.globals)
         except NotImplementedError as exc:  # @EVENTSHOP 内の未移植イベント
             self._halt(exc)
             return
@@ -296,7 +296,9 @@ class GameSession:
                     self._run_gen(retirement_gen(self._ctx()), self._show_shop)
                     return
         elif value == 800:
-            out.printl(f"（未實作：[{value}]）")
+            from .achievements import show_trophy
+            self._run_gen(show_trophy(self._ctx()), self._show_shop)
+            return
         # @USERSHOP 終了 → SystemProc@endCallEventBuy:737–755 → endAutoSave → @SHOW_SHOP
         self._show_shop()
 
@@ -332,7 +334,8 @@ class GameSession:
 
     def _run_gen(self, gen: Generator[None, int, object], done: Callable[[], None], phase: Phase = Phase.TURN) -> None:
         """INPUT を yield するジェネレータを駆動する。終了したら戻り値を `_gen_result` に入れて `done`。"""
-        self._turn = gen
+        from .wait_bridge import with_achievement_wait
+        self._turn = with_achievement_wait(gen, self.out)
         self._turn_done = done
         self._gen_phase = phase
         self._gen_result = None
