@@ -15,19 +15,20 @@
 - [x] TARGET／ASSI 初始值 — `ResetData` → `SetDefaultValue` 設 TARGET=1、ASSI=-1（`GameData/Variable/VariableData.cs`:644–647）。
 - [x] 存檔包含哪些變數 — 內建整數陣列 0x00–0x3B（含 **TFLAG**）、SAVESTR、TSTR、RANDDATA、角色全部內建變數、SAVEDATA 的 `#DIM`；`#DIM CHARADATA`（無 SAVEDATA）的 **TCVARn 不存**（`VariableCode.cs`:31–175、`VariableData.cs`:663–760、`CharacterData.cs`:289–350、`GameProc/UserDefinedVariable.cs`:150–152、315–320）。已改 `Character` 不存 TCVARn。RANDDATA 雖會存，但只在 `INITRAND`／`DUMPRAND` 使用（`GameProc/Function/Instraction.Child.cs`:1252、1266），本作 ERB 沒用到（grep 0 件）。
 - [x] 自動按鈕 `[n]` 的範圍 — 已移植 `GameView/ButtonStringCreator.cs@syn`:35–167 與 `PrintStringBuffer.cs@fromCssToButton`:275（換行時整行判定；只有 1 個 `[n]` 時整段都是按鈕）。
-- [ ] 無 BOM 的 UTF-8 角色 CSV（`_ADD/Chara160–163`、`Chara18xx_New Generation/CHARA1805–1807`）— 原版 1.824 以 Shift-JIS 解碼（`Sub/EraStreamReader.cs`:42 `new StreamReader(stream, Config.Encode)`、`Config/Config.cs`:17 SHIFT-JIS），這 7 檔會亂碼、連 `番号` 都讀不到；本作附的是 `Emuera1824+v10.exe`，**可能是 +v10 差異**（自動判別 UTF-8）。目前以 UTF-8 讀（`csv_loader.read_enabled_lines`，`# UNVERIFIED`）。需要時請在實機確認這些角色能否出現。
-- [ ] 無 BOM 的 ERB `ゲーム内_イベント発生/特別活動イベント.ERB`（S07 發現；全 ERB/ERH 中唯一）— 1.824 以 Shift-JIS 讀
+- [ ] `W08` 無 BOM 的 UTF-8 角色 CSV（`_ADD/Chara160–163`、`Chara18xx_New Generation/CHARA1805–1807`）— 原版 1.824 以 Shift-JIS 解碼（`Sub/EraStreamReader.cs`:42 `new StreamReader(stream, Config.Encode)`、`Config/Config.cs`:17 SHIFT-JIS），這 7 檔會亂碼、連 `番号` 都讀不到；本作附的是 `Emuera1824+v10.exe`，**可能是 +v10 差異**（自動判別 UTF-8）。目前以 UTF-8 讀（`csv_loader.read_enabled_lines`，`# UNVERIFIED`）。需要時請在實機確認這些角色能否出現。
+- [ ] `W08` 無 BOM 的 ERB `ゲーム内_イベント発生/特別活動イベント.ERB`（S07 發現；全 ERB/ERH 中唯一）— 1.824 以 Shift-JIS 讀
   （同上 `EraStreamReader.cs`:42），函式名會亂碼而找不到；catalog 以 UTF-8 讀（`narration.extract.read_logical_lines`）。
   口上／地の文沒有呼叫此檔的函式，目前不影響。可能是 +v10 差異。
-- [ ] 未定義識別子 `LOCAL:O`（`ゲーム内_戦闘処理/COMMON_BATTLE_HANTEI.ERB`:241／:245，振り解く判定）— 1.824 在第一次執行該行時
+- [ ] `W08` 未定義識別子 `LOCAL:O`（`ゲーム内_戦闘処理/COMMON_BATTLE_HANTEI.ERB`:241／:245，振り解く判定）— 1.824 在第一次執行該行時
   才解析引數（`GameProc/Process.ScriptProc.cs`:38–42），`O` 找不到 → `IdentifierNotFoundCodeEE`（`GameData/IdentifierDictionary.cs`:645）
   → 停止。原作附的 `Emuera1824+v10.exe` 是否同樣報錯未確認（reference 只有 1.824）。目前當 `LOCAL:0`（deviations.md）。
   S27：`エンディング/SCORE.ERB`:150 `FOR CCOUNT, O, CHARANUM` 同類（クリア時必經），目前當 0（deviations.md「SCORE 的 FOR CCOUNT, O」）。
+  **兩處按0處理已經使用者裁決，不重開決策；本項未決僅為原作附帶+v10與reference 1.824的引擎行為差異查證。**
 
 ## 原作邏輯
 
 - [x] `TFLAG:0`（戰鬥回合數）遞增處 — `ゲーム内_戦闘処理/BATTLE_COM_AFTER.ERB@SOURCE_CHECK`:1313–1318（先制攻擊中扣 `TFLAG:24`，否則 `TFLAG:0 += 1`）。
-- [ ] 一覧:594 說回合上限在 `TCVARn:13`，程式實際用 `ERB/DIM.ERH`:280 `ターン上限` — 以程式為準。
+- [ ] `W08` 一覧:594 說回合上限在 `TCVARn:13`，程式實際用 `ERB/DIM.ERH`:280 `ターン上限` — 以程式為準。
 - [x] 雜魚／クズ市民戰在體力・氣力・性耐性全 0 時的結束路徑 — `BEGIN AFTERTRAIN` 全作只有 6 處（grep：`BATTLE_COM_AFTER.ERB`:435 勝利、
   :950 敗北、:1095 強拘束敗北、:1130 時間切れ；`BATTLE_COM.ERB`:596／:614 撤退），`TFLAG:98` 只在 :129（=1 勝利）、:852、:973（=2 敗北）設定。
   :955／:1303 的一般敗北判定排除 MOB／CITIZEN，所以**雜魚戰全 0 也不會敗北**，只能以勝利・時間切れ（15 回合）・撤退結束；
@@ -44,10 +45,8 @@
 - [x] `TOINT` 對 cp932 無法編碼字元的處理（S10→S50）— `Creator.Method.cs:2363`、`_Library/LangManager.cs:12–20`、
   `Config/Config.cs:134` 指定 Encoding(932)。已以 .NET Framework 4 實測全 BMP 長度、數字分類及非 BMP 替代；
   `chara_make.toint` 與 `colorbar.isnumeric` 共用完整數值解析，不再因未移植而停止，原引擎轉換錯誤仍保留；重現步驟見 `python/numeric-input.md`。
-- [ ] `SHOP.ERB@USERSHOP`:288–293 `CASE 169 && GAME_OPTION_CHECK_F(OPTION_加入引退有り)` 等（S12 發現）— CASE 引數整個是式，
-  照字面會變成 `RESULT == (169 && …)`（0／1），[169]／[170]／[180] 可能永遠不會命中。未查 `SELECTCASE` 的 CASE 式解析
-  （`GameProc/Function/Instraction.Child.cs` 的 CASE 相關處）。INSTANT 模式專用、預設路徑不經過；Python 仍只印「（未實作）」。
-- [ ] `GAME_MODE_CHECK_F`／`GAME_MODE_CHECK`（GAMEMODE.ERB:124–137）以全域 `COUNT` 當 FOR 變數（S12）。呼叫端若在 `FOR COUNT`
+- [ ] `W06／W08` `SHOP.ERB@USERSHOP:288–294`的`CASE 169 && GAME_OPTION_CHECK_F(...)`式語意 — 舊S12記錄尚未結案；S43／S44已接通169／170／180（`game/session.py:283–297`與對應wiki），不再是只印未實作。需核對引擎CASE解析、原作實際入口與現行條件是否一致，必要時交使用者裁決；不能以目前測試通過代替查證。
+- [ ] `W07／W08` `GAME_MODE_CHECK_F`／`GAME_MODE_CHECK`（GAMEMODE.ERB:124–137）以全域 `COUNT` 當 FOR 變數（S12）。呼叫端若在 `FOR COUNT`
   迴圈中呼叫 `CHECK_GAMEOVER_F()` 會被改寫；已移植的呼叫端（SHOP／SHOP_TURNEND／SET_PARTYMEMBER（CCOUNT）／PRISON（LOCAL:999））
   都不是用 COUNT 迴圈，Python 未模型化 COUNT。之後移植新呼叫端時需確認。
 - [x] 悪堕ちキャラ戰（FLAG:110 > 0）中受精時 `NINSIN_HANTEI`:150–151 的 `TENTACLE_ACCESS "GETNAME"`（S13）— S19 確認：
@@ -63,21 +62,25 @@
   原變身後名（CSTR:55）時不寫 RESULTS:2 → :787 讀到前一次的 RESULTS:2。**S22 結案**（使用者裁決 2026-10-02：照原作）：RESULTS 改為
   `GameState.results` 共用陣列（引擎：不存檔、讀檔／新遊戲清空；寫入來源一覽 `docs/wiki/python/result.md`），STRMATCH 同步寫入、:787 讀共用陣列，
   停止點解除。測試 `tests/test_results_shared.py`（不成立＋前值非空／空、連續 2 人）。
-- [ ] `.NET string.IndexOf(string, int)`（STRFINDU，`Creator.Method.cs`:2273）是文化相依比較；catalog／corruption 以 Python `str.find`（序數）
+- [ ] `W08` `.NET string.IndexOf(string, int)`（STRFINDU，`Creator.Method.cs`:2273）是文化相依比較；catalog／corruption 以 Python `str.find`（序數）
   實作。本作用到的字串（假名・漢字・記號）在 CompareOptions.None 下應一致，但 reference 內無法確認 .NET 文化表（S21）。
 - [x] BEGIN 在被 CALL 的函式中（S28a）— 只設定 begintype 並 Return 一層，呼叫端繼續執行，最後一次的 BEGIN 在函式堆疊清空時生效
   （`GameProc/Function/Instraction.Child.cs@BEGIN_Instruction`:1681–1689、`GameProc/Process.State.cs@SetBegin`:203–228／`@Return`:355–425／`@Begin`:263–311）。
   `docs/wiki/era/actions.md`「S28a 補足」。
-- [ ] SCHEDULE 畫面（S28a）的 PRINT 行尾空白：原作行尾有半形空白（CRLF 前），Python 省略；只影響顯示寬度，未查 Emuera 是否保留引數行尾空白。
-- [ ] `TIMES 變數, 實數`（S29，catalog）— 引擎以 `(decimal)double` 計算（`GameProc/Function/Instraction.Child.cs`:905–916），.NET 的
+- [ ] `W07／W08` SCHEDULE 畫面（S28a）的 PRINT 行尾空白：原作行尾有半形空白（CRLF 前），Python 省略；只影響顯示寬度，未查 Emuera 是否保留引數行尾空白。
+- [ ] `W08` `TIMES 變數, 實數`（S29，catalog）— 引擎以 `(decimal)double` 計算（`GameProc/Function/Instraction.Child.cs`:905–916），.NET 的
   double→decimal 轉換（有效數字 15 位捨入）不在 reference 內；catalog 以實數字面的原文作 Decimal（`narration.runtime.Interp._times`，`# UNVERIFIED`，
   與 `game.era.times` 同前提），有效數字 > 15 位者 unsupported。本作口上／地の文只有 `0.5`（二進位精確）與 `0.20`（double 略大於 0.2，
   乘整數後截斷結果與精確值相同），實際結果不受影響。
-- [ ] catalog 的 `run_function_gen` 等待 INPUTS 時ジャーナル區間保持開啟（S29）：若等待期間 Web 另外執行會寫 GameState 的 catalog 函式，
+- [ ] `W07／W08` catalog 的 `run_function_gen` 等待 INPUTS 時ジャーナル區間保持開啟（S29）：若等待期間 Web 另外執行會寫 GameState 的 catalog 函式，
   其書き込み會被算進這個區間、重放時一併回復。目前 INPUTS 函式（`MESSAGE_SEX_SPCOM7` 動画サイト等）等待期間沒有其他 catalog 執行路徑，未發生。
-- [ ] `SETCOLORBYNAME` 的色名大小寫（S30，catalog）— 引擎呼叫 `Color.FromName(字串)`（`GameProc/Function/ArgumentBuilder.cs`:364–373、
+- [ ] `W08` `SETCOLORBYNAME` 的色名大小寫（S30，catalog）— 引擎呼叫 `Color.FromName(字串)`（`GameProc/Function/ArgumentBuilder.cs`:364–373、
   `GameProc/Process.ScriptProc.cs`:408–420），名稱比對規則屬 .NET Framework（ColorConverter 的色名表），不在 reference 內。原作
   `地の文/MESSAGE_BATTLE.ERB`:364 寫 `HOTPINK`（KnownColor 名為 HotPink）；catalog 以「不分大小寫」處理（`narration.extract.DOTNET_NAMED_COLORS`，
   `# UNVERIFIED`），表只收本作用到的 HotPink・Fuchsia。已查：reference 全體 grep `FromName`（ArgumentBuilder.cs:366、Process.ScriptProc.cs:411／458、Creator.Method.cs:701、HtmlManager.cs:1011），皆只看 `A == 0`，比對規則不在 reference；各處的 transparent 判定用 OrdinalIgnoreCase 只是旁證。
 - [x] `GETBGCOLOR`：S33 已建立 TextOutput 目前背景色，接通既有 SETBGCOLOR／RESETBGCOLOR 路徑及 Web。
   依據 `reference/emuera-1824/Emuera/GameData/Function/Creator.Method.cs:584–599`；來源與驗證見 `../python/narration.md` 的 S33 節。
+
+## S56盤點新增
+
+- [ ] `W05／W08` 末王強化時敵方回復是否漏套係數 — `ERB/ゲーム内_戦闘処理/LASTBOSS_POWERUP.ERB@LASTBOSS_REST:16–22`在強化且末王時回8，`game/battle/enemy.py:657–661`行動4目前固定除以`2+0`；HP強化在`battle/encount.py:325–327`、跨回合回復在`game/turnend.py:354–356`已處理。已查這三處Python與LASTBOSS_POWERUP原文；尚需核對`TENTACLE_COM`呼叫鏈、兩末王行動4可達性與定向expected，不能判整套強化未移植，也不在文件階段擅改規則。

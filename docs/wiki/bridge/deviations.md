@@ -8,10 +8,11 @@
 
 格式：`- [ ] 內容（原作：檔案@函式／reference 位置；Python：模組@函式）— 為什麼要偏離／替代方案`
 ERB 路徑相對 `source/earGVP/ERB/`。
+S56現況歸屬：各未勾選項的W編號指向`docs/PLAN.md`；仍待實作／查證／裁決，不因排入計畫而視為批准。現存停止以`docs/PLAYABILITY.md`為準。
 
 ## 狀態會不同
 
-- [ ] **亂數**：用 Python `random.Random`（可 seed），不是 Emuera 的 MT 實作；RAND 的呼叫次數也不追求一致（例：`RESEARCH_QUOTA` 的 `RAND:5` 是否短路求值）。同 seed 不會得到原作同樣的結果。（原作：`reference/.../GameData/Variable/VariableEvaluator.cs`:36–52；Python：`eragvt.state.rng.GameRng`）— 要完全一致需移植 MTRandom 並逐一核對求值順序，成本高。
+- [ ] `W08` **亂數**：用 Python `random.Random`（可 seed），不是 Emuera 的 MT 實作；RAND 的呼叫次數也不追求一致（例：`RESEARCH_QUOTA` 的 `RAND:5` 是否短路求值）。同 seed 不會得到原作同樣的結果。（原作：`reference/.../GameData/Variable/VariableEvaluator.cs`:36–52；Python：`eragvt.state.rng.GameRng`）— 要完全一致需移植 MTRandom 並逐一核對求值順序，成本高。
 - [x] ~~**開局：身體資料生成未移植**~~（S09 解決）：`CHARA_MAKE_BASE_PROFILE` 已移植（`eragvt.game.opening.chara_make_base_profile`、
   `eragvt.game.body`）。查證結果：初期セットのキャラは `NO ≠ 0`（:498 條件不成立）→ 原作本來就不生成，BASE:40–48／CFLAG:33–34 為 0
   與原作一致（`docs/wiki/era/body-profile.md`）。S10：汎用キャラ的隨機生成（:507–980）與 AGE_SETTING 的年齢指定（CSTR:204–206）
@@ -24,7 +25,7 @@ ERB 路徑相對 `source/earGVP/ERB/`。
   代入もコメントで到達しない；S26 の「102／87 回」は 3001／3002 の戰鬥回数で、この路の回数ではなかった）。戰後の BEGIN SHOP では
   @EVENTSHOP 後のオートセーブが @SAVEINFO を呼び、:604 `SUBSTRING` が RESULTS:0 = "408" を書く → 原作どおり「FLASH NEWS：《408》」を表示
   （`shop.save_info` が共用 RESULTS:0 を書く。詳細と書き込み元一覧は `docs/wiki/python/result.md`「事件戰ニュースの前回値」）。
-- [ ] **全域資料（GLOBAL）：成就・歷代紀錄不讀不寫**（S24 縮小範圍）：config 相關的 GLOBAL（LOADGLOBAL／UPDATE／UPDATE_GLOBAL、
+- [ ] `W01` **全域資料（GLOBAL）：成就・歷代紀錄不讀不寫**（S24 縮小範圍）：config 相關的 GLOBAL（LOADGLOBAL／UPDATE／UPDATE_GLOBAL、
   GLOBAL:4・11〜15・51〜59、MOB_GLOBAL、CONFIG 畫面的 SAVEGLOBAL、CHARA_MAKE_MAIN:9–21 的讀取）已照原作移植（`eragvt.game.config`、
   `state.savefile.GlobalStore`、`saves/global.json`；`docs/wiki/era/flow.md` §10）。仍不做的是成就／紀錄類：（原作：下列各處；Python：見各行）
   S55 已接通角色製作 [170]／[180] 共通設定存讀（GLOBAL:5〜9・20〜23、GLOBALS:15〜17），見 `docs/wiki/era/creation-menu.md`。
@@ -35,11 +36,11 @@ ERB 路徑相對 `source/earGVP/ERB/`。
   S27 起同理不執行：`SCORE.ERB`:695–698／:740–747 的 GLOBAL:110（最高總合評價）・GLOBAL:100〜102（各模式クリア回數）與 SAVEGLOBAL、
   實績 211〜213・259〜261・265・270（`BATTLE_COM_AFTER.ERB`:185／:283–304、SCORE:709／:722／:736）——判定沒有其他副作用、不影響畫面；
   ENDING_1／3／6 エンドレス分岐的 GLOBAL:114（撃破數歷代記錄）不讀不寫 → **不顯示「ボス撃破の新記録を達成しました！」**（ENDLESS 模式
-  因模式選擇未移植目前到達不了）。（Python：`eragvt.game.ending.score`／`_endless_record`、`battle.source_check._all_bosses_cleared`）
+  新局入口尚未接通，但S37引繼已可選SURVIVAL，不能視為不可達）。（Python：`eragvt.game.ending.score`／`_endless_record`、`battle.source_check._all_bosses_cleared`）
   S08 起同理不執行：幽閉的 `COMMON_PRISON.ERB@COMMON_PRISON_EXP`:87 `GET_STATE_EXPUP`、救出時的 `UNLOCK_ACHIEVEMENT`（271／273：
   `BATTLE_COM_AFTER.ERB`:209／240）、`MESSAGE_PRISON_PRISENTENCE_FIRST`:9（hook 為無動作）。（Python：`eragvt.game.prison.commands.common_prison_exp`、
   `battle.source_check._rescue_captives`、`narration/hooks.py` PRISON_HOOK_LINES）
-- [ ] **開局的 UI 跳過**（S10 改寫、S24 縮小）：狀態已照原作預設路徑（NORMAL → キャラメイク不設定直接 `[1000]`＝汎用キャラ 3 名おまかせ生成
+- [ ] `W02／W04／W06` **開局的 UI 跳過**（S10 改寫、S24 縮小）：狀態已照原作預設路徑（NORMAL → キャラメイク不設定直接 `[1000]`＝汎用キャラ 3 名おまかせ生成
   → HEROINE_PRESET `[1]` 基本セット → 序章 `[0]`，`docs/wiki/era/flow.md` §1）。**S24**：HEROINE_PRESET 畫面照原文顯示並接受 [0]〜[3]・[10]
   （[20+]／[30] 已於 S25／S51 接通）。S55 已接通角色製作主選單與共通設定。仍略過模式選擇／序章畫面，保留 `@EVENTFIRST` 中 MODE_SELECT 位置的
   2 択「[0] おまかせで開始（原作既定）／[1] 初期セット『特装戦隊』で開始」（後者先載入原作 `[200]`→`[0]`→`[1]はい` 的角色，再進製作主選單；兩者均需按 `[1000]` 完成），
@@ -51,28 +52,11 @@ ERB 路徑相對 `source/earGVP/ERB/`。
   S43追加招募[0]/[1]沿用同一路徑（共用`character_defaults.confirm_default_character`）；[2]依原作略過個別編輯，
   特徵選擇後才FINALIZE，不提前初始化種族；詳見 `docs/wiki/era/recruitment.md`。
 
-- [ ] **S04 未翻的行動會停止遊戲**：（出撃已於 S05 接上，戰鬥內的停止見下一項）（自由行動 S28c1／S28c2、特別活動 S28b、拠点防衛・戦闘支援・情報収集 S28a 已接上；`action_main` 只剩不存在的預約值會丟 `NotImplementedError`），Web session 捕捉後進入「停止」狀態（只能按「タイトルに戻る」）。同樣停止的還有：（ENDING 於 S27 接上：クリア後只剩引き継ぎ SUCCESSION 停止）、救出直後、妊娠・育兒・幽閉・悪堕ち等 S04 無法產生的狀態、鍛錬排程（CFLAG:110）、戦闘基礎 Lv5 的變身能力獲得。（原作：`ゲーム内_行動実行処理/ACTION.ERB`:74–175 等；Python：`eragvt.game.action`、`eragvt.game.turnend`、`eragvt.game.session._advance_turn`）— 各自屬 S05 以後；影響範圍見 `docs/wiki/era/actions.md`。
+- [ ] `W05／W08` **S04未翻行動的停止處理**：8類行動、鍛錬排程、結局／引繼等已接通；目前`action.py:304,420`是不存在預約值與REST狀態安全網，不能沿用舊S04缺口清單。Web遇到未移植仍進HALTED；現存分支統一見`docs/PLAYABILITY.md`，逐項核對可達性。
 - [x] ~~**襲撃／救援 會被跳過**~~（S20 解決）：`RAID_HANTEI` 成立時照原作 `JUMP RAID_RESCUE／RAID_ATTACK` → イベント戦（`eragvt.game.raid`）。ラスボス出現後（FLAG:100 = 0）の襲来は S27 接上（生存ラスボス 0 で原作無限ループの路だけ停止）。
-- [ ] **未移植的戰鬥分岐會停止遊戲**（S05 新增、S06 更新）：戰鬥中下列情況丟 `NotImplementedError` → Web「停止」。
-  S06 接上了拘束後的性攻擊、拘束中指令、絶頂／射精、敗北（→ 幽閉）與指令 6・7・16・17・69・71・72；
-  S16 接上 ＳＰ変身（73）・ＳＰバースト（70）・ＳＰフルバースト（74）與バースト攻撃（TCVARn:217）的全部補正；
-  仍停止的一覽見 `docs/STATUS.md`「S06 後仍會停止的分岐」（反擊、受精成立、
-  強制自慰、動画流出、幽閉後的 TURNEND、悪堕ち／雜魚／ラスボス等；拡張度 CFLAG:34 != 0 於 S11 接上，只剩羞恥プレイ的
-  動画サイト視窗 `MESSAGE_SEX_VIDEO_SITE_Window`）。
-  （Python：`eragvt.game.battle.*` 各處 `raise NotImplementedError`、`battle.commands.run_com` 的 `# DEVIATION:`）
-  — 依規格「未移植分岐必須停止」。
-- [ ] **幽閉的未移植分岐會停止遊戲**（S08 新增）：（受精成立・苗床出産・`RESCUE_CHILD` 已於 S13 接上；膨乳化的
-  `SET_PROFILE` 已於 S09 接上）、悪堕ちキャラ 的幽閉（悪堕ち的 PALAM_HOSEI；ラスボス（Ｋ触手）的幽閉 S27 接上，天使の樹仍停止）、`CORRUPT_CHANGE_LOOKS_MAIN`:24–（設定 CONFIG_CHECK_PRISON_F(4) ON 時）、`RECOVER_CORRUPTION`、
-  TS 性別變化（`TS_MtoF` 等）（ゲームオーバーモードは S12、ENDING_1 的エンドレス分岐は S27 接上）、悪堕ちキャラの淫謀（`AKUOTI_EVENT`，防衛力 0 時悪堕ちキャラ一在就必定發生）。
-  （Python：`eragvt.game.prison.*`、`party`、`ending`、`turnend._inmon_fall`、`turnend.akuoti_attack` 的 `raise NotImplementedError`）
-  — 依規格「牽涉未移植系統時照 S06 慣例停止」。
-- [ ] **妊娠・子供的未移植分岐會停止遊戲**（S13 新增）：TS 変身キャラ妊娠時的女體化（`TRANS_SEX.ERB@TS_MtoF`：
-  `PREGNANT_SOURCE_NINSIN.ERB@NINSIN_TS_FIX`:263–267、`@NINSIN_FLAG`:248–256）、手入力（INPUTS）的選項：子供名字 [1]
-  （`PREGNANT_CHILD_BIRTH.ERB@ADD_CHILD`:419–427、`@BIRTH_DAUGHTER_TENTACLE_ORIGIN`:235–243）、変身後名 [1]〜[4]（含
-  ランダム命名畫面 `FIRSTSETTING_RANDOMNAMING(_ALL)`）、変身後呼び名・かけ声・名乗り口上的「自分で設定」
-  （`FIRSTSETTING_CHARA_TRANSFORMATION.ERB`）、デバッグモード的妊娠確率輸入（`NINSIN_HANTEI`:125–138）。
-  （Python：`eragvt.game.battle.ninsin`、`eragvt.game.child`、`eragvt.game.firstsetting` 的 `raise NotImplementedError`）
-  — S35 已補命名 INPUTS／隨機命名；TS 系統仍屬之後的階段。
+- [ ] `W03／W05／W06` **未移植的戰鬥分岐會停止遊戲**：主幹、雜魚／市民／悪堕ち、兩隻末王皆已有實作。剩餘裝備／觸手服、觀眾妨礙、返り血、模式與動態分派安全網見`docs/PLAYABILITY.md`完整歸屬表；依既定規格明確停止，不自行發明行為。
+- [ ] `W03／W05` **幽閉未移植分岐會停止遊戲**：TS_MtoF／TS_NORMAL／TS_FtoM仍停止。悪堕ち、容姿／回復、Ｋ触手與天使の樹幽閉已接通；其餘資料分派guard需核對，不能再把整個末王2列未移植。見`game/prison/event.py:87,122,141,233,241`與盤點表。
+- [ ] `W03／W08` **妊娠／子供未移植分岐會停止遊戲**：TS轉換與除錯妊娠輸入仍缺；命名INPUTS、變身命名及隨機命名已接通，不再列停止。來源`ERB/ヒロイン関連/TRANS_SEX.ERB@TS_MtoF`，Python `battle/ninsin.py:175,279,296,452`。
 - [x] **振り解く判定的 `LOCAL:O`**（S06 新增；**已裁決 2026-10-03：視為打錯字，當 `0` 處理＝`LOCAL:0`**）：`ゲーム内_戦闘処理/COMMON_BATTLE_HANTEI.ERB`:241／:245
   `SIF LOCAL:5 <= 45 && LOCAL:O > 49` 的 `O` 是英文字母，全作沒有這個識別子（grep 僅此 2 處）。1.824 在執行到該行時
   報錯停止（`GameProc/Process.ScriptProc.cs`:38–42、`GameData/Expression/ExpressionParser.cs`:264–269、
@@ -91,10 +75,10 @@ ERB 路徑相對 `source/earGVP/ERB/`。
 
 ## 只影響顯示
 
-- [ ] **口上**（S07 更新）：SHOP 一口メッセージ・行動・戰鬥中的口上改由 catalog 輸出（`eragvt.narration`）。仍未輸出的：
-  unsupported 的口上（S30 起 0；實行時失敗者見下項）、開局 `MESSAGE_FIRST`（`opening.event_first` 沒有輸出／narration 參數，
+- [ ] `W04／W07` **口上**（S07 更新）：SHOP 一口メッセージ・行動・戰鬥中的口上改由 catalog 輸出（`eragvt.narration`）。仍未輸出的：
+  unsupported 的口上（S30 起 0；實行時失敗者見下項）、開局 `MESSAGE_FIRST`（`opening.event_first_gen` 仍略過此處輸出，
   維持 FLAG:62＝0・FLAG:900＝0 的「找不到」處理）。無 `ERB/` 目錄時回落 `NullNarrationService`。
-- [ ] **口上 catalog 的實行時失敗**（S07 新增；S29 改寫）：執行中才發現的子集外（動態 CALLFORM 的呼叫先不可執行、generator 以外遇到 INPUT）
+- [ ] `W07` **口上 catalog 的實行時失敗**（S07 新增；S29 改寫）：執行中才發現的子集外（動態 CALLFORM 的呼叫先不可執行、generator 以外遇到 INPUT）
   或引擎會報錯停止的狀況（除以 0、範圍外參照），catalog 會回復輸出・亂數・LOCAL・RESULT(S)，S29 起連 **GameState 的書き込み**（ジャーナル
   `runtime.StateJournal`，含 KOJO_ROOT 的 FLAG:62／900）也完整回復，口上當「找不到」、地の文印佔位。原作會報錯停止或照常執行。
   無法回復而停止（NotImplementedError）的情況包括：Python 移植的 hook CALL（`HOOK_CALLS`：SET_TENTACLE_SIZE_BY_MESSAGE、NINSIN_HANTEI、
@@ -105,7 +89,7 @@ ERB 路徑相對 `source/earGVP/ERB/`。
   `YANDERE_FIRST_SETTING` 到 INPUT（預設 34 局 5,399 次；S29 的程式碼同 seed 也會發生，非 S30 新增）。
   **S31 裁決（2026-10-04）**：TURNEND／SHOP 口上遇到 INPUT 依原作顯示選項並等待，選完續行，不再回復為「找不到」。
   輸入後才發現不可執行內容時停止；其他同步呼叫的失敗回復仍待裁決。詳見 narration wiki 的 S31 節。
-- [ ] **口上 catalog 的顯示簡化**（S07 新增，只影響顯示）：`SETFONT`（字型名）不反映（`FONTITALIC` 斜體 S20 起反映：`TextOutput.set_italic`）；`CLEARLINE` 只刪已完成的行；
+- [ ] `W07／W08` **口上 catalog 的顯示簡化**（S07 新增，只影響顯示）：`SETFONT`（字型名）不反映（`FONTITALIC` 斜體 S20 起反映：`TextOutput.set_italic`）；`CLEARLINE` 只刪已完成的行；
   S41角色強化重繪沿用共用CLEARLINE（`ERB/インターミッション画面/SHOP_CHARA_POWERUP.ERB@CHARA_POWERUP:343–346`）；不影響分配、扣款及共享RESULT(S)。
   S45設施擴充、S49武器自訂沿用同一CLEARLINE偏離；局部回顯數值輸入並在繼續時移除Enter操作提示，避免誤刪選項，未修改全域顯示語意（見`docs/wiki/era/facilities.md`）。
   COUNT 放在口上專用的暫存（`state.temp.narr`），與 Python 移植部分不共用（原作是全域變數；Python 未模型化 COUNT）。RESULT（S21）・RESULTS（S22）
@@ -116,28 +100,28 @@ ERB 路徑相對 `source/earGVP/ERB/`。
   S14：`DRAWLINEFORM 文字列` 畫成與 DRAWLINE 相同的區切線（原作以該字串重複到畫面寬：`GameView/EmueraConsole.Print.cs@getStBar`:543–560；
   動画サイト :1335 的 `―`）；動画サイトの `PRINT_TAGSET_TEXT` 的 `@F:` フォント指定不反映（本作未使用），既定色的 `SETCOLOR 0x{GETCOLOR}`
   以「回到呼叫前的顏色」表示（顯示相同）。（Python：`eragvt.narration.runtime`、`eragvt.narration.windowlib`）
-- [ ] **SHOW_SHOP 簡化**：狀態條（`COLOR_BAR` 的色階與長度）以 20 格單色近似；`SHOW_SHOP_STATUS_SIGN`（生理周期・疲勞等標記）、隊伍列表的欄寬對齊與第 2 行詳細未移植；`SHOP_NG_ACTION_INFO` 的紅字在函式結尾重設顏色（原作不重設）。（Python：`eragvt.game.shop`）
+- [ ] `W07` **SHOW_SHOP 簡化**：狀態條（`COLOR_BAR` 的色階與長度）以 20 格單色近似；`SHOW_SHOP_STATUS_SIGN`（生理周期・疲勞等標記）、隊伍列表的欄寬對齊與第 2 行詳細未移植；`SHOP_NG_ACTION_INFO` 的紅字在函式結尾重設顏色（原作不重設）。（Python：`eragvt.game.shop`）
   S46 已接通出場／候補列表與編成選擇，候補列表沿用相同欄寬、數值條與狀態標記簡化；來源 `ERB/インターミッション画面/SHOP_SHOW_STATUS_LIST.ERB@SHOP_SHOW_STATUS_RESERVE_LIST:52–86`。
-- [ ] **未實作的選單**：目前 `game.session._shop_input` 僅 SHOP `[800]` 仍顯示「（未實作）」；`[50]`、`[110]`〜`[180]` 的原作入口與 `[700]` 已接通。
+- [ ] `W01` **未實作的選單**：目前 `game.session._shop_input` 僅 SHOP `[800]` 仍顯示「（未實作）」；`[50]`、`[110]`〜`[180]` 的原作入口與 `[700]` 已接通。
   此處指 SHOP 的 `[800]`，不含已實作的戰鬥 `[800]` 狀態畫面；各選單內部尚未移植的分支見 STATUS。
-- [ ] **WAIT／PRINTW 不阻塞**：Web 一次顯示到下一個 INPUT 為止，WAIT 位置以虛線標示，不需按鍵繼續。（Python：`eragvt.game.session`、`eragvt.web`）S44引退名簿／報告、S45設施擴充、S49武器自訂已依原作局部補上PRINTW／WAIT等待；其他系統的既有簡化仍保留，見`docs/wiki/era/retirement.md`與`facilities.md`。
-- [ ] **存檔格式與檔名**：JSON（`saves/saveNN.json`），不是 Emuera 的 `.sav`；存檔說明文字（日時＋`@SAVEINFO`）與一覽格式照原作。
-- [ ] **Web 專用按鈕**：頁尾「タイトルに戻る」（重建 session）是原作沒有的。
-- [ ] **無效輸入訊息**：Emuera 以「刪一行＋暫時行」顯示「無効な値です」，這裡以一般行輸出。
-- [ ] **SHOW_SHOP 的 TARGET == CHARANUM**：原作會因越界參照報錯，這裡視為「編成外」重新選擇 TARGET（`eragvt.game.shop.show_shop`）。
+- [ ] `W07` **WAIT／PRINTW 不阻塞**：Web 一次顯示到下一個 INPUT 為止，WAIT 位置以虛線標示，不需按鍵繼續。（Python：`eragvt.game.session`、`eragvt.web`）S44引退名簿／報告、S45設施擴充、S49武器自訂已依原作局部補上PRINTW／WAIT等待；其他系統的既有簡化仍保留，見`docs/wiki/era/retirement.md`與`facilities.md`。
+- [ ] `W08` **存檔格式與檔名**：JSON（`saves/saveNN.json`），不是 Emuera 的 `.sav`；存檔說明文字（日時＋`@SAVEINFO`）與一覽格式照原作。
+- [ ] `W08` **Web 專用按鈕**：頁尾「タイトルに戻る」（重建 session）是原作沒有的。
+- [ ] `W07` **無效輸入訊息**：Emuera 以「刪一行＋暫時行」顯示「無効な値です」，這裡以一般行輸出。
+- [ ] `W08` **SHOW_SHOP 的 TARGET == CHARANUM**：原作會因越界參照報錯，這裡視為「編成外」重新選擇 TARGET（`eragvt.game.shop.show_shop`）。
 
-- [ ] **鍛錬畫面**：（S25 起素質一覧 `SHOW_STATUS_TALENT` 與 COLORSENTENCE_BAR 已照原文移植，以下只剩 PRINTLC）`PRINTLC` 以 cp932 位元組數補空白到 26，不做原作依字型寬度削減尾端空白（`GameView/EmueraConsole.Print.cs@CreateTypeCString`:383–425）。（Python：`eragvt.game.action.show_status_base_training`、`eragvt.text.TextOutput.print_lc`）
-- [ ] **戰鬥畫面簡略顯示**（S05 新增）：`@SHOW_STATUS`（`ゲーム内_戦闘処理/BATTLE_SHOW_STATUS.ERB`:3–351，含
+- [ ] `W07` **鍛錬畫面**：（S25 起素質一覧 `SHOW_STATUS_TALENT` 與 COLORSENTENCE_BAR 已照原文移植，以下只剩 PRINTLC）`PRINTLC` 以 cp932 位元組數補空白到 26，不做原作依字型寬度削減尾端空白（`GameView/EmueraConsole.Print.cs@CreateTypeCString`:383–425）。（Python：`eragvt.game.action.show_status_base_training`、`eragvt.text.TextOutput.print_lc`）
+- [ ] `W07` **戰鬥畫面簡略顯示**（S05 新增）：`@SHOW_STATUS`（`ゲーム内_戦闘処理/BATTLE_SHOW_STATUS.ERB`:3–351，含
   `ヒロイン関連/CHARA_STATUS.ERB@SHOW_STATUS_BASE_DISPBATTLE`、`SHOW_TRAIN_PALAM_STATUS`、`CLOTH_BATTLE_DISPHP`、
   `SHOW_DISTANCE_WINDOW`）只顯示名稱・Lv・體力／氣力／性耐性條・EX 值・狀態・心境・敵名 Lv・距離・剩餘回合・
   敵體力／射精（解析度不足時 ？？？）・油斷・敵能力・解析度；距離適性、スタイル、衣裝耐久、PALAM 表、距離視窗未顯示。
   這些函式內沒有 RAND；代入只有 `STATUS_PRINT_CHARGE`（CHARA_STATUS.ERB:1477–1489，每回合無條件）的 TCVARn:206（[反撃]バースト的蓄積限度），S16 起照原文計算（`train.status_charge_limit`），其餘不影響狀態。`[800]` ステータス畫面 S25 起照原文移植（`eragvt.game.status_screen`）。`SHOW_USERCOM` 只移植「不分類」版（`BATTLE_COM.ERB`:379–568，基本設定 FLAG:801 bit2 = 0），
   《危険度》的顏色照 `FORECAST_OUTPUT_SETCOLOR`。（Python：`eragvt.game.battle.train.show_status`／`show_usercom`／`usercom`）
-- [ ] **性攻擊的地の文**（S06 新增、S07 更新）：S07 起 `地の文/MESSAGE_SEX*.ERB`、敗北 `MESSAGE_BATTLE_END_LOSS`、射精・處女喪失・
+- [ ] `W07` **性攻擊的地の文**（S06 新增、S07 更新）：S07 起 `地の文/MESSAGE_SEX*.ERB`、敗北 `MESSAGE_BATTLE_END_LOSS`、射精・處女喪失・
   ヒロイン側性攻撃的地の文由 catalog 輸出本文，其中的狀態變化行經 `narration/hooks.py`（140 行，對照 sexmsg）依 ERB 順序執行、
   RAND 也照 ERB 順序抽（亂數序列與 S06 不同）。S14 起 `MESSAGE_SEX_SPCOM7`（含 INPUTS 與動画サイト）也由 catalog 執行。catalog 不可執行或 Null 時才印
   「〈地の文：函式名〉」並走 S06 的 Python 移植（`eragvt.game.battle.core.run_chinobun`、`sexmsg._catalog`）。
-- [ ] **幽閉的地の文與淫紋顯示**（S08 新增，只影響顯示）：`地の文/MESSAGE_PRISON.ERB`、`MESSAGE_OTHER.ERB` 的 PRISON 系、
+- [ ] `W03／W07` **幽閉的地の文與淫紋顯示**（S08 新增，只影響顯示）：`地の文/MESSAGE_PRISON.ERB`、`MESSAGE_OTHER.ERB` 的 PRISON 系、
   `MESSAGE_KYUUSHUTU.ERB`、刻印地の文由 catalog 輸出（狀態變化行 21 行經 `narration/hooks.py` PRISON_HOOK_LINES：FLAG:900、
   TALENT:膨乳改造値、TS 呼叫 → 停止、成就 → 無動作）；catalog 不可執行（Null 等）時印「〈地の文：…〉」並只做末尾的 KOJO_ROOT
   （`MESSAGE_KYUUSHUTU` 則以 Python 輸出同文）。淫紋圖樣 `CHARA_TATTOO.ERB@PRINT_TATTOO`:239–474／`@TATTOO_LIB`（無代入到狀態、
@@ -145,10 +129,10 @@ ERB 路徑相對 `source/earGVP/ERB/`。
   （Python：`eragvt.game.prison.*` 的 `run_chinobun`、`eragvt.game.tattoo.print_tattoo`）
 - [x] **INPUTS 只能輸入整數**（S11／S14；S35 已消除）：Web 與既有 catalog 等待通道現接受任意字串／空字串；
   命名、影片及巢狀呼叫共用文字請求標記。數字選單仍接收整數。詳見 `docs/wiki/python/naming.md`。
-- [ ] **HTML_PRINT 的子集**（S11 新增，只影響顯示）：只支援原作用到的 `<font color>`／`<nonbutton title>`（tooltip 以 Web 的
+- [ ] `W07` **HTML_PRINT 的子集**（S11 新增，只影響顯示）：只支援原作用到的 `<font color>`／`<nonbutton title>`（tooltip 以 Web 的
   title 屬性顯示）；S25 加 `<br>`（照 `GameView/HtmlManager.cs`:672–676、`PrintStringBuffer.cs`:189–196 分行）、`<nobr>`（Web 不折行，
   無差）、`<shape type='space' param='n'>`（原作寬 n% × 字型大小：`ConsoleShapePart.cs`:40–53；**近似為半角空白 n/50 個**）。其他タグ停止。（Python：`eragvt.text.TextOutput.html_print`）
-- [ ] **子供加入時的キャラ設定畫面**（S13 新增，只影響顯示）：`ADD_CHILD`:515 的一人称設定（`FIRSTSETTING_CHARA_SELFCALL`）與
+- [ ] `W02` **子供加入時的キャラ設定畫面**（S13 新增，只影響顯示）：`ADD_CHILD`:515 的一人称設定（`FIRSTSETTING_CHARA_SELFCALL`）與
   :1078 的プロフィール設定（`CHARA_SIZE_UI.ERB@SIZE_SETTING`）不顯示，照 AGENTS.md 以「什麼都不改、直接按 [99] 決定」的狀態變化執行
   （CSTR:4 = 一人称、パーソナリティ前詰め、身體資料照 GENERATE_CHAR_SIZE 重算；顯示部分無代入・無 RAND）。フィート選擇畫面
   （[0]はい）有移植，種族／フィート說明（`SYUZOKU_INFO`／`FEAT_INFO`）走 catalog，不可執行時印「〈SYUZOKU_INFO n〉」。
@@ -156,7 +140,7 @@ ERB 路徑相對 `source/earGVP/ERB/`。
   S25：ステータス畫面 PAGE5 [20]（`SHOW_STATUS_CHARA_SELECT_PAGE5.ERB`:73–79）也同樣：GENERATE_BODYLINE／CHARA_MAKE_AGE_SETTING／
   CHARA_SIZE_DEFAULT 照原文執行後，SIZE_SETTING 以「直接按 [99]」的狀態變化代替（`status_screen._cmd_page5`，`# DEVIATION`）。
   玩家無法在此手動改身長等（原作可以）。PAGE1 [12] 一人稱設定畫面已於 S47 完整接通；上述子供加入與身體資料的預設路徑不變（`era/self-call-setting.md`）。
-- [ ] **Web 停止狀態**：遇到未移植處理時顯示「（未實作のため停止しました：…）」並停住，是原作沒有的畫面（見上「S04 未翻的行動」）。
+- [ ] `W08` **Web 停止狀態**：遇到未移植處理時顯示「（未實作のため停止しました：…）」並停住，是原作沒有的畫面（見上「S04 未翻的行動」）。
   （S08 的全滅／ソロ結局後停止已於 S12 解除：照原作進入ゲームオーバーモード繼續。）
 
 ## 原作行為（照翻，但請留意）
@@ -370,17 +354,17 @@ ERB 路徑相對 `source/earGVP/ERB/`。
   並設 `RESULT = 1`，但 (1) 迴圈次數用了 CFLAG:113 的項目編碼（`NUM_SCHEDULE_F`，項目 9 個時約 10^16），全為學校時事實上停住；
   (2) 迴圈內 `CALL RES_SCHEDULE` 每次把 RESULT 蓋回 0，跑完也是夜裡上學。只要有非學校項目，原作在第一個非學校項目就 BREAK（正常情況夜裡不會上學）。
   Python 只跑項目數次（實行番號一巡），全為學校則 RESULT = 1 → 夜間隨機（:59–67）。（Python：`pastime._schedule_night`）
-- [ ] **catalog 不可時的狀態變化**：本文中心函式（`PASTIME_HOOK_LINES`）在 Null narration 時，Pool 的淫乱分岐水着（CFLAG:270）與授業
+- [ ] `W07` **catalog 不可時的狀態變化**：本文中心函式（`PASTIME_HOOK_LINES`）在 Null narration 時，Pool 的淫乱分岐水着（CFLAG:270）與授業
   （Classwork_CL／PE 的 EXP・処女・CFLAG:42）依本文亂數決定 → 停止（NotImplementedError）；其他以 `_FALLBACKS` 照 ERB 更新。Web 預設 catalog 可執行，
   不會發生。（Python：`pastime._FALLBACKS`）
 - S28c1 照原作的怪處（非偏離，備查）：見 `docs/wiki/era/actions.md`「S28c1 補足」。
 
 ## S28c2（自由行動的本編；待使用者裁決）
 
-- [ ] **catalog 不可時停止**：ナンパ・酒ナンパ・痴漢的本編（`PASTIME_ナンパ.ERB` 等 11 函式）只以 catalog 執行（`pastime_nanpa._run`），
+- [ ] `W07` **catalog 不可時停止**：ナンパ・酒ナンパ・痴漢的本編（`PASTIME_ナンパ.ERB` 等 11 函式）只以 catalog 執行（`pastime_nanpa._run`），
   Null narration（無原作 ERB）時 NotImplementedError → Web 停止（原作不會停）。Web 預設 catalog 可執行（72 行 hook 全部可執行，
   `tests/test_pastime_nanpa.py::test_nanpa_hook_table_matches_erb`），不會發生。
-- 備查（非偏離）：レイプ中 `CONFIG_CHECK_EVENT_F(5) == 1` 的 `ENCOUNT_CITIZEN(6001)` 是未移植系統 → 停止（既定 config 不發生）。
+- 備查（非偏離）：原文`ERB/ゲーム内_イベント発生/自由行動中イベント/PASTIME_ナンパ.ERB@PASTIME_NANPA_RAPE:3086`與`PASTIME_酒ナンパ.ERB@PASTIME_SAKE_NANPA_RAPE:1696`的`ENCOUNT_CITIZEN(6001)`已於S36接通：`narration/hooks.py:288,310,369`→`game/pastime_nanpa.py@hook_encount_citizen:98–102`→`game/battle/citizen.py@encount_citizen:8–40`，已執行市民遭遇狀態設定，不再屬未移植停止；定向證據`tests/test_citizen_battle.py:191–195`。
   照原作的怪處見 `docs/wiki/era/actions.md`「S28c2 補足」。
 
 ## S33（雜魚戰）
