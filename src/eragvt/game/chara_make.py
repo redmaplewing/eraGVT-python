@@ -144,7 +144,8 @@ def base_profile_generic(state: GameState, data: GameData, sel: int) -> None:
         head = state.savestr[11]
         tail = c.callname
         if state.flag[820] > 0:
-            raise NotImplementedError("RANDOMNAMING_FROMGENRE（FLAG:820 > 0）は未移植")
+            from .genre_naming import genre_name_tail
+            tail = genre_name_tail(state, data, sel, generic=True)
         if head + tail != "":
             c.cstr[0] = head + tail
             c.cstr[201] = head

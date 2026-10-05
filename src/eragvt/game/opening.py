@@ -303,9 +303,8 @@ def research_quota(state: GameState) -> None:
 
 def _chara_make_load_global(state: GameState, store: GlobalStore) -> None:
     """`CHARA_MAKE.ERB@CHARA_MAKE_MAIN`:9–21：LOADGLOBAL 後、メモリ上の GLOBAL から共通設定を読む（成否は見ない）。
-    GLOBAL:5〜9・20〜23／GLOBALS:15〜17 はキャラメイク画面の [170]（未移植）でしか書かれないので、本程式では常に 0／空
-    ＝主題・変身名・かけ声なし、苗字／名前の言語「デフォルト」、種族「ランダム」、フィート自動割り当て「なし」、
-    性格「完全ランダム」（:32–40 の表示）。UPDATE_GLOBAL の :68–77（GLOBAL:8）・:79–83（GLOBAL:20）も 0 のまま。"""
+    GLOBAL:5〜9・20〜23／GLOBALS:15〜17 由既有全域檔案讀入；不存在時為 0／空。
+    S53 支援 GLOBAL:8 的主題命名；角色製作 [1003] 選擇與 [170] 儲存 UI 仍未移植。"""
     store.load()
     g, gs = store.mem.global_, store.mem.globals_
     for k, gk in ((5, 5), (6, 6), (7, 7), (820, 8), (821, 9), (822, 20), (823, 21), (824, 22), (825, 23)):
@@ -571,7 +570,8 @@ def chara_make_initialize(state: GameState, data: GameData, sel: int) -> None:
             head = state.savestr[11]
             tail = c.callname
             if state.flag[820] > 0:
-                raise NotImplementedError("RANDOMNAMING_FROMGENRE は未移植")
+                from .genre_naming import genre_name_tail
+                tail = genre_name_tail(state, data, sel, generic=False)
             if head + tail != "":
                 c.cstr[0] = head + tail
                 c.cflag[2] = 1

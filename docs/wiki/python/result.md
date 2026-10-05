@@ -159,3 +159,9 @@ WINDOW_*、PRINT_TATTOO（上表）、**@SAVEINFO**（S26b：`shop.save_info`）
 
 - COUNT は共用していない（catalog 専用の暫存；Python は COUNT を模型化していない。unresolved `GAME_MODE_CHECK`）。
 - catalog で実行できない口上・地の文（Null narration 含む）の中の書き込みは起きない（`SELF_CALL_ANALYSIS` は S21 の STRFINDU 追加で実行可能に）。
+
+## S53 主題命名
+
+`ERB/SYSTEM/キャラメイキング関連/FIRSTSETTING_RANDOMNAMING.ERB@RANDOMNAMING_FROMGENRE:505–507`
+先把 LOCALS 寫入 RESULTS:0，再由 REPLACE 刪除一個尾端中點，RETURN 將 RESULT:0 設為 0。
+其他格保留；LOCALS 的原始字串獨立保存在非存檔暫存，不以 RESULTS 殘值替代，見 `docs/wiki/era/genre-naming.md`。

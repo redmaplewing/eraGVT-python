@@ -32,6 +32,9 @@
   `del_chara(i)` = `DELCHARA`（後面往前補，TARGET／ASSI 不自動調整）、`swap_chara(a, b)` = `SWAPCHARA`。MASTER 不可刪。
 - 不存在的 era 內建變數（PALAMLV、EXPLV、BOUGHT、ITEMSALES…）**沒有建模**：本作沒用到或尚未需要。
 
+- `temp.genre_name_local` 保存 `RANDOMNAMING_FROMGENRE` 的 LOCALS 原始命名字串，非存檔；
+  無效主題會讀此殘值，詳見 `docs/wiki/era/genre-naming.md`。
+
 ## `Character`（`state/character.py`）
 
 - 欄位＝era 角色變數小寫：`base maxbase abl talent exp mark palam juel ex nowex stain cflag cdflag equip relation tcvarn cstr`，

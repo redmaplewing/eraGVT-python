@@ -1,6 +1,6 @@
 # 現況（唯一真相，≤120 行）
 
-更新：2026-10-05（S52遊戲說明驗收完成）
+更新：2026-10-05（S53主題隨機命名驗收完成）
 
 ## 已完成（各階段細節見 git log 與 wiki）
 
@@ -29,15 +29,16 @@
 - **S29** 口上／地の文的狀態書き込み（catalog が非 LOCAL 代入を GameState へ直接書く＋ジャーナルで失敗回復；下節）。
 - **S30** catalog 剩餘的不可執行原因（ループ內 $ラベルへの GOTO・STRDATA・SETCOLORBYNAME・FINDCHARA・GETCOLOR・RANDCHOOSE 系；下節）。
 
-## S52：開局遊戲說明
+## S53：主題隨機命名
 
-- S32–S51完成既有擴充，含SHOP衣裝／強化／醫療室／招募／引退／設施／隊伍編成、一人稱與武器自訂、數值格式、開局關係設定。
-- S52接通開局 [300] TUTORIAL：5章原文、劇透子選單、PRINTW等待、返回與重入；無效值依原作只重等。
-- 固定文字可重抽，互動手翻；RESULT:0依輸入／返回更新，其他資料與RNG不變，無新增UNVERIFIED／DEVIATION。
-- 詳見`docs/wiki/era/tutorial.md`；新增23案，含兩種開局Web閱讀後繼續到SHOP。
-- 主代理完整pytest：`3514 passed, 1 warning in 327.67s (0:05:27)`。
-- 標準500局：default246上限／4回標題、tokusou250上限，catalog失敗0；逐seed完整結果與S51一致。
-- 10個50局前景批次exit=0，seed全集、log／JSONL一致；結果與audit位於`tmp/s52/`。
+- S32–S52完成既有擴充，含SHOP各子選單、隊伍編成、一人稱與武器自訂、數值格式、開局關係與遊戲說明。
+- S53接通RANDOMNAMING_FROMGENRE與兩個角色初始化caller：8主題／隨機主題、空字重抽、最多10次避重重抽。
+- 直接使用既有CSV資料；尾端中點處理、RESULT／RESULTS與LOCALS靜態殘值照原作，無新增UNVERIFIED／DEVIATION。
+- GLOBAL:8經既有全域檔案載入FLAG:820；未新增開局輸入，主題手動UI留待完整角色製作階段。
+- 詳見`docs/wiki/era/genre-naming.md`；新增49案，含兩條caller、兩種開局Web及存讀檔。
+- 主代理完整pytest：`3563 passed, 1 warning in 297.70s (0:04:57)`。
+- 標準500局：default246上限／4回標題、tokusou250上限，catalog失敗0；逐seed完整結果與S52一致。
+- 10個50局前景批次exit=0，seed全集、log／JSONL一致；結果與audit位於`tmp/s53/`。
 
 ## 口上 catalog 現況
 
@@ -61,7 +62,7 @@ P4 父親 CFLAG:9 指向不存在的ボス／ラスボス／モブ；HEROINE_PRE
 
 - **自主推進（使用者指定 2026-10-02，依序）**：~~S22 RESULTS 共用~~ → ~~S23 [反撃]スタイル~~ → ~~S24 設定畫面／プリセット~~ → ~~S25 狀態畫面~~
   → ~~S26 FLASHNEWS~~ → ~~S26b RESULTS:0 殘值~~ → ~~S27 ラスボス～結局~~ → ~~S28 未移植行動（S28a〜S28c2）~~：**指定範圍全部完成**。
-  使用者已授權S52開局遊戲說明；完成本階段後停止，下一階段待選定。
+  使用者已授權選定下一步並推進S53主題隨機命名；完成本階段後停止，下一階段待選定。
 - 已裁決（2026-10-02）：名乗り改竄的 RESULTS:2 殘值照原作（S22 實作）；開局デフォルト悪堕ち的輸出丟棄維持現況。
 - 已裁決（2026-10-02）：PALAM_HOSEI 殘值照原作、防衛力負數 D1〜D4（S21 實作）。已裁決（2026-10-01）：S20 的 DEVIATION 6 項＋斜體。
 - 已裁決（2026-09-30）：拡張度初期值照原作；S13 苗床出産的 static LOSEDEF 等怪處照原作。

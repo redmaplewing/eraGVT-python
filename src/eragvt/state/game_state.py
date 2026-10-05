@@ -46,6 +46,9 @@ class TempVars:
     # （reference/emuera-1824/Emuera/GameData/Variable/VariableData.cs@SetDefaultLocalValue:514–520）。
     # 原作有幾處依賴「上次呼叫留下的值」（例：DAMAGE の LOCAL:7、PALAMLV_F の LOCAL），以 (函式名, 索引) 保存。
     locals: dict[tuple[str, int], int] = field(default_factory=dict)
+    # RANDOMNAMING_FROMGENRE 的 LOCALS：呼叫間保留，讀檔／重設時清空。
+    # reference/emuera-1824/Emuera/GameData/Variable/VariableData.cs:514–520。
+    genre_name_local: str = ""
     # インターミッション画面/SHOP_FLASHNEWS.ERB@FLASHNEWS の関数内 static #DIM（:7 `NOWLOOPNUM=0`、:19 `バイラルメディアフラグ=-1`）。
     # 初期値は宣言の値（GameData/Variable/VariableToken.cs@StaticInt1DVariableToken.SetDefault:1861–1865）。
     flashnews_loopnum: int = 0
