@@ -78,6 +78,7 @@ S56現況歸屬：各未勾選項的W編號指向`docs/PLAN.md`；仍待實作�
 - [ ] `W07／W08` **口上 catalog 的顯示簡化**（S07 新增，只影響顯示）：`SETFONT`（字型名）不反映（`FONTITALIC` 斜體 S20 起反映：`TextOutput.set_italic`）；`CLEARLINE` 只刪已完成的行；
   S41角色強化重繪沿用共用CLEARLINE（`ERB/インターミッション画面/SHOP_CHARA_POWERUP.ERB@CHARA_POWERUP:343–346`）；不影響分配、扣款及共享RESULT(S)。
   S60隨機命名沿用精簡按鈕列，重繪依實際輸出行數清除配置／候選頁，對應原文CLEARLINE 16／25；不改狀態與亂數次序。
+  S61一般身體頁兩形態依序顯示，數值、提示、可選項與原文INPUT模式保留；固定欄寬／字型仍本項W07。色盤保留32×32及軸／明度列，依實際輸出行數清除舊按鈕，對應`ERB/汎用関数/COLOR_TABLE.ERB@COLOR_TABLE:156`固定40行；不是新增全域CLEARLINE語意。
   S45設施擴充、S49武器自訂沿用同一CLEARLINE偏離；局部回顯數值輸入並在繼續時移除Enter操作提示，避免誤刪選項，未修改全域顯示語意（見`docs/wiki/era/facilities.md`）。
   COUNT 放在口上專用的暫存（`state.temp.narr`），與 Python 移植部分不共用（原作是全域變數；Python 未模型化 COUNT）。RESULT（S21）・RESULTS（S22）
   已改為共用（`GameState.result`／`results`，`docs/wiki/python/result.md`）；Python 移植部分只同步寫 RESULT:1／RESULTS:1 以後的來源與「之後有人讀
@@ -123,9 +124,7 @@ S56現況歸屬：各未勾選項的W編號指向`docs/PLAN.md`；仍待實作�
   （CSTR:4 = 一人称、パーソナリティ前詰め、身體資料照 GENERATE_CHAR_SIZE 重算；顯示部分無代入・無 RAND）。フィート選擇畫面
   （[0]はい）有移植，種族／フィート說明（`SYUZOKU_INFO`／`FEAT_INFO`）走 catalog，不可執行時印「〈SYUZOKU_INFO n〉」。
   （Python：`eragvt.game.firstsetting.selfcall_default`／`size_setting_default`／`feat_select_ui`）
-  S25：ステータス畫面 PAGE5 [20]（`SHOW_STATUS_CHARA_SELECT_PAGE5.ERB`:73–79）也同樣：GENERATE_BODYLINE／CHARA_MAKE_AGE_SETTING／
-  CHARA_SIZE_DEFAULT 照原文執行後，SIZE_SETTING 以「直接按 [99]」的狀態變化代替（`status_screen._cmd_page5`，`# DEVIATION`）。
-  玩家無法在此手動改身長等（原作可以）。PAGE1 [12] 一人稱設定畫面已於 S47 完整接通；上述子供加入與身體資料的預設路徑不變（`era/self-call-setting.md`）。
+  S61：狀態PAGE5[20]（`SHOW_STATUS_CHARA_SELECT_PAGE5.ERB@CMD_STATUS_CHARA_SELECT_PAGE5:73–79`）保留GENERATE_BODYLINE／CHARA_MAKE_AGE_SETTING／CHARA_SIZE_DEFAULT，接回SIZE_SETTING的一般身體／外貌真實輸入；不再代按99。其餘未移植分支明確停止，整頁未完成。PAGE1[12]一人稱S47已接通；子供獨立流程的代按仍未解除，見`era/body-editor.md`。
 - [ ] `W08` **Web 停止狀態**：遇到未移植處理時顯示「（未實作のため停止しました：…）」並停住，是原作沒有的畫面（見上「S04 未翻的行動」）。
   （S08 的全滅／ソロ結局後停止已於 S12 解除：照原作進入ゲームオーバーモード繼續。）
 

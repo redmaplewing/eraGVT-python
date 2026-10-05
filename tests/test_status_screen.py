@@ -397,7 +397,9 @@ def test_func_check_chara_incest(data):
 
 def test_page5_profile_setting_sets_gaping(data):
     """初期セット（身体資料なし CFLAG:34 = 0）：「プロフィール未設定」と [20]　設定。[20] で GENERATE_BODYLINE〜CHARA_SIZE_DEFAULT
-    （＋SIZE_SETTING は [99] 相当）→ CFLAG:34 > 0、再表示で PRINTFORM_GAPING_NOW が拡張度の初期値を設定（S11 裁決）。"""
+    SIZE_SETTING:1731–1750須玩家按99確認，才返回狀態頁執行原有顯示初始化。"""
+    from tools.sim_adult import adult_data
+    data = adult_data(data)  # S61新操作使用全新25歲人工定義。
     st, out, ctx, gen = _open(data, preset=1)
     c = st.charas[1]
     assert c.cflag[34] == 0
@@ -408,6 +410,9 @@ def test_page5_profile_setting_sets_gaping(data):
     assert c.cflag[35] == 0 and c.cflag[36] == 0
     gen.send(20)
     assert c.cflag[34] > 0
+    assert c.base[40] == c.base[41] == 25
+    assert c.cflag[35] == 0 and c.cflag[36] == 0
+    gen.send(99)
     p = _last_page(out)
     assert Z * 11 + "＜＜通常時＞＞" in p
     assert "　　拡張度" in p

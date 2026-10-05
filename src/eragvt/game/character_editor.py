@@ -157,6 +157,9 @@ def character_editor(ctx, who, bonus=0, restricted=0):
             yield from {2:chara_callname,3:selfcall_gen,11:trans_after_name,13:trans_call,14:nanori,24:customize}[r](ctx,who)
         elif r==5:
             yield from kojo_setting(ctx,who)
+        elif r==6:
+            from .body_editor import size_setting
+            yield from size_setting(ctx,who)
         elif r==12:
             if c.cflag[2]==1:
                 c.cflag[3]=1
@@ -165,7 +168,7 @@ def character_editor(ctx, who, bonus=0, restricted=0):
             yield from clothing_setting_gen(ctx,who,r+24)
             st.result[0]=0
         else:
-            names={0:'FIRSTSETTING_CHARA_SEX',4:'FIRSTSETTING_CHARA_SYUZOKU',6:'SIZE_SETTING',7:'FIRSTSETTING_CHARA_SEIKAKU',8:'FIRSTSETTING_CHARA_EXP',10:'FIRSTSETTING_CHARA_TRANSABILITY',23:'FIRSTSETTING_STATUS_BONUS',999:'FIRSTSETTING_CHARA_LOADCSV'}
+            names={0:'FIRSTSETTING_CHARA_SEX',4:'FIRSTSETTING_CHARA_SYUZOKU',7:'FIRSTSETTING_CHARA_SEIKAKU',8:'FIRSTSETTING_CHARA_EXP',10:'FIRSTSETTING_CHARA_TRANSABILITY',23:'FIRSTSETTING_STATUS_BONUS',999:'FIRSTSETTING_CHARA_LOADCSV'}
             raise NotImplementedError(names[r]+' 尚未移植')
 
 def kojo_setting(ctx,who):

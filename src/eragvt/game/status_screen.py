@@ -965,9 +965,9 @@ def _cmd_page5(ctx: Ctx, arg: int, cmd: int, sc: _Screen) -> Gen:
             generate_bodyline(st, data, c)
         chara_make_age_setting(st, data, c)
         chara_size_default(data, c, st.result)
-        # DEVIATION（表示のみ）：プロフィール設定画面 SIZE_SETTING（CHARA_SIZE_UI.ERB:2–2145）は未移植のため、
-        # 何も変えずに [99]「決定して戻る」を押した場合の状態変化だけ行う（deviations「子供加入時的キャラ設定畫面」と同じ扱い）
-        size_setting_default(ctx, arg)
+        # CHARA_SIZE_UI.ERB@SIZE_SETTING:2–2142：一般編輯等待真實輸入。
+        from .body_editor import size_setting
+        yield from size_setting(ctx, arg)
     elif cmd == 30 and st.flag[999] > 0:
         c.cflag[35] = 0
     elif cmd == 31 and st.flag[999] > 0:
