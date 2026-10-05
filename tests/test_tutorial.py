@@ -5,7 +5,7 @@ import pytest
 from eragvt.data import default_csv_dir, load_game_data
 from eragvt.state import GameState, GameRng
 from eragvt.text import TextOutput
-from eragvt.game.input_request import TextInputRequest
+from eragvt.game.input_request import WaitInputRequest
 from eragvt.game.tutorial import tutorial
 
 ROOT = Path(__file__).parents[1]
@@ -39,7 +39,7 @@ def test_chapters_wait_return_without_state_change(env, choice, lo, hi, ack):
     g = tutorial(st, out)
     assert next(g) is None
     assert texts(out) == expected(456,465)
-    assert isinstance(g.send(choice), TextInputRequest)
+    assert isinstance(g.send(choice), WaitInputRequest)
     assert texts(out)[11:-2] == expected(lo,hi)
     assert st.result[0] == choice
     assert g.send(ack) is None
@@ -76,7 +76,7 @@ def test_spoiler_submenu(env, choice):
         assert len(out.lines) == count
     req=g.send(choice)
     if choice == 1:
-        assert isinstance(req,TextInputRequest)
+        assert isinstance(req,WaitInputRequest)
         assert texts(out)[-11:-2] == expected(566,574)
         assert g.send("") is None
         assert st.result[0] == 1
@@ -121,7 +121,7 @@ def test_web_opening_continue(data,tmp_path,preset):
     send(300)
     assert "チュートリアルメニュー" in client.get("/").text
     send(0)
-    assert app.state.session.input_kind == "text"
+    assert app.state.session.input_kind == "wait"
     send("")
     send(4)
     send(1)

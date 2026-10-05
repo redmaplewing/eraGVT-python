@@ -3,10 +3,10 @@ from collections.abc import Generator
 
 from ..state import GameState
 from ..text import TextOutput
-from .input_request import TextInputRequest
+from .input_request import WaitInputRequest
 from .tutorial_text import TEXT
 
-Menu = Generator[None | TextInputRequest, int | str, int]
+Menu = Generator[None | WaitInputRequest, int | str, int]
 # 各章 PRINTL 範圍與末尾 PRINTW 行號；跳過 :480–482 已註解的文字。
 CHAPTERS = {0: (469, 479, 483), 1: (486, 500, 501),
             2: (504, 515, 516), 3: (519, 539, 540)}
@@ -25,13 +25,13 @@ def _number(state: GameState, out: TextOutput) -> Generator[None, int, int]:
     return value
 
 
-def _wait(out: TextOutput, line: int) -> Generator[TextInputRequest, int | str, None]:
+def _wait(out: TextOutput, line: int) -> Generator[WaitInputRequest, int | str, None]:
     # PRINTW 換行並等待；不是 INPUTS，不寫 RESULTS。
     # reference/emuera-1824/Emuera/GameData/Expression/ExpressionMediator.cs:50–65；
     # GameView/EmueraConsole.cs:497–508、701–734（非數值／字串輸入不寫結果）。
     out.printw(TEXT[line])
     out.printl("（按 Enter 繼續）")
-    yield TextInputRequest()
+    yield WaitInputRequest()
     out.clearline(1)
 
 

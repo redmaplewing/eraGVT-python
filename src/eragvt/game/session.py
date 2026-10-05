@@ -26,7 +26,7 @@ from . import shop
 from .action import Ctx
 from .config import config_gen, update
 from .era import limit
-from .input_request import TextInputRequest
+from .input_request import TextInputRequest, WaitInputRequest
 from .opening import event_first_gen
 from .turnend import run_turn
 
@@ -99,7 +99,9 @@ class GameSession:
         return lines[start:]
 
     def input(self, value: int | str) -> None:
-        if self.input_kind == "text":
+        if self.input_kind == "wait":
+            value = ""  # Enter 確認；generator 收到非 None，且不寫結果變數。
+        elif self.input_kind == "text":
             value = str(value)
         else:
             try:
@@ -363,7 +365,8 @@ class GameSession:
             self._turn = None
             self._halt(exc)
             return
-        self.input_kind = "text" if isinstance(y, TextInputRequest) else "number"
+        self.input_kind = ("wait" if isinstance(y, WaitInputRequest)
+                           else "text" if isinstance(y, TextInputRequest) else "number")
         if isinstance(y, SaveGameRequest):
             # S27：ジェネレータ内の SAVEGAME（ENDING.ERB:22）→ セーブ画面、終わったら（キャンセル含む）続きから
             # （SystemProc@saveGameWaitInput:865–869／@endCallSaveInfo:926–934 の loadPrevState）

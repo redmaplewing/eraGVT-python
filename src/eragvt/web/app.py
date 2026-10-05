@@ -9,6 +9,8 @@ from collections.abc import Callable
 from datetime import datetime
 from pathlib import Path
 from typing import Any
+from threading import RLock
+from uuid import uuid4
 
 from fastapi import FastAPI, Form, Request
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
@@ -27,6 +29,7 @@ _HERE = Path(__file__).parent
 
 class InputBody(BaseModel):
     value: int | str
+    input_token: str | None = None
 
 
 def create_app(
@@ -54,6 +57,8 @@ def create_app(
         return GameSession(data, save_dir, rng=rng_factory(), narration=narration, now=now, global_store=globals_store)
 
     app.state.session = new_session()
+    input_lock = RLock()
+    input_token = uuid4().hex
 
     def screen_json() -> dict[str, Any]:
         s: GameSession = app.state.session
@@ -63,32 +68,49 @@ def create_app(
         return {
             "phase": s.phase.value,
             "input_kind": s.input_kind,
+            "input_token": input_token,
             "background": bg,
             "lines": [line.to_json() for line in s.screen()],
         }
 
+    def submit(value: int | str, token: str | None) -> None:
+        nonlocal input_token
+        # Web 傳輸去重：舊頁面不能把一次確認送入下一個輸入點。
+        # token 省略時保留既有 API／表單客戶端相容性。
+        if token is not None and token != input_token:
+            return
+        app.state.session.input(value)
+        input_token = uuid4().hex
+
     @app.get("/", response_class=HTMLResponse)
     def index(request: Request) -> HTMLResponse:
-        return templates.TemplateResponse(request, "index.html", {"screen": screen_json()})
+        with input_lock:
+            return templates.TemplateResponse(request, "index.html", {"screen": screen_json()})
 
     @app.post("/input")
-    def post_input(value: str = Form("")) -> RedirectResponse:
-        app.state.session.input(value)
+    def post_input(value: str = Form(""), input_token: str | None = Form(None)) -> RedirectResponse:
+        with input_lock:
+            submit(value, input_token)
         return RedirectResponse("/", status_code=303)
 
     @app.post("/restart")
     def restart() -> RedirectResponse:
-        app.state.session.close()
-        app.state.session = new_session()
+        nonlocal input_token
+        with input_lock:
+            app.state.session.close()
+            app.state.session = new_session()
+            input_token = uuid4().hex
         return RedirectResponse("/", status_code=303)
 
     @app.get("/api/screen")
     def api_screen() -> JSONResponse:
-        return JSONResponse(screen_json())
+        with input_lock:
+            return JSONResponse(screen_json())
 
     @app.post("/api/input")
     def api_input(body: InputBody) -> JSONResponse:
-        app.state.session.input(body.value)
-        return JSONResponse(screen_json())
+        with input_lock:
+            submit(body.value, body.input_token)
+            return JSONResponse(screen_json())
 
     return app

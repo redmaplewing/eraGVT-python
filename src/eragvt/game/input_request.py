@@ -3,6 +3,14 @@ from dataclasses import dataclass
 
 
 @dataclass(frozen=True)
+class WaitInputRequest:
+    """WAIT／PRINTW 的 Enter 確認，不寫 RESULT／RESULTS。
+
+    reference/emuera-1824/Emuera/GameView/EmueraConsole.cs:497–508、707–734。
+    """
+
+
+@dataclass(frozen=True)
 class TextInputRequest:
     pass
 

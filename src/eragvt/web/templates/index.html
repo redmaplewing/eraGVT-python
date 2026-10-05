@@ -15,7 +15,7 @@
   <div class="line align-{{ line.align }}{% if line.wait %} wait{% endif %}">
     {%- for part in line.parts -%}
       {%- if part.button is not none -%}
-      <form method="post" action="/input" class="btn"><button type="submit" name="value" value="{{ part.button }}">
+      <form method="post" action="/input" class="btn"><input type="hidden" name="input_token" value="{{ screen.input_token }}"><button type="submit" name="value" value="{{ part.button }}">
         {%- for seg in part.segments -%}<span style="{% if seg.color %}color: {{ seg.color }};{% endif %}{% if seg.bold %}font-weight: bold;{% endif %}{% if seg.italic %}font-style: italic;{% endif %}">{{ seg.text }}</span>{%- endfor -%}
       </button></form>
       {%- else -%}
@@ -29,8 +29,13 @@
 </main>
 <footer>
   <form method="post" action="/input" id="input-form">
+    <input type="hidden" name="input_token" value="{{ screen.input_token }}">
+    {% if screen.input_kind == "wait" %}
+    <button type="submit" id="continue" name="value" value="" autofocus>確認（Enter）</button>
+    {% else %}
     <input type="{{ 'text' if screen.input_kind == 'text' else 'number' }}" name="value" id="value" autofocus autocomplete="off"{% if screen.input_kind != "text" %} required{% endif %}>
     <button type="submit">入力</button>
+    {% endif %}
   </form>
   <form method="post" action="/restart" class="restart"><button type="submit">タイトルに戻る</button></form>
 </footer>

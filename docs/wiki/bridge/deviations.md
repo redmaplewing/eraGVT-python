@@ -377,3 +377,5 @@ S56現況歸屬：各未勾選項的W編號指向`docs/PLAN.md`；仍待實作�
   Python依最新裁決：0照原手術、1提示AMPUTEE原作移植未完成並停止、其他值提示後重讀；不扣資源、不改角色。
   原否分支是另提NPC處置方案，:245–266明示移植未完而停用，AMPUTEE呼叫也註解；修復維持停用及51隱藏。
   先前「1返回」推論已被使用者「提示未完成截斷」裁決取代；透過NotImplementedError進入既有HALTED，不輸出或執行草稿事件／結算。歷史證據見[醫療室查證](../era/drug-preparation.md)。
+
+S60b補充：tutorial的PRINTW改為明確確認請求及Enter按鈕；其他舊WAIT未全面遷移，既有等待偏離仍未完成，不能勾選結案。[範圍與驗收](generic-input.md)。
