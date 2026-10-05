@@ -25,6 +25,7 @@ def test_join(ctx, sex, feat):
     """@TSUIKAYOUSEI_NORMAL:21–35、126–154：免費，加入一次，恢復TARGET。"""
     st=ctx.state; count=st.charanum; target=st.target; st.money=-1; st.flag[250]=7
     gen=recruitment_gen(ctx); next(gen); gen.send(sex)
+    if sex!=2: gen.send(99)
     assert st.charanum==count+1 and st.flag[250]==8
     assert st.target==count
     if feat==0:
@@ -78,6 +79,7 @@ def test_initialization_order_and_items(ctx,sex,initialized):
     st.item[101]=7; st.item[701]=9
     for i in range(4): st.savestr[i]="保留"
     gen=recruitment_gen(ctx); next(gen); gen.send(sex)
+    if sex!=2: gen.send(99)
     c=st.charas[-1]
     assert (c.callname!='汎用キャラ')==initialized
     assert (st.result[0]>0)==initialized
@@ -91,6 +93,7 @@ def test_invalid_feat_inputs_do_not_add_again(ctx,choice):
     """@TSUIKAYOUSEI_NORMAL:137–138只回到第二個INPUT，並不重做ADDCHARA。"""
     st=ctx.state; before=st.charanum
     gen=recruitment_gen(ctx); next(gen); gen.send(choice)
+    if choice!=2: gen.send(99)
     for value in (-1,3,99):
         gen.send(value)
         assert st.charanum==before+1 and st.flag[250]==1
@@ -109,7 +112,7 @@ def test_cancel_preserves_other_result_cells(ctx):
 def test_feat_manual_toggle_limit(ctx):
     """@TSUIKAYOUSEI_NORMAL:101–123最多3項，超出仍等待，可取消已選項。"""
     st=ctx.state
-    gen=recruitment_gen(ctx); next(gen); gen.send(0)
+    gen=recruitment_gen(ctx); next(gen); gen.send(0); gen.send(99)
     race=st.result[0]
     from eragvt.game.firstsetting import feat_able
     options=[i for i in range(100,300) if feat_able(ctx,race,i+1000)]

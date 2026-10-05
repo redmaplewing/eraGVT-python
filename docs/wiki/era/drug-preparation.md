@@ -65,14 +65,14 @@
   1以NotImplementedError顯示「AMPUTEE 原作移植未完成；本支線停止且未執行」，GameSession進入HALTED；不扣資源、不改角色。
   0照既有手術、錯值重新INPUT；不輸出或執行NPC／AMPUTEE草稿事件與結算、不新增51按鈕。已記錄DEVIATION，無新增UNVERIFIED。
 
-## 機器人加入的預設路徑
+## 機器人加入與個別編輯
 
 `@DRUG_PREPARATION:280–430`：等待性別0／1或取消99，確定才扣費、ADDCHARA0、保存／切換TARGET、設五項素質。
 後續特徵選單正常等待0手選／1不設／2隨機；手選最多3項。最後CHARA_MAKE_FINALIZE後恢復TARGET。
 
-個別編輯暫走 `ERB/SYSTEM/キャラメイキング関連/FIRSTSETTING_CHARA.ERB@FIRSTSETTING_CHARA_MAIN:9–34／318–353`
-不改任何設定直接[99]的路徑：暫存衣裝、初始化角色、解碼既有武器、清壓縮字串、身體計算殘值、更新結界、
-清SAVESTR:0–3、恢復衣裝。沒有提供名字／性格／身體／武器等完整手動編輯器；沿用既有角色製作UI偏離。
+S60已接到`character_editor.character_editor`，按`@DRUG_PREPARATION:303–315`傳ARG:2=1，只鎖種族與CSV讀入，不再自動代按[99]。
+`ERB/SYSTEM/キャラメイキング関連/FIRSTSETTING_CHARA.ERB@FIRSTSETTING_CHARA_MAIN:9–34／318–353`的暫存衣裝、初始化、武器解碼、身體計算殘值、確認更新結界、清SAVESTR:0–3及恢復衣裝均保留。
+已接通12項一般子選單；性格／身體等其餘子選單仍未移植，選取時明確停止，詳見[角色編輯](character-editor.md)。
 特徵的資格與隨機設定沿用既有原生函式；手選畫面沿用同源的 `feat_select_ui`，其種族9分支不適用實際201以上種族。
 
 ## 引擎語意與顯示
@@ -88,7 +88,7 @@
   `reference/emuera-1824/Emuera/GameView/PrintStringBuffer.cs:111–115／151–164／275–325`。
   主選單的非數字素質括號不額外產生按鈕；角色附註與同一行PRINT相接。
   特徵的「固定取得」仍走PRINTPLAIN，不併進按鈕。原作DOT_AFTER與SHORTLINE使用既有語意。
-- 不新增UNVERIFIED；個別編輯畫面略過及既有CLEARLINE顯示簡化沿用既有偏離。
+- 不新增UNVERIFIED；S60已取消個別編輯代按，既有CLEARLINE顯示簡化仍保留偏離記錄。
 
 ## 驗證
 

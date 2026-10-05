@@ -230,7 +230,7 @@ def _choose(ctx,cmd):
 
 
 def _join_robot(ctx):
-    """@DRUG_PREPARATION:280–435；個別編輯依AGENTS走不改設定直接[99]路徑。"""
+    """@DRUG_PREPARATION:280–435；個別編輯ARG:2=1鎖定種族與CSV。"""
     from .opening import chara_make_finalize
     from .chara_common import syuzoku_check
     from .firstsetting import feat_select_ui, set_feat_default
@@ -246,8 +246,8 @@ def _join_robot(ctx):
     for name,value in (('感情乏しい',1),('未熟',2),('口上設定',1),('初期経験設定不可',1),('ロボっ子',1)):
         _set(ctx,c,name,value)
     if sex==1: _set(ctx,c,'オトコ',1); c.name='汎用キャラ(♂)'
-    from .character_defaults import confirm_default_character
-    confirm_default_character(ctx,who)
+    from .character_editor import character_editor
+    yield from character_editor(ctx,who,restricted=1)
     race=syuzoku_check(c); st.result[0]=race
     _say(ctx,325,326,327,328,c=c)
     while True:

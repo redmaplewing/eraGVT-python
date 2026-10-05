@@ -2,7 +2,7 @@
 from .akuoti import dot_after
 from .action import print_callname
 from .body import set_profile
-from .character_defaults import confirm_default_character
+from .character_editor import character_editor
 from .chara_common import syuzoku_check
 from .firstsetting import feat_select_ui, set_feat_default
 from .input_request import input_number
@@ -51,8 +51,7 @@ def recruitment_gen(ctx):
         if choice==1:
             c.talent[data.index_of('TALENT','オトコ')]=1
             c.name='汎用キャラ(♂)'
-        # DEVIATION: 沿用既有角色製作UI暫略；只走不改設定直接[99]確認。
-        confirm_default_character(ctx,who)
+        yield from character_editor(ctx,who)
     # :39–40；[2]尚未INITIALIZE，race可能是0，不能提前生成種族。
     race=syuzoku_check(c); st.result[0]=race
     _say(ctx,45,46,47,48)

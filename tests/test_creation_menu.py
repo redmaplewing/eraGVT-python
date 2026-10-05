@@ -189,13 +189,10 @@ def test_dynamic_preset_description_stops_before_rng(ctx,choice):
         g.send(choice)
     assert ctx.state.rng.snapshot()==before and ctx.state.charanum==4
 
-@pytest.mark.parametrize('choice',[1,101,501])
+@pytest.mark.parametrize('choice',[501])
 def test_unported_entries_explicit_stop(ctx,choice):
     g=creation_menu(ctx);next(g)
     with pytest.raises(NotImplementedError):g.send(choice)
-    if choice==101:
-        assert ctx.state.charas[1].name=='汎用キャラ(♂)'
-        assert ctx.state.charas[1].talent[ctx.data.index_of('TALENT','オトコ')]==1
 
 def test_main_named_character_display_results(ctx):
     # CHARA_MAKE:95–116 呼叫兩個 STRING 查詢；:120–124 最後覆寫汎用人數。

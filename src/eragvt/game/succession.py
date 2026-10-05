@@ -10,7 +10,7 @@ from ..state.sparse import IntArray
 from .action import Ctx, Step, kojo_root_gen, seikaku_hosei
 from .chara_common import talent, seikaku_check, baseup_cal_shield
 from .era import div, mod
-from .opening import (BOSS_ERB_NUM, chara_make_main_default, game_option,
+from .opening import (BOSS_ERB_NUM, game_option,
                       research_quota, set_limit_day)
 from .shop import game_mode_check, lb
 
@@ -512,7 +512,8 @@ def succession_gen(ctx: Ctx, rank: int):
     set_limit_day(st)
     _training_points(ctx,s.values[16])
     st.target=st.charanum-1
-    chara_make_main_default(st,ctx.data,ctx.globals)
+    from .creation_menu import creation_menu
+    yield from creation_menu(ctx,bonus=s.values[16])
     for i,c in enumerate(st.charas[1:],1):
         if c.cflag[6]==0 or c.cflag[6]>=100:
             c.cflag[6]=c.no

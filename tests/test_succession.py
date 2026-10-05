@@ -163,7 +163,7 @@ def test_selected_characters_complete_succession(ctx):
     old=st.charas[2]
     gen=succession.succession_gen(ctx,1)
     next(gen)
-    for key in (0,2,999,999,1):  # 選角色2→開始→NORMAL（無GLOBAL通關次數選單）。
+    for key in (0,2,999,999,1,1000):  # 選角色2→開始→NORMAL（無GLOBAL通關次數選單）。
         gen.send(key)
     assert any("基本セット" in ln.text for ln in ctx.out.lines[-10:])
     with pytest.raises(StopIteration) as done:

@@ -443,6 +443,8 @@ def test_session_lastboss_clear_score_savegame(data):
         s2.input(0)
         s2.input(1)  # NORMAL
         s2.input(0)  # 周回人數預設
+        # SUCCESSION.ERB@SUCCESSION:1560 → CHARA_MAKE.ERB@CHARA_MAKE_MAIN:207–210。
+        s2.input(1000)  # 保留預設角色設定，明確完成角色製作。
         s2.input(1)  # HEROINE_PRESET 基本設定
         assert s2.phase == Phase.SHOP
         assert (s2.state.flag[64], s2.state.day[0], s2.state.time) == (0, 1, 0)  # EVENTSHOP 清除繼承標記。

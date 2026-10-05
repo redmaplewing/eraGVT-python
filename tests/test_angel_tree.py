@@ -307,6 +307,8 @@ def test_session_final_form_clear(data,tmp_path,narration):
     session.input(0)
     session.input(1)
     session.input(0)
+    # SUCCESSION.ERB@SUCCESSION:1560 → CHARA_MAKE.ERB@CHARA_MAKE_MAIN:207–210。
+    session.input(1000)  # 保留預設角色設定，明確完成角色製作。
     session.input(1)
     assert session.phase==Phase.SHOP
     session.close()

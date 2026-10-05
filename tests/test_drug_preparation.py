@@ -149,7 +149,7 @@ def test_robot_join_default(ctx,sex,feat):
     """@DRUG_PREPARATION:280–430：性別選擇、扣50000、預設確認、特徵選單、還原TARGET。"""
     st=ctx.state; st.money=50000; st.target=2; old=st.charanum
     old_items=[st.item[i] for i in range(100,700)]
-    gen=begin(ctx,100); gen.send(sex)
+    gen=begin(ctx,100); gen.send(sex); gen.send(99)
     assert st.charanum==old+1 and st.money==0
     gen.send(feat)
     if feat==0: gen.send(0)

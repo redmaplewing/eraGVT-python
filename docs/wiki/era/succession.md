@@ -41,10 +41,10 @@
 
 - :1444–1490 決定人數並補汎用角色，GLOBAL:100–102 有通關數時提供增減人數選單；
   SOLO 固定1人，其他模式預設至少3人。:1491–1550 扣已用修練P、下限0，再加基礎值獎勵。
-- :1560 `CHARA_MAKE_MAIN, LOCAL:16` 沿用既有預設 [1000] 路徑。
-  `ERB/SYSTEM/キャラメイキング関連/CHARA_MAKE.ERB@CHARA_MAKE_MAIN:145、203` 僅手動編輯傳 ARG；
-  :206–209 預設完成直接呼叫 CHARA_MAKE_FINALIZE，不讀 ARG。獎勵已在 SUCCESSION 加入 JUEL，
-  因此預設路徑不需新增參數，也不改選初期セット。
+- :1560 `CHARA_MAKE_MAIN, LOCAL:16`於S60接到`creation_menu`，等待玩家編輯或按[1000]完成，不再自動代按。
+  `ERB/SYSTEM/キャラメイキング関連/CHARA_MAKE.ERB@CHARA_MAKE_MAIN:145、203`將周回獎勵傳入共用個別編輯器；:207–210完成時呼叫CHARA_MAKE_FINALIZE。
+  獎勵已在SUCCESSION加入JUEL；`ERB/SYSTEM/キャラメイキング関連/FIRSTSETTING_CHARA.ERB@FIRSTSETTING_CHARA_MAIN:323–324`僅於CSV重載後補回獎勵，進入／確認／重入均不重複加點。
+  共用12項子選單已接通，CSV重載等其餘子選單仍未移植，詳見[角色編輯](character-editor.md)。
 - :1563–1622 設口上號、恢復結界、MESSAGE_FIRST（使用現有可等待的口上呼叫）、前排名單、
   衣裝所持品、HEROINE_PRESET 設定選單、探索目標及 FLASHNEWS 文字；FLAG:64=-1 後 BEGIN SHOP。
   必須立即終止舊 TURNEND；EVENTSHOP 把繼承標記清0並進第1天白天，再依引擎規則自動存檔。

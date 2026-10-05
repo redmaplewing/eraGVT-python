@@ -27,10 +27,10 @@
 
 ## 共用流程與原作細節
 
-- 個別編輯暫略UI，沿用S42的原作不改設定直接[99]路徑；本次抽出`character_defaults.confirm_default_character`讓兩入口共用。
+- S60已將[0]/[1]接到`character_editor.character_editor`，等待玩家操作共用個別編輯器；不再自動代按[99]。[2]仍依原作略過個別編輯。
   依據`ERB/SYSTEM/キャラメイキング関連/FIRSTSETTING_CHARA.ERB@FIRSTSETTING_CHARA_MAIN:9–34、112–122、318–353`：
   保存命名衣裝的ITEM100–699、暫設1、初始化、解碼武器、清壓縮字串、保留身體顯示計算殘值、更新結界、清SAVESTR0–3並恢復ITEM。
-  沒有提供完整手動角色製作畫面；沿用既有DEVIATION，不把[0]/[1]改成[2]替代。
+  姓名／呼稱／一人稱／口上設定／變身文字／衣裝／武器共12項子選單已接通；身體等其餘子選單仍未移植，詳見[角色編輯](character-editor.md)。
 - `ERB/ヒロイン関連/CHARA_SYUZOKU.ERB@SYUZOKU_CHECK:5–28`只回201–249中第一個存在種族，否則0。
   [2]路徑保留先選特徵再初始化的原作順序；未自行修正種族0時沒有可選特徵的怪處。
 - 手選沿用`firstsetting.feat_select_ui`；逐段對照`ERB/ヒロイン関連/PREGNANT_CHILD_BIRTH.ERB@ADD_CHILD:549–627`與本函式`:51–126`。

@@ -35,10 +35,8 @@ S56現況歸屬：各未勾選項的W編號指向`docs/PLAN.md`；仍待實作�
   其下照 MODE_SELECT:360–368 附 [100] タイトルに戻る／[200] グローバルコンフィグの編集（照原作）／[300] ゲームの説明（S52 已接通）。
   模式固定 NORMAL（MODE_SELECT 沒有預設值，[1] 是第一個選項）。（Python：`eragvt.game.opening.event_first_gen`、`session._title_input`）
   開局 `MESSAGE_FIRST` 口上仍不輸出（見下「口上」）。
-  S42延伸至醫療室機器人加入：個別編輯走FIRSTSETTING_CHARA_MAIN不改設定直接[99]，初始化、結界、暫存復原照原作；
-  性別與後續特徵選單仍等待玩家選擇。手動個別編輯尚未接通，詳見 `docs/wiki/era/drug-preparation.md`。
-  S43追加招募[0]/[1]沿用同一路徑（共用`character_defaults.confirm_default_character`）；[2]依原作略過個別編輯，
-  特徵選擇後才FINALIZE，不提前初始化種族；詳見 `docs/wiki/era/recruitment.md`。
+  S60已取消開局個別編輯／醫療加入／追加招募[0]/[1]／引繼的主選單代按，接通12項子選單；
+  招募[2]仍照原作略過個別編輯。子供原作獨立流程不插入共用主選單，剩餘身體等子選單仍W02。見[角色編輯](../era/character-editor.md)。
 
 - [ ] `W05／W08` **S04未翻行動的停止處理**：8類行動、鍛錬排程、結局／引繼等已接通；目前`action.py:304,420`是不存在預約值與REST狀態安全網，不能沿用舊S04缺口清單。Web遇到未移植仍進HALTED；現存分支統一見`docs/PLAYABILITY.md`，逐項核對可達性。
 - [x] ~~**襲撃／救援 會被跳過**~~（S20 解決）：`RAID_HANTEI` 成立時照原作 `JUMP RAID_RESCUE／RAID_ATTACK` → イベント戦（`eragvt.game.raid`）。ラスボス出現後（FLAG:100 = 0）の襲来は S27 接上（生存ラスボス 0 で原作無限ループの路だけ停止）。
@@ -79,11 +77,12 @@ S56現況歸屬：各未勾選項的W編號指向`docs/PLAN.md`；仍待實作�
   輸入後才發現不可執行內容時停止；其他同步呼叫的失敗回復仍待裁決。詳見 narration wiki 的 S31 節。
 - [ ] `W07／W08` **口上 catalog 的顯示簡化**（S07 新增，只影響顯示）：`SETFONT`（字型名）不反映（`FONTITALIC` 斜體 S20 起反映：`TextOutput.set_italic`）；`CLEARLINE` 只刪已完成的行；
   S41角色強化重繪沿用共用CLEARLINE（`ERB/インターミッション画面/SHOP_CHARA_POWERUP.ERB@CHARA_POWERUP:343–346`）；不影響分配、扣款及共享RESULT(S)。
+  S60隨機命名沿用精簡按鈕列，重繪依實際輸出行數清除配置／候選頁，對應原文CLEARLINE 16／25；不改狀態與亂數次序。
   S45設施擴充、S49武器自訂沿用同一CLEARLINE偏離；局部回顯數值輸入並在繼續時移除Enter操作提示，避免誤刪選項，未修改全域顯示語意（見`docs/wiki/era/facilities.md`）。
   COUNT 放在口上專用的暫存（`state.temp.narr`），與 Python 移植部分不共用（原作是全域變數；Python 未模型化 COUNT）。RESULT（S21）・RESULTS（S22）
   已改為共用（`GameState.result`／`results`，`docs/wiki/python/result.md`）；Python 移植部分只同步寫 RESULT:1／RESULTS:1 以後的來源與「之後有人讀
   呼叫前值」的 RESULT:0／RESULTS:0。S22 全件確認：RESULTS:0 沒有讀呼叫前值的地方；RESULT:0 只有不發的 TRYCALL(FORM) 之後會讀，已移植者全部同步
-  （S22 追加 `BATTLE_COM_AFTER.ERB`:1159）。hook 的 CALL（SET_TENTACLE_SIZE_BY_MESSAGE 等）之後地の文不讀 RESULT（grep）。因此在已確認的讀取位置 RESULT／RESULTS 與原作一致，殘留差異是 COUNT。
+  （S22 追加 `BATTLE_COM_AFTER.ERB`:1159）。hook 的 CALL（SET_TENTACLE_SIZE_BY_MESSAGE 等）之後地の文不讀 RESULT（grep）。因此在已確認的讀取位置 RESULT／RESULTS 與原作一致，殘留差異是 COUNT。S60姓名生成僅重現本函式COUNT終值20用於LOCAL30索引，仍不寫catalog的共用COUNT；沿本項W07，未新增批准。
   （Python：`eragvt.narration.runtime`）
   S14：`DRAWLINEFORM 文字列` 畫成與 DRAWLINE 相同的區切線（原作以該字串重複到畫面寬：`GameView/EmueraConsole.Print.cs@getStBar`:543–560；
   動画サイト :1335 的 `―`）；動画サイトの `PRINT_TAGSET_TEXT` 的 `@F:` フォント指定不反映（本作未使用），既定色的 `SETCOLOR 0x{GETCOLOR}`
@@ -377,5 +376,10 @@ S56現況歸屬：各未勾選項的W編號指向`docs/PLAN.md`；仍待實作�
   Python依最新裁決：0照原手術、1提示AMPUTEE原作移植未完成並停止、其他值提示後重讀；不扣資源、不改角色。
   原否分支是另提NPC處置方案，:245–266明示移植未完而停用，AMPUTEE呼叫也註解；修復維持停用及51隱藏。
   先前「1返回」推論已被使用者「提示未完成截斷」裁決取代；透過NotImplementedError進入既有HALTED，不輸出或執行草稿事件／結算。歷史證據見[醫療室查證](../era/drug-preparation.md)。
+
+## S60：姓名原作錯誤安全網（W08）
+
+- [ ] `W08` `ERB/SYSTEM/キャラメイキング関連/FIRSTSETTING_CHARA.ERB@FIRSTSETTING_CHARA_NAME_RANDOM:913–920`兩次WHILE誤檢查姓氏；手輸未定義姓氏語言可使空姓永久重抽。Python明確停止，避免本機掛死；此安全網待裁決，非玩法移植缺口。
+- 備查：同檔`@FIRSTSETTING_CHARA_NAME:656`允許CHARANUM角色索引，原作即越界，Python明確停止；沒有猜修為<。固定姓名順序不影響回傳、中文第二字被覆寫等其餘原作怪處均保留，詳見[角色編輯](../era/character-editor.md)。
 
 S60b補充：tutorial的PRINTW改為明確確認請求及Enter按鈕；其他舊WAIT未全面遷移，既有等待偏離仍未完成，不能勾選結案。[範圍與驗收](generic-input.md)。

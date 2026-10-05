@@ -241,9 +241,10 @@ def _preset_zero(ctx):
     shokiset_select_0(ctx.state,ctx.data)
     shokiset_csvfix(ctx.state,ctx.data)
 
-def creation_menu(ctx,initial_preset=None):
+def creation_menu(ctx,initial_preset=None,bonus=0):
     """CHARA_MAKE.ERB@CHARA_MAKE_MAIN:5–363；[1000] 完成後 EVENTFIRST 再 FINALIZE 一次。"""
     from .opening import chara_make_finalize,game_option
+    from .character_editor import character_editor
     st,out=ctx.state,ctx.out
     load_common(ctx)
     if initial_preset is not None:_preset_zero(ctx)
@@ -252,13 +253,15 @@ def creation_menu(ctx,initial_preset=None):
         while True:
             r=yield from number(ctx)
             if 100<r<st.charanum+100 and st.charas[r-100].callname=='汎用キャラ':
-                # @CHARA_MAKE_MAIN:142–145：未移植呼叫前仍保留原作已執行的性別／名字寫入。
+                # @CHARA_MAKE_MAIN:142–145。
                 c=st.charas[r-100]
                 c.talent[ctx.data.index_of('TALENT','オトコ')]=1
                 c.name='汎用キャラ(♂)'
-                raise NotImplementedError('FIRSTSETTING_CHARA_MAIN 個別角色製作尚未移植')
+                yield from character_editor(ctx,r-100,bonus)
+                break
             if 0<r<st.charanum:
-                raise NotImplementedError('FIRSTSETTING_CHARA_MAIN 個別角色製作尚未移植')
+                yield from character_editor(ctx,r,bonus)
+                break
             if 500<r<st.charanum+500:raise NotImplementedError('CHARA_MAKE_MAIN 初始角色狀態切換尚未移植')
             if r==300 and _can_count(ctx):raise NotImplementedError('CHARA_MAKE_MAIN 人數變更尚未移植')
             if r==1000:

@@ -62,7 +62,7 @@
   原變身後名（CSTR:55）時不寫 RESULTS:2 → :787 讀到前一次的 RESULTS:2。**S22 結案**（使用者裁決 2026-10-02：照原作）：RESULTS 改為
   `GameState.results` 共用陣列（引擎：不存檔、讀檔／新遊戲清空；寫入來源一覽 `docs/wiki/python/result.md`），STRMATCH 同步寫入、:787 讀共用陣列，
   停止點解除。測試 `tests/test_results_shared.py`（不成立＋前值非空／空、連續 2 人）。
-- [ ] `W08` `.NET string.IndexOf(string, int)`（STRFINDU，`Creator.Method.cs`:2273）是文化相依比較；catalog／corruption 以 Python `str.find`（序數）
+- [ ] `W08` `.NET string.IndexOf(string, int)`（STRFINDU，`Creator.Method.cs`:2273）是文化相依比較；S60姓名STRFIND、catalog／corruption 以 Python `str.find`（序數）
   實作。本作用到的字串（假名・漢字・記號）在 CompareOptions.None 下應一致，但 reference 內無法確認 .NET 文化表（S21）。
 - [x] BEGIN 在被 CALL 的函式中（S28a）— 只設定 begintype 並 Return 一層，呼叫端繼續執行，最後一次的 BEGIN 在函式堆疊清空時生效
   （`GameProc/Function/Instraction.Child.cs@BEGIN_Instruction`:1681–1689、`GameProc/Process.State.cs@SetBegin`:203–228／`@Return`:355–425／`@Begin`:263–311）。
