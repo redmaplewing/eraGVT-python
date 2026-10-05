@@ -45,3 +45,15 @@
 - 衣裝／武器依據：`ERB/武器と衣装/衣装関連/CLOTH_WEAR.ERB@CLOTH_SETTING_OUTER`／`@CLOTH_SETTING_OUTER2`／`@CLOTH_SETTING_INNER`；`ERB/武器と衣装/武器カスタマイズ関連/WEAPON_CUSTOMIZE.ERB@SETTING_WEAPON_NAME`／`@SETTING_FSTYLE`、`WEAPON_ARCHIVE.ERB@DECODE_WEAPON_DATA`。各入口與殘值精確依據列於測試註解。
 - 父代理獨立新增28案全綠；真瀏覽器完成一人稱、口上設定、四變身文字、三衣裝欄與近距離武器名／風格，99確認後重入保留值、年齡25。16欄預覽取消保留119，確認後改118；17=118、18=308。
 - 全回歸、自然開局／招募／醫療／引繼、未移植子選單、舊PRINTW等待遷移均不算通過。此次沒有新增UNVERIFIED／DEVIATION。
+
+## 四入口接續驗收
+- 使用者要求年齡25；優先以原作支援的年齡指定欄位建立全新成年測試資料，讓真實INITIALIZE／FINALIZE運作。不得將此前未成年角色改年齡後重用。
+- 前輪僅入口契約：本輪補真實生成與確認返回銜接，使用NullNarration、臨時存檔，不執行性敘事或子供／其他受限流程。
+- 產品年齡生成規則與source/reference不改；若入口需要測試注入，精確列出替代點，不能稱完全自然開局。
+- 先以小範圍API驗證四入口，提供父代理真實瀏覽器可操作的入口fixture；每個顯示點斷言實／外見年齡25。
+- 僅修本輪發現的一般整合錯誤，原文expected先紅後綠；沿用本規格與STATUS，不新開階段。
+- 四入口定向：`python -X utf8 -m pytest -q tmp/s60d/test_adult_entry_flows.py` → `5 passed, 1 warning in 2.67s`；真實ADDCHARA／INITIALIZE／FINALIZE／引繼reset_data均未替代，四入口到SHOP；引繼獎勵10點於編輯確認／重入保留、FINALIZE才分配。
+- 啟動：`python -X utf8 tmp/s60d/adult_entry_fixture.py <entry>`；opening=8771、recruitment=8772、medical=8773、succession=8774；完整產品Web與模板，每次HTTP回應斷言所有角色BASE／MAXBASE:40、41皆25，`/fixture/state`供瀏覽器核對。
+- 人工依賴：記憶體全新CharaDef(0/999)，BASE:40/41=25與CSTR:204/205/206="25"，普通服裝與變身能力；非開局入口以兩名真實生成成人建立人工SHOP前態（資金60000、招募旗標），引繼從succession_gen直接進入並回真實SHOP。臨時目錄、NullNarration；不是自然遊玩通關，不更動既有角色年齡或來源。
+- 順序：開局`0,1,99,1,99,1000,0`；招募`180,1,99,1`；醫療`113,100,1,4,999,99,1,999`（4/999鎖定留主頁）；引繼`0,1,999,999,1,1,99,1000,0`。父真瀏覽器四入口全部回SHOP，開局確認重入、醫療4/999留在限制編輯器均正常；沒有新增產品修改／UNVERIFIED／DEVIATION，全回歸／500局未執行。
+- 父獨立定向：`5 passed, 1 warning in 2.42s`。四個瀏覽器最終狀態皆4人（含管理員）、四年齡格全25；資金依序5000／60000／10000／1000。真實生成、確認與引繼重置未替代；既有產品變更仍待完整回歸與正式500局，不把本輪記為整包S60完成。
