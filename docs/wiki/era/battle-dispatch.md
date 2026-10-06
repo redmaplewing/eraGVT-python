@@ -61,4 +61,6 @@
 - `tmp/s81/browser_fixture.py`：末王四路按原7、條件四路按fixture0、事件4先fixture0再原201。全新25歲四欄、臨時存檔；gate以RAND70=69拒絕後續事件，只驗候選門檻及短路。主代理九路真瀏覽器通過，console錯誤0，末王HP與四gate候選77／RNG bounds符合，catalog失敗0；敘事遮蔽，不能說完整敘事可見。證據由主代理保存於`tmp/s81/`。
 - 事件4按201後RESULT8=120是正常覆寫：人工敵為BOSS3，`ERB/ゲーム内_戦闘処理/PALAM_UP.ERB@PALAM_HOSEI_TENTACLE:564–568`→`ERB/ゲーム内_戦闘処理/COMMON_TENTACLE_DATA.ERB@TENTACLE_ACCESS:251–253`→`ERB/ゲーム内_戦闘処理/触手データ/ボス触手/TENTACLE_BOSS_3_Ａ触手.ERB@TENTACLE_BOSS_3_PALAM_HOSEI:98–125`，`:117`令LOCAL8=120，`:125`RETURN十二格。Python的`core.tentacle_palam_hosei`同樣set_result_x；RESULTS8仍保留「尾格」。其他八路RESULT8保持765，不以通用保存器的舊假設判為產品bug；已保存本次結果，未重跑產品瀏覽器。
 - 主代理全pytest：`5269 passed, 1 warning in 346.08s (0:05:46)`；局部條件與回復公式修正，未改共用RNG／排程／存讀檔，依分級驗證不跑500。
-- 未完成W05整包：仍需自然遭遇抽樣、兩末王勝敗／撤退／時間切れ與救援事件完整連續鏈的瀏覽器彙整；本次人工下一行動／事件_exec邊界不冒充這些證據。下一成果仍留W05，不跳W06，也未觸發工作包完成的500局。
+- S81範圍為人工下一行動／事件_exec邊界；自然入口與完整終端證據由S82補齊，見下段。S81本身未觸發500局。
+
+S82已補上述缺少的兩末王八種終端、四類正常ACTION_MAIN實抽與救援事件4完整進出，16案及主代理16路真瀏覽器通過；原文expected、人工前態／固定seed範圍及W05完成條件對照見[戰鬥連續鏈](battle-lifecycle.md)。W05結包驗證結果依STATUS，既有W06／W07／W08範圍未擴張。
