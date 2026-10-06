@@ -194,7 +194,7 @@ def _main(ctx):
     out.printl()
     st.result[0]=sum(c.callname=='汎用キャラ' for c in st.charas)
     if not game_option(st,GameOption.SOLO):lines(ctx,MAIN,127,127)
-    # :130 成就或自由模式才顯示；尚未手翻人数編輯。
+    # :131 成就或實績END無し才顯示，SOLO只限制成就分支。
     if _can_count(ctx):out.printl('[300]人数を変更する')
     out.printl();out.printl();out.printl()
     out.print('[1000]★キャラメイクを完了する'+format_percent(' （未設定のキャラはおまかせ） ' if st.result[0] else '  ',32,True))
@@ -203,6 +203,56 @@ def _main(ctx):
 def _can_count(ctx):
     from .opening import game_option
     return game_option(ctx.state,GameOption.NO_ACHIEVEMENT_END) or (sum(ctx.globals.mem.global_[i] for i in (100,101,102))>0 and not game_option(ctx.state,GameOption.SOLO))
+
+
+def _cycle_initial_state(ctx,who):
+    """ERB/SYSTEM/キャラメイキング関連/CHARA_MAKE.ERB@CHARA_MAKE_MAIN:150–198。"""
+    from .opening import game_option
+    c=ctx.state.charas[who]
+    before=c.cflag[0]
+    free=game_option(ctx.state,GameOption.NO_ACHIEVEMENT_END)
+    unlocked=lambda key:bool(ctx.globals.mem.global_[key]) or free
+    if before in (0,1,3,4):
+        if before==0 and unlocked(258):
+            c.cflag[0]=1
+        elif before in (0,1) and unlocked(262) and not game_option(ctx.state,GameOption.SOLO):
+            c.cflag[0]=3
+            c.cflag[41]=401
+            c.exp[ctx.data.index_of('EXP','陥落経験')]+=1
+        elif before in (0,1,3) and unlocked(278):
+            c.cflag[0]=4
+            c.cflag[71]=30
+        elif unlocked(212):
+            c.cflag[0]=9
+        else:
+            c.cflag[0]=0
+        if before==3:
+            # :187–188 離開仍保留衣裝401，經驗直接減1，不設下限。
+            c.cflag[41]=401
+            c.exp[ctx.data.index_of('EXP','陥落経験')]-=1
+    elif before==9:
+        c.cflag[0]=0
+
+
+def _count_setting(ctx):
+    """ERB/SYSTEM/キャラメイキング関連/CHARA_MAKE.ERB@CHARA_MAKE_MAIN:324–359；選定立即生效。"""
+    st=ctx.state
+    lines(ctx,MAIN,324,324)
+    title=326 if sum(ctx.globals.mem.global_[k] for k in (100,101,102))>0 else 328
+    lines(ctx,MAIN,title,title);lines(ctx,MAIN,330,337)
+    while True:
+        count=yield from number(ctx)
+        if count==99:return
+        if not 2<=count<=6:continue
+        ctx.out.printl(f'{count}人で開始します')
+        # reference/emuera-1824/Emuera/GameData/Variable/VariableEvaluator.cs:1026–1067：
+        # ADDCHARA尾端加入；DELCHARA移除該索引，不調TARGET/ASSI，命令不寫RESULT。
+        # reference/emuera-1824/Emuera/GameProc/Function/Instraction.Child.cs:934–965。
+        while st.charanum-1<count:
+            st.add_chara(ctx.data,0);st.flag[8]+=1
+        while st.charanum-1>count:
+            st.del_chara(st.charanum-1);st.flag[8]-=1
+        return
 
 def preset_menu(ctx):
     """SHOKISET.ERB@CHARA_MAKE_FINALIZE_KAI:5–45。"""
@@ -262,8 +312,14 @@ def creation_menu(ctx,initial_preset=None,bonus=0):
             if 0<r<st.charanum:
                 yield from character_editor(ctx,r,bonus)
                 break
-            if 500<r<st.charanum+500:raise NotImplementedError('CHARA_MAKE_MAIN 初始角色狀態切換尚未移植')
-            if r==300 and _can_count(ctx):raise NotImplementedError('CHARA_MAKE_MAIN 人數變更尚未移植')
+            if 500<r<st.charanum+500:
+                # :149 原作ARG同時保存周回bonus；狀態選擇覆寫它，後續個別編輯沿用。
+                bonus=r-500
+                _cycle_initial_state(ctx,bonus)
+                break
+            if r==300 and _can_count(ctx):
+                yield from _count_setting(ctx)
+                break
             if r==1000:
                 out.printl('キャラメイクを終了します')
                 chara_make_finalize(st,ctx.data,ctx=ctx);st.result[0]=0

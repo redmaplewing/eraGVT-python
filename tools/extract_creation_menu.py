@@ -16,6 +16,8 @@ def extract():
             if name=='FIRSTSETTING_CHARA_SYUZOKU.ERB' and n<168:continue
             if name=='FIRSTSETTING_CHARA_TRANSFORMATION.ERB' and n<453:continue
             m=re.fullmatch(r'\s*PRINT(?:L|W)(?: (.*))?',line,re.I)
+            if name=='CHARA_MAKE.ERB' and 325<=n<=337:
+                m=re.fullmatch(r'\s*PRINT(?:FORM)?L(?: (.*))?',line,re.I)
             if m:text[name,n]=m[1] or ''
     presets={}
     dynamic=set()
