@@ -74,10 +74,9 @@ S56現況歸屬：各未勾選項的W編號指向`docs/PLAN.md`；仍待實作�
   S60隨機命名沿用精簡按鈕列，重繪依實際輸出行數清除配置／候選頁，對應原文CLEARLINE 16／25；不改狀態與亂數次序。
   S61一般身體頁兩形態依序顯示，數值、提示、可選項與原文INPUT模式保留；S87已接Windows共用字型／欄寬計量，非Windows與個別精簡排版仍留本項W07。色盤保留32×32及軸／明度列，依實際輸出行數清除舊按鈕，對應`ERB/汎用関数/COLOR_TABLE.ERB@COLOR_TABLE:156`固定40行；不是新增全域CLEARLINE語意。
   S45設施擴充、S49武器自訂的共用CLEARLINE已由S87核對；局部回顯數值輸入並在繼續時移除Enter操作提示，避免誤刪選項，未修改全域顯示語意（見`docs/wiki/era/facilities.md`）。
-  COUNT 放在口上專用的暫存（`state.temp.narr`），與 Python 移植部分不共用（原作是全域變數；Python 未模型化 COUNT）。RESULT（S21）・RESULTS（S22）
-  已改為共用（`GameState.result`／`results`，`docs/wiki/python/result.md`）；Python 移植部分只同步寫 RESULT:1／RESULTS:1 以後的來源與「之後有人讀
-  呼叫前值」的 RESULT:0／RESULTS:0。S22 全件確認：RESULTS:0 沒有讀呼叫前值的地方；RESULT:0 只有不發的 TRYCALL(FORM) 之後會讀，已移植者全部同步
-  （S22 追加 `BATTLE_COM_AFTER.ERB`:1159）。hook 的 CALL（SET_TENTACLE_SIZE_BY_MESSAGE 等）之後地の文不讀 RESULT（grep）。因此在已確認的讀取位置 RESULT／RESULTS 與原作一致，殘留差異是 COUNT。S60姓名生成僅重現本函式COUNT終值20用於LOCAL30索引，仍不寫catalog的共用COUNT；沿本項W07，未新增批准。S62的RAND_CHOOSE_KOJO_SEIKAKU:462–475同樣只保留局部FOR終值19，不寫catalog共用COUNT；仍沿本項。S64 LOADCSV的REPEAT4清SAVESTR同樣不寫catalog共用COUNT，沿本項W07。
+  S88已建立`GameState.count`，catalog與原生共用，按引擎保存COUNT的證據加入JSON v4及v1–3遷移；姓名、一人稱、性格亂數、LOADCSV、單詞命名、個別編輯主入口與模式選單／判定17處迴圈已同步。CALL色函式若改COUNT，候選及NEXT實讀新值；不再只補終值。
+  **COUNT整項仍未結案**：全作291個REPEAT／COUNT迴圈行扣本次17處後，274行需按衣裝63、攻擊數值61、ABL16、狀態19、製作／除錯22、SHOP11、事件41、其他戰鬥36、汎用／武器5群組續查／同步（含不可達及已由catalog接通者，不等同274個缺口）。完整來源、引擎行號與驗證邊界見[共用COUNT](../python/count.md)。未接原生函式仍可能留下不同殘值，存檔亦可觀測，不視為已批准。
+  RESULT（S21）／RESULTS（S22）沿既有共用與局部同步範圍，詳[共用回傳值](../python/result.md)；此項不擴張為所有RESULT殘值均已一致。
   （Python：`eragvt.narration.runtime`）
   S87：Windows的DRAWLINEFORM依`EmueraConsole.Print.cs@getStBar:543–560`計算指定字串重複數；`PRINT_TAGSET_TEXT`的`@F:`依原CHKFONT套用／還原。非Windows仍保留原近似；既定色的`SETCOLOR 0x{GETCOLOR}`仍以回到呼叫前顏色表示，顯示相同。
 - [ ] `W07` **SHOW_SHOP 簡化**：S86已接回狀態標記、出場第二行／候補的4格資源條、原姓名／數字欄寬、NG紅色殘值；主資源20格漸層先前已由S25接回。數值／標記範圍結案，S87已接Windows共用字型與PRINTLC原GDI欄寬，剩餘非Windows／字形像素及個別精簡排版沿本頁文字顯示原項留W07，沒有視為批准。來源與邊界見[決策資訊](../era/decision-information.md)。

@@ -60,8 +60,10 @@ def check_gameover(state: GameState) -> bool:
 def game_mode_check(state: GameState) -> int:
     """`@GAME_MODE_CHECK_F`（同:131–137）：FLAG:0 と一致するモード、無ければ -1。"""
     for mode, opts in MODE_OPTIONS.items():
+        state.count[0] = int(mode)
         if state.flag[0] == opts:
             return int(mode)
+    state.count[0] = len(MODE_OPTIONS)
     return -1
 
 
@@ -70,8 +72,10 @@ def game_mode_check_proc(state: GameState) -> int:
     各モードのオプションに 64（OPTION_制限時間無し = bit 6）を足して比べる。@SAVEINFO（オープニング処理.ERB:586）が使う。"""
     extra = 64 if state.flag[906] else 0
     for mode, opts in MODE_OPTIONS.items():
+        state.count[0] = int(mode)
         if state.flag[0] == (opts | extra):
             return int(mode)
+    state.count[0] = len(MODE_OPTIONS)
     return -1
 
 

@@ -491,18 +491,19 @@ class Interp:
 
     def _repeat(self, s: N.Repeat, fr: Frame) -> None:
         # REPEAT：カウンタ COUNT:0、開始 0、步進 1（FOR と同じ REPEAT_Instruction）
+        # 同FOR：先清COUNT再求終值；REPEAT COUNT因此是零次（引擎:1735–1737）。
+        self.st.count[0] = 0
         n = self._int(s.count, fr)
-        self._set_narr("COUNT", 0, 0)
         pending = None
         while True:
-            if pending is None and not self._get_narr("COUNT", 0, 0) < n:
+            if pending is None and not self.st.count[0] < n:
                 break
             r = self._loop_body(s, fr, pending)
             pending = None
             if r == "goto":
                 pending = self._pending
                 continue
-            self._set_narr("COUNT", 0, self._get_narr("COUNT", 0, 0) + 1)
+            self.st.count[0] += 1
             if r == "break":
                 break
 
@@ -690,7 +691,10 @@ class Interp:
             elif tgt.name == "RESULTS":
                 self.st.results.clear()  # 共用 RESULTS（GameState.results、S22）全體を "" に
                 return
-            elif tgt.name == "COUNT" or getattr(self.cat.user_vars.get(tgt.name), "narration_owned", False):
+            elif tgt.name == "COUNT":
+                self.st.count.clear()
+                return
+            elif getattr(self.cat.user_vars.get(tgt.name), "narration_owned", False):
                 key0 = tgt.name
             else:
                 raise NotSupported(f"{tgt.name} への VARSET")
@@ -1002,7 +1006,8 @@ class Interp:
         if name == "RESULT":
             return self.st.result[self._idx(args[0], name) if args else 0]
         if name == "COUNT":
-            return self._get_narr(name, args[0] if args else 0, 0)
+            self._check_index(name, args or [0])
+            return self.st.count[args[0] if args else 0]
         if name == "RESULTS":
             return self.st.results[self._results_idx(args[0] if args else 0)]
         if name in TEMP_ARRAY_ATTR:
@@ -1078,7 +1083,8 @@ class Interp:
             return
         if name == "COUNT":
             args = self._args(fr, v)
-            self._set_narr(name, args[0] if args else 0, value)
+            self._check_index(name, args or [0])
+            self.st.count[args[0] if args else 0] = value
             return
         uv = self.cat.user_vars.get(name)
         if uv is not None and getattr(uv, "narration_owned", False):

@@ -150,10 +150,17 @@ def random_naming_select(ctx, genre, who, prefix):
     regenerate = True
     while True:
         if regenerate:
-            words = [_draw(ctx, genre) for _ in range(20)]
+            words = []
+            # @FIRSTSETTING_RANDOMNAMING_SELECT:314–384，REPEAT20。
+            for i in range(20):
+                st.count[0] = i
+                words.append(_draw(ctx, genre))
+            st.count[0] = 20
         for i, index in enumerate(words):
+            st.count[0] = i  # :390–400，顯示同樣以共用COUNT跑20次。
             word = _word(ctx, index)
             out.printl(f"[{i:2}] " + (prefix + word if side == 0 else word + prefix))
+        st.count[0] = 20
         out.printl()
         out.print("[100] ジャンルから選びなおす")
         if prefix:

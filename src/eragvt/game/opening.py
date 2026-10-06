@@ -108,6 +108,7 @@ def mode_select_gen(ctx, *, inherited=False, count=0):
         out.set_bold(False)
         out.reset_color()
         for mode in list(GameMode)[1:]:
+            st.count[0] = int(mode)  # @MODE_SELECT:306明示FOR COUNT,1,8。
             out.printl()
             if mode in disabled:
                 out.set_color((105, 105, 105))
@@ -118,6 +119,7 @@ def mode_select_gen(ctx, *, inherited=False, count=0):
             out.printl()
             out.button("　　　　┗　" + descriptions[mode] + "　　　", int(mode))
             out.printl()
+        st.count[0] = len(GameMode)
         if inherited:
             out.printl("[100] 引き継ぎ選択に戻る")
         else:

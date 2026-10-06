@@ -170,7 +170,7 @@ WINDOW_*、PRINT_TATTOO（上表）、**@SAVEINFO**（S26b：`shop.save_info`）
 
 ## 限界（deviations「口上 catalog の表示簡化」・unresolved）
 
-- COUNT は共用していない（catalog 専用の暫存；Python は COUNT を模型化していない。unresolved `GAME_MODE_CHECK`）。
+- S88已建立共用COUNT及存讀，接17處角色編輯／模式邊界；其他原生群組尚未全部同步，原COUNT偏離仍保留。詳[共用COUNT](count.md)。
 - catalog で実行できない口上・地の文（Null narration 含む）の中の書き込みは起きない（`SELF_CALL_ANALYSIS` は S21 の STRFINDU 追加で実行可能に）。
 
 ## S53 主題命名

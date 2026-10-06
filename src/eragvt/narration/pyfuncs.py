@@ -108,7 +108,27 @@ def py_mob_901_getname(it, args: list) -> int:
     return 0
 
 
+def py_event_cloth_option_3004(it, args: list) -> int:
+    """3004 プール奇襲.ERB@BATTLE_EVENT_CLOTH_STATUS_3004:8–79 的 option 邊界。
+
+    info 狀態仍由 game.raid.battle_event_cloth_status 原生處理，不開放整個 ERB 函式。
+    CLOTHDATA※イベント専用装備.ERB@CLOTH_CUSTOMIZE_OPTION_DRAW_990／991／992:102–120
+    會動態呼叫本函式；OUTER、OUTER_TRANS 及其他 parts 都只清 RESULTS:0。
+    落尾 RESULT:0=0：reference/emuera-1824/Emuera/GameProc/Process.ScriptProc.cs:61–67。
+    """
+    if _arg(args, 0, "") != "option":
+        raise NotSupported("BATTLE_EVENT_CLOTH_STATUS_3004：僅接 option 顯示")
+    it.st.results[0] = ""
+    if _arg(args, 1, "") == "INNER":
+        variant = it.st.target_chara.cflag[270]
+        if variant in (0, 1, 2, 3):
+            it.call(f"MESSAGE_EVENT_CLOTH_3004_{variant}", [])
+    it._set_result([0])
+    return 0
+
+
 PY_FUNCS = {
+    "BATTLE_EVENT_CLOTH_STATUS_3004": py_event_cloth_option_3004,
     "TENTACLE_MOB_901_GETNAME": py_mob_901_getname,
     "ADDRANDCHOOSE": py_addrandchoose,
     "CLEARRANDCHOOSE": py_clearrandchoose,

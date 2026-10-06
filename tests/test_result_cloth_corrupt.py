@@ -101,7 +101,7 @@ def test_result_saved_and_migrated(data):
     st2, _ = load_save(dump_save(st))
     assert st2.result[3] == 33
     obj = json.loads(dump_save(st))
-    assert obj["version"] == 3
+    assert obj["version"] == 4
     obj["version"] = 1
     del obj["state"]["result"]
     st3, _ = load_save(json.dumps(obj).encode())

@@ -77,6 +77,7 @@ def test_swap_entire_character_and_reset_base_before_inheritance(ctx,unique):
     c=st.charas[1]
     assert c is not old and c.no==50 and c.abl[0]==0  # PRINTFORMW在CSVFIX之前。
     assert [st.savestr[i] for i in range(5)]==['','','','','保留']
+    assert st.count[0]==4  # FIRSTSETTING_CHARA.ERB@FIRSTSETTING_CHARA_LOADCSV:1563–1565。
     assert st.result[0]==50
     finish(g)
     assert st.charanum==3 and st.charas[0] is master and st.charas[2] is other

@@ -25,6 +25,9 @@ from .symbols import UserVar, load_erh
 # 只抽取已手翻函式中的顯示段落。遊戲觸發條件與狀態更新仍由遊戲模組負責。
 # 原文：ゲーム内_戦闘処理/SUBEVENT_BATTLEE.ERB@HATUJOU_TO_HAIRAN:528–582。
 _TEXT_FRAGMENTS = {
+    # S88 驗收修正：只抽 option 的 RESULTS 文字；mode/parts/衣裝選取由原生 adapter 處理。
+    **{f"MESSAGE_EVENT_CLOTH_3004_{variant}": ("BATTLE_EVENT_CLOTH_STATUS_3004", line, line)
+       for variant, line in enumerate((34, 41, 48, 55))},
     # S80：只讀顯示片段；條件、選人、狀態與TS由battle.side_events手翻。
     "MESSAGE_AUDIENCE_INTERFERENCE": ("ACT_LIMIT", 284, 287),
     **{f"MESSAGE_BLOOD_{first}": ("SUPART_BLOOD", first, last)

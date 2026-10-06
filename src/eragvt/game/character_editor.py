@@ -134,8 +134,14 @@ def character_editor(ctx, who, bonus=0, restricted=0):
     """
     st,data=ctx.state,ctx.data
     c=st.charas[who]
-    items={i:st.item[i] for i in range(100,700) if i in data.items and data.items[i].name}
-    for i in items:st.item[i]=1
+    items={}
+    # @FIRSTSETTING_CHARA_MAIN:9–14：明示FOR COUNT，不與LOCAL迴圈混同。
+    for i in range(100,700):
+        st.count[0]=i
+        if i in data.items and data.items[i].name:
+            items[i]=st.item[i]
+            st.item[i]=1
+    st.count[0]=700
     _master_loop(ctx,who)
     while True:
         _draw(ctx,who,restricted)
@@ -155,8 +161,14 @@ def character_editor(ctx, who, bonus=0, restricted=0):
             if r in allowed:break
         if r==99:
             baseup_cal_shield(data,st,who)
-            for i in range(4):st.savestr[i]=''
-            for i in range(100,700):st.item[i]=items.get(i,0)
+            for i in range(4):
+                st.count[0]=i
+                st.savestr[i]=''
+            st.count[0]=4
+            for i in range(100,700):
+                st.count[0]=i
+                st.item[i]=items.get(i,0)
+            st.count[0]=700
             # reference/emuera-1824/Emuera/GameProc/Process.ScriptProc.cs:61–67：自然終端只寫RESULT:0。
             st.result[0]=0
             ctx.out.clearline(ctx.out.linecount)

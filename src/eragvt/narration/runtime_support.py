@@ -42,7 +42,7 @@ TEMP_ARRAY_ATTR = {
 TEMP_SCALAR_ATTR = {"EX_COM": "ex_com", "SH_COM": "sh_com", "INSERT": "insert", "ターン上限": "turn_limit"}
 CLOTH_INDEX = {"CLOTH_NO_INNER": 0, "CLOTH_OUTER_PER": 1, "CLOTH_OUTER_DEF": 2, "CLOTH_INNER_PER": 3, "CLOTH_INNER_DEF": 4}
 STATE_SAVEDATA_ATTR = {"SHIELD": "shield", "MOB_FLAG": "mob_flag"}
-NARR_STORE = {"RESULT", "RESULTS", "COUNT"}  # 読み書きできる一時変数（RESULT／RESULTS は GameState.result／results 共用、COUNT は state.temp.narr）
+NARR_STORE = {"RESULT", "RESULTS", "COUNT"}  # 可讀寫的共用內建陣列，存放GameState。
 # S29：TCVAR（Emuera 内建キャラ変数）は本作の ERB 全体で一度も書かれない（読むのは口上 4 檔と雑魚／クズ市民の触手データのみ。
 # `CSV/VariableSize.csv`:7 で「非使用、代わりに DIM.ERH の TCVARn を使う」）。引擎が書くのは BEGIN TRAIN 時の 0 クリアだけ
 # （`reference/emuera-1824/Emuera/GameData/Variable/VariableEvaluator.cs@UpdateInBeginTrain`:1458–1460）なので値は常に 0。
@@ -94,6 +94,7 @@ IMPLEMENTED_METHODS = {
 
 # Python 實作的使用者函式：名稱 → 說明（實體在 service.py 註冊）
 PY_FUNCTIONS = {
+    "BATTLE_EVENT_CLOTH_STATUS_3004": "ERB/ゲーム内_イベント発生/イベントから派生する特殊戦闘/3004 プール奇襲.ERB@BATTLE_EVENT_CLOTH_STATUS_3004（僅 option 顯示轉接）",
     "TENTACLE_MOB_901_GETNAME": "ゲーム内_戦闘処理/触手データ/雑魚敵/TENTACLE_MOB_901_天界（セラプー）.ERB@TENTACLE_MOB_901_GETNAME:9–13",
     "KOJO_ROOT": "口上/口上システム関係/KOJO_ROOT.ERB@KOJO_ROOT（派發規則、FLAG:62／FLAG:900）",
     # S14：汎用関数/WindowDrawer.ERB（＋TagSetText.ERB）→ `narration.windowlib`

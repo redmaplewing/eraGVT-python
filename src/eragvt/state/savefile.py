@@ -18,7 +18,7 @@ from .rng import GameRng
 
 SAVE_FORMAT = "eragvt-save"
 GLOBAL_FORMAT = "eragvt-global"
-SAVE_VERSION = 3
+SAVE_VERSION = 4
 GLOBAL_VERSION = 1
 
 
@@ -39,7 +39,16 @@ def _migrate_2_to_3(obj: dict[str, Any]) -> dict[str, Any]:
     return obj
 
 
-SAVE_MIGRATIONS: dict[int, Callable[[dict[str, Any]], dict[str, Any]]] = {1: _migrate_1_to_2, 2: _migrate_2_to_3}
+def _migrate_3_to_4(obj: dict[str, Any]) -> dict[str, Any]:
+    """S88：補共用COUNT；舊檔未保存，依既有新增陣列慣例初始化為0。"""
+    obj["state"].setdefault("count", {})
+    obj["version"] = 4
+    return obj
+
+
+SAVE_MIGRATIONS: dict[int, Callable[[dict[str, Any]], dict[str, Any]]] = {
+    1: _migrate_1_to_2, 2: _migrate_2_to_3, 3: _migrate_3_to_4,
+}
 
 
 class SaveFormatError(ValueError):

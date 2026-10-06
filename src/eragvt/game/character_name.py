@@ -106,10 +106,7 @@ def character_name(ctx, who):
 
 
 def random_character_name(ctx, who):
-    """保留LOCAL重疊、中文第二字覆寫、COUNT=20的本地索引及回傳忽略固定順序。
-
-    # DEVIATION: 沿既有W07 COUNT未共用；此處只重現本函式使用的終值，不寫catalog暫存。
-    """
+    """保留LOCAL重疊、中文第二字覆寫、共用COUNT索引及回傳忽略固定順序。"""
     st,out=ctx.state,ctx.out
     local=[0]*100;local[0]=2
     word=lambda i:ctx.data.str_defaults.get(i,'')
@@ -155,6 +152,7 @@ def random_character_name(ctx, who):
                 # reference/emuera-1824/Emuera/GameProc/Function/Instraction.Child.cs:488–500。
                 out.clearline(out.linecount-config_line)
         for i in range(20):
+            st.count[0]=i  # @FIRSTSETTING_CHARA_NAME_RANDOM:827 REPEAT20。
             if local[1] in family_ranges:
                 if local[1]==6:local[3]=1
                 local[10+i]=draw(*family_ranges[local[1]])
@@ -167,17 +165,21 @@ def random_character_name(ctx, who):
                 local[31+i]=st.rng.rand(1000)+16500
             elif local[2] in given_ranges:
                 local[30+i]=draw(*given_ranges[local[2]],7000 if local[2]==99 else None)
+        st.count[0]=20
         configure=False
         while True:
             candidates_line=out.linecount
-            for i in range(20):out.printl(f'[{i:2}]'+composed(i))
+            for i in range(20):
+                st.count[0]=i  # :943–957，REND後留下20供:1009／1012使用。
+                out.printl(f'[{i:2}]'+composed(i))
+            st.count[0]=20
             out.printl('[100]構成から選びなおす [200]再生成')
             out.printl('[800]順序を固定しない [801]「苗字 名前」の順に固定 [802]「名前 苗字」の順に固定')
             while True:
                 r=yield from input_number(ctx)
                 if 0<=r<20 or r in (100,200,800,801,802):break
             if 0<=r<20:
-                st.results[0]=composed(r,False,local[30])
+                st.results[0]=composed(r,False,local[10+st.count[0]])
                 st.results[1]=word(local[30+r]);st.results[2]=word(local[10+r])
                 st.result[0],st.result[1]=local[1],local[2]
                 return local[1]

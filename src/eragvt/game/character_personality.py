@@ -120,13 +120,22 @@ def personality_setting(ctx,who):
         out.clearline(out.linecount-start)
         if choice==98:
             candidates=[]
-            # DEVIATION: 共用COUNT尚未模型化，沿W07既有COUNT項；此處局部FOR終值19。
-            for person in range(10,29):
-                if _kojo_color(ctx,who,person) and not c.talent[person]:candidates.append(person)
+            # @RAND_CHOOSE_KOJO_SEIKAKU:462–470：CALL可改寫共用COUNT，
+            # CALL後的TALENT索引／NEXT都必須讀新值，不能用Python for的局部person。
+            st.count[0]=0
+            while st.count[0]<19:
+                if _kojo_color(ctx,who,st.count[0]+10) and not c.talent[st.count[0]+10]:
+                    candidates.append(st.count[0]+10)
+                st.count[0]+=1
             out.reset_color()
             # 空集合RAND:0照引擎停止，不發明後備性格。
             # reference/emuera-1824/Emuera/GameData/Function/Creator.Method.cs:960–970。
             st.result[0]=st.rng.rand(len(candidates))
+            # :473–475再次FOR COUNT清除19格；_select_personality本身也供LOCAL分支使用。
+            for i in range(19):
+                st.count[0]=i
+                c.talent[i+10]=0
+            st.count[0]=19
             _select_personality(c,candidates[st.result[0]])
         elif choice==99:_select_personality(c,10+st.rng.rand(19))
         elif 0<=choice<=18:_select_personality(c,10+choice)

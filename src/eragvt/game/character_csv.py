@@ -48,9 +48,11 @@ def load_character_csv(ctx, who):
     if choice == 1:
         c.talent[data.index_of('TALENT', 'オトコ')] = 1
         c.name = '汎用キャラ(♂)'
-    # DEVIATION: REPEAT4的COUNT沿既有W07未與catalog共用，不新增全域COUNT模型。
+    # @FIRSTSETTING_CHARA_LOADCSV:1563–1565；REPEAT4先寫COUNT，等待前留下4。
     for i in range(4):
+        st.count[0] = i
         st.savestr[i] = ''
+    st.count[0] = 4
     out.printw(f'{who}人目のキャラを{c.name}にしました')
     yield WaitInputRequest()
     firstsetting_chara_csvfix(st, data, who)

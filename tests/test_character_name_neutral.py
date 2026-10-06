@@ -19,7 +19,7 @@ def ctx():
         for slot in (40, 41):
             chara.base[slot] = chara.maxbase[slot] = 25
     state = SimpleNamespace(charas=charas, charanum=3, MASTER=0,
-                            result=IntArray(), results=StrArray())
+                            result=IntArray(), results=StrArray(), count=IntArray())
     data = SimpleNamespace(charas={1: SimpleNamespace(name="預設名稱", callname="名稱", cstr={})})
     out = TextOutput()
     out.printl("呼叫者保留行")

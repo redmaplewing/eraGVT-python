@@ -1,6 +1,6 @@
 # 現況（唯一真相，≤120行）
 
-更新：2026-10-07（S87共用文字與重繪完成；下一項S88共用COUNT）
+更新：2026-10-07（S88共用COUNT生命週期完成；下一項S89衣裝／武器COUNT）
 
 ## 完成標的與下一步
 
@@ -35,7 +35,8 @@
 - S85四處成就／紀錄／評分等待改明確確認，等待期間停用歷史按鈕；父全pytest5404、兩路真瀏覽器通過，依分級驗證不跑500。
 - S86已接SHOP標記／隊伍資料、戰鬥距離／衣裝／資源資訊及六種分類；父全pytest5443、三路25歲真瀏覽器通過，依分級驗證不跑500。
 - S87已接Windows原GDI字型／PRINTLC、DRAWLINEFORM、HTML實用子集與暫時行；父全pytest5465、三路25歲真瀏覽器通過，含角色強化重繪修正。
-- 下一成果S88留W07，處理共用COUNT與原生迴圈邊界；既有W02／W04具體阻塞與完整B矩陣保留。
+- S88已接共用COUNT／JSON v4、交易回復及17處編輯／模式邊界；父最終全pytest5527及兩路COUNT／一條衣裝真瀏覽器通過，標準500局已完成，並修正seed216事件衣裝顯示缺口。
+- 下一成果S89留W07的COUNT同步，處理衣裝／武器及共用選取群組；既有W02／W04具體阻塞與完整B矩陣保留。
 - [8]經歷／初始經驗涉及直接按未成年年齡／學生類型生成性經驗，保留未實作停止；具體依據見[角色編輯](wiki/era/character-editor.md)，不冒充原作未完成或25歲驗證失敗。
 - 使用者已裁決本次500局採全新25歲人工資料並建立獨立基線；產品年齡規則不變，與S59原始資料不宣稱逐seed等價。
 
@@ -60,12 +61,14 @@
 
 ## 最新驗收
 
-- S87主代理最終全pytest：`5465 passed, 1 warning in 212.31s (0:03:32)`；最初5461通過後，真瀏覽器發現角色強化缺INPUT回顯，追加4案先紅後綠及局部修正，定向141通過。
-- 三路真瀏覽器通過：混合字型／HTML空白／長行／catalog INPUT／重繪保留60行歷史；角色強化1→3→200→3→100→999，前文不再侵蝕、單一面板、BASE50由1535至1635、點數1000至900；標題／讀檔重複無效值只留一個暫時訊息且返回正常。
-- render／system沿用修正前已通過結果；只重驗受影響powerup。三路RNG不變、catalog失敗0、console警告／錯誤0、journal深度0、無殘留worker；證據tmp/s87/browser-summary.json及browser-render-before／after、browser-powerup-fixed、browser-system.png。
-- 全新25歲人工局部前態，三個年齡欄均25，替代MAXBASE41按原初始化保留-1哨兵；不是完整開局或自然遭遇驗收。瀏覽器舊來源CSS快取已用新來源排除，未改產品快取規則；測試伺服器與頁籤已關。
-- Windows GDI計量另有獨立C#80案完全一致；非Windows、Web字形光柵化與個別精簡排版仍保留原偏離。詳[共用文字](wiki/python/text-rendering.md)，沒有新增UNVERIFIED／DEVIATION。
-- 本階段只改顯示／局部回顯，無跨系統排程／RNG／存讀改動，W07尚未結包，不跑500。最近完整基線沿S84：default247上限／3回標題、tokusou250上限、catalog／fixture0，全部輸出欄位逐seed同S82；tmp/s84/adult25-v1/audit.json，不冒充本次重跑。
+- S88主代理最終全pytest：`5527 passed, 1 warning in 194.26s (0:03:14)`；初次5515通過後，修正實際模擬失敗再驗；新增共62案，COUNT定向502及衣裝修正定向233通過。共用／交易／存讀36案與編輯7案先紅後綠；補驗hook、BEGIN及真正缺欄的v1–3。
+- 兩路真瀏覽器通過：編輯3→21→99、7→98→200、1→0→200→0→1→99，COUNT中途為[10,3]／[19,3]／[20,3]，收尾[700,3]；CSV選0→確認收尾[4,74]。兩路由中性catalog顯示同值、INPUT後回標題。
+- 兩路dump/load函式邊界讀回COUNT相同，不冒充完整存檔選單驗收；catalog失敗0、console警告／錯誤0、journal0、無worker。CSV與一人稱操作不耗RNG；性格／姓名抽選正常耗RNG。
+- 全新25歲人工局部前態，前三年齡欄25，替代MAXBASE41依原初始化可為-1；不冒充完整開局。tmp/s88/browser-summary.json及browser-editor-count／csv-count.png；服務與頁籤已關。
+- COUNT存檔／JSON v4觸發500局：default247上限／3回標題、tokusou250上限，catalog／fixture0；與S84只差default216新增衣裝option原生介面計數3，其餘模擬輸出欄位一致。tmp/s88/adult25-v1/audit.json為新完整基線。
+- 500局初次第五批seed216遇衣裝992顯示停止，根因為3004函式info寫入令option一併被catalog拒絕，與COUNT無關；窄原生option介面已修正。前四批200局不受影響沿用，重跑第五批並完成tokusou五批；初次17局另存，未混入最終500。
+- 追加衣裝真UI：820→830→998重繪後category2、turn0、COUNT[9,0]、RNG不變，四年齡欄均25、catalog／console0，browser-cloth-repair.png。原文標籤抽取，不開放info遊戲邏輯；沒有新增UNVERIFIED／DEVIATION。
+- 完整COUNT尚未結案；本次17處外的274搜尋迴圈行含不可達／catalog已承接者，分九群續查，不能當274個功能。來源與邊界見[共用COUNT](wiki/python/count.md)。S87成果沿既有驗收，未重跑。
 
 ## 剩餘工作概況
 
@@ -74,7 +77,7 @@
 - S59已裁決：最高總評讀寫113，魅了仍110；現行檔已有113保留，污染110不猜回填。W01已通過最終驗收，S60已完成W02共用入口及命名／一人稱／武器UI整合，接續同包其餘子選單。
 - W02–W04：個別角色經歷、套組10及序章觀看的具體範圍阻塞；完整出生／加入驗收未完成。W03範圍、其他12套組、序章略過及開局FIRST接線已完成。
 - W05範圍已完成；W06六處規則缺口、七模式生命週期及結包500已通過，W06範圍完成。
-- W07：S85明確確認、S86決策資訊／分類、S87共用文字／排版／重繪已完成；S88續COUNT，其餘舊WAIT與catalog失敗仍待完成。
+- W07：S85明確確認、S86決策資訊／分類、S87共用文字／排版／重繪已完成；S88共用COUNT／編輯模式邊界已完成；S89續衣裝／武器COUNT，其他原生群組、舊WAIT與catalog失敗仍待完成。
 - W08–W09：未決引擎／原作錯誤與安全網查證、既有偏離裁決、真正瀏覽器端到端驗收與使用說明。
 - 94行`raise NotImplementedError`包含未移植、原作錯誤、安全網、catalog失敗與抽象方法；不能當94個功能。
 - 醫療室隱藏AMPUTEE支線依既有裁決提示未完成並截斷；其他原作不完整項須按具體原文範圍保留。
@@ -83,7 +86,7 @@
 
 - 既有裁決維持：夜間全學校改隨機、兩處英字O作0、反擊302不寫入、防衛力負數D1–D4、PALAM／RESULT／RESULTS殘值、開局預設悪堕ち輸出丟棄、自訂一人稱重入修復。
 - 原作不完整不再續寫；原作bug不能自行修正，先查意圖與分支再交使用者裁決。
-- [deviations](wiki/bridge/deviations.md)23項未勾選與 [unresolved](wiki/bridge/unresolved.md)13項（原有11＋套組10索引1＋空中妨礙註解1；末王回復已結案）各有工作包歸屬；不因建立路線圖而視為批准。
+- [deviations](wiki/bridge/deviations.md)23項未勾選與 [unresolved](wiki/bridge/unresolved.md)12項（S88模式COUNT結案；套組10索引與空中妨礙註解保留）各有工作包歸屬；不因建立路線圖而視為批准。
 - JSON存檔是既定技術規格，舊Emuera.sav匯入不在本輪標的；不同亂數序列等未裁決差異仍保留記錄。
 - 7個無BOM角色CSV與1個ERB之+v10解碼、.NET字串／小數／色名語意等未決，見W08；程式UNVERIFIED不能被文件抹除。
 - source／reference永遠唯讀，private不變，main單線；後續依PLAN工作流程驗收後才換包。

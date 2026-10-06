@@ -46,9 +46,7 @@
   `Config/Config.cs:134` 指定 Encoding(932)。已以 .NET Framework 4 實測全 BMP 長度、數字分類及非 BMP 替代；
   `chara_make.toint` 與 `colorbar.isnumeric` 共用完整數值解析，不再因未移植而停止，原引擎轉換錯誤仍保留；重現步驟見 `python/numeric-input.md`。
 - [ ] `W06／W08` `SHOP.ERB@USERSHOP:288–294`的`CASE 169 && GAME_OPTION_CHECK_F(...)`式語意 — 舊S12記錄尚未結案；S43／S44已接通169／170／180（`game/session.py:283–297`與對應wiki），不再是只印未實作。需核對引擎CASE解析、原作實際入口與現行條件是否一致，必要時交使用者裁決；不能以目前測試通過代替查證。
-- [ ] `W07／W08` `GAME_MODE_CHECK_F`／`GAME_MODE_CHECK`（GAMEMODE.ERB:124–137）以全域 `COUNT` 當 FOR 變數（S12）。呼叫端若在 `FOR COUNT`
-  迴圈中呼叫 `CHECK_GAMEOVER_F()` 會被改寫；已移植的呼叫端（SHOP／SHOP_TURNEND／SET_PARTYMEMBER（CCOUNT）／PRISON（LOCAL:999））
-  都不是用 COUNT 迴圈，Python 未模型化 COUNT。之後移植新呼叫端時需確認。
+- [x] `GAME_MODE_CHECK_F`／`GAME_MODE_CHECK`以全域COUNT作FOR變數（S12→S88）：`ERB/ゲーム内_イベント発生/オープニング処理_カスタムGAMEMODE.ERB@GAME_MODE_CHECK:124–130`／`@GAME_MODE_CHECK_F:131–138`已按原文共用COUNT，命中RETURN保留索引，未命中留8；引擎CALL不還原COUNT（`reference/emuera-1824/Emuera/GameProc/Process.State.cs:438–483、502–523`）。原有SHOP／SHOP_TURNEND／SET_PARTYMEMBER（CCOUNT）／PRISON（LOCAL:999）不是COUNT迴圈，原查證沿用。此未決語意結案；其餘原生COUNT同步仍留原偏離，詳[共用COUNT](../python/count.md)。
 - [x] 悪堕ちキャラ戰（FLAG:110 > 0）中受精時 `NINSIN_HANTEI`:150–151 的 `TENTACLE_ACCESS "GETNAME"`（S13）— S19 確認：
   ENCOUNT_ENEMY:22 SAVESTR:13 = "BOSS"、ACTION.ERB:37–38 FLAG:10 = FLAG:11 = 0 → `TENTACLE_BOSS_0_GETNAME` 不存在，TRYCALLFORM 不發，
   RESULTS 為錯誤字串（`battle.core.tentacle_access`；deviations「原作行為」S19）。

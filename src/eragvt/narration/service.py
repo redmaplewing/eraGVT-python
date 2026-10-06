@@ -42,7 +42,7 @@ _EVENT_STACK = 64 * 1024 * 1024  # run_event_gen のスレッドのスタック�
 
 
 class _Tx:
-    """輸出・亂數・LOCAL・RESULT(S) 的快照＋GameState 書き込みのジャーナル区間（S29）。失敗時に `rollback`、成功時に `commit`。"""
+    """輸出、亂數、LOCAL、RESULT(S)、COUNT快照及GameState交易；失敗rollback，成功commit。"""
 
     def __init__(self, ctx, journal: Optional[StateJournal] = None) -> None:
         out = ctx.out
@@ -59,6 +59,7 @@ class _Tx:
         self.locals = dict(st.temp.locals)
         self.narr = dict(st.temp.narr)
         self.result = st.result.copy()
+        self.count = st.count.copy()
         self.results = st.results.copy()  # 共用 RESULTS（S22）
         self.ctx = ctx
         if journal is None:
@@ -85,6 +86,7 @@ class _Tx:
         st.temp.locals = self.locals
         st.temp.narr = self.narr
         st.result = self.result
+        st.count = self.count
         st.results = self.results
         if not self.closed:
             self.closed = True

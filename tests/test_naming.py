@@ -143,7 +143,7 @@ def test_all_keep_reverse_regenerate_static_and_save(ctx, monkeypatch):
     assert not loaded.temp.locals  # static #DIM 不存檔
     assert loaded.results[0] == ""
     obj = json.loads(raw)
-    assert obj["version"] == 3
+    assert obj["version"] == 4
     obj["version"] = 2
     del obj["state"]["da"]
     assert len(load_save(json.dumps(obj).encode())[0].da) == 0

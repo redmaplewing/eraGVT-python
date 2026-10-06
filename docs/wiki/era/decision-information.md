@@ -19,7 +19,9 @@
 - 同檔`@STATUS_PRINT_FEAT:1529–1713`依現況顯示禁用顏色與效果。`@STATUS_PRINT_EX:1156–1343`保留五格數值／消費預告；`@STATUS_PRINT_AIRGAGE:1347–1472`保留八槽與本次消費預告；`@STATUS_PRINT_CHARGE:1477–1525`每次SHOW_STATUS恰計算一次TCVARn206，沒有額外重算。
 - `ERB/武器と衣装/衣装関連/CLOTH_BATTLE.ERB@CLOTH_BATTLE_DISPHP:31–192`只讀已計算耐久與CLOTH表，負／零／損壞／低於防護門檻／低於中段／完整各依原值及顏色。零外衣分支仍讀CFLAG40，即使已變身亦保留此原文判斷。
 - 耐久下方經既有catalog執行`ERB/武器と衣装/衣装関連/CLOTH_衣装カスタマイズ共通処理.ERB@CLOTH_CUSTOMIZE_OPTION_DRAW:161–182`，由EQUIP九位拆出CUSTOM，呼叫原DRAW函式。這些是玩家已選改造／衣裝資訊，不能以純外觀為由省略；沒有新增遊戲邏輯解譯能力。
-- 61個DRAW根函式／個別函式皆可由既有catalog執行，原DRAW本文無RAND。根函式原TRYCCALL找不到特定衣裝DRAW時印空行；真正catalog執行失敗則明確停止。只有既有NullNarration測試代理允許無標籤空行，不能用Null驗收正式畫面。
+- 61個DRAW根函式／個別函式通過既有catalog靜態檢查，原DRAW本文無RAND；這不涵蓋全部動態呼叫。根函式原TRYCCALL找不到特定衣裝DRAW時印空行；真正catalog執行失敗則明確停止。只有既有NullNarration測試代理允許無標籤空行，不能用Null驗收正式畫面。
+- S88驗收補事件衣裝992：`ERB/武器と衣装/衣装関連/CLOTHDATA※イベント専用装備.ERB@CLOTH_CUSTOMIZE_OPTION_DRAW_992:115–120`以FLAG45動態查詢；3004的整函式先因info分支CSTR寫入被靜態檢查拒絕。原生option轉接只依parts／CFLAG270選取`ERB/ゲーム内_イベント発生/イベントから派生する特殊戦闘/3004 プール奇襲.ERB@BATTLE_EVENT_CLOTH_STATUS_3004:8–79`的4個RESULTS原文片段；CASE4／5／ELSE與外衣分支回空字串。info仍由既有原生衣裝狀態處理，沒有放寬catalog遊戲邏輯寫入。
+- option清RESULTS0，尾格不變；落尾只清RESULT0，依`reference/emuera-1824/Emuera/GameProc/Process.ScriptProc.cs:61–67`。不改CSTR、SAVESTR、TARGET，不抽RNG、不等待INPUT；外層DRAW原REPEAT9仍留下COUNT0=9。失敗保留原交易回復。新增12案、相關定向233通過；seed216修正後上限／catalog0，與S84只多原生adapter計數3，其餘輸出欄位相同。追加UI前態`tmp/s88/browser_cloth_repair.py`，最終驗收由S88 session收口。
 - BAR空段使用預設點：`reference/emuera-1824/Emuera/GameData/Expression/ExpressionMediator.cs:121–144`、`Config/ConfigData.cs:130`；原`CSV/_Replace.csv`只有空白BAR文字1且不生效，沒有BAR文字2覆寫，見[未決查證](../bridge/unresolved.md)。COLOR_BAR除零仍依原作報錯，不為不完整測試前態自訂替代值。
 - `ERB/ゲーム内_戦闘処理/BATTLE_SHOW_STATUS.ERB@SHOW_STATUS:18–132`狀態標記、177–217幽閉／洗腦名單、232–250剩餘時間、256–331敵資源及解析能力均接回。名單原文只比CFLAG21與FLAG11／FLAG111，沒有CFLAG20敵類篩選，沒有自行加條件。
 - `ERB/汎用関数/コモン関数.ERB@COLORSENTENCE_ENEMYBAR:146–190`：解析25可見上限、50可見當前值，除錯與角色敵直接顯示；數字被遮蔽時條長仍照真實比例。原HP標籤顏色也使用最大值／長度，不另修正。

@@ -168,6 +168,16 @@ def selfcall_gen(ctx: Ctx, who: int) -> Generator[None | TextInputRequest, int |
     # PRN_VAR/CHR_VAR 不在入口清除，手動讀音取消及無效值跳轉會使用殘值。
     mem=st.temp.locals
     key="FIRSTSETTING_CHARA_SELFCALL:"
+    # :1211–1215初始化CALL_LIST的兩層FOR，兩個COUNT元素各自留終值。
+    # SELF_CALL_LIST為固定查表且不改COUNT；不能把COUNT:1當作函式區域暫存。
+    call_list={}
+    for i in range(21):
+        st.count[0]=i
+        for j in range(3):
+            st.count[1]=j
+            call_list[i,j]=self_call_list(i,j)
+        st.count[1]=3
+    st.count[0]=21
     pron=div(c.cflag[8],5)%20
     style=c.cflag[8]%5
     # DEVIATION: S48 修復自訂重入；保留原碼而非重析顯示文字（CHAR_LIB 非完全可逆）。
@@ -182,8 +192,13 @@ def selfcall_gen(ctx: Ctx, who: int) -> Generator[None | TextInputRequest, int |
             _say(ctx,1223)
             _say(ctx,1224,**{"{ARG:0}":who,"%CALLNAME:ARG%":c.callname})
             _say(ctx,1225)
-            for i in range(9):
-                label=f"[{i}] {self_call_list(i,0)}（{self_call_list(i,1)}）　"
+            for i in range(21):
+                st.count[0]=i
+                if not call_list[i,0]:
+                    # BREAK同樣加步進：reference/emuera-1824/Emuera/GameProc/Function/Instraction.Child.cs:2067–2073。
+                    st.count[0]+=1
+                    break
+                label=f"[{i}] {call_list[i,0]}（{call_list[i,1]}）　"
                 if pron==i:
                     out.set_color((120,255,0))
                     out.print_plain(label)
@@ -192,10 +207,13 @@ def selfcall_gen(ctx: Ctx, who: int) -> Generator[None | TextInputRequest, int |
                     out.print(label)
                 if i%5==4:
                     out.printl()
+            else:
+                st.count[0]=21
             out.printl()
             out.printl()
             if 0<=pron<=20:
                 for i in range(3):
+                    st.count[0]=i
                     label=f"[{i+30}] {self_call_list(pron,i)}　"
                     if style==i:
                         out.set_color((120,255,0))
@@ -203,6 +221,7 @@ def selfcall_gen(ctx: Ctx, who: int) -> Generator[None | TextInputRequest, int |
                         out.reset_color()
                     else:
                         out.print(label)
+                st.count[0]=3
             out.printl()
             out.printl()
             for choice,line in ((21,1258),(22,1262)):

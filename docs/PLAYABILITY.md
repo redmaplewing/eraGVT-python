@@ -19,7 +19,7 @@ Python路徑以下相對`src/eragvt/`；測試相對`tests/`。原作路徑相�
 | 末王／終局 | Ｋ触手、天使の樹、SCORE、結局1–6函式及引繼；`test_lastboss.py`／`test_angel_tree.py`／`test_succession.py` | 不等於六結局全能自然到達；原作ENDING_6前置停用。S81已驗末王回復與強化ON/OFF；S82兩末王各勝／敗／撤退／超時八路通過，勝利按原作交接W06，非勝利回SHOP；S84補有限模式通關存讀／六模式新周與ENDLESS終局對照；[模式生命週期](wiki/era/mode-lifecycle.md)，主驗收依STATUS | W05、W06、W08 |
 | 身體／生命週期 | 身體／裏プロフィール、妊娠出産／子供、幽閉／救出、寄生／悪堕ち、夜間與強制事件；對應測試 | S70三種TS／首次事件、S71妊娠TS與共用結算／幽閉／catalog等待、S72女體受容五分支及夜間／戰後入口已接通；S74特殊裝備、S75外衣199與原生妊娠等待已接，S76初始無內衣判定已接；S77兩條25歲編輯TS→幽閉／既有救出→SHOP／新session存讀鏈通過，見[證據](sessions/S77-adult-lifecycle-evidence.md)。W03範圍完成，不含出生／自然遭遇或B05整列 | W02、W03、W05 |
 | 設定 | config 1–3、各開關／篩選、GLOBAL；`test_config.py` | S86分類指令已接通；其餘開關逐項ON/OFF與相依組合驗收 | W03、W05–W08 |
-| 口上／顯示 | catalog 13,384函式可執行，另有雜魚194／市民10；INPUT／INPUTS已有；`test_kojo_input.py`／`test_narration*.py` | S79已接開局MESSAGE_FIRST共用分派／等待；S85已修成就／紀錄／評分四處明確確認及確認頁舊按鈕；S86決策資訊／分類及S87 Windows GDI字型／欄寬、論理行重繪、暫時行、實用HTML已接，見[共用文字](wiki/python/text-rendering.md)；其餘COUNT、同步失敗回復、圖樣、WAIT、個別精簡排版及平台／字形差異仍保留；可執行率不保證呼叫成功 | W04、W07 |
+| 口上／顯示 | catalog 13,384函式可執行，另有雜魚194／市民10；INPUT／INPUTS已有；`test_kojo_input.py`／`test_narration*.py` | S79已接開局MESSAGE_FIRST共用分派／等待；S85已修成就／紀錄／評分四處明確確認及確認頁舊按鈕；S86決策資訊／分類及S87 Windows GDI字型／欄寬、論理行重繪、暫時行、實用HTML已接，見[共用文字](wiki/python/text-rendering.md)；S88已接共用COUNT生命週期與17處編輯／模式邊界，其他COUNT群組見[共用COUNT](wiki/python/count.md)；同步失敗回復、圖樣、WAIT、個別精簡排版及平台／字形差異仍保留；可執行率不保證呼叫成功 | W04、W07 |
 | 非NORMAL與除錯 | S79新局與引繼共用MODE_SELECT；S83接回ENDLESS擊破／期限、能力降低與INSTANT真等待；[依據](wiki/era/mode-rules.md) | S84七模式日期／權限／終局與周回定向已完成，主驗收依STATUS；除錯輸入／顯示未完成；不能說目前不可到達而排除 | W06、W08 |
 
 ## 原作未完成與原作錯誤：只保留有證據的範圍

@@ -53,7 +53,7 @@ class TempVars:
     # 初期値は宣言の値（GameData/Variable/VariableToken.cs@StaticInt1DVariableToken.SetDefault:1861–1865）。
     flashnews_loopnum: int = 0
     flashnews_viral: int = -1
-    # 口上／地の文 catalog 執行器（eragvt.narration）用：LOCALS・ARG・ARGS・函式內 #DIM（靜態）、RESULT／RESULTS／COUNT、
+    # 口上／地の文 catalog 執行器（eragvt.narration）用：LOCALS・ARG・ARGS・函式內 #DIM（靜態）、
     # 口上專用的非 SAVEDATA #DIM（真面目_フラグ_シチュ 等）。鍵 = (變數, 索引)。不存檔（與 Emuera 的非 SAVEDATA 相同）。
     narr: dict = field(default_factory=dict)
 
@@ -91,6 +91,10 @@ class GameState:
     # 新遊戲 ResetData 清零（VariableData.cs@SetDefaultValue:538–）；BEGIN TRAIN 不清（VariableEvaluator.cs@UpdateInBeginTrain:1422–）。
     # 跨函式共用：原作有讀「前一次 RESULT」的地方（EVENT_PALAM_HOSEI 的悪堕ち分岐等）。寫入來源一覽：docs/wiki/python/result.md。
     result: IntArray = field(default_factory=IntArray)
+    # 共用COUNT：reference/emuera-1824/Emuera/GameData/Variable/VariableCode.cs:45、94
+    # 0x0B < 0x3C，VariableData.cs:663–688存讀；ConstantData.cs:147–148預設1000格。
+    # ResetData清零；BEGIN TRAIN不清（VariableEvaluator.cs:1132–1139、1422–1460）。
+    count: IntArray = field(default_factory=IntArray)
     # DA：reference/emuera-1824/Emuera/GameData/Variable/VariableCode.cs:182，SAVE_EXTENDED。
     da: IntArray = field(default_factory=IntArray)
     # 內建 RESULTS（字串 1 維、大小 100：VariableCode.cs:110 0x02、ConstantData.cs@setDefaultArrayLength:154–155；
@@ -199,6 +203,7 @@ class GameState:
             "shield": self.shield.to_json(),
             "mob_flag": self.mob_flag.to_json(),
             "result": self.result.to_json(),
+            "count": self.count.to_json(),
             "da": self.da.to_json(),
             "charas": [c.to_json() for c in self.charas],
         }
@@ -218,6 +223,7 @@ class GameState:
             shield=IntArray.from_json(obj["shield"]),
             mob_flag=IntArray.from_json(obj["mob_flag"]),
             result=IntArray.from_json(obj["result"]),
+            count=IntArray.from_json(obj["count"]),
             da=IntArray.from_json(obj["da"]),
             charas=[Character.from_json(c) for c in obj["charas"]],
             rng=rng or GameRng(),

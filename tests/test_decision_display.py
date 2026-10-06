@@ -151,6 +151,76 @@ def test_clothing_catalog_real_options(ctx):
     assert ctx.state.result[1]==74 and ctx.state.results[1]=="尾格"
 
 
+@pytest.mark.parametrize("variant,expected", [
+    (0, "[過剰な露出][隠せない果実]"),
+    (1, "[過剰な露出][透けかけた布地]"),
+    (2, "[過剰な露出][ずり落ちそうな布切れ]"),
+    (3, "[過剰な露出][丸見えの尻肉]"),
+    (4, ""), (5, ""), (99, ""),
+])
+def test_event_clothing_catalog_options(ctx, variant, expected):
+    # 3004 プール奇襲.ERB@BATTLE_EVENT_CLOTH_STATUS_3004:8–79：
+    # option 只改 RESULTS:0，CASE4/5/ELSE 的代入均被註解；人工角色25歲。
+    # CLOTHDATA※イベント専用装備.ERB@CLOTH_CUSTOMIZE_OPTION_DRAW_992:115–120。
+    # 流程落尾只清 RESULT:0：reference/emuera-1824/Emuera/GameProc/Process.ScriptProc.cs:61–67。
+    from eragvt.narration.service import CatalogNarrationService
+    from eragvt.game.battle.status_display import cloth_durability
+    ctx.narration = CatalogNarrationService(default_csv_dir().parent / "ERB", ctx.data)
+    st, c = ctx.state, ctx.state.target_chara
+    st.flag[45] = 3004
+    c.cflag[42], c.cflag[270] = 992, variant
+    c.cstr[82], st.savestr[0] = "中性衣裝名稱", "原有衣裝資料"
+    st.count[0], st.count[1] = 71, 82
+    before_rng = st.rng.snapshot()
+    cloth_durability(ctx)
+    assert not ctx.narration.failures
+    assert expected in text(ctx) if expected else "[過剰な露出]" not in text(ctx)
+    assert st.results[0] == expected and st.results[1] == "尾格"
+    assert st.result[0] == 0 and st.result[1] == 74
+    assert c.cstr[82] == "中性衣裝名稱" and st.savestr[0] == "原有衣裝資料"
+    assert (st.count[0], st.count[1]) == (9, 82)
+    assert st.rng.snapshot() == before_rng and st.target == 1
+
+
+@pytest.mark.parametrize("mode,parts,ok", [
+    ("option", "OUTER", True), ("option", "OUTER_TRANS", True),
+    ("option", "OTHER", True), ("info", "INNER", False),
+])
+def test_event_clothing_option_boundary(ctx, mode, parts, ok):
+    # 3004 プール奇襲.ERB@BATTLE_EVENT_CLOTH_STATUS_3004:8–27：外衣兩分支全為註解。
+    # info 未開放 catalog；確認失敗保持現有交易回復契約。
+    from eragvt.narration.service import CatalogNarrationService
+    ctx.narration = CatalogNarrationService(default_csv_dir().parent / "ERB", ctx.data)
+    st = ctx.state
+    st.result[0], st.results[0], st.count[0] = 31, "入口殘值", 52
+    assert ctx.narration.run_function(ctx, "BATTLE_EVENT_CLOTH_STATUS_3004", [mode, parts]) is ok
+    assert (st.result[0], st.results[0]) == ((0, "") if ok else (31, "入口殘值"))
+    assert st.result[1] == 74 and st.results[1] == "尾格" and st.count[0] == 52
+    assert st.rng._values == [] and not ctx.out.lines
+
+
+def test_event_clothing_option_failure_rolls_back(ctx):
+    # 純顯示 adapter 後失敗必須回復；片段 expected 由上述原文 CASE0 推導。
+    from eragvt.narration.service import CatalogNarrationService
+    from eragvt.narration.extract import parse_function, read_logical_lines
+    svc = ctx.narration = CatalogNarrationService(default_csv_dir().parent / "ERB", ctx.data)
+    source = '''@NEUTRAL_OPTION_FAILURE
+CALL BATTLE_EVENT_CLOTH_STATUS_3004("option", "INNER")
+REPEAT 3
+REND
+PRINTFORML %RESULTS%
+LOCAL = 1 / 0
+'''
+    svc.catalog._parsed["NEUTRAL_OPTION_FAILURE"] = parse_function(
+        svc.catalog.ctx, "口上/neutral.ERB", read_logical_lines(source.encode("utf-8")))
+    st = ctx.state
+    st.result[0], st.results[0], st.count[0] = 31, "入口殘值", 52
+    assert not svc.run_function(ctx, "NEUTRAL_OPTION_FAILURE")
+    assert (st.result[0], st.results[0], st.count[0]) == (31, "入口殘值", 52)
+    assert st.result[1] == 74 and st.results[1] == "尾格"
+    assert st.rng._values == [] and not ctx.out.lines
+
+
 @pytest.mark.parametrize("flags,expected",[(32,1),(96,1),(416,0)])
 def test_palam_side_effect_and_charge_once(ctx,monkeypatch,flags,expected):
     # CHARA_STATUS.ERB@SHOW_TRAIN_PALAM_STATUS:1715–1750；BATTLE_SHOW_STATUS:357–362。
