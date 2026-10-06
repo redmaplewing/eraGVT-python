@@ -25,6 +25,10 @@ from .symbols import UserVar, load_erh
 # 只抽取已手翻函式中的顯示段落。遊戲觸發條件與狀態更新仍由遊戲模組負責。
 # 原文：ゲーム内_戦闘処理/SUBEVENT_BATTLEE.ERB@HATUJOU_TO_HAIRAN:528–582。
 _TEXT_FRAGMENTS = {
+    # SUBEVENT_BATTLEE.ERB：純顯示；條件／狀態／KOJO在tentacle_suit.py。
+    **{f"MESSAGE_TENTACLE_SUIT_{first}": ("SUBEVENT_BATTLE_ACTTENTACLESUIT", first, last)
+       for first, last in ((338,339), (341,341), (342,342), (395,398),
+                           (402,406), (426,429), (433,436))},
     "MESSAGE_HATUJOU_TO_HAIRAN": ("HATUJOU_TO_HAIRAN", 528, 582),
     # BATTLE_COM_AFTER.ERB@SOURCE_CHECK；只有文字，條件／狀態與 CALL 仍在 citizen.py。
     "MESSAGE_CITIZEN_DEFEAT": ("SOURCE_CHECK", 853, 859),

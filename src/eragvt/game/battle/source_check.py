@@ -113,9 +113,9 @@ def source_check(ctx: Ctx) -> Generator[None, int, None]:
     # :696 SUBEVENT_BATTLE_ACTTENTACLECLOTH（CFLAG:42 == 400 のときのみ）
     if c.cflag[42] == 400:
         _acttentaclecloth(ctx)
-    # :699 SUBEVENT_BATTLE_ACTTENTACLESUIT（触手服 199 のときのみ）
-    if (c.cflag[1] == 0 and c.cflag[40] == 199) or (c.cflag[1] > 0 and c.cflag[41] == 199):
-        raise NotImplementedError("触手服の処理（SUBEVENT_BATTLE_ACTTENTACLESUIT）は未移植")
+    # :699 原作無條件CALL；未穿戴時也由函式RETURN 0。
+    from .tentacle_suit import act_tentacle_suit
+    yield from act_tentacle_suit(ctx)
     if v[0] != 0:  # :702–703
         st.tflag[20] = -999
     refresh_cloth_data(ctx)
@@ -528,8 +528,9 @@ def _motion_palam(ctx: Ctx) -> None:
         l1 |= 2
     if v[24] == -1 or (cl_no_inner > 0 and l1 > 0):
         l1 |= 1
-    if c.cflag[40 if c.cflag[1] == 0 else 41] == 199:
-        raise NotImplementedError("触手服の運動快感判定は未移植")
+    from .cloth import figure_split
+    if c.cflag[40 if c.cflag[1] == 0 else 41] == 199 and figure_split(c.equip[99 if c.cflag[1] == 0 else 199], 1) == 0:
+        l1 = 0
     # --- 快C ---
     ac = abl(ctx, c, "Ｃ感覚")
     if ac <= 2:

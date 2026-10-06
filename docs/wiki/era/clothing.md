@@ -116,6 +116,26 @@ Python仍以原生COM0執行遊戲規則；`commands._msg_nanori_byousha`接既�
 `tests/test_special_equipment.py`158案使用全新人工25歲、兩形態25歲，覆蓋門檻、負值／超限、位元、RNG次序、疲勞與勝利順序、原catalog節點／字型、三路真實COM201→COM0→SOURCE_CHECK→下一戰鬥輸入及Web邊界。
 `tmp/s74/browser_fixture.py --equipment 506|507|509`提供臨時存檔、原數字按鈕與唯讀狀態端點。無效998不改狀態；可見201後三路變身1／EX12／氣力700，506敵HP2950、507體力720、509的FLAG17=24與TFLAG3=0。本次顯示用原catalog，其餘Null且遮蔽文字；只稱人工B04回合邊界，主代理獨立全pytest、真瀏覽器及500後由STATUS收口。
 
+## 外衣199運動／回合（S75／W03）
+
+原生入口：`ERB/ゲーム内_戦闘処理/BATTLE_COM_AFTER.ERB@SOURCE_CHECK:448–454、696–702`。先完成運動與內衣400，再**無條件**呼叫外衣199；未穿戴時也會RETURN0。一般形態讀CFLAG40／EQUIP99，變身形態讀CFLAG41／EQUIP199；運動只有第一位數為0才清LOCAL1的衣裝遮蔽位元，不改耐久。兩形態四年齡欄25的測試不改產品年齡規則。
+
+`ERB/ゲーム内_戦闘処理/SUBEVENT_BATTLEE.ERB@SUBEVENT_BATTLE_ACTTENTACLESUIT:309–507`由`battle/tentacle_suit.py`手翻：
+
+- 325–342：耐性>0、第四位≠4，且第四位≠3或RAND100≥5，才消耗`7+RAND5+第二位*7`；第三位>0再+2，第四位1／2／3乘0.9／0.8／0.5，最後耐性封0。負數／超限不自行修正。
+- 346–355：其餘走既有`SEX_COMEX(0,0,15)`，12項先乘`100+第二位*20`整除100，第四位1／2再乘1.1／1.2。第三位及第四位3不加此倍率。
+- 358–460：先地文／口上再判距離0，保留四個指定姿勢，其他改通常；否則男性LOCAL1歸0；其他依TCVARn41階段處理。階段1潤滑門檻500、特徵與旗標變動；階段2／3／≥4各自倍率、污漬／經驗與`NINSIN_HANTEI`參數完整保留。距離0結尾階段=-1，舊-1→1，其餘+1。
+- 462–506：清NOWEX後逐索引0–12補正。保留原作LOCAL索引直接作COMMON_PALAM／特徵補正編號，沒有改映射；只有中毒判定使用`index+10−4`。先姿勢、耐性、特徵、性格、中毒、亂數；原正值補正後封最低1，索引≥4封999999，零／負數不套補正。
+- 原呼叫者沒有改TARGET。未穿戴RETURN0與函式落尾只寫RESULT0；事件的SEX_COMEX會先寫RESULT0–11，不能把第8格一律當保留。純顯示片段額外CALL不外洩RESULT，借用LOCAL／LOCALS後還原；衣名依317–323在前段取快照，後續口上不重取。
+
+地文`ERB/地の文/MESSAGE_SUBEVENT.ERB@MESSAGE_SUBEVENT_BATTLE_ACTTENTACLESUIT:65–170`沿`run_event_gen`，四段內嵌敘事只抽原PRINT／字型節點；KOJO及妊娠走原生generator。PRINTW沿既有顯示行為，一般WAIT議題仍屬W07。全ERB精確名稱搜尋10筆（含地文／口上標籤），產品入口與直接相依均已核對；不摘錄敘事。
+
+引擎短路：`reference/emuera-1824/Emuera/GameData/Expression/OperatorMethod.cs:524–555`；TIMES截斷：`reference/emuera-1824/Emuera/GameProc/Function/Instraction.Child.cs:893–916`；自然落尾RESULT0：`reference/emuera-1824/Emuera/GameProc/Process.ScriptProc.cs:61–67`。無新的UNVERIFIED／DEVIATION。
+
+新增142案，定向連同S71／S73／S74共`423 passed, 1 warning in 2.71s`。先紅39案（36個缺實作／3個運動前態漏指定動作，依原479–487修正前態），首輪綠39，再擴完整分支。原生妊娠等待驗四題與無效輸入：先前SEX_COMEX不重跑，後段階段／NOWEX／經驗／RNG待選擇完成才結算。兩路真`run_train`及Web指令998→201→下一選單；catalog測節點／字型／衣名快照。原算式精確值由table測試驗證，整合事件分支只驗後續PALAM_UP扣除後的正值區間，不以Python實測反推expected。
+
+`tmp/s75/browser_fixture.py --mode cost|event`提供臨時存檔、原按鈕、唯讀數值端點與遮蔽輸出。cost預期體氣700、耐性93；event預期stage1／事件經驗1及後續體氣耐性下降；共同敵HP3000、變身1、TARGET1、遠尾格RESULT99=345、先制餘額減1。僅人工回合邊界，主代理獨立全pytest／真瀏覽器／500由STATUS收口，不宣稱自然遭遇或B04／B05整列完成。
+
 ## 衣裝購買（S40）
 
 入口 `ERB/インターミッション画面/SHOP.ERB@USERSHOP:267–269`：非遊戲結束模式且FLAG:63=0。
