@@ -11,7 +11,7 @@ Python路徑以下相對`src/eragvt/`；測試相對`tests/`。原作路徑相�
 |---|---|---|---|
 | 啟動／存讀 | `__main__.py`、`web/app.py`、`game/session.py:381–492`；`test_main.py`／`test_web.py`／`test_state_game.py` | 乾淨安裝、新程序讀回、損毀／版本限制、瀏覽器實測矩陣尚未完成 | W08、W09 |
 | 開局／模式 | 共通角色製作、HEROINE_PRESET 0–3、關係、說明；`opening.py`／`creation_menu.py`；`test_creation_menu.py`／`test_tutorial.py` | 新局二擇捷徑固定NORMAL、完整模式與序章；`opening.py:83–98` | W04、W06 |
-| 角色製作 | 主題命名、生成設定、姓名／變身命名、一人稱、武器、關係；各同名測試 | S60共用入口及12項子選單已接開局／招募／醫療／引繼；S61一般身體／外貌、S62性格／精神素質、S63種族／feat／變身能力／基礎點、S64共用CSV模板、S65性別、S66初始狀態／人數及GLOBAL權限已接通。其餘身體與經歷仍缺；子供仍獨立，見[角色編輯](wiki/era/character-editor.md) | W02 |
+| 角色製作 | 主題命名、生成設定、姓名／變身命名、一人稱、武器、關係；各同名測試 | S60共用入口及12項子選單已接開局／招募／醫療／引繼；S61一般身體／外貌、S62性格／精神素質、S63種族／feat／變身能力／基礎點、S64共用CSV模板、S65性別、S66初始狀態／人數及GLOBAL權限、S67身體其餘操作已接通。經歷仍缺；子供仍獨立，見[角色編輯](wiki/era/character-editor.md) | W02 |
 | 套組 | 0_特捜戦隊；`opening.py:334`、`test_opening.py` | 其餘1–11與14（12套）、6／7／8動態說明；不能由缺號推測待實作12／13 | W04 |
 | SHOP／日常 | 8類行動、編成／排程、衣裝購買／穿戴、強化／醫療／設施／招募引退；`session.py:214–302`、各模組／測試 | 決策資訊、各子選單預設代按與特殊條件（SHOP[800]已於S57接通） | W01–W03、W07 |
 | 成就／紀錄 | S57共用取得／保存、GET_STATE判定、catalog／原生呼叫者、SHOP[800]六頁；S58的20欄紀錄、模式通關數、ENDLESS紀錄與六觸發；[證據](wiki/era/achievements.md) | S59已按裁決修正新全域版本／最高總評113；未移植解鎖互動端屬W02 | W01 |
@@ -58,10 +58,10 @@ Python路徑以下相對`src/eragvt/`；測試相對`tests/`。原作路徑相�
 - `battle/enemy.py:660–661`末王回復固定除2，原文`ERB/ゲーム内_戦闘処理/LASTBOSS_POWERUP.ERB@LASTBOSS_REST:16–22`強化時回8；W05／W08核對呼叫可達性與測試，詳見unresolved新增項。這是無raise的待查證差異。
 - 過時說明例：`commands.py:1458`仍提COM47，但`restraint.py`已有COM47分派；`core.py:566`仍稱雜魚未移植。W05只核對遺留guard可達性；已完成系統不能由舊註解重新算成缺口。
 
-## 停止語句的完整歸屬（S55基線118，S66現為118）
+## 停止語句的完整歸屬（S55基線118，S67現為117）
 
 M＝已知移植／互動缺口；O＝已證實原作未完成且已有處置；G＝通用抽象介面；U＝可達性、原作錯誤或資料／catalog失敗尚需逐項核對。U不是豁免。
-一行主歸屬一包；共享依賴看PLAN。S60移除兩處個別入口停止、新增一處細分子選單分派與兩處姓名原作錯誤安全網；S61新增一般身體頁剩餘分支一處停止；S66移除初始狀態與人數兩處停止。合計W02=2、W03=11、W04=3、W05=22、W06=6、W07=20、W08=54，總數118；W01原先沒有raise的成就／紀錄缺口已接通，最終驗收見STATUS。
+一行主歸屬一包；共享依賴看PLAN。S60移除兩處個別入口停止、新增一處細分子選單分派與兩處姓名原作錯誤安全網；S61新增一般身體頁剩餘分支一處停止；S66移除初始狀態與人數兩處停止；S67移除SIZE_SETTING選項停止。合計W02=1、W03=11、W04=3、W05=22、W06=6、W07=20、W08=54，總數117；W01原先沒有raise的成就／紀錄缺口已接通，最終驗收見STATUS。
 
 | Python檔案@函式 | 行號 | 工作包／分類 | 內容 |
 |---|---|---|---|
@@ -72,7 +72,6 @@ M＝已知移植／互動缺口；O＝已證實原作未完成且已有處置；
 | `game/config.py@update` | 189 | W08／U | 非法值／原作錯誤或版本限制；逐項核對 |
 | `game/creation_menu.py@preset_menu` | 221,232 | W04／M | 動態說明／其他套組 |
 | `game/character_editor.py@character_editor` | 經歷停止 | W02／M | [8]經歷維持未移植；S65已接[0]性別，具體範圍阻塞一次記於[角色編輯](wiki/era/character-editor.md)；非原作未完成 |
-| `game/body_editor.py@size_setting` | 未移植選項分派 | W02／M | SIZE_SETTING的2／12、3／13、46、70–76、80–86；一般身體／外貌分支已接通，整個UI尚未完成 |
 | `game/character_name.py@character_name、random_character_name` | CHARANUM／空姓守衛 | W08／U | 姓名原作越界及無窮重抽；[具體依據](wiki/era/character-editor.md) |
 | `game/drug_preparation.py@drug_preparation_gen` | 320 | W08／O | AMPUTEE已裁決保留截斷 |
 | `game/export_csv.py@csvbase` | 41 | W08／U | 非法值／原作錯誤或版本限制；逐項核對 |

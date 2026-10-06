@@ -13,6 +13,13 @@ def main():
         line=lines[n-1].strip()
         value=re.sub(r'^(?:PRINT(?:PLAIN|FORM)?L?|LOCALS:1\s*=)\s*','',line)
         out.append(f'    {n}: {value!r},')
+    out.append('}')
+    out.append('LABELS = {')
+    for n in (273,275,278,483,487,489,496,517,521,531,535,537,548,553,555,557,
+              574,578,580,587,615,630,634,636,645,660,664,666,675,690,695,697,
+              709,713,715,717,730,735,737,739,741,743,811,815,817,819):
+        value=re.sub(r'^(?:PRINT(?:PLAIN|FORM)?L?|LOCALS\s*=)\s*','',lines[n-1].strip())
+        out.append(f'    {n}: {value!r},')
     out.append('}\n')
     target=ROOT/'src/eragvt/game/body_editor_text.py'
     target.write_text('\n'.join(out),encoding='utf-8',newline='\n')

@@ -114,12 +114,6 @@ def test_palette_confirm_cancel_and_static_axis(ctx):
     assert [ctx.state.result[i] for i in range(4)]==[-1]*4
 
 
-def test_unported_actions_remain_explicit_stops(ctx):
-    gen=size_setting(ctx,1);next(gen)
-    with pytest.raises(NotImplementedError,match='SIZE_SETTING'):
-        gen.send(70)
-
-
 def test_display_result_tail_from_top_under(ctx):
     """@SIZE_SETTING:341–342、378–379；顯示覆寫RESULT:1，非GENERATE的成長曲線。"""
     c=ctx.state.charas[1];c.cstr[14]='不同'

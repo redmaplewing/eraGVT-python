@@ -1,15 +1,17 @@
 """一般身體／外貌編輯：CHARA_SIZE_UI.ERB@SIZE_SETTING:2–2142。
 
-手寫狀態機，未移植分支明確停止；不是ERB執行器。整頁只有99確認，
+手寫原生狀態機。整頁只有99確認，
 子頁取消保留已經寫入的設定（:1712–1715）。TARGET在正常返回恢復。
 """
 from .body import generate_char_size, generate_bodyline, top_under, cup_size
-from .body_editor_text import TEXT
-from .chara_common import talent, charatalent, is_female, seikaku_check
+from .body_editor_text import TEXT, LABELS
+from .chara_common import talent, charatalent, is_female, is_male, seikaku_check
 from .firstsetting import convert_age, convert_colorcstr, _talent_change
 from .input_request import input_number, inputs
 from .era import div, mod, limit, cp932_len
 from .colorbar import setcolor, setcolor_by_str
+from .opening import game_option
+from ..state.constants import GameOption
 
 SLOTS=(43,44,45,46,47,48)
 RANDOM_FIELDS=('身長成長率乱数','身長補正乱数','体重乱数','胴囲乱数','腰囲乱数','アンダー乱数','胸の張り乱数','胸成長率乱数','胸サイズ補正乱数')
@@ -17,6 +19,173 @@ MODULI=(11,31,59,15,16,13,23,7,53)
 COLORS=('255//8//8','8//255//125','8//125//255','255//255//8','255//8//255','255//125//8','255//8//125','205//205//205','88//8//8','40//24//24')
 SKIN=('255//236//220','255//200//180','183//86//17','40//24//24')
 MATCH_COLORS={649:(30,31),699:(31,30),748:(32,33),749:(32,34),798:(33,32),799:(33,35),848:(34,35),849:(34,32),898:(35,34),899:(35,33)}
+
+
+def _cycle_sex(ctx, c, form):
+    """ERB/SYSTEM/キャラメイキング関連/CHARA_SIZE_UI.ERB@SIZE_SETTING:1533–1606。"""
+    data = ctx.data
+    t = lambda name: talent(data, c, name)
+    ct = lambda name: charatalent(data, c, 1, name)
+    def put(name, value):
+        c.talent[data.index_of('TALENT', name)] = value
+
+    for slot in range(190, 194):
+        if c.talent[slot]:
+            c.talent[slot] = 0
+            c.juel[data.index_of('JUEL', '修練P')] += 50
+    if t('避妊結界'):
+        put('避妊結界', 0)
+        c.juel[data.index_of('JUEL', '修練P')] += 50
+    if form:
+        if ((is_male(data, c) and t('変身時ＴＳ') == 0)
+                or (is_female(data, c) and t('変身時ＴＳ') == 1)) and t('変身時男の娘') == 0:
+            put('変身時男の娘', 1)
+        else:
+            if ct('オトコ'):
+                put('変身時外見', t('外見'))
+                put('変身時男の娘', 1)
+            put('変身時ＴＳ', 0 if t('変身時ＴＳ') > 0 else 1)
+    elif is_male(data, c) and t('男の娘') == 0:
+        put('男の娘', 1)
+        put('変身時男の娘', 1)
+    elif is_male(data, c):
+        # :1564–1577 各SIF依序讀更新後的值，不提前快照或全面清零。
+        for name, field, value in (('絶壁', '貧乳', 2), ('貧乳', '貧乳', 1),
+                                    ('奇乳', '巨乳', 5), ('魔乳', '巨乳', 4),
+                                    ('超乳', '巨乳', 3), ('爆乳', '巨乳', 2), ('巨乳', '巨乳', 1)):
+            if ct(name): put(field, value)
+        if not ct('オトコ'): put('外見', t('変身時外見'))
+        for name in ('オトコ', '男の娘', '変身時男の娘'): put(name, 0)
+    else:
+        put('オトコ', 1)
+        if not ct('オトコ'):
+            put('変身時胸サイズ変動', t('巨乳') - t('貧乳'))
+            put('変身時外見', t('外見'))
+        for name in ('処女', '変身時非処女', '貧乳', '巨乳', '外見', 'ふたなり', 'アクセサリ'):
+            put(name, 0)
+    if ct('オトコ'):
+        for name in ('変身時胸サイズ変動', '変身時外見', '変身時ふたなり'): put(name, 0)
+    else:
+        put('変身時男の娘', 0)
+
+
+def _cycle_shape(ctx, c, form):
+    """ERB/SYSTEM/キャラメイキング関連/CHARA_SIZE_UI.ERB@SIZE_SETTING:1608–1651。"""
+    data = ctx.data
+    t = lambda name: talent(data, c, name)
+    ct = lambda name: charatalent(data, c, form, name)
+    def put(name, value):
+        c.talent[data.index_of('TALENT', name)] = value
+
+    if form:
+        field = '変身時胸サイズ変動'
+        if any(ct(name) for name in ('巨乳', '爆乳', '超乳', '魔乳', '絶壁', '貧乳')):
+            put(field, t(field) + 1)
+        elif ct('奇乳'):
+            put(field, -2)  # :1619 絕對-2，原作未扣通常形態數值。
+        else:
+            put(field, t(field) + 1)
+            for _ in range(2):
+                if not ct('巨乳'): put(field, t(field) + 1)
+    else:
+        for name, value in (('巨乳', 2), ('爆乳', 3), ('超乳', 4), ('魔乳', 5)):
+            if ct(name):
+                put('巨乳', value)
+                return
+        if ct('奇乳'):
+            put('巨乳', 0); put('貧乳', 2)
+        elif ct('絶壁'): put('貧乳', 1)
+        elif ct('貧乳'): put('貧乳', 0)
+        else: put('巨乳', 1)
+
+
+def _cycle_body_trait(ctx, c, choice):
+    """ERB/SYSTEM/キャラメイキング関連/CHARA_SIZE_UI.ERB@SIZE_SETTING:1904–2048。
+
+    只寫欄位與清理既有經驗；原文沒有年齡、NO、GLOBAL輸入限制。
+    """
+    data = ctx.data
+    t = lambda name: talent(data, c, name)
+    def put(name, value): c.talent[data.index_of('TALENT', name)] = value
+
+    pairs = {70: ('濡れやすい', '濡れにくい'), 71: ('Ｃ敏感', 'Ｃ鈍感'),
+             72: ('Ｖ敏感', 'Ｖ鈍感'), 73: ('Ａ敏感', 'Ａ鈍感'), 74: ('Ｂ敏感', 'Ｂ鈍感')}
+    if choice in pairs:
+        if choice in (70, 72) and is_male(data, c):
+            if t('変身時ＴＳ') > 0:
+                field = '変身時濡れやすさ変動' if choice == 70 else '変身時Ｖ感覚変動'
+                put(field, -1 if t(field) > 0 else 0 if t(field) < 0 else 1)
+        else:
+            positive, negative = pairs[choice]
+            values = (0, 1) if t(positive) > 0 else (0, 0) if t(negative) > 0 else (1, 0)
+            put(positive, values[0]); put(negative, values[1])
+    elif choice == 76:
+        put('未熟', 1 if t('未熟') == 0 else 2 if t('未熟') == 1 else 0)
+    elif choice == 81:
+        female = is_female(data, c)
+        normal, other, ability, ts = (t(n) for n in ('ふたなり', '変身時ふたなり', '変身能力', '変身時ＴＳ'))
+        if normal == 0 and other == 0:
+            if female:
+                put('ふたなり', 3)
+                if ability == 1 and ts == 0: put('変身時ふたなり', 3)
+            elif ability == 1 and ts > 0: put('変身時ふたなり', 3)
+        elif ability == 1 and ((female and ts == 0 and normal == 3 and other == 3)
+                              or (not female and ts > 0 and other == 0)):
+            put('ふたなり', 0); put('変身時ふたなり', 3)
+        elif female and ts == 0 and normal == 0 and other == 3:
+            put('ふたなり', 3); put('変身時ふたなり', 0)
+        else:
+            put('ふたなり', 0)
+            if t('固有キャラ') == 0 and t('初期経験設定不可') == 0:
+                c.exp[data.index_of('EXP', '射精経験')] = 0
+            put('変身時ふたなり', 0)
+    else:
+        field = {75: 'パイパン', 80: '初心', 82: '母乳体質', 83: '苗床化', 84: '寄生'}[choice]
+        before = t(field)
+        put(field, int(before == 0))
+        if choice == 84 and before != 0: put('共生', 0)
+
+
+def _draw_body_traits(ctx, c):
+    """ERB/SYSTEM/キャラメイキング関連/CHARA_SIZE_UI.ERB@SIZE_SETTING:480–724。
+
+    原文均為PRINTFORM，數字模式仍有按鈕；GLOBAL僅決定顯示。
+    """
+    out, data = ctx.out, ctx.data
+    t = lambda name: talent(data, c, name)
+    label = lambda line: LABELS[line].strip()
+    female = is_female(data, c)
+    eligible = female or t('変身時ＴＳ') > 0
+    def row(title, value, choice, enabled=True):
+        text = f'{label(title)}　{value}'
+        if enabled: out.printl(f'{text} [{choice}]')
+        else: out.print_plain(text); out.printl()
+
+    for choice, title, transformed_title, positive, negative, high, low, delta in (
+        (70, 483, 496, '濡れやすい', '濡れにくい', 487, 489, '変身時濡れやすさ変動'),
+        (71, 531, 531, 'Ｃ敏感', 'Ｃ鈍感', 535, 537, None),
+        (72, 574, 587, 'Ｖ敏感', 'Ｖ鈍感', 578, 580, '変身時Ｖ感覚変動'),
+        (73, 630, 630, 'Ａ敏感', 'Ａ鈍感', 634, 636, None),
+        (74, 660, 660, 'Ｂ敏感', 'Ｂ鈍感', 664, 666, None),
+    ):
+        if delta and not female:
+            value = label(high) if t(delta) > 0 else label(low) if t(delta) < 0 else '―'
+            row(transformed_title, value if eligible else '―', choice, eligible)
+        else:
+            value = label(high) if t(positive) > 0 else label(low) if t(negative) > 0 else '―'
+            row(title, value, choice)
+    row(690, label(697 if female else 695) if t('パイパン') > 0 else '―', 75)
+    maturity = label(713) if t('未熟') == 1 else label(715) if t('未熟') == 2 else label(717) if t('ロボっ子') > 0 and female else '―'
+    row(709, maturity, 76)
+    row(517, label(521) if t('初心') > 0 else '―', 80)
+    if ctx.globals.mem.global_[244]:
+        normal, other = t('ふたなり') == 3, t('変身時ふたなり') == 3
+        value = label(553 if normal and other else 555 if other else 557) if normal or other else '―'
+        row(548, value if eligible else '―', 81, eligible)
+    for key, choice, title, field in ((245, 82, 615, '母乳体質'), (253, 83, 645, '苗床化'), (255, 84, 675, '寄生')):
+        if ctx.globals.mem.global_[key]:
+            enabled = choice != 82 or eligible
+            row(title, field if t(field) > 0 and enabled else '―', choice, enabled)
 
 
 def _generated(ctx,c,form):
@@ -51,6 +220,12 @@ def _draw(ctx,c,ages,values,mode,locks):
         stature='小柄' if charatalent(data,c,form,'小柄') else '長身' if charatalent(data,c,form,'長身') else '―'
         mainline(f'{TEXT[187]} {div(values[form][0],10)}.{mod(values[form][0],10)} cm [{1+form*10}] {stature}', c.no==0)
         out.printl(f'{TEXT[236]} {div(values[form][1],10)}.{mod(values[form][1],10)} kg')
+        male = charatalent(data,c,form,'オトコ')
+        girly = talent(data,c,'変身時男の娘' if form else '男の娘')
+        mainline(f'[{2+form*10}] '+LABELS[273 if male and girly else 275 if male else 278], c.no==0)
+        shape = next((name for name in ('絶壁','貧乳','奇乳','魔乳','超乳','爆乳','巨乳') if charatalent(data,c,form,name)), '―')
+        # :316、353只查NO，男性仍顯示按鈕；:1608另查性別，手輸不變更。
+        mainline(f'[{3+form*10}] {shape}', c.no==0)
         looks='―'
         for name in ('安産型','むちむち','イカ腹','スレンダー','巨尻','爆尻'):
             if charatalent(data,c,form,name):looks=name
@@ -62,9 +237,26 @@ def _draw(ctx,c,ages,values,mode,locks):
         st.result[1]=influence
         st.result[0],label=cup_size(value)
         st.results[0]=f'({label})'
+    _draw_body_traits(ctx,c)
     mainline(f'{TEXT[763]} [5] {c.cstr[12]}')
     mainline(f'{TEXT[773]} [15] {c.cstr[13]}'+(f' [25] {c.cstr[14]}' if ages[1]>=0 else '')+' [35] ランダム')
     mainline(f'{TEXT[800]} [45] {c.cstr[18]}')
+    # :810–828 顯示不查固有角色；:1892寫入才檢查。一般外觀判斷同
+    # ERB/汎用関数/SEX_GENDER.ERB@ISGIRLY:28–37，不讀另一形態。
+    girly = is_female(data,c) or talent(data,c,'男の娘') != 0
+    accessory = {1:LABELS[815],2:LABELS[817],3:LABELS[819]}.get(talent(data,c,'アクセサリ'),'―')
+    if girly:
+        # :823 PRINTFORM始終產生按鈕，數字輸入模式只改顏色，按46仍作該模式數值。
+        out.printl(f'{LABELS[811]} {accessory} [46]')
+    else:out.print_plain(LABELS[811]+' ―');out.printl()
+    if any(ctx.globals.mem.global_[k] for k in (212,258,262,278)) or game_option(st,GameOption.NO_ACHIEVEMENT_END):
+        status={1:LABELS[735],2:LABELS[737],3:LABELS[739],4:LABELS[741],9:LABELS[743]}.get(c.cflag[0],'―')
+        # :726 ARG:1為本函式未寫入／未宣告參數的0格，不是呼叫端共用ARG。
+        # reference/emuera-1824/Emuera/GameData/Variable/VariableData.cs:330–331；
+        # reference/emuera-1824/Emuera/GameData/Variable/VariableLocal.cs:23–29、36–70；
+        # reference/emuera-1824/Emuera/GameData/Variable/VariableToken.cs:1726–1738。
+        # 正常呼叫沒有「鎖初期狀態」參數。
+        out.printl(f'{LABELS[730]} {status} [86]')
     for label,numbers in ((835,(6,16)),(868,(7,8,17,18)),(927,(9,19))):
         out.print(TEXT[label])
         for n in numbers:
@@ -74,8 +266,6 @@ def _draw(ctx,c,ages,values,mode,locks):
             else:out.print_plain(f'[{n}] ■')
         out.printl()
     mainline('[30] オートローラー [40] 再生成')
-    # 未移植支線保留可識別入口，不默認代選。
-    out.print_plain('未移植：2／12、3／13、46、70–76、80–86');out.printl()
     if mode in (0,10,2):
         out.printl(TEXT[992] if mode==2 else TEXT[971])
         for start in range(10,30,5):
@@ -129,7 +319,7 @@ def _draw(ctx,c,ages,values,mode,locks):
 
 
 def size_setting(ctx,who):
-    """CHARA_SIZE_UI.ERB@SIZE_SETTING:21–2142，一般分支；其他選項明確停止。"""
+    """ERB/SYSTEM/キャラメイキング関連/CHARA_SIZE_UI.ERB@SIZE_SETTING:21–2142。"""
     st,data,out=ctx.state,ctx.data,ctx.out;c=st.charas[who]
     keep=st.target;st.target=who;line=out.linecount
     convert_colorcstr(c);convert_age(c)
@@ -183,8 +373,10 @@ def size_setting(ctx,who):
             elif CT(0,'長身'):put('長身',0);put('小柄',1)
             elif CT(0,'小柄'):put('小柄',0)
             else:put('長身',1)
-        elif r in (2,12,3,13,46) or 70<=r<=76 or 80<=r<=86:
-            raise NotImplementedError(f'SIZE_SETTING 選項{r}尚未移植')
+        elif r in (2,12) and c.no==0:
+            _cycle_sex(ctx,c,div(r,10))
+        elif r in (3,13) and not CT(div(r,10),'オトコ') and c.no==0:
+            _cycle_shape(ctx,c,div(r,10))
         elif r in (4,14) and c.no==0 and (not CT(div(r,10),'オトコ') or CT(div(r,10),'男の娘')):
             field='外見' if r==4 else '変身時外見'
             put(field,T(field)+1 if 1<=T(field)<=5 else 0 if T(field)==6 else 1)
@@ -238,6 +430,16 @@ def size_setting(ctx,who):
                     v=data.str_defaults.get(30500+st.rng.rand(500),'');c.cstr[40+i]=v
                     rejected=(not v or v in (('CSTR:ARG:41','CSTR:ARG:42') if i==0 else ('CSTR:ARG:40','CSTR:ARG:41') if i==2 else ('CSTR:ARG:40',)) or (i==1 and c.cstr[40]=='CSTR:ARG:42'))
                     if not rejected:break
+        elif r==46:
+            if (is_female(data,c) or T('男の娘')) and T('固有キャラ')==0:
+                put('アクセサリ',T('アクセサリ')+1 if T('アクセサリ') in (1,2) else 0 if T('アクセサリ')==3 else 1)
+        elif 70<=r<=76 or 80<=r<=84:
+            _cycle_body_trait(ctx,c,r)
+        elif r==85:pass  # ERB/SYSTEM/キャラメイキング関連/CHARA_SIZE_UI.ERB@SIZE_SETTING:2049–2051 未使用。
+        elif r==86:
+            # @SIZE_SETTING:2053–2102與CHARA_MAKE.ERB@CHARA_MAKE_MAIN:150–198逐條相同。
+            from .creation_menu import _cycle_initial_state
+            _cycle_initial_state(ctx,who)
         # :2106，-1含bit2，因此一般操作不清舊頁；保持原文。
         if not display&4:out.clearline(out.linecount-line)
     if ages[1]==ages[0] and not _talent_change(ctx,c) and values[0][0]==values[1][0] and values[0][2]==values[1][2] and colors_equal():ages[1]=-1
