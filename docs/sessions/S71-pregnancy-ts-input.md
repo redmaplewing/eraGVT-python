@@ -29,3 +29,12 @@
 - 子代理完成定向測試後凍結；主代理獨立全pytest、真瀏覽器、正式500局（兩入口各seed0–249、max-shop200、actions101–108、每50局前景一批），與S70逐seed完整JSON比較。
 - 更新必要既有wiki／PLAYABILITY／bridge；STATUS／PLAN由主代理收口。無新增未決或偏離時不製造條目。
 - 繁體中文、LF／UTF-8無BOM，source／reference唯讀；核對git status／diff，回報成果／依據／裁決，不commit/push。
+
+## 完成驗收
+- 新增38案及2案模擬計數器回歸，皆先紅後綠；主代理全pytest：4502 passed, 1 warning in 294.99s (0:04:54)。原測試只改generator driver／mock，不改expected。
+- 四路EVENTEND、真實共用結算／COM0／COM2、callback／catalog裝飾器、同步getter及RESULT返回邊界均有案例；199呼叫點及37動態命令槽已稽核。
+- 主代理真瀏覽器normal／after兩入口通過，無效9及0／1／0／1選題、等待前保留清理欄位、完成後真實續行與25歲兩形態皆核對；console錯誤0。
+- 證據tmp/s71/browser-*.json及after-complete.jpg；僅Null人工函式邊界，不稱自然戰鬥或B05整列完成。
+- 正式500：default247上限／3回標題，tokusou250上限；catalog／fixture失敗0，完整JSON與S70逐seed一致，十批退出／seed／log／參數均核對。
+- 模擬計數器改為等generator返回才分類；僅seed153受影響，重跑tokusou150–199，其餘九批保留，原始證據存before-counter-fix。
+- 無新增UNVERIFIED／DEVIATION；妊娠除錯輸入與其他裝備仍依既有包處理。下一規格S72女體受容仍屬W03。

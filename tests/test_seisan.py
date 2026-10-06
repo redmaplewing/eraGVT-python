@@ -6,6 +6,7 @@ expected は ERB 原文から推導（路徑相對 `source/earGVP/ERB/`、`特�
 """
 
 from __future__ import annotations
+from _gen_driver import as_generator
 
 import re
 import tempfile
@@ -57,7 +58,7 @@ def ninsin_calls(monkeypatch):
         calls.append((a0, a1, a2))
         return 0
 
-    monkeypatch.setattr(ninsin_mod, "ninsin_hantei", fake)
+    monkeypatch.setattr(ninsin_mod, "ninsin_hantei", as_generator(fake))
     return calls
 
 

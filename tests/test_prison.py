@@ -7,6 +7,7 @@ PRISON.ERB = `ゲーム内_イベント発生/敗北幽閉中イベント/PRISON
 """
 
 from __future__ import annotations
+from _gen_driver import as_generator, run_no_input
 
 import re
 import tempfile
@@ -147,7 +148,8 @@ def test_check_contamination(ctx, data, seitaisei, abls, naedoko, cfg3, flag904,
 def calls(monkeypatch):
     rec = []
     for n in (0, 1, 2, 3, 4, 5, 6, 7, 100, 101, 102, 103, 104, 105, 200, 201, 300, 301):
-        monkeypatch.setattr(commands, f"prison_com{n}", lambda ctx, n=n: rec.append(n))
+        fake = lambda ctx, n=n: rec.append(n)
+        monkeypatch.setattr(commands, f"prison_com{n}", as_generator(fake) if n in (0,1,2,3,5,7,101,104,200) else fake)
     return rec
 
 
@@ -202,7 +204,7 @@ def test_prison_comable(ctx, data, calls, arg, setup, rng, expected):
     if setup.get("maniac_off"):
         st.flag.set_bit(850, 1, True)
     st.rng = FixedRng(list(rng))
-    commands.prison_comable(ctx, arg)
+    run_no_input(commands.prison_comable(ctx, arg))
     assert calls == [expected]
 
 
@@ -212,7 +214,7 @@ def test_prison_comable(ctx, data, calls, arg, setup, rng, expected):
 @pytest.fixture
 def comable(monkeypatch):
     rec = []
-    monkeypatch.setattr(commands, "prison_comable", lambda ctx, arg: rec.append(arg))
+    monkeypatch.setattr(commands, "prison_comable", as_generator(lambda ctx, arg: rec.append(arg)))
     return rec
 
 
@@ -446,7 +448,7 @@ def test_prison_com200_doubles_kakuchou_exp(ctx, data):
     st.flag.set_bit(805, 2, True)  # 常時避妊（NINSIN_HANTEI:23–24 で打ち切り）
     before = {k: c.exp[ei(data, k)] for k in ("Ｖ拡張経験", "異常経験", "Ｖ経験")}
     st.rng = GameRng(3)
-    commands.prison_com200(ctx)
+    run_no_input(commands.prison_com200(ctx))
     assert c.exp[ei(data, "Ｖ拡張経験")] - before["Ｖ拡張経験"] == 2
     assert c.exp[ei(data, "異常経験")] - before["異常経験"] == 1
     assert c.cflag[204] == 1

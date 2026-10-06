@@ -4,6 +4,7 @@ expected は ERB 原文から手計算（路徑相對 `source/earGVP/ERB/`、行
 """
 
 from __future__ import annotations
+from _gen_driver import run_no_input
 
 import re
 
@@ -104,7 +105,7 @@ def test_ninsin_prison_tentacle_father(ctx, data):
     c.cflag[21] = 3
     c.cflag[217] = 0  # 危険日でない
     st.rng = FixedRng([0, 11, 2, 20])  # CHECK_HININ RAND:100、:140 RAND:1000、RAND:4、RAND:41
-    assert ninsin.ninsin_hantei(ctx, 10, 30) == 1
+    assert run_no_input(ninsin.ninsin_hantei(ctx, 10, 30)) == 1
     assert c.cflag[230] == 3 and c.cflag[232] == 0 and c.cflag[221] == 0
     assert c.talent[T(data, "妊娠")] == 1
     assert c.cflag[227] == 3 and c.cflag[228] == 88 * 3 * 100 // 100
@@ -119,7 +120,7 @@ def test_ninsin_prison_not_pregnant_keeps_count(ctx, data):
     c.cflag[21] = 3
     c.cflag[217] = 0
     st.rng = FixedRng([0, 12])  # 12 < 12 は偽
-    assert ninsin.ninsin_hantei(ctx, 10, 30) == 0
+    assert run_no_input(ninsin.ninsin_hantei(ctx, 10, 30)) == 0
     assert c.cflag[232] == 10 and c.cflag[221] == 10 and c.talent[T(data, "妊娠")] == 0
 
 
@@ -133,12 +134,12 @@ def test_ninsin_battle_boss_father(ctx, data):
     st.flag[11] = 2
     st.savestr[13] = "BOSS"
     st.rng = FixedRng([0, 111])
-    assert ninsin.ninsin_hantei(ctx, 5, 15) == 1
+    assert run_no_input(ninsin.ninsin_hantei(ctx, 5, 15)) == 1
     assert c.talent[T(data, "妊娠")] == 2 and c.cflag[230] == 2 and c.cflag[227] == 0
     # 戦闘後：NINSIN_CHECK_AFTER（:169–190）で 妊娠 1
     st.flag[700] = 0
     st.rng = FixedRng([3, 40])  # NUM_CHILD：1 + RAND:4 = 4、SIZE：88×4×(80+40)/100 = 422
-    ninsin.ninsin_check_after(ctx)
+    run_no_input(ninsin.ninsin_check_after(ctx))
     assert c.talent[T(data, "妊娠")] == 1 and c.cflag[227] == 4 and c.cflag[228] == 422
 
 
@@ -151,7 +152,7 @@ def test_ninsin_h_tentacle_ovulation(ctx, data):
     st.savestr[13] = "BOSS"
     c.tcvarn[12] = 2
     st.rng = FixedRng([0, 999])
-    assert ninsin.ninsin_hantei(ctx, 5, 15) == 1
+    assert run_no_input(ninsin.ninsin_hantei(ctx, 5, 15)) == 1
     assert c.talent[T(data, "妊娠")] == 1 and c.cflag[227] == 0 and c.cflag[228] == 0
     t = texts(ctx.out)
     assert "成熟した卵子の周りには無数の触手の精子が群がっている。" in t
@@ -170,7 +171,7 @@ def test_ninsin_akuoti_father(ctx, data):
     st.savestr[13] = "BOSS"  # :151 TENTACLE_ACCESS "GETNAME"（悪堕ちキャラ戦は未移植なので仮の敵データ）
     st.flag[11] = 1
     st.rng = FixedRng([99, 111, 0])  # CHECK_HININ（CFLAG:241 = 0 → LOCAL 0）、:140、PREGNANT_RANDOM_SIZE RAND:41
-    assert ninsin.ninsin_hantei(ctx, 5, 15) == 1
+    assert run_no_input(ninsin.ninsin_hantei(ctx, 5, 15)) == 1
     assert c.cflag[230] == -102 and c.talent[T(data, "妊娠")] == 4 and c.cflag[228] == 266 * 80 // 100
 
 
@@ -185,7 +186,7 @@ def test_ninsin_companion_father(ctx, data, parasite, used, preg):
     # CHECK_HININ、:65 は寄生ふたなりでない → RAND:4 なし、:140（SQRT(60×10/2) = 17 + 100）、
     # 妊娠 4：RAND:41 ／ 妊娠 1：RAND:4、RAND:41
     st.rng = FixedRng([0, 116, 0, 0])
-    assert ninsin.ninsin_hantei(ctx, 10, 60, -102) == 1
+    assert run_no_input(ninsin.ninsin_hantei(ctx, 10, 60, -102)) == 1
     assert c.talent[T(data, "妊娠")] == preg and c.cflag[230] == -102
     assert c.cflag[used] == 0
 
@@ -199,7 +200,7 @@ def test_ninsin_papa_zero_uses_previous_preg_per(ctx, data):
     st.temp.locals[("NINSIN_HANTEI:PREG_PER", 0)] = 50
     # CHECK_HININ、:140（149 < 50 + 100）、NINSIN_FLAG：触手扱い 2 → 戦闘外で即時 1（NUM_CHILD RAND:4、SIZE RAND:41）
     st.rng = FixedRng([0, 149, 0, 0])
-    assert ninsin.ninsin_hantei(ctx, 5, 15) == 1
+    assert run_no_input(ninsin.ninsin_hantei(ctx, 5, 15)) == 1
     assert c.cflag[230] == 0 and c.talent[T(data, "妊娠")] == 1 and c.cflag[227] == 1
 
 

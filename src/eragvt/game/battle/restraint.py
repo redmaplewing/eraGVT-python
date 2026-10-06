@@ -1157,7 +1157,7 @@ def com100(ctx: Ctx) -> ComGen:
     before = st.flag[15]
     tentacle_syasei_up(ctx, min(div(c.maxbase[2], 5), 75) + 100 + g * 25)
     _pleasure_given(ctx, before)
-    r0 = tentacle_syasei_check(ctx)[0]  # RESULT = RESULT:0
+    r0 = (yield from tentacle_syasei_check(ctx))[0]  # RESULT = RESULT:0
     out.printl()
     if g >= 3 and st.rng.rand(100) < 10:  # :52–62
         _need_boss(ctx)
@@ -1212,7 +1212,7 @@ def com101(ctx: Ctx) -> ComGen:
         local += 100
     tentacle_syasei_up(ctx, local)
     _pleasure_given(ctx, before)
-    tentacle_syasei_check(ctx)
+    yield from tentacle_syasei_check(ctx)
     out.printl()
     _houshi_juel(ctx, 800, 40)
     c.exp[ctx.data.index_of("EXP", "フェラ経験")] += 1
@@ -1246,7 +1246,7 @@ def com102(ctx: Ctx) -> ComGen:
         before = st.flag[15]
         tentacle_syasei_up(ctx, min(div(c.maxbase[2], 2), 150) + 150 + 75 * g)
         _pleasure_given(ctx, before)
-        tentacle_syasei_check(ctx)
+        yield from tentacle_syasei_check(ctx)
         out.printl()
         _houshi_juel(ctx, 1050, 25)
         st.tflag[17] = -1
@@ -1316,7 +1316,7 @@ def com103(ctx: Ctx) -> ComGen:
         out.set_bold(False)
         out.printl("を選択しやすくなった！")
         out.printw()
-        tentacle_syasei_check(ctx)
+        yield from tentacle_syasei_check(ctx)
         out.printl()
         _houshi_juel(ctx, 250, 25)
         st.tflag[1] = 1
@@ -1417,7 +1417,7 @@ def com104(ctx: Ctx) -> ComGen:
     before = st.flag[15]
     tentacle_syasei_up(ctx, 225 + g * g * isqrt(div(st.flag[15], 2) + 50))
     _pleasure_given(ctx, before)
-    tentacle_syasei_check(ctx)
+    yield from tentacle_syasei_check(ctx)
     out.printl()
     _houshi_juel(ctx, 450, 25)
     c.ex[99] += 1

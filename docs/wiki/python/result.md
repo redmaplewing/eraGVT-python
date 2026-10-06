@@ -59,6 +59,13 @@ RESULT:0 だけの書き込み（単値 RETURN・関数終端・INPUT 等）は�
 `CITIZEN_1.ERB`:123）、`COLOR_TABLE.ERB`、`TRANS_SEX`／`SUCCESSION`／`FIRSTSETTING_CHARA_TRANSFORMATION` の GENERATE_CHAR_SIZE。
 移植時は同じく `GameState.result` に書くこと。
 
+## S71妊娠TS輸入的返回邊界
+
+- `ERB/ヒロイン関連/PREGNANT_SOURCE_NINSIN.ERB@NINSIN_FLAG:257`、`@NINSIN_TS_FIX:271`、`@NINSIN_CHECK_AFTER:190`皆自然終端；內層TS_MtoF返回1後，外層必須把RESULT:0寫回0，其他格不清。
+- `@NINSIN_HANTEI:16–36、162–165`的早退／成功返回0／1由該函式寫入；不能把內層NINSIN_FLAG的0當作成功結果。catalog呼叫者自己的終端仍將第0格清0。
+- 此四函式依`reference/emuera-1824/Emuera/GameProc/Process.ScriptProc.cs:61–67`及`GameProc/Function/Instraction.Child.cs:1997–2023`補齊；不擴成其他既有函式的RESULT收尾重寫。
+- 新測試同時驗第0格與尾格；真實COM／幽閉流程在進TS前可能已有SEX_COMEX或PALAM_HOSEI的多格返回，不把初始哨兵誤認為進TS時的RESULT。
+
 ## 読む側（殘值を使う所）
 
 - `EVENT_PALAM_UP.ERB@EVENT_PALAM_HOSEI`:134–140（悪堕ちキャラによる幽閉 CFLAG:20 == 2）：`UP:k = RESULT:k / 100`（k = 0〜11）。

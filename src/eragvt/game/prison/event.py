@@ -51,7 +51,7 @@ _FALL = ("PRISON_EVENT", "今回陥落するフラグ")
 # --- TENTACLE_ACCESS_PRISON ------------------------------------------------------------------------
 
 
-def _boss_prison_routine(ctx: Ctx, n: int) -> int:
+def _boss_prison_routine(ctx: Ctx, n: int) -> Generator[None, int, int]:
     """`触手データ/ボス触手/TENTACLE_BOSS_{n}_*.ERB@TENTACLE_BOSS_{n}_PRISON_ROUTINE`。"""
     from ..battle.sexcom import check_holyvirgin
     from .commands import prison_comable
@@ -66,14 +66,14 @@ def _boss_prison_routine(ctx: Ctx, n: int) -> int:
     elif n == 3:  # TENTACLE_BOSS_3_Ａ触手.ERB:199–225
         for bound, com in ((45, 2), (60, 102), (75, 201)):
             if r < bound:
-                prison_comable(ctx, com)
+                yield from prison_comable(ctx, com)
                 return 1
         r = rand(100)
         for bound, com in ((35, 4), (70, 6), (85, 300)):
             if r < bound:
-                prison_comable(ctx, com)
+                yield from prison_comable(ctx, com)
                 return 1
-        prison_comable(ctx, 301)
+        yield from prison_comable(ctx, 301)
         return 1
     elif n == 4:  # TENTACLE_BOSS_4_Ｂ触手.ERB:195–208
         table = ((30, 3), (40, 103), (50, 105))
@@ -90,12 +90,12 @@ def _boss_prison_routine(ctx: Ctx, n: int) -> int:
         raise NotImplementedError(f"TENTACLE_BOSS_{n}_PRISON_ROUTINE は存在しない（TRYCALLFORM の不発は未対応）")
     for bound, com in table:
         if r < bound:
-            prison_comable(ctx, com)
+            yield from prison_comable(ctx, com)
             return 1
     return 0
 
 
-def _lastboss_prison_routine(ctx: Ctx, n: int = 1) -> int:
+def _lastboss_prison_routine(ctx: Ctx, n: int = 1) -> Generator[None, int, int]:
     """`TENTACLE_LASTBOSS_1_PRISON_ROUTINE`（TENTACLE_LASTBOSS_1_Ｋ触手.ERB:208–239）。"""
     from .commands import prison_comable
 
@@ -105,7 +105,7 @@ def _lastboss_prison_routine(ctx: Ctx, n: int = 1) -> int:
               if n == 2 else ((10,100),(20,101),(30,102),(40,103),(50,200),(60,201),(70,300),(75,104),(85,105)))
     for bound, com in bounds:
         if r < bound:
-            prison_comable(ctx, com)
+            yield from prison_comable(ctx, com)
             return 1
     return 0
 
@@ -164,6 +164,18 @@ def tentacle_access_prison(ctx: Ctx, who: int, key: str):
     if key == "PALAM_HOSEI":
         return tuple(st.result[i] for i in range(12))
     return 0 if key == "PRISON_ROUTINE" else ""
+
+
+def prison_routine(ctx: Ctx, who: int) -> Generator[None, int, int]:
+    """ERB/ゲーム内_戦闘処理/COMMON_TENTACLE_DATA.ERB@TENTACLE_ACCESS_PRISON:314–343。
+
+    PRISON_ROUTINE可等待TS輸入；NAME／GETNAME／PALAM_HOSEI仍是同步getter。
+    無對應routine時保留getter原作終端回傳0。
+    """
+    result = tentacle_access_prison(ctx, who, "PRISON_ROUTINE")
+    if isinstance(result, Generator):
+        return (yield from result)
+    return result
 
 
 # --- @CHECK_CONTAMINATION -------------------------------------------------------------------------
@@ -301,22 +313,22 @@ def prison_event(ctx: Ctx) -> Generator[None, int, None]:
     if is_hole(ctx):  # :106–107 `SIF ISHOLE() == 0 / GOTO SKIP`
         # :111–161 幽閉コマンドの選択
         if c.cflag[220] > 0 and rand(100) < 30:
-            prison_comable(ctx, 7)
+            yield from prison_comable(ctx, 7)
         else:
-            local0 = int(tentacle_access_prison(ctx, st.target, "PRISON_ROUTINE"))  # :116–117
+            local0 = int((yield from prison_routine(ctx, st.target)))  # :116–117
             if local0 == 0:  # :120–159
                 l1 = rand(100)
                 if l1 < 12:
-                    prison_comable(ctx, 0)
+                    yield from prison_comable(ctx, 0)
                 elif l1 < 24:
-                    prison_comable(ctx, 3 if check_holyvirgin(ctx) == 1 else 1)
+                    yield from prison_comable(ctx, 3 if check_holyvirgin(ctx) == 1 else 1)
                 else:
                     for bound, com in ((36, 2), (48, 3), (60, 4), (72, 5), (84, 6), (89, 104), (94, 300)):
                         if l1 < bound:
-                            prison_comable(ctx, com)
+                            yield from prison_comable(ctx, com)
                             break
                     else:
-                        prison_comable(ctx, 301)
+                        yield from prison_comable(ctx, 301)
             out.printl()  # :160
         # :164–172 被姦経験・汚染度
         c.exp[data.index_of("EXP", "被姦経験")] += 1

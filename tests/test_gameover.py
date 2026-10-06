@@ -7,6 +7,7 @@ expected は ERB 原文から推導（路徑相對 `source/earGVP/ERB/`，行號
 """
 
 from __future__ import annotations
+from _gen_driver import as_generator, run_no_input
 
 import tempfile
 from pathlib import Path
@@ -51,7 +52,7 @@ def ctx(data):
 @pytest.fixture
 def comable(monkeypatch):
     rec = []
-    monkeypatch.setattr(commands, "prison_comable", lambda ctx, arg: rec.append(arg))
+    monkeypatch.setattr(commands, "prison_comable", as_generator(lambda ctx, arg: rec.append(arg)))
     return rec
 
 
@@ -406,9 +407,9 @@ def test_akuoti_attack_candidates(ctx, monkeypatch, time, flag852, states, rng, 
     for i, s in zip((1, 2, 3), states):
         st.charas[i].cflag[0] = s
     called = []
-    monkeypatch.setattr(akuoti, "akuoti_event", lambda c: called.append(c.state.flag[111]))
+    monkeypatch.setattr(akuoti, "akuoti_event", as_generator(lambda c: called.append(c.state.flag[111])))
     st.rng = FixedRng(rng + ([0] if fires else []))
-    turnend.akuoti_attack(ctx)
+    run_no_input(turnend.akuoti_attack(ctx))
     assert called == ([1] if fires else [])
     assert st.rng.snapshot() == []  # 与えた乱数をちょうど使い切る
 

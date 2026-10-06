@@ -14,6 +14,7 @@ SYASEI_UP）は Python 側でも RESULT:0 を書く。
 """
 
 from __future__ import annotations
+from collections.abc import Generator
 
 from ..action import Ctx, get_syuren, kojo_root, print_transcallname
 from ..chara_common import is_female
@@ -98,15 +99,15 @@ def enemy_no_penis(ctx: Ctx) -> bool:
     return is_female(ctx.data, e) and t(ctx, e, "ふたなり") < 1 and t(ctx, e, "寄生") == 0
 
 
-def tentacle_syasei_check(ctx: Ctx) -> tuple[int, int, int, int]:
+def tentacle_syasei_check(ctx: Ctx) -> Generator[None, int, tuple[int, int, int, int]]:
     """`@TENTACLE_SYASEI_CHECK`:88–216。戻り値 (潤滑, 屈服, 恭順, 欲情) の UP 加算値（RESULT:0〜3）。
     どの分岐も 4 値 RETURN（:119／:149／:169／:175／:194／:212／:215）→ 共用 RESULT:0〜3 に書く。"""
-    r = _tentacle_syasei_check(ctx)
+    r = (yield from _tentacle_syasei_check(ctx))
     ctx.state.set_result_x(*r)
     return r
 
 
-def _tentacle_syasei_check(ctx: Ctx) -> tuple[int, int, int, int]:
+def _tentacle_syasei_check(ctx: Ctx) -> Generator[None, int, tuple[int, int, int, int]]:
     st = ctx.state
     f = st.flag
     out = ctx.out
@@ -140,7 +141,7 @@ def _tentacle_syasei_check(ctx: Ctx) -> tuple[int, int, int, int]:
     if (tf4 == 0 or (tf4 & BOUHATSU)) and f[15] >= f[14]:  # :151–176
         if (f[15] >= f[14] * 2 and st.tflag[20] not in (15, 17, 19)) or (tf4 & BOUHATSU):
             st.tflag[3] += 200
-            r = tentacle_syasei_point(ctx, 2)
+            r = (yield from tentacle_syasei_point(ctx, 2))
             r = tentacle_sakusei(ctx, f[15] * 4, *r)
             f[15] = 0
             _clear_kyoukousoku(ctx)
@@ -150,14 +151,14 @@ def _tentacle_syasei_check(ctx: Ctx) -> tuple[int, int, int, int]:
         return (0, 0, 0, 0)
     if f[15] >= f[14] * 2:  # :177–194
         st.tflag[3] += 200
-        r = tentacle_syasei_point(ctx, 2)
+        r = (yield from tentacle_syasei_point(ctx, 2))
         r = tentacle_sakusei(ctx, f[15] * 2, *r)
         f[15] = 0
         _clear_kyoukousoku(ctx)
         return r
     if f[15] >= f[14]:  # :195–212
         st.tflag[3] += 100
-        r = tentacle_syasei_point(ctx, 1)
+        r = (yield from tentacle_syasei_point(ctx, 1))
         r = tentacle_sakusei(ctx, f[15], *r)
         f[15] = f[15] - f[14]
         _clear_kyoukousoku(ctx)
@@ -177,7 +178,7 @@ _POINTS = {
 }
 
 
-def tentacle_syasei_point(ctx: Ctx, arg: int) -> tuple[int, int, int, int]:
+def tentacle_syasei_point(ctx: Ctx, arg: int) -> Generator[None, int, tuple[int, int, int, int]]:
     """`@TENTACLE_SYASEI_POINT, ARG`:220–568。悪堕ちキャラ（ペニスあり・寄生なし）は TFLAG:18（ペニス位置）以外の部位に
     射精しない（各部位の `LOCAL:3`）。悪堕ちキャラ戦では各部位の地の文の後に MESSAGE_OTHER_SEX_TENTACLE_SYASEI_*。"""
     from .sexmsg import istentacler
@@ -219,7 +220,7 @@ def tentacle_syasei_point(ctx: Ctx, arg: int) -> tuple[int, int, int, int]:
         run_chinobun(ctx, f"MESSAGE_SEX_TENTACLE_SYASEI_{sub}",
                      fallback=None if code == "WAREME" else (lambda s=sub: kojo_root(ctx, f"SEX_TENTACLE_SYASEI_{s}")))
         if part == V_BIT:  # :306／:326 受精判定
-            ninsin_hantei(ctx, arg, 3 if arg == 1 else 15)
+            yield from ninsin_hantei(ctx, arg, 3 if arg == 1 else 15)
         if akuoti:  # 洗脳／悪堕ちキャラ側の地の文（ワレメは VAGINA を呼ぶ：:251–253／:269–271）
             msg_other(ctx, f"SEX_TENTACLE_SYASEI_{'VAGINA' if code == 'WAREME' else code}{'_HI' if arg == 2 else ''}")
         loc[0] += p[0]

@@ -22,6 +22,7 @@ RAND・状態変化なし：grep 確認）。fallback は末尾の `TRYCALLFORM 
 """
 
 from __future__ import annotations
+from collections.abc import Generator
 
 from ..action import Ctx, kojo_root, kojo_root_full
 from ..chara_common import is_female
@@ -87,17 +88,17 @@ def self_check(ctx: Ctx, who: int) -> int:
     return 1 if local >= 15 else 0  # :175–178
 
 
-def self_battleend(ctx: Ctx, arg: int) -> None:
+def self_battleend(ctx: Ctx, arg: int) -> Generator[None, int, None]:
     """`@SELF_BATTLEEND, ARG`:65–72。"""
     from .ablup import ablup
 
     if self_check(ctx, arg) == 1:
         run_chinobun(ctx, "MESSAGE_SELF_BATTLEEND", fallback=lambda: kojo_root(ctx, "SELF_BATTLEEND"))  # :69
-        self_kind(ctx, arg, 1)  # :70
+        yield from self_kind(ctx, arg, 1)  # :70
         ablup(ctx, 0)  # :71
 
 
-def self_kind(ctx: Ctx, arg: int, arg1: int) -> None:
+def self_kind(ctx: Ctx, arg: int, arg1: int) -> Generator[None, int, None]:
     """`@SELF_KIND, ARG, ARG:1`:182–247。ARG:1 == 1 は戦闘後自慰（悪堕ちキャラ戦の目撃地の文のみに影響）。"""
     st, data = ctx.state, ctx.data
     c = st.charas[arg]
@@ -107,13 +108,13 @@ def self_kind(ctx: Ctx, arg: int, arg1: int) -> None:
     c.nowex.clear()  # :189 VARSET NOWEX（TARGET = ARG）
     # :192–200（`素質 > 0 && RAND:3 == 0 && ISFEMALE(ARG)`：左から短絡）
     if t(ctx, c, "淫壷") > 0 and st.rng.rand(3) == 0 and fem():
-        self_v(ctx, arg, arg1)
+        yield from self_v(ctx, arg, arg1)
     elif t(ctx, c, "淫尻") > 0 and st.rng.rand(3) == 0:
-        self_a(ctx, arg, arg1)
+        yield from self_a(ctx, arg, arg1)
     elif t(ctx, c, "淫乳") > 0 and st.rng.rand(3) == 0:
-        self_b(ctx, arg, arg1)
+        yield from self_b(ctx, arg, arg1)
     elif t(ctx, c, "淫核") > 0 and st.rng.rand(3) == 0:
-        self_n(ctx, arg, arg1)
+        yield from self_n(ctx, arg, arg1)
     c.nowex.clear()  # :203
     if a("Ｖ感覚") >= 1:  # :206–209（静的 #DIM：0 に戻さない）
         loc[_V_OK] = 1
@@ -122,25 +123,25 @@ def self_kind(ctx: Ctx, arg: int, arg1: int) -> None:
     v_ok, a_ok = loc.get(_V_OK, 0), loc.get(_A_OK, 0)
     if v_ok == 0 and a_ok == 0:  # :211–217
         if st.rng.rand(100) < 50:
-            self_n(ctx, arg, arg1)
+            yield from self_n(ctx, arg, arg1)
         else:
-            self_b(ctx, arg, arg1)
+            yield from self_b(ctx, arg, arg1)
     elif v_ok == 1:  # :218–226
         r = st.rng.rand(99)
         if r < 33:
-            self_n(ctx, arg, arg1)
+            yield from self_n(ctx, arg, arg1)
         elif r < 66 and fem():
-            self_v(ctx, arg, arg1)
+            yield from self_v(ctx, arg, arg1)
         else:
-            self_b(ctx, arg, arg1)
+            yield from self_b(ctx, arg, arg1)
     elif a_ok == 1:  # :227–235
         r = st.rng.rand(99)
         if r < 33:
-            self_n(ctx, arg, arg1)
+            yield from self_n(ctx, arg, arg1)
         elif r < 66:
-            self_b(ctx, arg, arg1)
+            yield from self_b(ctx, arg, arg1)
         else:
-            self_a(ctx, arg, arg1)
+            yield from self_a(ctx, arg, arg1)
     # :236–247 `ELSEIF Ｖ自慰可 == 1 && Ａ自慰可 == 1` は :218 の Ｖ自慰可 == 1 に先に当たるので到達しない（原作どおり）
 
 
@@ -153,7 +154,7 @@ def _other(ctx: Ctx, arg1: int, kind: str) -> None:
                      fallback=lambda: kojo_root_full(ctx, e.cflag[6], f"OTHER_SELF_{kind}"))
 
 
-def _tail(ctx: Ctx, arg: int, arg1: int, kind: str, L: list[int], kutsu: tuple, chijo: tuple, l12: int) -> None:
+def _tail(ctx: Ctx, arg: int, arg1: int, kind: str, L: list[int], kutsu: tuple, chijo: tuple, l12: int) -> Generator[None, int, None]:
     """各 SELF_x の地の文以降（屈服・恥情・欲情・習得・体力消費 → PALAM_CAL）。"""
     from .palam import palam_cal
 
@@ -169,10 +170,10 @@ def _tail(ctx: Ctx, arg: int, arg1: int, kind: str, L: list[int], kutsu: tuple, 
     if onani >= 0:  # 習得
         L[6] = (200, 400, 800, 1000, 2000, 4000)[min(onani, 5)]
     L[12] = l12
-    palam_cal(ctx, *L[:12], losebase=L[12])
+    yield from palam_cal(ctx, *L[:12], losebase=L[12])
 
 
-def self_n(ctx: Ctx, arg: int, arg1: int) -> None:
+def self_n(ctx: Ctx, arg: int, arg1: int) -> Generator[None, int, None]:
     """`@SELF_N, ARG, ARG:1`:251–406。"""
     from .sexcom import palam_vabc_estimate
 
@@ -189,10 +190,10 @@ def self_n(ctx: Ctx, arg: int, arg1: int) -> None:
     g = a("技巧")  # :310–328
     L[0], L[1], L[3] = _gikou(g, L[0]), _gikou(g, L[1]), _gikou(g, L[3])
     palam_vabc_estimate(ctx, L, 0, 1, 3, -1)  # :331
-    _tail(ctx, arg, arg1, "N", L, (50, 100, 200, 500, 1000, 2000), (50, 100, 200, 500, 1000, 2000), 150)
+    yield from _tail(ctx, arg, arg1, "N", L, (50, 100, 200, 500, 1000, 2000), (50, 100, 200, 500, 1000, 2000), 150)
 
 
-def self_b(ctx: Ctx, arg: int, arg1: int) -> None:
+def self_b(ctx: Ctx, arg: int, arg1: int) -> Generator[None, int, None]:
     """`@SELF_B, ARG, ARG:1`:410–525。"""
     from .sexcom import palam_vabc_estimate
 
@@ -204,10 +205,10 @@ def self_b(ctx: Ctx, arg: int, arg1: int) -> None:
     L[3] = _tbl(a("Ｂ感覚"), (200, 400, 1000, 2000, 4000, 10000))  # :421–433
     L[3] = _gikou(a("技巧"), L[3])  # :436–446
     palam_vabc_estimate(ctx, L, 3, -1)  # :449
-    _tail(ctx, arg, arg1, "B", L, (50, 100, 200, 500, 1000, 2000), (100, 200, 500, 1000, 2000, 4000), 100)
+    yield from _tail(ctx, arg, arg1, "B", L, (50, 100, 200, 500, 1000, 2000), (100, 200, 500, 1000, 2000, 4000), 100)
 
 
-def self_a(ctx: Ctx, arg: int, arg1: int) -> None:
+def self_a(ctx: Ctx, arg: int, arg1: int) -> Generator[None, int, None]:
     """`@SELF_A, ARG, ARG:1`:529–641。Ａ感覚 0／1 は快Ａ の代入なし（0）。"""
     from .sexcom import palam_vabc_estimate
 
@@ -220,7 +221,7 @@ def self_a(ctx: Ctx, arg: int, arg1: int) -> None:
     L[2] = _a_table(a("Ａ感覚"), (2000, 4000, 10000, 20000))  # :541–549
     L[2] = _gikou(a("技巧"), L[2])  # :552–562
     palam_vabc_estimate(ctx, L, 2, -1)  # :565
-    _tail(ctx, arg, arg1, "A", L, (100, 200, 500, 1000, 2000, 4000), (100, 200, 500, 1000, 2000, 4000), 150)
+    yield from _tail(ctx, arg, arg1, "A", L, (100, 200, 500, 1000, 2000, 4000), (100, 200, 500, 1000, 2000, 4000), 150)
 
 
 def _a_table(v: int, table: tuple[int, int, int, int]) -> int:
@@ -230,7 +231,7 @@ def _a_table(v: int, table: tuple[int, int, int, int]) -> int:
     return table[min(v, 5) - 2]
 
 
-def self_v(ctx: Ctx, arg: int, arg1: int) -> None:
+def self_v(ctx: Ctx, arg: int, arg1: int) -> Generator[None, int, None]:
     """`@SELF_V, ARG, ARG:1`:645–811。"""
     from .sexcom import palam_vabc_estimate
 
@@ -254,4 +255,4 @@ def self_v(ctx: Ctx, arg: int, arg1: int) -> None:
     g = a("技巧")  # :718–732
     L[1], L[2] = _gikou(g, L[1]), _gikou(g, L[2])
     palam_vabc_estimate(ctx, L, 1, 2, -1)  # :735
-    _tail(ctx, arg, arg1, "V", L, (50, 100, 200, 500, 1000, 2000), (50, 100, 200, 500, 1000, 2000), 150)
+    yield from _tail(ctx, arg, arg1, "V", L, (50, 100, 200, 500, 1000, 2000), (50, 100, 200, 500, 1000, 2000), 150)

@@ -12,6 +12,7 @@ ERB の評価順どおりに引く。
 """
 
 from __future__ import annotations
+from collections.abc import Generator
 
 import functools
 
@@ -67,6 +68,18 @@ def _catalog(name: str, erb_args: int = 2):
 
         return wrapper
 
+    return deco
+
+
+def _catalog_gen(name: str, erb_args: int = 2):
+    """S71：原catalog hook也會等待TS；沿run_event_gen，不經同步run_function。"""
+    def deco(fn):
+        @functools.wraps(fn)
+        def wrapper(ctx: Ctx, *args):
+            if (yield from ctx.narration.run_event_gen(ctx, name, list(args[:erb_args]))):
+                return
+            yield from fn(ctx, *args)
+        return wrapper
     return deco
 
 
@@ -134,8 +147,8 @@ def msg_com1(ctx: Ctx, arg: int, arg1: int) -> None:
     _film_any(ctx, arg, 1)  # :824–828
 
 
-@_catalog("MESSAGE_SEX_COM2", 2)
-def msg_com2(ctx: Ctx, arg: int, arg1: int) -> None:
+@_catalog_gen("MESSAGE_SEX_COM2", 2)
+def msg_com2(ctx: Ctx, arg: int, arg1: int) -> Generator[None, int, None]:
     """`@MESSAGE_SEX_COM2`:832–1284。"""
     from .syasei import tentacle_syasei_up
     from .ninsin import ninsin_hantei
@@ -169,9 +182,9 @@ def msg_com2(ctx: Ctx, arg: int, arg1: int) -> None:
             if st.flag[15] >= st.flag[14] * 2:
                 st.tflag[4] |= B
         elif st.flag[15] >= st.flag[14] * 2:
-            ninsin_hantei(ctx, 2, 50)
+            yield from ninsin_hantei(ctx, 2, 50)
         else:
-            ninsin_hantei(ctx, 1, 10)
+            yield from ninsin_hantei(ctx, 1, 10)
     _film_any(ctx, arg, 1)  # :1279–1283
 
 

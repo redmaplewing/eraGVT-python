@@ -140,7 +140,7 @@ def source_check(ctx: Ctx) -> Generator[None, int, None]:
             select_enemy_action(ctx)
         else:
             select_tentacle_action(ctx)
-        palam_cal(ctx, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+        yield from palam_cal(ctx, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
     else:
         yield from enemy_action(ctx)
         if v[2] in (P_HANGEKI, P_EX_HANGEKI, P_HANGEKI_OK):
@@ -164,7 +164,7 @@ def source_check(ctx: Ctx) -> Generator[None, int, None]:
         if cancel_lose > 0:  # :963–965
             state_change_kizetu(ctx, 100)
         else:
-            _battle_lose(ctx)
+            yield from _battle_lose(ctx)
     # :1104–1131 時間切れ
     if c.base[0] == 0 and c.base[1] == 0 and c.base[2] == 0 and cancel_lose > 0:
         state_change_kizetu(ctx, 100)  # :1106
@@ -205,7 +205,7 @@ def source_check(ctx: Ctx) -> Generator[None, int, None]:
         enemy_type_check(st, "MOB") == 0 and enemy_type_check(st, "CITIZEN") == 0
     ):
         if cancel_lose == 0:  # :1304–1305 GOTO BATTLE_LOSE
-            _battle_lose(ctx)
+            yield from _battle_lose(ctx)
         state_change_kizetu(ctx, 100)  # :1308
     # :1313–1318
     if st.tflag[24] > 0:
@@ -671,7 +671,7 @@ def _motion_by_command(sel: int, local: int) -> int:
     return div(local, 8)
 
 
-def _battle_lose(ctx: Ctx) -> None:
+def _battle_lose(ctx: Ctx) -> Generator[None, int, None]:
     """:969–1095 `$BATTLE_LOSE` 以降（敗北 → 幽閉：CFLAG:0 = 1）。最後に `BEGIN AFTERTRAIN`。"""
     from ..action import config_check_prison
     from .core import is_hole, run_chinobun
@@ -736,7 +736,7 @@ def _battle_lose(ctx: Ctx) -> None:
                 _msg_end_loss(ctx)
                 msg_other(ctx, "BATTLE_END_LOSS")
             else:  # 犯される（幽閉されない）
-                _subevent_battle_raped_enemy(ctx)
+                yield from _subevent_battle_raped_enemy(ctx)
                 raise_after(ctx)
                 return
         else:
@@ -769,7 +769,7 @@ def _msg_end_loss(ctx: Ctx) -> None:
     run_chinobun(ctx, "MESSAGE_BATTLE_END_LOSS", fallback=lambda: (kojo_root(ctx, "BATTLE_END_LOSS"), out.wait()))
 
 
-def _subevent_battle_raped_enemy(ctx: Ctx) -> None:
+def _subevent_battle_raped_enemy(ctx: Ctx) -> Generator[None, int, None]:
     """`SUBEVENT_BATTLEE.ERB@SUBEVENT_BATTLE_RAPED_ENEMY`:24–51：悪堕ちキャラに敗北して犯される（幽閉されない）。"""
     from ..action import kojo_root_full
 
@@ -785,7 +785,7 @@ def _subevent_battle_raped_enemy(ctx: Ctx) -> None:
                  fallback=lambda: kojo_root(ctx, "SUBEVENT_BATTLE_RAPED_ENEMY"))
     c.exp[ctx.data.index_of("EXP", "被姦経験")] += 1
     c.nowex.clear()  # SUBEVENT_BATTLE_PRECALCRESET:20 `VARSET NOWEX, 0`
-    palam_cal(ctx, *loc)
+    yield from palam_cal(ctx, *loc)
 
 
 def _check_contamination(ctx: Ctx) -> int:

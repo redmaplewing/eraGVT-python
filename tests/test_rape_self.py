@@ -6,6 +6,7 @@ expected は ERB 原文から手計算（路徑相對 `source/earGVP/ERB/`、行
 """
 
 from __future__ import annotations
+from _gen_driver import as_generator, run_no_input
 
 import pytest
 
@@ -398,7 +399,7 @@ def test_self_check(ctx, data, yokujo, yokubou, roshutsu, onani, inran, roll, ex
 @pytest.fixture
 def cal(monkeypatch):
     got: list = []
-    monkeypatch.setattr(palam, "palam_cal", lambda ctx, *a, losebase=0: got.append((list(a), losebase)))
+    monkeypatch.setattr(palam, "palam_cal", as_generator(lambda ctx, *a, losebase=0: got.append((list(a), losebase))))
     return got
 
 
@@ -441,7 +442,7 @@ def test_self_parts(ctx, data, cal, func, abls, talents, up, lb, dexp):
         c.talent[I(data, "TALENT", k)] = v
     e0 = {k: c.exp[I(data, "EXP", k)] for k in dexp}
     st.rng = RecRng([])
-    getattr(self_kind, f"self_{func}")(ctx, 1, 0)
+    run_no_input(getattr(self_kind, f"self_{func}")(ctx, 1, 0))
     assert cal == [(up, lb)]
     assert {k: c.exp[I(data, "EXP", k)] - e0[k] for k in dexp} == dexp
     assert texts(ctx.out)[0] == f"〈地の文：MESSAGE_SELF_{func.upper()}〉"
@@ -454,7 +455,7 @@ def test_self_parts(ctx, data, cal, func, abls, talents, up, lb, dexp):
 def kinds(monkeypatch):
     got: list = []
     for k in "nbav":
-        monkeypatch.setattr(self_kind, f"self_{k}", lambda ctx, a, a1, k=k: got.append(k.upper()))
+        monkeypatch.setattr(self_kind, f"self_{k}", as_generator(lambda ctx, a, a1, k=k: got.append(k.upper())))
     return got
 
 
@@ -482,7 +483,7 @@ def test_self_kind_branch(ctx, data, kinds, abls, talents, rolls, calls, expecte
     for k, v in talents.items():
         c.talent[I(data, "TALENT", k)] = v
     ctx.state.rng = RecRng(rolls)
-    self_kind.self_kind(ctx, 1, 0)
+    run_no_input(self_kind.self_kind(ctx, 1, 0))
     assert kinds == expected
     assert ctx.state.rng.calls == calls
 
@@ -492,10 +493,10 @@ def test_self_kind_static_flag(ctx, data, kinds):
     st = ctx.state
     st.charas[1].abl[I(data, "ABL", "Ｖ感覚")] = 1
     st.rng = RecRng([0])
-    self_kind.self_kind(ctx, 1, 0)
+    run_no_input(self_kind.self_kind(ctx, 1, 0))
     st.charas[1].abl[I(data, "ABL", "Ｖ感覚")] = 0
     st.rng = RecRng([40])
-    self_kind.self_kind(ctx, 1, 0)
+    run_no_input(self_kind.self_kind(ctx, 1, 0))
     assert st.rng.calls == [99]
     assert kinds == ["N", "V"]
     # 読込（新しい GameState）では 0 に戻る（VariableData.cs@SetDefaultLocalValue:514–520）
@@ -513,7 +514,7 @@ def test_forced_masturbation_spcom6(cctx, data):
     st.flag[11] = 3
     st.rng = GameRng(3)
     e0 = c.exp[I(data, "EXP", "自慰経験")]
-    sexcom.sex_spcom6(cctx)
+    run_no_input(sexcom.sex_spcom6(cctx))
     t = texts(cctx.out)
     assert c.exp[I(data, "EXP", "自慰経験")] == e0 + 1
     assert "強制自慰" in t
@@ -530,7 +531,7 @@ def test_battle_end_masturbation(cctx, data):
     _abl(c, data, {"欲望": 3, "露出癖": 3})
     e0 = c.exp[I(data, "EXP", "自慰経験")]
     st.rng = RecRng([50, 0])  # SELF_CHECK RAND:100、SELF_KIND :212 RAND:100 = 0 → SELF_N
-    after.subevent_battleend(cctx)
+    run_no_input(after.subevent_battleend(cctx))
     t = texts(cctx.out)
     assert "戦闘後自慰（紅葉）" in t
     assert "自慰" in t
@@ -541,7 +542,7 @@ def test_battle_end_no_masturbation_on_defeat(ctx):
     st = ctx.state
     st.tflag[98] = 2  # SUBEVENT_BATTLEEND:12 TFLAG:98 == 0 || 1 のときだけ
     st.rng = RecRng([])
-    after.subevent_battleend(ctx)
+    run_no_input(after.subevent_battleend(ctx))
     assert st.rng.calls == []
 
 
@@ -560,7 +561,7 @@ def test_night_masturbation(cctx, data):
     st.charas[2].talent[I(data, "TALENT", "交際相手")] = 0
     before = st.target
     st.rng = RecRng([34, 0, 34, 0])  # 各キャラ :49 RAND:100 < 35、SELF_KIND :212 RAND:100 < 50 → SELF_N
-    turnend.self_night(cctx)
+    run_no_input(turnend.self_night(cctx))
     t = texts(cctx.out)
     assert "夜間自慰（紅葉）" in t
     assert sum(1 for x in t if x.startswith("夜間自慰（")) == 2

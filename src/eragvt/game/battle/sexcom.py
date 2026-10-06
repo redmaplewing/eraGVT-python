@@ -11,7 +11,7 @@ SEX_COMEX.ERB、AUTO_V_DEFENCE.ERB）と `ENEMY_ACTION.ERB@ENEMY_ACTION_SEX_ROUT
 - 雜魚／市民的 MESSAGE_MOB_* 沿用原文 catalog；缺 TRYCALLFORM 函式保持無作用。
 - 悪堕ちキャラ戦（S19）：本文の地の文の直前に `MESSAGE_OTHER_SEX_COMn`／`SPCOMn`（`core.msg_other`）、ペニス位置 TFLAG:18
   （`_penis_pos`）、近親交配は `INCEST_F(TARGET, FLAG:111)`（RELATION）、追加責めは SEX_COMEX_RANDOM:66–74。
-- AUTO_V_DEFENCE は INPUT を含むので、SEX_COMABLE と一部の SEX_COM はジェネレータ（`yield` で入力待ち）。
+- AUTO_V_DEFENCE與共用PALAM_CAL→妊娠TS均可能等待INPUT；所有命令及SEX_COMABLE都傳遞generator。
 """
 
 from __future__ import annotations
@@ -124,14 +124,14 @@ def _begin(ctx: Ctx) -> list[int]:
     return [0] * 13
 
 
-def _finish(ctx: Ctx, fname: str, L: list[int], add12: int) -> None:
+def _finish(ctx: Ctx, fname: str, L: list[int], add12: int) -> Generator[None, int, None]:
     """`LOCAL:12 += add12` と `CALL PALAM_CAL, LOCAL:0〜12`。"""
     from .palam import palam_cal
 
     st = ctx.state
     l12 = get_local(st, fname, 12) + add12
     set_local(st, fname, 12, l12)
-    palam_cal(ctx, *L[:12], losebase=l12)
+    yield from palam_cal(ctx, *L[:12], losebase=l12)
 
 
 def _comex(ctx: Ctx, L: list[int], part: int, strength: int) -> None:
@@ -486,7 +486,7 @@ def _maybe_auto_v(ctx: Ctx, need_v: bool) -> SexGen:
 # --- SEX_COM0〜20 -------------------------------------------------------------------
 
 
-def _mob_or_msg(ctx: Ctx, n: int, msg) -> None:
+def _mob_or_msg(ctx: Ctx, n: int, msg) -> SexGen:
     """`IF 雑魚／市民 / TRYCALLFORM MESSAGE_MOB_… / ELSE / (悪堕ち) MESSAGE_OTHER_SEX_COMn / CALL MESSAGE_SEX_COMn`。"""
     if _mob(ctx):
         from .mob import message
@@ -495,10 +495,13 @@ def _mob_or_msg(ctx: Ctx, n: int, msg) -> None:
         return
     _no_mob(ctx, n)
     _other(ctx, f"COM{n}")
-    msg()
+    # 回呼保留原同步文字函式；MESSAGE_SEX_COM2則回傳可等待的generator。
+    result = msg()
+    if isinstance(result, Generator):
+        yield from result
 
 
-def sex_com0(ctx: Ctx, arg: int = 0, arg1: int = 0) -> None:
+def sex_com0(ctx: Ctx, arg: int = 0, arg1: int = 0) -> Generator[None, int, None]:
     """`SEX_COM0.ERB@SEX_COM0`:19–117（C攻め弱）。"""
     st = ctx.state
     c = tc(ctx)
@@ -511,7 +514,7 @@ def sex_com0(ctx: Ctx, arg: int = 0, arg1: int = 0) -> None:
     if is_manly(ctx) or t(ctx, c, "ふたなり") > 0:
         L[0] += 500
     palam_vabc_estimate(ctx, L, 0, -1)
-    _mob_or_msg(ctx, 0, lambda: sexmsg.msg_com0(ctx, st.temp.ex_com, st.temp.sh_com))
+    yield from _mob_or_msg(ctx, 0, lambda: sexmsg.msg_com0(ctx, st.temp.ex_com, st.temp.sh_com))
     set_tentacle_pool(ctx)
     cloth_battle_damage(ctx, 4)
     _comex(ctx, L, C, 0)
@@ -519,10 +522,10 @@ def sex_com0(ctx: Ctx, arg: int = 0, arg1: int = 0) -> None:
     st.tflag[20] = 0
     L[8] += 500
     L[9] += 50
-    _finish(ctx, "SEX_COM0", L, 50)
+    yield from _finish(ctx, "SEX_COM0", L, 50)
 
 
-def sex_com1(ctx: Ctx, arg: int = 0, arg1: int = 0) -> None:
+def sex_com1(ctx: Ctx, arg: int = 0, arg1: int = 0) -> Generator[None, int, None]:
     """`SEX_COM1.ERB@SEX_COM1`:7–108（C攻め強）。"""
     st = ctx.state
     c = tc(ctx)
@@ -535,7 +538,7 @@ def sex_com1(ctx: Ctx, arg: int = 0, arg1: int = 0) -> None:
     if is_manly(ctx) or t(ctx, c, "ふたなり") > 0:
         L[0] += 1000
     palam_vabc_estimate(ctx, L, 0, -1)
-    _mob_or_msg(ctx, 1, lambda: sexmsg.msg_com1(ctx, st.temp.ex_com, st.temp.sh_com))
+    yield from _mob_or_msg(ctx, 1, lambda: sexmsg.msg_com1(ctx, st.temp.ex_com, st.temp.sh_com))
     set_tentacle_pool(ctx)
     cloth_battle_damage(ctx, 8)
     if _a(ctx, "Ｃ感覚") < 3 and c.palam[10] < 1000:  # :70–71
@@ -548,10 +551,10 @@ def sex_com1(ctx: Ctx, arg: int = 0, arg1: int = 0) -> None:
     L[9] += 50
     L[10] += 100
     L[11] += 50
-    _finish(ctx, "SEX_COM1", L, 100)
+    yield from _finish(ctx, "SEX_COM1", L, 100)
 
 
-def sex_com2(ctx: Ctx, arg: int = 0, arg1: int = 0) -> None:
+def sex_com2(ctx: Ctx, arg: int = 0, arg1: int = 0) -> Generator[None, int, None]:
     """`SEX_COM2.ERB@SEX_COM2`:7–133（V攻め弱）。"""
     st = ctx.state
     c = tc(ctx)
@@ -564,7 +567,7 @@ def sex_com2(ctx: Ctx, arg: int = 0, arg1: int = 0) -> None:
     if c.tcvarn[2] == P_V_GUARD:
         L[1] = div(L[1], 4)
     palam_vabc_estimate(ctx, L, 1, -1)
-    _mob_or_msg(ctx, 2, lambda: sexmsg.msg_com2(ctx, st.temp.ex_com, st.temp.sh_com))
+    yield from _mob_or_msg(ctx, 2, lambda: sexmsg.msg_com2(ctx, st.temp.ex_com, st.temp.sh_com))
     set_tentacle_pool(ctx)
     cloth_battle_damage(ctx, 4)
     if st.temp.ex_com & V:
@@ -585,7 +588,7 @@ def sex_com2(ctx: Ctx, arg: int = 0, arg1: int = 0) -> None:
     L[8] += 500
     L[9] += 100
     L[10] += 50
-    _finish(ctx, "SEX_COM2", L, 50)
+    yield from _finish(ctx, "SEX_COM2", L, 50)
 
 
 def _v_pain_fear(ctx: Ctx, L: list[int], lub_low: int, lub_mid: int, fear: tuple[int, int, int, int]) -> None:
@@ -667,7 +670,7 @@ def sex_com3(ctx: Ctx, arg: int = 0, arg1: int = 0) -> SexGen:
     L[9] += 200
     L[10] += 100
     L[11] += 1000
-    _finish(ctx, "SEX_COM3", L, 200)
+    yield from _finish(ctx, "SEX_COM3", L, 200)
     return 1
 
 
@@ -678,7 +681,7 @@ def _a_sense(ctx: Ctx, low: tuple[int, ...], high: tuple[int, ...]) -> int | Non
     return _tbl(_a(ctx, "Ａ感覚"), high)
 
 
-def sex_com4(ctx: Ctx, arg: int = 0, arg1: int = 0) -> None:
+def sex_com4(ctx: Ctx, arg: int = 0, arg1: int = 0) -> Generator[None, int, None]:
     """`SEX_COM4.ERB@SEX_COM4`:7–168（A攻め弱）。"""
     st = ctx.state
     c = tc(ctx)
@@ -689,7 +692,7 @@ def sex_com4(ctx: Ctx, arg: int = 0, arg1: int = 0) -> None:
     _size(ctx, 4)
     _set(L, 2, _a_sense(ctx, (40, 400, 1000, 2000, 4000, 10000), (500, 1000, 2000, 4000, 8000, 10000)))
     palam_vabc_estimate(ctx, L, 2, -1)
-    _mob_or_msg(ctx, 4, lambda: sexmsg.msg_com4(ctx, st.temp.ex_com, st.temp.sh_com))
+    yield from _mob_or_msg(ctx, 4, lambda: sexmsg.msg_com4(ctx, st.temp.ex_com, st.temp.sh_com))
     set_tentacle_pool(ctx)
     cloth_battle_damage(ctx, 4)
     if st.temp.ex_com & A:
@@ -716,7 +719,7 @@ def sex_com4(ctx: Ctx, arg: int = 0, arg1: int = 0) -> None:
     L[9] += 500
     L[10] += 100
     L[11] += 100
-    _finish(ctx, "SEX_COM4", L, 50)
+    yield from _finish(ctx, "SEX_COM4", L, 50)
 
 
 def sex_com5(ctx: Ctx, arg: int = 0, arg1: int = 0) -> SexGen:
@@ -791,11 +794,11 @@ def sex_com5(ctx: Ctx, arg: int = 0, arg1: int = 0) -> SexGen:
     L[9] += 800
     L[10] += 200
     L[11] += 500
-    _finish(ctx, "SEX_COM5", L, 200)
+    yield from _finish(ctx, "SEX_COM5", L, 200)
     return 1
 
 
-def sex_com6(ctx: Ctx, arg: int = 0, arg1: int = 0) -> None:
+def sex_com6(ctx: Ctx, arg: int = 0, arg1: int = 0) -> Generator[None, int, None]:
     """`SEX_COM6.ERB@SEX_COM6`:7–152（B攻め弱）。"""
     st = ctx.state
     _random(ctx, B, arg1)
@@ -810,7 +813,7 @@ def sex_com6(ctx: Ctx, arg: int = 0, arg1: int = 0) -> None:
     _size(ctx, 6)
     _set(L, 3, _tbl(_a(ctx, "Ｂ感覚"), _C_WEAK))
     palam_vabc_estimate(ctx, L, 3, -1)
-    _mob_or_msg(ctx, 6, lambda: sexmsg.msg_com6(ctx, st.temp.ex_com, st.temp.sh_com))
+    yield from _mob_or_msg(ctx, 6, lambda: sexmsg.msg_com6(ctx, st.temp.ex_com, st.temp.sh_com))
     set_tentacle_pool(ctx)
     cloth_battle_damage(ctx, 4)
     L[5] = _le2(_a(ctx, "従順"), _KYOUJUN)
@@ -822,10 +825,10 @@ def sex_com6(ctx: Ctx, arg: int = 0, arg1: int = 0) -> None:
     L[8] += 500
     L[9] += 50
     L[10] += 200
-    _finish(ctx, "SEX_COM6", L, 50)
+    yield from _finish(ctx, "SEX_COM6", L, 50)
 
 
-def sex_com7(ctx: Ctx, arg: int = 0, arg1: int = 0) -> None:
+def sex_com7(ctx: Ctx, arg: int = 0, arg1: int = 0) -> Generator[None, int, None]:
     """`SEX_COM7.ERB@SEX_COM7`:7–99（B攻め強：追加責めは PALAM_VABCestimate より前）。"""
     st = ctx.state
     _random(ctx, B, arg1)
@@ -836,7 +839,7 @@ def sex_com7(ctx: Ctx, arg: int = 0, arg1: int = 0) -> None:
     _set(L, 3, _tbl(_a(ctx, "Ｂ感覚"), (400, 1000, 2000, 4000, 10000, 20000)))
     _comex(ctx, L, B, 1)
     palam_vabc_estimate(ctx, L, 3, -1)
-    _mob_or_msg(ctx, 7, lambda: sexmsg.msg_com7(ctx, st.temp.ex_com, st.temp.sh_com))
+    yield from _mob_or_msg(ctx, 7, lambda: sexmsg.msg_com7(ctx, st.temp.ex_com, st.temp.sh_com))
     set_tentacle_pool(ctx)
     cloth_battle_damage(ctx, 8)
     st.tflag[17] = -1
@@ -846,7 +849,7 @@ def sex_com7(ctx: Ctx, arg: int = 0, arg1: int = 0) -> None:
     L[9] += 200
     L[10] += 800
     L[11] += 100
-    _finish(ctx, "SEX_COM7", L, 100)
+    yield from _finish(ctx, "SEX_COM7", L, 100)
 
 
 def _maso_fear(ctx: Ctx, L: list[int], a: int, b: int, c_: int, d: int) -> None:
@@ -858,7 +861,7 @@ def _maso_fear(ctx: Ctx, L: list[int], a: int, b: int, c_: int, d: int) -> None:
         L[11] = c_ if lowm else d
 
 
-def sex_com8(ctx: Ctx, arg: int = 0, arg1: int = 0) -> None:
+def sex_com8(ctx: Ctx, arg: int = 0, arg1: int = 0) -> Generator[None, int, None]:
     """`SEX_COM8.ERB@SEX_COM8`:7–106（スパンキング）。"""
     st = ctx.state
     c = tc(ctx)
@@ -869,7 +872,7 @@ def sex_com8(ctx: Ctx, arg: int = 0, arg1: int = 0) -> None:
     tentacle_syasei_up(ctx, 25)
     _size(ctx, 8)
     palam_vabc_estimate(ctx, L, -1)
-    _mob_or_msg(ctx, 8, lambda: sexmsg.msg_com8(ctx))
+    yield from _mob_or_msg(ctx, 8, lambda: sexmsg.msg_com8(ctx))
     set_tentacle_pool(ctx)
     cloth_battle_damage(ctx, 15)
     add_exp(ctx, c, "苦痛快楽経験", 1)
@@ -881,10 +884,10 @@ def sex_com8(ctx: Ctx, arg: int = 0, arg1: int = 0) -> None:
     L[9] += 100
     L[10] += 4000
     L[11] += 4000
-    _finish(ctx, "SEX_COM8", L, 50)
+    yield from _finish(ctx, "SEX_COM8", L, 50)
 
 
-def sex_com9(ctx: Ctx, arg: int = 0, arg1: int = 0) -> None:
+def sex_com9(ctx: Ctx, arg: int = 0, arg1: int = 0) -> Generator[None, int, None]:
     """`SEX_COM9.ERB@SEX_COM9`:7–113（針）。"""
     st = ctx.state
     c = tc(ctx)
@@ -895,7 +898,7 @@ def sex_com9(ctx: Ctx, arg: int = 0, arg1: int = 0) -> None:
     tentacle_syasei_up(ctx, 25)
     _size(ctx, 9)
     palam_vabc_estimate(ctx, L, -1)
-    _mob_or_msg(ctx, 9, lambda: sexmsg.msg_com9(ctx))
+    yield from _mob_or_msg(ctx, 9, lambda: sexmsg.msg_com9(ctx))
     set_tentacle_pool(ctx)
     cloth_battle_damage(ctx, 10)
     m = _a(ctx, "マゾっ気")
@@ -912,7 +915,7 @@ def sex_com9(ctx: Ctx, arg: int = 0, arg1: int = 0) -> None:
     L[8] += 500
     L[10] += 5000
     L[11] += 2500
-    _finish(ctx, "SEX_COM9", L, 300)
+    yield from _finish(ctx, "SEX_COM9", L, 300)
 
 
 def sex_com10(ctx: Ctx, arg: int = 0, arg1: int = 0) -> SexGen:
@@ -934,7 +937,7 @@ def sex_com10(ctx: Ctx, arg: int = 0, arg1: int = 0) -> SexGen:
 
         yield from message_gen(ctx,f"MESSAGE_MOB_{arg}_COM10",[st.temp.ex_com,st.temp.sh_com])
     else:
-        _mob_or_msg(ctx, 10, lambda: sexmsg.msg_com10(ctx, st.temp.ex_com, st.temp.sh_com))
+        yield from _mob_or_msg(ctx, 10, lambda: sexmsg.msg_com10(ctx, st.temp.ex_com, st.temp.sh_com))
     set_tentacle_pool(ctx)
     cloth_battle_damage(ctx, 5)
     add_exp(ctx, c, "奉仕快楽経験", 1)
@@ -947,10 +950,10 @@ def sex_com10(ctx: Ctx, arg: int = 0, arg1: int = 0) -> SexGen:
     L[6] += 2000
     L[8] += 400
     L[9] += 100
-    _finish(ctx, "SEX_COM10", L, 50)
+    yield from _finish(ctx, "SEX_COM10", L, 50)
 
 
-def sex_com11(ctx: Ctx, arg: int = 0, arg1: int = 0) -> None:
+def sex_com11(ctx: Ctx, arg: int = 0, arg1: int = 0) -> Generator[None, int, None]:
     """`SEX_COM11.ERB@SEX_COM11`:7–168（フェラ）。"""
     st = ctx.state
     c = tc(ctx)
@@ -965,7 +968,7 @@ def sex_com11(ctx: Ctx, arg: int = 0, arg1: int = 0) -> None:
     tentacle_syasei_up(ctx, 200)
     _size(ctx, 11)
     palam_vabc_estimate(ctx, L, -1)
-    _mob_or_msg(ctx, 11, lambda: sexmsg.msg_com11(ctx, st.temp.ex_com, st.temp.sh_com))
+    yield from _mob_or_msg(ctx, 11, lambda: sexmsg.msg_com11(ctx, st.temp.ex_com, st.temp.sh_com))
     set_tentacle_pool(ctx)
     cloth_battle_damage(ctx, 5)
     add_exp(ctx, c, "フェラ経験", 1)
@@ -985,10 +988,10 @@ def sex_com11(ctx: Ctx, arg: int = 0, arg1: int = 0) -> None:
     L[9] += 500
     L[10] += 1000
     L[11] += 100
-    _finish(ctx, "SEX_COM11", L, 100)
+    yield from _finish(ctx, "SEX_COM11", L, 100)
 
 
-def sex_com12(ctx: Ctx, arg: int = 0, arg1: int = 0) -> None:
+def sex_com12(ctx: Ctx, arg: int = 0, arg1: int = 0) -> Generator[None, int, None]:
     """`SEX_COM12.ERB@SEX_COM12`:7–150（イラマチオ）。"""
     st = ctx.state
     c = tc(ctx)
@@ -1004,7 +1007,7 @@ def sex_com12(ctx: Ctx, arg: int = 0, arg1: int = 0) -> None:
     tentacle_syasei_up(ctx, 350)
     _size(ctx, 12)
     palam_vabc_estimate(ctx, L, -1)
-    _mob_or_msg(ctx, 12, lambda: sexmsg.msg_com12(ctx))
+    yield from _mob_or_msg(ctx, 12, lambda: sexmsg.msg_com12(ctx))
     set_tentacle_pool(ctx)
     cloth_battle_damage(ctx, 5)
     add_exp(ctx, c, "フェラ経験", 2)
@@ -1025,10 +1028,10 @@ def sex_com12(ctx: Ctx, arg: int = 0, arg1: int = 0) -> None:
     L[8] += 2500
     L[10] += 8500
     L[11] += 1000
-    _finish(ctx, "SEX_COM12", L, 300)
+    yield from _finish(ctx, "SEX_COM12", L, 300)
 
 
-def sex_com13(ctx: Ctx, arg: int = 0, arg1: int = 0) -> None:
+def sex_com13(ctx: Ctx, arg: int = 0, arg1: int = 0) -> Generator[None, int, None]:
     """`SEX_COM13.ERB@SEX_COM13`:7–119（絶頂禁止）。雑魚・市民でも MESSAGE_SEX_COM13 を呼ぶ（:37–41）。"""
     st = ctx.state
     c = tc(ctx)
@@ -1060,10 +1063,10 @@ def sex_com13(ctx: Ctx, arg: int = 0, arg1: int = 0) -> None:
     st.tflag[20] = 13
     L[8] += 500
     L[11] += 1000
-    _finish(ctx, "SEX_COM13", L, 250)
+    yield from _finish(ctx, "SEX_COM13", L, 250)
 
 
-def sex_com14(ctx: Ctx, arg: int = 0, arg1: int = 0) -> None:
+def sex_com14(ctx: Ctx, arg: int = 0, arg1: int = 0) -> Generator[None, int, None]:
     """`SEX_COM14.ERB@SEX_COM14`:7–117（衣装を破く）。:46 の `ABL:恥情` は DIM.ERH:119 の定数 15 ＝ ABL:15（マゾっ気）。"""
     st = ctx.state
     c = tc(ctx)
@@ -1075,7 +1078,7 @@ def sex_com14(ctx: Ctx, arg: int = 0, arg1: int = 0) -> None:
     tentacle_syasei_up(ctx, 50)
     _size(ctx, 14)
     palam_vabc_estimate(ctx, L, -1)
-    _mob_or_msg(ctx, 14, lambda: sexmsg.msg_com14(ctx))
+    yield from _mob_or_msg(ctx, 14, lambda: sexmsg.msg_com14(ctx))
     set_tentacle_pool(ctx)
     L[9] = _le2(c.abl[15], (2000, 1000, 500, 100))
     cl = st.temp.cloth
@@ -1106,7 +1109,7 @@ def sex_com14(ctx: Ctx, arg: int = 0, arg1: int = 0) -> None:
         st.tflag[17] = -1
     st.tflag[20] = 14
     L[9] += 1000
-    _finish(ctx, "SEX_COM14", L, 0)
+    yield from _finish(ctx, "SEX_COM14", L, 0)
 
 
 def _com15_20_head(ctx: Ctx) -> None:
@@ -1115,7 +1118,7 @@ def _com15_20_head(ctx: Ctx) -> None:
         state_change_pkousoku(ctx, 100)
 
 
-def sex_com15(ctx: Ctx, arg: int = 0, arg1: int = 0) -> None:
+def sex_com15(ctx: Ctx, arg: int = 0, arg1: int = 0) -> Generator[None, int, None]:
     """`SEX_COM15.ERB@SEX_COM15`:7–169（種付けピストン）。"""
     st = ctx.state
     c = tc(ctx)
@@ -1129,7 +1132,7 @@ def sex_com15(ctx: Ctx, arg: int = 0, arg1: int = 0) -> None:
     _size(ctx, 15)
     _set(L, 1, _tbl(_a(ctx, "Ｖ感覚"), (40, 100, 200, 400, 1000, 2000)))
     palam_vabc_estimate(ctx, L, 1, -1)
-    _mob_or_msg(ctx, 15, lambda: sexmsg.msg_plain(ctx, 15))
+    yield from _mob_or_msg(ctx, 15, lambda: sexmsg.msg_plain(ctx, 15))
     set_tentacle_pool(ctx)
     cloth_battle_damage(ctx, 2)
     add_exp(ctx, c, "Ｖ経験", 1)
@@ -1156,7 +1159,7 @@ def sex_com15(ctx: Ctx, arg: int = 0, arg1: int = 0) -> None:
     L[9] += 100
     L[10] += 50
     L[11] += 150
-    _finish(ctx, "SEX_COM15", L, 1)
+    yield from _finish(ctx, "SEX_COM15", L, 1)
 
 
 def _finish_tflag4_hand_mouth(ctx: Ctx) -> None:
@@ -1171,7 +1174,7 @@ def _finish_tflag4_hand_mouth(ctx: Ctx) -> None:
     st.tflag[4] |= MOUTH
 
 
-def sex_com16(ctx: Ctx, arg: int = 0, arg1: int = 0) -> None:
+def sex_com16(ctx: Ctx, arg: int = 0, arg1: int = 0) -> Generator[None, int, None]:
     """`SEX_COM16.ERB@SEX_COM16`:7–173（種付けフィニッシュ）。"""
     st = ctx.state
     c = tc(ctx)
@@ -1187,7 +1190,7 @@ def sex_com16(ctx: Ctx, arg: int = 0, arg1: int = 0) -> None:
     _size(ctx, 16)
     _set(L, 1, _tbl(_a(ctx, "Ｖ感覚"), (4600, 5500, 8000, 11000, 14000, 20000)))
     palam_vabc_estimate(ctx, L, 1, -1)
-    _mob_or_msg(ctx, 16, lambda: sexmsg.msg_plain(ctx, 16))
+    yield from _mob_or_msg(ctx, 16, lambda: sexmsg.msg_plain(ctx, 16))
     set_tentacle_pool(ctx)
     cloth_battle_damage(ctx, 2)
     add_exp(ctx, c, "Ｖ経験", 1)
@@ -1209,7 +1212,7 @@ def sex_com16(ctx: Ctx, arg: int = 0, arg1: int = 0) -> None:
     L[8] += 4000
     L[9] += 1000
     L[11] += 1500
-    _finish(ctx, "SEX_COM16", L, 500)
+    yield from _finish(ctx, "SEX_COM16", L, 500)
 
 
 def sex_com17(ctx: Ctx, arg: int = 0, arg1: int = 0) -> SexGen:
@@ -1231,7 +1234,7 @@ def sex_com17(ctx: Ctx, arg: int = 0, arg1: int = 0) -> SexGen:
     _size(ctx, 17)
     _set(L, 2, _a_sense(ctx, (8, 50, 200, 400, 1000, 2000), (40, 100, 200, 400, 1000, 2000)))
     palam_vabc_estimate(ctx, L, 2, -1)
-    _mob_or_msg(ctx, 17, lambda: sexmsg.msg_plain(ctx, 17))
+    yield from _mob_or_msg(ctx, 17, lambda: sexmsg.msg_plain(ctx, 17))
     set_tentacle_pool(ctx)
     cloth_battle_damage(ctx, 2)
     add_exp(ctx, c, "Ａ経験", 1)
@@ -1261,11 +1264,11 @@ def sex_com17(ctx: Ctx, arg: int = 0, arg1: int = 0) -> SexGen:
     L[9] += 200
     L[10] += 100
     L[11] += 50
-    _finish(ctx, "SEX_COM17", L, 1)
+    yield from _finish(ctx, "SEX_COM17", L, 1)
     return 1
 
 
-def sex_com18(ctx: Ctx, arg: int = 0, arg1: int = 0) -> None:
+def sex_com18(ctx: Ctx, arg: int = 0, arg1: int = 0) -> Generator[None, int, None]:
     """`SEX_COM18.ERB@SEX_COM18`:7–195（アナルフィニッシュ）。"""
     st = ctx.state
     c = tc(ctx)
@@ -1284,7 +1287,7 @@ def sex_com18(ctx: Ctx, arg: int = 0, arg1: int = 0) -> None:
     _size(ctx, 18)
     _set(L, 2, _a_sense(ctx, (920, 2750, 8000, 11000, 14000, 20000), (4600, 5500, 8000, 11000, 14000, 20000)))
     palam_vabc_estimate(ctx, L, 2, -1)
-    _mob_or_msg(ctx, 18, lambda: sexmsg.msg_plain(ctx, 18))
+    yield from _mob_or_msg(ctx, 18, lambda: sexmsg.msg_plain(ctx, 18))
     set_tentacle_pool(ctx)
     cloth_battle_damage(ctx, 2)
     add_exp(ctx, c, "Ａ経験", 1)
@@ -1306,7 +1309,7 @@ def sex_com18(ctx: Ctx, arg: int = 0, arg1: int = 0) -> None:
     L[8] += 4000
     L[9] += 1000
     L[11] += 1500
-    _finish(ctx, "SEX_COM18", L, 500)
+    yield from _finish(ctx, "SEX_COM18", L, 500)
 
 
 def _va_fear(ctx: Ctx, L: list[int]) -> None:
@@ -1315,7 +1318,7 @@ def _va_fear(ctx: Ctx, L: list[int]) -> None:
     _set(L, 11, {0: 150, 1: 75, 2: 35, 3: 15}.get(_a(ctx, "Ａ感覚")))
 
 
-def sex_com19(ctx: Ctx, arg: int = 0, arg1: int = 0) -> None:
+def sex_com19(ctx: Ctx, arg: int = 0, arg1: int = 0) -> Generator[None, int, None]:
     """`SEX_COM19.ERB@SEX_COM19`:7–250（両穴ピストン）。:62／:77 はどちらも `CONFIG_CHECK_BALANCE_F(7) == 0`
     （2 つ目の表には到達しない：原作どおり）。"""
     st = ctx.state
@@ -1375,10 +1378,10 @@ def sex_com19(ctx: Ctx, arg: int = 0, arg1: int = 0) -> None:
     L[9] += 300
     L[10] += 150
     L[11] += 200
-    _finish(ctx, "SEX_COM19", L, 5)
+    yield from _finish(ctx, "SEX_COM19", L, 5)
 
 
-def sex_com20(ctx: Ctx, arg: int = 0, arg1: int = 0) -> None:
+def sex_com20(ctx: Ctx, arg: int = 0, arg1: int = 0) -> Generator[None, int, None]:
     """`SEX_COM20.ERB@SEX_COM20`:7–240（両穴フィニッシュ）。"""
     st = ctx.state
     c = tc(ctx)
@@ -1399,7 +1402,7 @@ def sex_com20(ctx: Ctx, arg: int = 0, arg1: int = 0) -> None:
     _set(L, 1, _tbl(_a(ctx, "Ｖ感覚"), (3450, 4125, 6000, 8250, 10500, 15000)))
     _set(L, 2, _a_sense(ctx, (690, 2065, 6000, 8250, 10500, 15000), (3450, 4125, 6000, 8250, 10500, 15000)))
     palam_vabc_estimate(ctx, L, 1, 2, -1)
-    _mob_or_msg(ctx, 20, lambda: sexmsg.msg_plain(ctx, 20))
+    yield from _mob_or_msg(ctx, 20, lambda: sexmsg.msg_plain(ctx, 20))
     set_tentacle_pool(ctx)
     cloth_battle_damage(ctx, 3)
     add_exp(ctx, c, "Ｖ経験", 1)
@@ -1424,13 +1427,13 @@ def sex_com20(ctx: Ctx, arg: int = 0, arg1: int = 0) -> None:
     L[8] += 8000
     L[9] += 2000
     L[11] += 3000
-    _finish(ctx, "SEX_COM20", L, 1000)
+    yield from _finish(ctx, "SEX_COM20", L, 1000)
 
 
 # --- SEX_SPCOM0〜15 ------------------------------------------------------------------
 
 
-def sex_spcom0(ctx: Ctx) -> None:
+def sex_spcom0(ctx: Ctx) -> Generator[None, int, None]:
     """`SEX_SPCOM0.ERB@SEX_SPCOM0`:7–112（C攻めSP）。"""
     st = ctx.state
     c = tc(ctx)
@@ -1458,7 +1461,7 @@ def sex_spcom0(ctx: Ctx) -> None:
     L[8] += 2000
     L[10] += 500
     L[11] += 1000
-    _finish(ctx, "SEX_SPCOM0", L, 200)
+    yield from _finish(ctx, "SEX_SPCOM0", L, 200)
 
 
 def _no_mob_sp(ctx: Ctx, n: int) -> None:
@@ -1525,7 +1528,7 @@ def sex_spcom1(ctx: Ctx) -> SexGen:
     L[8] += 4000
     L[10] += 1000
     L[11] += 1000
-    _finish(ctx, "SEX_SPCOM1", L, 200)
+    yield from _finish(ctx, "SEX_SPCOM1", L, 200)
     return 1
 
 
@@ -1594,11 +1597,11 @@ def sex_spcom2(ctx: Ctx) -> SexGen:
     L[8] += 2000
     L[10] += 1000
     L[11] += 1000
-    _finish(ctx, "SEX_SPCOM2", L, 200)
+    yield from _finish(ctx, "SEX_SPCOM2", L, 200)
     return 1
 
 
-def sex_spcom3(ctx: Ctx) -> None:
+def sex_spcom3(ctx: Ctx) -> Generator[None, int, None]:
     """`SEX_SPCOM3.ERB@SEX_SPCOM3`:7–111（B攻めSP）。"""
     st = ctx.state
     _random(ctx, B)
@@ -1623,10 +1626,10 @@ def sex_spcom3(ctx: Ctx) -> None:
     L[8] += 2000
     L[10] += 2000
     L[11] += 1000
-    _finish(ctx, "SEX_SPCOM3", L, 200)
+    yield from _finish(ctx, "SEX_SPCOM3", L, 200)
 
 
-def sex_spcom4(ctx: Ctx) -> None:
+def sex_spcom4(ctx: Ctx) -> Generator[None, int, None]:
     """`SEX_SPCOM4.ERB@SEX_SPCOM4`:7–96（電撃）。EX_COM／SH_COM は変更しない（前回値のまま：原作どおり）。"""
     st = ctx.state
     L = _begin(ctx)
@@ -1649,10 +1652,10 @@ def sex_spcom4(ctx: Ctx) -> None:
     L[8] += 5000
     L[10] += 20000
     L[11] += 2000
-    _finish(ctx, "SEX_SPCOM4", L, 100)
+    yield from _finish(ctx, "SEX_SPCOM4", L, 100)
 
 
-def sex_spcom5(ctx: Ctx) -> None:
+def sex_spcom5(ctx: Ctx) -> Generator[None, int, None]:
     """`SEX_SPCOM5.ERB@SEX_SPCOM5`:7–167（パイズリ）。"""
     st = ctx.state
     c = tc(ctx)
@@ -1686,10 +1689,10 @@ def sex_spcom5(ctx: Ctx) -> None:
     L[8] += 5000
     L[10] += 1000
     L[11] += 1000
-    _finish(ctx, "SEX_SPCOM5", L, 300)
+    yield from _finish(ctx, "SEX_SPCOM5", L, 300)
 
 
-def sex_spcom6(ctx: Ctx) -> None:
+def sex_spcom6(ctx: Ctx) -> Generator[None, int, None]:
     """`SEX_SPCOM6.ERB@SEX_SPCOM6`:8–45（強制自慰）。自慰本体は SELF_KIND（`self_kind.py`、ARG:1 = 0）。"""
     st = ctx.state
     L = _begin(ctx)
@@ -1704,7 +1707,7 @@ def sex_spcom6(ctx: Ctx) -> None:
     st.tflag[20] = 1006
     from .self_kind import self_kind
 
-    self_kind(ctx, st.target, 0)  # :45
+    yield from self_kind(ctx, st.target, 0)  # :45
 
 
 def sex_spcom7(ctx: Ctx) -> SexGen:
@@ -1729,10 +1732,10 @@ def sex_spcom7(ctx: Ctx) -> SexGen:
         L[7] = {2: 500, 3: 1000, 4: 2000}.get(ro, 5000)
     st.tflag[17] = -1
     st.tflag[20] = 1007
-    _finish(ctx, "SEX_SPCOM7", L, 150)
+    yield from _finish(ctx, "SEX_SPCOM7", L, 150)
 
 
-def sex_spcom8(ctx: Ctx) -> None:
+def sex_spcom8(ctx: Ctx) -> Generator[None, int, None]:
     """`SEX_SPCOM8.ERB@SEX_SPCOM8`:7–130（尿道攻め）。"""
     st = ctx.state
     c = tc(ctx)
@@ -1763,7 +1766,7 @@ def sex_spcom8(ctx: Ctx) -> None:
     L[9] += 400
     L[10] += 500
     L[11] += 4000
-    _finish(ctx, "SEX_SPCOM8", L, 50)
+    yield from _finish(ctx, "SEX_SPCOM8", L, 50)
 
 
 def _gaping_exp_tables(ctx: Ctx, L: list[int], ex: int) -> None:
@@ -1786,7 +1789,7 @@ def _gaping_sense(v: int, ex: int) -> int:
     return v
 
 
-def sex_spcom9(ctx: Ctx) -> None:
+def sex_spcom9(ctx: Ctx) -> Generator[None, int, None]:
     """`SEX_SPCOM9.ERB@SEX_SPCOM9`:7–188（V拡張攻め）。"""
     st = ctx.state
     c = tc(ctx)
@@ -1827,10 +1830,10 @@ def sex_spcom9(ctx: Ctx) -> None:
     L[8] += 4000
     L[10] += 1500
     L[11] += 1500
-    _finish(ctx, "SEX_SPCOM9", L, 50)
+    yield from _finish(ctx, "SEX_SPCOM9", L, 50)
 
 
-def sex_spcom10(ctx: Ctx) -> None:
+def sex_spcom10(ctx: Ctx) -> Generator[None, int, None]:
     """`SEX_SPCOM10.ERB@SEX_SPCOM10`:7–178（A拡張攻め）。"""
     st = ctx.state
     c = tc(ctx)
@@ -1863,10 +1866,10 @@ def sex_spcom10(ctx: Ctx) -> None:
     L[9] += 500
     L[10] += 2000
     L[11] += 1000
-    _finish(ctx, "SEX_SPCOM10", L, 50)
+    yield from _finish(ctx, "SEX_SPCOM10", L, 50)
 
 
-def sex_spcom11(ctx: Ctx) -> None:
+def sex_spcom11(ctx: Ctx) -> Generator[None, int, None]:
     """`SEX_SPCOM11.ERB@SEX_SPCOM11`:7–187（甘えん坊授乳プレイ）。"""
     st = ctx.state
     c = tc(ctx)
@@ -1910,10 +1913,10 @@ def sex_spcom11(ctx: Ctx) -> None:
     L[8] += 2000
     L[9] += 2000
     L[11] += 4000
-    _finish(ctx, "SEX_SPCOM11", L, 200)
+    yield from _finish(ctx, "SEX_SPCOM11", L, 200)
 
 
-def sex_spcom12(ctx: Ctx) -> None:
+def sex_spcom12(ctx: Ctx) -> Generator[None, int, None]:
     """`SEX_SPCOM12.ERB@SEX_SPCOM12`:7–93（ヘソ快楽攻め）。"""
     st = ctx.state
     L = _begin(ctx)
@@ -1935,10 +1938,10 @@ def sex_spcom12(ctx: Ctx) -> None:
     L[7] += 10000
     L[8] += 5000
     L[11] += 2000
-    _finish(ctx, "SEX_SPCOM12", L, 1050)
+    yield from _finish(ctx, "SEX_SPCOM12", L, 1050)
 
 
-def sex_spcom13(ctx: Ctx) -> None:
+def sex_spcom13(ctx: Ctx) -> Generator[None, int, None]:
     """`SEX_SPCOM13.ERB@SEX_SPCOM13`:7–325（丸飲み精液攻め：Ｐ触手）。"""
     from .ninsin import ninsin_hantei
 
@@ -2000,7 +2003,7 @@ def sex_spcom13(ctx: Ctx) -> None:
         L[11] += 2000
         add12 = 1050
         if female:  # :242–243
-            ninsin_hantei(ctx, 5, 3)
+            yield from ninsin_hantei(ctx, 5, 3)
         c.base[0] = 0  # :246–247
         c.base[1] = 0
     else:  # :248–314 失敗
@@ -2022,10 +2025,10 @@ def sex_spcom13(ctx: Ctx) -> None:
     set_tentacle_pool(ctx)
     st.tflag[17] = -1
     st.tflag[20] = 1013
-    _finish(ctx, "SEX_SPCOM13", L, add12)
+    yield from _finish(ctx, "SEX_SPCOM13", L, add12)
 
 
-def sex_spcom14(ctx: Ctx) -> None:
+def sex_spcom14(ctx: Ctx) -> Generator[None, int, None]:
     """`SEX_SPCOM14.ERB@SEX_SPCOM14`:7–140（催眠姦）。"""
     st = ctx.state
     c = tc(ctx)
@@ -2059,10 +2062,10 @@ def sex_spcom14(ctx: Ctx) -> None:
     L[7] += 1000
     L[8] += 3000
     L[9] += 3000
-    _finish(ctx, "SEX_SPCOM14", L, 500)
+    yield from _finish(ctx, "SEX_SPCOM14", L, 500)
 
 
-def sex_spcom15(ctx: Ctx) -> None:
+def sex_spcom15(ctx: Ctx) -> Generator[None, int, None]:
     """`SEX_SPCOM15.ERB@SEX_SPCOM15`:7–159（サブミッションファック）。"""
     st = ctx.state
     c = tc(ctx)
@@ -2112,23 +2115,24 @@ def sex_spcom15(ctx: Ctx) -> None:
     L[7] += 500
     L[10] += 15000
     L[11] += 1500
-    _finish(ctx, "SEX_SPCOM15", L, 1050)
+    yield from _finish(ctx, "SEX_SPCOM15", L, 1050)
 
 
 # --- SEX_COMABLE.ERB ------------------------------------------------------------------
 
-_COM_FUNCS = {
-    0: sex_com0, 1: sex_com1, 2: sex_com2, 4: sex_com4, 6: sex_com6, 7: sex_com7, 8: sex_com8, 9: sex_com9,
-    11: sex_com11, 12: sex_com12, 13: sex_com13, 14: sex_com14, 15: sex_com15, 16: sex_com16,
-    18: sex_com18, 19: sex_com19, 20: sex_com20,
+# S71：共用PALAM_CAL可進TS輸入，全部命令都必須等待；不再區分同步表。
+_COM_GENS = {
+    0: sex_com0, 1: sex_com1, 2: sex_com2, 3: sex_com3, 4: sex_com4,
+    5: sex_com5, 6: sex_com6, 7: sex_com7, 8: sex_com8, 9: sex_com9,
+    10: sex_com10, 11: sex_com11, 12: sex_com12, 13: sex_com13, 14: sex_com14,
+    15: sex_com15, 16: sex_com16, 17: sex_com17, 18: sex_com18, 19: sex_com19, 20: sex_com20,
 }
-_COM_GENS = {3: sex_com3, 5: sex_com5, 10: sex_com10, 17: sex_com17}
-_SP_FUNCS = {
-    1000: sex_spcom0, 1003: sex_spcom3, 1004: sex_spcom4, 1005: sex_spcom5, 1006: sex_spcom6,
-    1008: sex_spcom8, 1009: sex_spcom9, 1010: sex_spcom10, 1011: sex_spcom11, 1012: sex_spcom12,
-    1013: sex_spcom13, 1014: sex_spcom14, 1015: sex_spcom15,
+_SP_GENS = {
+    1000: sex_spcom0, 1001: sex_spcom1, 1002: sex_spcom2, 1003: sex_spcom3,
+    1004: sex_spcom4, 1005: sex_spcom5, 1006: sex_spcom6, 1007: sex_spcom7,
+    1008: sex_spcom8, 1009: sex_spcom9, 1010: sex_spcom10, 1011: sex_spcom11,
+    1012: sex_spcom12, 1013: sex_spcom13, 1014: sex_spcom14, 1015: sex_spcom15,
 }
-_SP_GENS = {1001: sex_spcom1, 1002: sex_spcom2, 1007: sex_spcom7}
 
 
 def _run(ctx: Ctx, n: int, local: int) -> SexGen:
@@ -2136,12 +2140,8 @@ def _run(ctx: Ctx, n: int, local: int) -> SexGen:
     st = ctx.state
     if n in _COM_GENS:
         yield from _COM_GENS[n](ctx, st.flag[11], local)
-    elif n in _COM_FUNCS:
-        _COM_FUNCS[n](ctx, st.flag[11], local)
     elif n in _SP_GENS:
         yield from _SP_GENS[n](ctx)
-    elif n in _SP_FUNCS:
-        _SP_FUNCS[n](ctx)
     else:
         raise KeyError(n)
     return 1

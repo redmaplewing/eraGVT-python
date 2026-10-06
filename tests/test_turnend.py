@@ -5,6 +5,7 @@ SHOP_TURNEND.ERB は `インターミッション画面/SHOP_TURNEND.ERB`。
 """
 
 from __future__ import annotations
+from _gen_driver import run_no_input
 
 import pytest
 
@@ -282,7 +283,7 @@ def test_night_events_not_triggered_in_opening_state(ctx):
     list(turnend.prison(ctx))  # 幽閉中（CFLAG:0 == 1）なし
     list(turnend.birth_hantei(ctx))  # 妊娠なし
     list(turnend.grow_hantei(ctx))  # 育児なし
-    turnend.akuoti_attack(ctx)  # 悪堕ちなし
+    run_no_input(turnend.akuoti_attack(ctx))  # 悪堕ちなし
     list(turnend.lovesex_night(ctx))  # 交際相手 0 → :28 CONTINUE（RAND 短絡：OperatorMethod.cs:532–536）
     list(turnend.yobai(ctx))  # 淫核等・感覚 0 → 候補判定の対象外
     st.day[0] = 2
@@ -293,7 +294,7 @@ def test_self_night_rolls_but_zero_chance(ctx):
     st = ctx.state
     st.time = 1
     st.rng = FixedRng([0, 0, 0])  # :47 RAND:100 < 0 は常に偽
-    turnend.self_night(ctx)
+    run_no_input(turnend.self_night(ctx))
 
 
 @pytest.mark.parametrize(

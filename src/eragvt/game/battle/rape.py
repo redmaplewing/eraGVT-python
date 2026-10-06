@@ -108,7 +108,7 @@ def calc_gangbang(ctx: Ctx, situation: str, sao: int, nakadashi: int) -> InputGe
         if nakadashi == 1 and situation != "生オナホ":
             yield from after_pill(ctx, st.target, 20, NOZOMANAI_AITE)
         if situation != "生オナホ":
-            ninsin_hantei(ctx, _gb_get(ctx, 123), 100, NOZOMANAI_AITE)
+            yield from ninsin_hantei(ctx, _gb_get(ctx, 123), 100, NOZOMANAI_AITE)
     if situation == "脅迫":  # :145–159
         if t(ctx, c, "淫乱") or abl(ctx, c, "欲望") >= 3 or abl(ctx, c, "マゾっ気") >= 3:
             c.cflag[99] = 10

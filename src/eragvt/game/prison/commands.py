@@ -10,6 +10,7 @@ catalog で実行できないとき（Null など）は佔位 1 行＋末尾の 
 """
 
 from __future__ import annotations
+from collections.abc import Generator
 
 from ..body import set_profile
 from ..action import Ctx, kojo_root
@@ -165,12 +166,12 @@ def _ablup1(ctx: Ctx) -> None:
     ablup(ctx, 1)
 
 
-def _ninsin(ctx: Ctx, a0: int, a1: int, a2: int = 0) -> None:
+def _ninsin(ctx: Ctx, a0: int, a1: int, a2: int = 0) -> Generator[None, int, None]:
     """`SIF SHIELD:1 <= 0 / TRYCALL NINSIN_HANTEI, …`。"""
     from ..battle.ninsin import ninsin_hantei
 
     if ctx.state.shield[1] <= 0:
-        ninsin_hantei(ctx, a0, a1, a2)
+        yield from ninsin_hantei(ctx, a0, a1, a2)
 
 
 def _start(ctx: Ctx, tflag10: int, osen: tuple[int, int], incest_check: bool = True) -> list[int]:
@@ -237,7 +238,7 @@ def _base_add(L: list[int], adds: tuple[int, int, int, int, int, int]) -> None:
 # --- PRISON_COM0〜7 ------------------------------------------------------------------------------
 
 
-def prison_com0(ctx: Ctx) -> None:
+def prison_com0(ctx: Ctx) -> Generator[None, int, None]:
     """`PRISON_COM0_Ｃ責め.ERB@PRISON_COM0`:6–205（C 中心攻め）。"""
     L = _start(ctx, 0, (5, 6))  # :8–50
     _sense(ctx, L, _HIGH, _LOW, _LOW, _MID, v_female_only=True)  # :53–124
@@ -250,10 +251,10 @@ def prison_com0(ctx: Ctx) -> None:
     _msg(ctx, "MESSAGE_PRISON_COM_0", "PRISON_COM_0")  # :177
     _tail(ctx, L)  # :180–199
     _ablup1(ctx)  # :202
-    _ninsin(ctx, 10, 30)  # :204–205
+    yield from _ninsin(ctx, 10, 30)  # :204–205
 
 
-def prison_com1(ctx: Ctx) -> None:
+def prison_com1(ctx: Ctx) -> Generator[None, int, None]:
     """`PRISON_COM1_Ｖ責め.ERB@PRISON_COM1`:6–237（V 中心攻め）。"""
     L = _start(ctx, 1, (5, 6))  # :8–49
     _sense(ctx, L, _LOW, _HIGH, (1, 5, 50, 250, 500, 1000), _LOW, v_female_only=False)  # :52–121
@@ -270,10 +271,10 @@ def prison_com1(ctx: Ctx) -> None:
     _msg(ctx, "MESSAGE_PRISON_COM_1", "PRISON_COM_1")  # :209
     _tail(ctx, L)
     _ablup1(ctx)  # :234
-    _ninsin(ctx, 25, 60)  # :236–237
+    yield from _ninsin(ctx, 25, 60)  # :236–237
 
 
-def prison_com2(ctx: Ctx) -> None:
+def prison_com2(ctx: Ctx) -> Generator[None, int, None]:
     """`PRISON_COM2_Ａ責め.ERB@PRISON_COM2`:6–244（A 中心攻め）。"""
     L = _start(ctx, 2, (5, 6))  # :8–48
     _sense(ctx, L, _LOW, (1, 5, 50, 250, 500, 1000), (10, 50, 200, 500, 1000, 2000), _LOW, v_female_only=True)  # :51–122
@@ -290,10 +291,10 @@ def prison_com2(ctx: Ctx) -> None:
     _msg(ctx, "MESSAGE_PRISON_COM_2", "PRISON_COM_2")  # :216
     _tail(ctx, L)
     _ablup1(ctx)  # :241
-    _ninsin(ctx, 25, 30)  # :243–244
+    yield from _ninsin(ctx, 25, 30)  # :243–244
 
 
-def prison_com3(ctx: Ctx) -> None:
+def prison_com3(ctx: Ctx) -> Generator[None, int, None]:
     """`PRISON_COM3_Ｂ責め.ERB@PRISON_COM3`:6–216（B 中心攻め）。"""
     L = _start(ctx, 3, (5, 6))  # :8–48
     _sense(ctx, L, _MID, _LOW, _LOW, _HIGH, v_female_only=True)  # :51–122
@@ -308,7 +309,7 @@ def prison_com3(ctx: Ctx) -> None:
     _msg(ctx, "MESSAGE_PRISON_COM_3", "PRISON_COM_3")  # :188
     _tail(ctx, L)
     _ablup1(ctx)  # :213
-    _ninsin(ctx, 10, 30)  # :215–216
+    yield from _ninsin(ctx, 10, 30)  # :215–216
 
 
 def prison_com4(ctx: Ctx) -> None:
@@ -336,7 +337,7 @@ def prison_com4(ctx: Ctx) -> None:
     _ablup1(ctx)  # :236
 
 
-def prison_com5(ctx: Ctx) -> None:
+def prison_com5(ctx: Ctx) -> Generator[None, int, None]:
     """`PRISON_COM5_強制奉仕_催眠.ERB@PRISON_COM5`:6–265（強制奉仕）。"""
     L = _start(ctx, 5, (10, 6))  # :8–48
     _sense(ctx, L, _LOW, _LOW, _LOW, _LOW, v_female_only=True, a_needs_exp=True)  # :51–125
@@ -368,7 +369,7 @@ def prison_com5(ctx: Ctx) -> None:
     _msg(ctx, "MESSAGE_PRISON_COM_5", "PRISON_COM_5")  # :237
     _tail(ctx, L)
     _ablup1(ctx)  # :262
-    _ninsin(ctx, 25, 30)  # :264–265
+    yield from _ninsin(ctx, 25, 30)  # :264–265
 
 
 def prison_com6(ctx: Ctx) -> None:
@@ -390,7 +391,7 @@ def prison_com6(ctx: Ctx) -> None:
     _ablup1(ctx)  # :250
 
 
-def prison_com7(ctx: Ctx) -> None:
+def prison_com7(ctx: Ctx) -> Generator[None, int, None]:
     """`PRISON_COM7_子触手.ERB@PRISON_COM7`:6–233（子触手に犯される）。INCEST_F の判定は無い。"""
     st = ctx.state
     c = tc(ctx)
@@ -419,7 +420,7 @@ def prison_com7(ctx: Ctx) -> None:
     _tail(ctx, L)
     _ablup1(ctx)  # :230
     # :232–233 `TRYCALL NINSIN_HANTEI,(15 * CFLAG:220),(MIN(EXP:TARGET:近親交配経験 * 5 + 20,120)),200`
-    _ninsin(ctx, 15 * c.cflag[220], min(exp(ctx, st.target_chara, "近親交配経験") * 5 + 20, 120), 200)
+    yield from _ninsin(ctx, 15 * c.cflag[220], min(exp(ctx, st.target_chara, "近親交配経験") * 5 + 20, 120), 200)
 
 
 # --- PRISON_COM100〜105 -------------------------------------------------------------------------
@@ -467,7 +468,7 @@ def _by_exp(e: int, table: tuple[int, int, int, int]) -> int:
     return table[0] if e < 3 else table[1] if e < 5 else table[2] if e < 8 else table[3]
 
 
-def prison_com101(ctx: Ctx) -> None:
+def prison_com101(ctx: Ctx) -> Generator[None, int, None]:
     """`PRISON_COM101_Ｖ拡張.ERB@PRISON_COM101`:6–208（V 拡張）。"""
     c = tc(ctx)
     L = _start(ctx, 101, (10, 5))  # :8–48
@@ -490,7 +491,7 @@ def prison_com101(ctx: Ctx) -> None:
         L[150] = 1
     _tail(ctx, L)
     _ablup1(ctx)  # :205
-    _ninsin(ctx, 10, 30)  # :207–208
+    yield from _ninsin(ctx, 10, 30)  # :207–208
 
 
 def prison_com102(ctx: Ctx) -> None:
@@ -546,7 +547,7 @@ def prison_com103(ctx: Ctx) -> None:
     _ablup1(ctx)  # :144
 
 
-def prison_com104(ctx: Ctx) -> None:
+def prison_com104(ctx: Ctx) -> Generator[None, int, None]:
     """`PRISON_COM104_苗床化.ERB@PRISON_COM104`:6–244（苗床化）。"""
     c = tc(ctx)
     L = _start(ctx, 104, (10, 11))  # :8–48
@@ -581,7 +582,7 @@ def prison_com104(ctx: Ctx) -> None:
     _base_add(L, (20, 0, 250, 0, 250, 250))  # :201–216
     _tail(ctx, L)
     _ablup1(ctx)  # :241
-    _ninsin(ctx, 120, 60)  # :243–244
+    yield from _ninsin(ctx, 120, 60)  # :243–244
 
 
 def prison_com105(ctx: Ctx) -> None:
@@ -627,7 +628,7 @@ def prison_com105(ctx: Ctx) -> None:
 # --- PRISON_COM200／201（産み付け）・300（毒液注射）・301（寄生）-----------------------------------
 
 
-def prison_com200(ctx: Ctx) -> None:
+def prison_com200(ctx: Ctx) -> Generator[None, int, None]:
     """`PRISON_COM200_Ｖ産み付け.ERB@PRISON_COM200`:6–203（V に産卵）。"""
     c = tc(ctx)
     L = _start(ctx, 200, (10, 10))  # :8–48
@@ -646,7 +647,7 @@ def prison_com200(ctx: Ctx) -> None:
         L[150] = 1
     _tail(ctx, L)
     _ablup1(ctx)  # :200
-    _ninsin(ctx, 50, 4000000)  # :202–203
+    yield from _ninsin(ctx, 50, 4000000)  # :202–203
 
 
 def _umitsuke_rest(L: list[int], e: int) -> None:
@@ -740,7 +741,7 @@ def prison_com301(ctx: Ctx) -> None:
 # --- PRISON_COMABLE.ERB ----------------------------------------------------------------------------
 
 
-def prison_comable(ctx: Ctx, arg: int) -> None:
+def prison_comable(ctx: Ctx, arg: int) -> Generator[None, int, None]:
     """`@PRISON_COMABLE, ARG`:93–348。
 
     `GOTO SHIELDED` は IF ARG == -1 ブロック内の `$SHIELDED`（:99）へ飛び、ENDIF（何もしない命令：
@@ -759,22 +760,22 @@ def prison_comable(ctx: Ctx, arg: int) -> None:
             arg = cand[st.rng.rand(len(cand))] if cand else st.rng.rand(KANKAKU_NUM)
             shielded = False
         if arg == 0:  # :131–132
-            prison_com0(ctx)
+            yield from prison_com0(ctx)
         elif arg == 1:  # :134–146
             if otoko_no_ko():
-                prison_com2(ctx)
+                yield from prison_com2(ctx)
             elif male():
-                prison_com0(ctx)
+                yield from prison_com0(ctx)
             else:
-                prison_com1(ctx)
+                yield from prison_com1(ctx)
         elif arg == 2:
-            prison_com2(ctx)
+            yield from prison_com2(ctx)
         elif arg == 3:
-            prison_com3(ctx)
+            yield from prison_com3(ctx)
         elif arg == 4:
             prison_com4(ctx)
         elif arg == 5:
-            prison_com5(ctx)
+            yield from prison_com5(ctx)
         elif arg == 6:  # :160–166
             if t(ctx, c, "感情乏しい") > 0:
                 prison_com4(ctx)
@@ -785,13 +786,13 @@ def prison_comable(ctx: Ctx, arg: int) -> None:
                 shielded = True
                 continue
             if otoko_no_ko():
-                prison_com2(ctx)
+                yield from prison_com2(ctx)
             elif male():
-                prison_com0(ctx)
+                yield from prison_com0(ctx)
             elif check_holyvirgin(ctx) == 1:
-                prison_com5(ctx)
+                yield from prison_com5(ctx)
             else:
-                prison_com7(ctx)
+                yield from prison_com7(ctx)
         elif arg == 100:  # :185–194
             if sh[0] > 0:
                 shielded = True
@@ -799,7 +800,7 @@ def prison_comable(ctx: Ctx, arg: int) -> None:
             from ..action import config_check_maniac
 
             if male() or config_check_maniac(st, 1) == 0:
-                prison_com0(ctx)
+                yield from prison_com0(ctx)
             else:
                 prison_com100(ctx)
         elif arg == 101:  # :196–220
@@ -807,26 +808,26 @@ def prison_comable(ctx: Ctx, arg: int) -> None:
                 shielded = True
                 continue
             if otoko_no_ko() and exp(ctx, c, "Ａ経験") < 20:
-                prison_com2(ctx)
+                yield from prison_com2(ctx)
             elif otoko_no_ko():
                 if sh[2] > 0:
                     shielded = True
                     continue
                 prison_com102(ctx)
             elif male():
-                prison_com0(ctx)
+                yield from prison_com0(ctx)
             elif check_holyvirgin(ctx) == 1:
-                prison_com5(ctx)
+                yield from prison_com5(ctx)
             elif exp(ctx, c, "Ｖ経験") < 20:
-                prison_com1(ctx)
+                yield from prison_com1(ctx)
             else:
-                prison_com101(ctx)
+                yield from prison_com101(ctx)
         elif arg == 102:  # :223–232
             if sh[2] > 0:
                 shielded = True
                 continue
             if exp(ctx, c, "Ａ経験") < 20:
-                prison_com2(ctx)
+                yield from prison_com2(ctx)
             else:
                 prison_com102(ctx)
         elif arg == 103:  # :235–244
@@ -836,7 +837,7 @@ def prison_comable(ctx: Ctx, arg: int) -> None:
             from ..action import config_check_maniac
 
             if male() or config_check_maniac(st, 2) == 0:
-                prison_com3(ctx)
+                yield from prison_com3(ctx)
             else:
                 prison_com103(ctx)
         elif arg == 104:  # :246–271
@@ -844,18 +845,18 @@ def prison_comable(ctx: Ctx, arg: int) -> None:
                 shielded = True
                 continue
             if otoko_no_ko():
-                prison_com5(ctx)
+                yield from prison_com5(ctx)
             elif male():
-                prison_com0(ctx)
+                yield from prison_com0(ctx)
             elif check_holyvirgin(ctx) == 1:
-                prison_com5(ctx)
+                yield from prison_com5(ctx)
             elif abl(ctx, c, "Ｖ感覚") < 5 and exp(ctx, c, "Ｖ拡張経験") < 10:
                 if exp(ctx, c, "Ｖ経験") < 20:
-                    prison_com1(ctx)
+                    yield from prison_com1(ctx)
                 else:
-                    prison_com101(ctx)
+                    yield from prison_com101(ctx)
             else:
-                prison_com104(ctx)
+                yield from prison_com104(ctx)
         elif arg == 105:  # :273–282
             if sh[3] > 0:
                 shielded = True
@@ -863,7 +864,7 @@ def prison_comable(ctx: Ctx, arg: int) -> None:
             from ..action import config_check_maniac
 
             if male() or config_check_maniac(st, 18) == 0:
-                prison_com3(ctx)
+                yield from prison_com3(ctx)
             else:
                 prison_com105(ctx)
         elif arg == 200:  # :284–318
@@ -876,16 +877,16 @@ def prison_comable(ctx: Ctx, arg: int) -> None:
                     continue
                 prison_com201(ctx) if exp(ctx, c, "Ａ拡張経験") > 3 else prison_com102(ctx)
             elif male():
-                prison_com0(ctx)
+                yield from prison_com0(ctx)
             elif check_holyvirgin(ctx) == 1:
                 if sh[2] > 0:
                     shielded = True
                     continue
                 prison_com201(ctx) if exp(ctx, c, "Ａ拡張経験") > 3 else prison_com102(ctx)
             elif exp(ctx, c, "Ｖ拡張経験") > 3:
-                prison_com200(ctx)
+                yield from prison_com200(ctx)
             else:
-                prison_com101(ctx)
+                yield from prison_com101(ctx)
         elif arg == 201:  # :320–329
             if sh[2] > 0:
                 shielded = True
@@ -899,9 +900,9 @@ def prison_comable(ctx: Ctx, arg: int) -> None:
             if t(ctx, c, "寄生") or config_check_maniac(st, 3) == 0:
                 r = st.rng.rand(3)
                 if r == 0:
-                    prison_com0(ctx)
+                    yield from prison_com0(ctx)
                 elif r == 1:
-                    prison_com1(ctx)
+                    yield from prison_com1(ctx)
                 else:
                     prison_com300(ctx)
             else:

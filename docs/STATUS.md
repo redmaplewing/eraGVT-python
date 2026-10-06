@@ -1,6 +1,6 @@
 # 現況（唯一真相，≤120行）
 
-更新：2026-10-06（S70三種TS與首次事件完成；接S71生命週期輸入）
+更新：2026-10-06（S71生命週期TS輸入完成；下一項S72女體受容）
 
 ## 完成標的與下一步
 
@@ -18,7 +18,9 @@
 - S68子供獨立一人稱已接真實輸入，98取消／99提交按原作續行；全pytest4381、25歲真瀏覽器及正式500通過。
 - S69子供實際身體收尾已接真實輸入，移除身體預設代按輔助函式；全pytest4394、25歲尾段真瀏覽器及正式500通過。
 - S70三種TS原生轉換、幽閉首次事件與catalog等待已接通；全pytest4462、25歲三路真瀏覽器及正式500通過。
-- **下一成果S71仍屬W03**：NINSIN_FLAG／NINSIN_TS_FIX接既有TS，完整傳遞生命週期輸入；W02一般入口已接，既有經歷阻塞保留，未標完成。
+- S71妊娠TS、共用結算／命令／幽閉／夜間／catalog等待與RESULT收尾已接通；全pytest4502、25歲兩入口真瀏覽器及正式500通過。
+- **下一成果S72仍屬W03**：女體受容取得及兩個生命週期入口，規格已寫；W02既有阻塞保留，未標完成。
+- 派工工具回報agent thread limit reached；S71由本階段新建代理完成。S72尚未派工，已詢問是否允許沿用代理；未答覆前維持每階段全新代理要求，工具恢復可建立新代理時可照原流程續行，不反覆催問。
 - [8]經歷／初始經驗涉及直接按未成年年齡／學生類型生成性經驗，保留未實作停止；具體依據見[角色編輯](wiki/era/character-editor.md)，不冒充原作未完成或25歲驗證失敗。
 - 使用者已裁決本次500局採全新25歲人工資料並建立獨立基線；產品年齡規則不變，與S59原始資料不宣稱逐seed等價。
 
@@ -27,7 +29,7 @@
 - **唯一佇列：[PLAN.md](PLAN.md)**。目前推進 **W03可獨立成果**；W01已完成，W02保留已記錄阻塞。依PLAN阻塞處理規則先行W03，不跳往較後包或將W02冒充完成。
 - 使用者本次授權自主推進W01–W09，不需逐階段確認；只在真正阻塞或必要裁決時停下。
 - S57取得／SHOP[800]及S58的20欄角色紀錄、結算統計、ENDLESS最高紀錄、六處成就觸發已接通。S59已按裁決修正新全域版本與最高總評113；W02未移植的解鎖互動端不算已完成。
-- 系統證據、113個停止語句的歸屬及原作未完成範圍見 [PLAYABILITY.md](PLAYABILITY.md)。
+- 系統證據、111個停止語句的歸屬及原作未完成範圍見 [PLAYABILITY.md](PLAYABILITY.md)。
 
 ## 已接通的主要範圍
 
@@ -42,14 +44,15 @@
 
 ## 最新驗收
 
-- S70主代理全pytest：`4462 passed, 1 warning in 157.94s (0:02:37)`；警告為既有Starlette/httpx棄用提示。
-- 真瀏覽器以全新25歲人工前態進真實首次事件TS邊界，MtoF／FtoM／NORMAL三路皆通過成就確認、無效輸入、逐題外貌選擇與完成續行，console錯誤0。
-- 已核對TARGET、原變身狀態復原、色彩／髮型分派、RESULT0=0及尾格、RNG耗用、兩形態25歲；完整EVENTTURNEND→SHOP另有定向案例。
-- Null敘事、臨時存檔；瀏覽器只稱首次事件TS函式邊界驗收，不宣稱自然幽閉全流程或B05整列通過。舊PRINTW等待簡化仍歸W07。
-- S70正式500局：default247上限／3回標題、tokusou250上限；catalog／fixture失敗0。十批退出0、seed／log／JSONL／參數核對，完整JSON與S69逐seed一致。
-- 兩入口各seed0–249、max-shop200、actions101–108，每50局前景一批；fresh-adult-25-v1。基線tmp/s70/adult25-v1/audit.json，前階段tmp/s69/adult25-v1；重現tools/sim_adult.py。
-- 新增68案；初次六檔定向362通過、文字修正後四檔253通過。瀏覽器證據tmp/s70/browser-mtof.json、browser-ftom.json、browser-normal.json及ts-options-complete.jpg。
-- 固定策略抽樣與函式邊界驗收不等於全模式／全設定／完整瀏覽器矩陣完成；與S59原始資料不宣稱等價。
+- S71主代理全pytest：`4502 passed, 1 warning in 294.99s (0:04:54)`；警告為既有Starlette/httpx棄用提示。
+- 真瀏覽器以全新25歲人工前態走NINSIN_HANTEI及EVENTEND→CHECK_AFTER，兩路皆通過無效輸入、髮型／色彩逐題選擇與完成續行，console錯誤0。
+- 一般入口返回1、RESULT0=1且維持原變身；戰後入口答完才清BASE20／21與TCVARn99、返回TURNEND、RESULT0=0。TARGET、尾格、外貌、兩形態25歲均核對；無效輸入未重跑RNG／狀態。
+- TS題目期間CFLAG1按原文暫為0；TS結尾先復原，戰後原呼叫者再解除變身。Null敘事、臨時存檔、人工函式邊界，不宣稱自然戰鬥或B05整列通過。
+- S71正式500局：default247上限／3回標題、tokusou250上限；catalog／fixture失敗0。十批退出0、seed／log／JSONL／參數核對，完整JSON與S70逐seed一致。
+- 兩入口各seed0–249、max-shop200、actions101–108，每50局前景一批；fresh-adult-25-v1。基線tmp/s71/adult25-v1/audit.json，前階段tmp/s70/adult25-v1；重現tools/sim_adult.py。
+- 新增38案及2案模擬計數器回歸；原遊戲測試只改driver／mock。四路EVENTEND、共用PALAM_CAL、COM0／COM2、同步getter及四個原catalog hook等待邊界通過；catalog案例只抽原hook，不冒充完整事件驗收。
+- 修正sim計數器須等generator返回後才分類；原500局僅tokusou seed153觸及此計數器，重跑150–199的50局，其餘九批保留。產品碼未變，重跑後完整JSON與S70一致。
+- 瀏覽器證據tmp/s71/browser-normal-complete.json、browser-after-{pending,invalid,complete}.json、normal-complete.jpg及after-complete.jpg。固定策略抽樣不等於全部模式／設定矩陣完成，與S59原始資料不宣稱等價。
 
 ## 剩餘工作概況
 
@@ -60,7 +63,7 @@
 - W05–W06：觀眾妨礙、返り血、部分救出、ENDLESS／能力降低、七模式完整循環等；精確歸屬見盤點表。
 - W07：SHOP／戰鬥決策資訊、指令分類、WAIT與顯示簡化、COUNT與catalog失敗處理。
 - W08–W09：未決引擎／原作錯誤與安全網查證、既有偏離裁決、真正瀏覽器端到端驗收與使用說明。
-- 113行`raise NotImplementedError`包含未移植、原作錯誤、安全網、catalog失敗與抽象方法；不能當113個功能。
+- 111行`raise NotImplementedError`包含未移植、原作錯誤、安全網、catalog失敗與抽象方法；不能當111個功能。
 - 醫療室隱藏AMPUTEE支線依既有裁決提示未完成並截斷；其他原作不完整項須按具體原文範圍保留。
 
 ## 裁決與相容性

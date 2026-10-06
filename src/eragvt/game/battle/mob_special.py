@@ -152,4 +152,4 @@ def special_command(ctx: Ctx, command: int, option: int):
     st.tflag[20],st.tflag[17] = command,2003 if n==901 and command==2002 else -1
     for index,value in zip((4,6,7,8,9,10,11,12),extra):
         st.result[index] += value
-    palam_cal(ctx,*[st.result[i] for i in range(12)],losebase=st.result[12])
+    yield from palam_cal(ctx,*[st.result[i] for i in range(12)],losebase=st.result[12])

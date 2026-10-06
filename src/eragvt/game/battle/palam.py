@@ -6,6 +6,7 @@
 """
 
 from __future__ import annotations
+from collections.abc import Generator
 
 from ..action import Ctx, config_check_maniac, config_check_screen, kojo_root, print_transcallname
 from ..chara_common import is_female, is_male, seikaku_check
@@ -68,14 +69,14 @@ _MARK_TABLE = {
 }
 
 
-def palam_cal(ctx: Ctx, *args: int, losebase: int = 0) -> None:
+def palam_cal(ctx: Ctx, *args: int, losebase: int = 0) -> Generator[None, int, None]:
     """`COMMON_PALAM_CAL.ERB@PALAM_CAL`:10–24：12 個の引数を UP:快Ｃ〜恐怖 に入れて PALAM_UP。"""
     st = ctx.state
     ids = (0, 1, 2, 3, 10, 11, 12, 13, 14, 15, 16, 17)
     for pid, value in zip(ids, args):
         st.temp.up[pid] = value
     st.temp.losebase[0] = losebase
-    palam_up(ctx)
+    yield from palam_up(ctx)
 
 
 # --- 補正（PALAM_UP.ERB:378–656）-------------------------------------------------------
@@ -1059,7 +1060,7 @@ def palam_seitaiseidown(ctx: Ctx, arg0: int, arg1: int) -> None:
 # --- @PALAM_UP（PALAM_UP.ERB:13–367）-------------------------------------------------
 
 
-def palam_up(ctx: Ctx) -> None:
+def palam_up(ctx: Ctx) -> Generator[None, int, None]:
     from .gaping import palam_calc_gaping
     from .source_check import source_check_jump
     from .syasei import tentacle_syasei_check
@@ -1123,7 +1124,7 @@ def palam_up(ctx: Ctx) -> None:
         up[12] += 150 + 15 * (abl(ctx, c, "従順") + abl(ctx, c, "奉仕精神") * 2)
     # :144–152 触手の射精チェック
     if st.flag[700] == 1:
-        r = list(tentacle_syasei_check(ctx))
+        r = list((yield from tentacle_syasei_check(ctx)))
         if (v[12] & HAIRAN) and (st.tflag[4] & 2):
             r[1] *= 4
             st.result[1] = r[1]  # :147 `RESULT:1 *= 4`（共用 RESULT）

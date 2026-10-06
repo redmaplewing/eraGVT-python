@@ -831,7 +831,7 @@ def _enemy_action_once(ctx: Ctx) -> Generator[None, int, bool]:
     v[200] = 0
     if st.tflag[10] != 4 and loc.get(0, 0) == 0:
         st.tflag[33] = 0
-    palam_cal(ctx, 0, 0, 0, 0, 0, 0, 0, loc.get(7, 0), loc.get(8, 0), loc.get(9, 0), loc.get(10, 0), loc.get(11, 0))
+    yield from palam_cal(ctx, 0, 0, 0, 0, 0, 0, 0, loc.get(7, 0), loc.get(8, 0), loc.get(9, 0), loc.get(10, 0), loc.get(11, 0))
     return False
 
 

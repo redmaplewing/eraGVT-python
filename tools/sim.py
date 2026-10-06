@@ -319,7 +319,8 @@ def install_event_counters() -> Counter:
     orig_ninsin = seisan_mod._ninsin
 
     def sninsin(ctx, *a):
-        r = orig_ninsin(ctx, *a)
+        # S71：等待實際返回值，不能用尚未執行的 generator 判斷成功。
+        r = yield from orig_ninsin(ctx, *a)
         counts["特別活動 妊娠判定" + ("→受精" if r else "")] += 1
         return r
 

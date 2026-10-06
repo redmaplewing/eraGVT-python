@@ -6,6 +6,7 @@ CSTR:1 = CALLNAME）、[2] 桃香（巨乳 1）、[3] 蒼美。FLAG:852 = 5000�
 """
 
 from __future__ import annotations
+from _gen_driver import as_generator
 
 import tempfile
 from pathlib import Path
@@ -279,7 +280,7 @@ def test_gather_buy_body_honban(ctx, data, monkeypatch):
     c.cflag[122] = 1  # 面識あり、bit4 = 0 → カラダで買える（:570 淫乱）
     c.talent[data.index_of("TALENT", "淫乱")] = 1
     calls = []
-    monkeypatch.setattr(ninsin, "ninsin_hantei", lambda ctx, a, b, f=0: calls.append((a, b, f)) or 0)
+    monkeypatch.setattr(ninsin, "ninsin_hantei", as_generator(lambda ctx, a, b, f=0: calls.append((a, b, f)) or 0))
     juel_v = c.juel[data.index_of("JUEL", "快Ｖ")]
     giko = c.abl[data.index_of("ABL", "技巧")]
     # 値段 RAND 0／0、本番：RAND:5 = 2、上客判定 RAND:4 = 1（!= 0 → SETBIT 5）

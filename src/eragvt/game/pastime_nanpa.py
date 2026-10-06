@@ -14,7 +14,7 @@ INPUT で本当に中断して待つ）。状態変化行は `narration/hooks.py
 
 RESULT：本編の中で RESULT を読むのは INPUT の直後だけ（`grep RESULT`：他は PASTIME_痴漢.ERB:458 の本編の戻り値のみ）。hook の CALL
 は元の関数と同じく RESULT:0 を書く（関数終端 → 0：`reference/emuera-1824/Emuera/GameProc/Process.ScriptProc.cs`:61–67。
-NINSIN_HANTEI は既存の hook（`battle.ninsin.ninsin_hantei`）で RESULT を書かないが、直後は関数終端か RETURN なので読まれない）。
+NINSIN_HANTEI由既有hook（`battle.ninsin.ninsin_hantei`）寫入RETURN 0／1；外層函式終端仍清RESULT:0）。
 """
 
 from __future__ import annotations

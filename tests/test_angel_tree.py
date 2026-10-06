@@ -1,4 +1,6 @@
 """S38 人工前置狀態；預期直接依原作函式，不代表自然通關。"""
+from eragvt.game.prison.event import prison_routine
+from _gen_driver import as_generator, run_no_input
 import pytest
 
 from test_lastboss import ctx as base_ctx, data, _lastboss_battle
@@ -133,9 +135,9 @@ def test_prison(ctx,monkeypatch,roll,command):
     c=ctx.state.target_chara
     c.cflag[20],c.cflag[21]=1,2
     calls=[]
-    monkeypatch.setattr(commands,'prison_comable',lambda ctx,com:calls.append(com))
+    monkeypatch.setattr(commands,'prison_comable',as_generator(lambda ctx,com:calls.append(com)))
     ctx.state.rng=FixedRng([roll])
-    assert tentacle_access_prison(ctx,ctx.state.target,'PRISON_ROUTINE')==int(command is not None)
+    assert run_no_input(prison_routine(ctx, ctx.state.target))==int(command is not None)
     assert calls==([] if command is None else [command])
     assert tentacle_access_prison(ctx,ctx.state.target,'GETNAME')=='楽園の花'
     # COMMON_TENTACLE_DATA.ERB@TENTACLE_ACCESS_PRISON:338，誤用一般BOSS_2補正照原作。
@@ -266,7 +268,7 @@ def test_defeat_to_prison(ctx):
     st=ctx.state
     st.rng=GameRng(19)
     with pytest.raises(BeginAfterTrain):
-        source_check._battle_lose(ctx)
+        run_no_input(source_check._battle_lose(ctx))
     assert (st.target_chara.cflag[0],st.target_chara.cflag[20],st.target_chara.cflag[21])==(1,1,2)
     prison(ctx)
     assert not ctx.narration.failures

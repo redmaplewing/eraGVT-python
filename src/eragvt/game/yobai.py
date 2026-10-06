@@ -95,10 +95,10 @@ def _ablup1(ctx: Ctx) -> None:
     ablup(ctx, 1)
 
 
-def _ninsin(ctx: Ctx, l123: int, father: int) -> None:
+def _ninsin(ctx: Ctx, l123: int, father: int) -> Generator[None, int, None]:
     from .battle.ninsin import ninsin_hantei
 
-    ninsin_hantei(ctx, l123, 400, ctx.state.charas[father].cflag[240] * -1 - 100)
+    yield from ninsin_hantei(ctx, l123, 400, ctx.state.charas[father].cflag[240] * -1 - 100)
 
 
 def _after_pill(ctx: Ctx, who: int, father: int) -> InputGen:
@@ -597,11 +597,11 @@ class _Action:
         if self.inc_tf() > 0:
             self.L[141] = 1
 
-    def ninsin_if(self) -> None:
+    def ninsin_if(self) -> Generator[None, int, None]:
         """`SIF (TALENT:TARGET:淫乱 > 0 || LOVER_F(FLAG:799, TARGET) > 0) && LOCAL:123 > 0 && TALENT:TARGET:未熟 == 0`
         `/ CALL NINSIN_HANTEI, LOCAL:123, 400, CFLAG:(FLAG:799):240 * -1 - 100`。"""
         if (self.tc_("淫乱") > 0 or self.lover_ft() > 0) and self.L[123] > 0 and self.tc_("未熟") == 0:
-            _ninsin(self.ctx, self.L[123], self.ctx.state.flag[799])
+            yield from _ninsin(self.ctx, self.L[123], self.ctx.state.flag[799])
 
     def target_side_c(self) -> None:
         """対象側の定型：快C 50・絶頂・近親・射精（未熟でなければ）→ COMMON_PRISON → _ABLUP。"""
@@ -1048,7 +1048,7 @@ def _case1(y: _Action) -> InputGen:
         y.inc_t_f()
         _prison(ctx, L)
         _ablup1(ctx)
-        y.ninsin_if()  # :1280–1281
+        yield from y.ninsin_if()  # :1280–1281
         y.switch()
         y.target_side_c()
         yield from y.pill_if()
@@ -1258,7 +1258,7 @@ def _v_lostvirgin_sex(y: _Action) -> InputGen:
     y.c.cflag[206] = 5 if y.lover_tf() > 0 else 6  # :1590–1594
     _prison(ctx, L)
     _ablup1(ctx)
-    y.ninsin_if()
+    yield from y.ninsin_if()
     y.switch()
     y.target_side_c()
     yield from y.pill_if()
@@ -1336,7 +1336,7 @@ def _v_sex(y: _Action) -> InputGen:
     y.inc_t_f()
     _prison(ctx, L)
     _ablup1(ctx)
-    y.ninsin_if()
+    yield from y.ninsin_if()
     y.switch()
     y.target_side_c()
     yield from y.pill_if()
@@ -2239,7 +2239,7 @@ def yobai_houshi_4(ctx: Ctx, suimin: int, self_: int, ts: int) -> InputGen:
         y.c.cflag[206] = 5 if lover_f(st, y.lcount, st.flag[799]) > 0 else 6
         _prison(ctx, L)
         if (t(ctx, lc, "淫乱") > 0 or lover_f(st, y.lcount, st.target) > 0) and L[123] > 0 and t(ctx, lc, "未熟") == 0:
-            _ninsin(ctx, L[123], y.lcount)  # :3100–3101
+            yield from _ninsin(ctx, L[123], y.lcount)  # :3100–3101
         _ablup1(ctx)
         if y.nakadashi == 1:  # :3103–3106
             yield from _after_pill(ctx, st.target, y.lcount)
@@ -2322,7 +2322,7 @@ def yobai_houshi_4(ctx: Ctx, suimin: int, self_: int, ts: int) -> InputGen:
     _prison(ctx, L)
     lc = st.charas[y.lcount]
     if (t(ctx, lc, "淫乱") > 0 or lover_f(st, y.lcount, st.target) > 0) and L[123] > 0 and t(ctx, lc, "未熟") == 0:
-        _ninsin(ctx, L[123], y.lcount)  # :3248–3249
+        yield from _ninsin(ctx, L[123], y.lcount)  # :3248–3249
     _ablup1(ctx)
     if y.nakadashi == 1:
         yield from _after_pill(ctx, st.target, y.lcount)

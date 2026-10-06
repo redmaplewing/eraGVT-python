@@ -87,6 +87,10 @@ ADD_CHILD：ADDCHARA 0 → 名前（INPUT）→ 一人称 → 種族（母依存
 
 ## 入口現況與剩餘停止
 
-- TS 変身キャラの女体化（`TRANS_SEX.ERB@TS_MtoF`：NINSIN_TS_FIX:263–267、NINSIN_FLAG:248–256）。
+- S71已接妊娠狀態的TS轉換：`ERB/ヒロイン関連/PREGNANT_SOURCE_NINSIN.ERB@NINSIN_FLAG:248–256`的女性／TS／變身中／妊娠4條件、`@NINSIN_TS_FIX:263–270`變身中轉換與未變身只顯示分支，均按原文。
+- `NINSIN_HANTEI`與`NINSIN_CHECK_AFTER`傳遞外貌INPUT；戰後四路、共用PALAM_CAL／命令、幽閉routine、夜間與行動續行已接。`MESSAGE_SEX_COM2`的callback及catalog裝飾器也使用等待通道；不能以同步`msg()`丟棄generator。
+- `NINSIN_FLAG`／`NINSIN_TS_FIX`／`NINSIN_CHECK_AFTER`自然終端只清RESULT:0；`NINSIN_HANTEI`返回0／1寫第0格，保留尾格（`reference/emuera-1824/Emuera/GameProc/Process.ScriptProc.cs:61–67`、`GameProc/Function/Instraction.Child.cs:1997–2023`）。
+- 38個S71新案使用全新25歲兩形態：條件／RNG、四路EVENTEND、真實共用結算及COM0／COM2分派、幽閉routine、四個原catalog hook等待邊界與Web續行。catalog測試只抽原hook，未執行敘事或聲稱完整事件通關。
+- `tmp/s71/browser_fixture.py`提供Null／臨時存檔的NINSIN_HANTEI與EVENTEND入口，完成選題後執行真實後續；真瀏覽器與500局由主代理驗收，證據見STATUS。這些局部邊界不等於B05整列或完整出生／加入。
 - デバッグモードの妊娠確率入力（NINSIN_HANTEI:125–138）。
 - 子供命名／變身命名／掛聲／名乗的手輸已接通；S68接`ERB/ヒロイン関連/PREGNANT_CHILD_BIRTH.ERB@ADD_CHILD:515`一人稱，S69接同函式:1075–1107身體收尾，均等待真實輸入。S69只驗25歲人工尾段函式邊界，不代表完整出生／加入或B05整列，見[角色編輯](character-editor.md)。

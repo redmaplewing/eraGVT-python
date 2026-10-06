@@ -193,7 +193,7 @@ def small_prison_com(ctx: Ctx, arg: int) -> Generator[None, int, None]:
                 L[1] *= 3
             if t(ctx, c, "処女") < 1:  # :259–264（処女喪失直後も成立：LOCAL:123 = 0 のまま NINSIN_HANTEI）
                 yield from after_pill(ctx, st.target, 35, 200)
-                ninsin_hantei(ctx, L[123], 30, 200)
+                yield from ninsin_hantei(ctx, L[123], 30, 200)
     elif arg == 2:  # Ａ襲来 :266–300
         L[2] = _tbl(a("Ａ感覚"), _SENSE, 1200)
         palam_vabc_estimate(ctx, L, 2, -1)  # :285

@@ -97,7 +97,7 @@ def defeat(ctx: Ctx):
     message(ctx,"MESSAGE_SUBEVENT_BATTLE_RAPED_CITIZEN")
     c.exp[ctx.data.index_of("EXP","被姦経験")] += 1
     c.nowex.clear()
-    palam_cal(ctx,*(core.get_local(st,"SUBEVENT_BATTLE_RAPED_CITIZEN",i) for i in range(12)))
+    yield from palam_cal(ctx,*(core.get_local(st,"SUBEVENT_BATTLE_RAPED_CITIZEN",i) for i in range(12)))
     if config_check_prison(st,10):
         yield from calc_gangbang(ctx,"戦闘後",5,2)
         message(ctx,"MESSAGE_CITIZEN_CAPTURE")

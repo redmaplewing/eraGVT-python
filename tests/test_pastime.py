@@ -6,6 +6,7 @@ FLAG:852 = 5000、DAY = 1、TIME = 0。GLOBAL:57 = 2（気晴らしの変身設�
 """
 
 from __future__ import annotations
+from _gen_driver import as_generator
 
 import tempfile
 from pathlib import Path
@@ -473,7 +474,7 @@ def test_inkioukyu_rape_loses_virgin(ctx, data, monkeypatch):
     monkeypatch.setattr(ablup_mod, "ablup", lambda ctx, arg: None)
     monkeypatch.setattr(pt, "_holyvirgin", lambda ctx: 0)
     calls = []
-    monkeypatch.setattr(ninsin_mod, "ninsin_hantei", lambda ctx, a, b, d=0: calls.append((a, b, d)) or 0)
+    monkeypatch.setattr(ninsin_mod, "ninsin_hantei", as_generator(lambda ctx, a, b, d=0: calls.append((a, b, d)) or 0))
 
     def pill(ctx, who, a, b):
         calls.append(("pill", a, b))

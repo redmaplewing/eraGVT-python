@@ -42,7 +42,7 @@ S56現況歸屬：各未勾選項的W編號指向`docs/PLAN.md`；仍待實作�
 - [x] ~~**襲撃／救援 會被跳過**~~（S20 解決）：`RAID_HANTEI` 成立時照原作 `JUMP RAID_RESCUE／RAID_ATTACK` → イベント戦（`eragvt.game.raid`）。ラスボス出現後（FLAG:100 = 0）の襲来は S27 接上（生存ラスボス 0 で原作無限ループの路だけ停止）。
 - [ ] `W03／W05／W06` **未移植的戰鬥分岐會停止遊戲**：主幹、雜魚／市民／悪堕ち、兩隻末王皆已有實作。剩餘裝備／觸手服、觀眾妨礙、返り血、模式與動態分派安全網見`docs/PLAYABILITY.md`完整歸屬表；依既定規格明確停止，不自行發明行為。
 - [ ] `W03／W05` **幽閉資料分派guard仍待核對**：S70三種TS原生轉換、首次事件generator及catalog三hook已接通；悪堕ち、容姿／回復、Ｋ触手與天使の樹幽閉亦已接通。剩`game/prison/event.py@_boss_prison_routine`／`@tentacle_access_prison`資料分派guard歸W05，不把整個末王2列未移植。妊娠TS呼叫者仍見下項。
-- [ ] `W03／W08` **妊娠／子供未移植分岐會停止遊戲**：三種TS轉換本體於S70完成，但NINSIN_FLAG／NINSIN_TS_FIX呼叫者及除錯妊娠輸入仍缺；命名INPUTS、變身命名及隨機命名已接通，不再列停止。來源`ERB/ヒロイン関連/TRANS_SEX.ERB@TS_MtoF`，Python `battle/ninsin.py:175,279,296,452`。
+- [ ] `W08` **妊娠相關除錯輸入仍停止**：S70完成三種TS本體，S71已接NINSIN_FLAG／NINSIN_TS_FIX及生命週期等待；來源`ERB/ヒロイン関連/PREGNANT_SOURCE_NINSIN.ERB@NINSIN_FLAG:248–257`、`@NINSIN_TS_FIX:263–271`。剩`battle/ninsin.py@ninsin_hantei`／`@after_pill`的除錯輸入；命名INPUTS、變身命名及隨機命名亦已接通，不再列停止。完整出生／加入驗收仍見W02／B05，不因局部接通而宣稱完成。
 - [x] **振り解く判定的 `LOCAL:O`**（S06 新增；**已裁決 2026-10-03：視為打錯字，當 `0` 處理＝`LOCAL:0`**）：`ゲーム内_戦闘処理/COMMON_BATTLE_HANTEI.ERB`:241／:245
   `SIF LOCAL:5 <= 45 && LOCAL:O > 49` 的 `O` 是英文字母，全作沒有這個識別子（grep 僅此 2 處）。1.824 在執行到該行時
   報錯停止（`GameProc/Process.ScriptProc.cs`:38–42、`GameData/Expression/ExpressionParser.cs`:264–269、

@@ -190,11 +190,11 @@ def _after_pill(ctx: Ctx, arg1: int, arg2: int) -> InputGen:
     ctx.state.result[0] = 0
 
 
-def _ninsin(ctx: Ctx, arg0: int, arg1: int, arg2: int) -> int:
+def _ninsin(ctx: Ctx, arg0: int, arg1: int, arg2: int) -> Generator[None, int, int]:
     """`CALL NINSIN_HANTEI, …`（`PREGNANT_SOURCE_NINSIN.ERB`:11–165：受精 RETURN 1、他は 0）→ RESULT:0。"""
     from .battle.ninsin import ninsin_hantei
 
-    r = ninsin_hantei(ctx, arg0, arg1, arg2)
+    r = (yield from ninsin_hantei(ctx, arg0, arg1, arg2))
     ctx.state.result[0] = r
     return r
 
@@ -759,7 +759,7 @@ def pest_control(ctx: Ctx) -> InputGen:
             c.cflag[37] += div(tentacle, 2) + 2
         if _female(ctx) and c.base[v_kekkai] == 0:  # :68–71
             yield from _after_pill(ctx, 5, 200)
-            _ninsin(ctx, div(st.result[0], 10) + 2, 50, 200)  # :70 RESULT:0 は AFTER_PILL の 0（原作どおり）
+            yield from _ninsin(ctx, div(st.result[0], 10) + 2, 50, 200)  # :70 RESULT:0 は AFTER_PILL の 0（原作どおり）
     else:  # :74–82
         _msg(ctx, "MESSAGE_SEISAN_PEST_CONTROL_NORMAL")
         calc_seisan(ctx, TAIJI, SEIKOU)
@@ -927,7 +927,7 @@ def _prostitution_normal(ctx: Ctx) -> Generator[None, int, int]:
             ejac(EJAC_CONDOM, namahame * 100)
     if use_vagina and nakadashi > 0:  # :291–296
         yield from _after_pill(ctx, 35, DAREtomo)
-        _ninsin(ctx, nakadashi, 800, DAREtomo)
+        yield from _ninsin(ctx, nakadashi, 800, DAREtomo)
     _ret(ctx, payment)  # :298
     return payment
 
@@ -1105,7 +1105,7 @@ def toilet(ctx: Ctx) -> InputGen:
         out.printl(f"肉便器{_name(ctx)}は{st.result[0]}人に使われたが、使用料は{payment}＄しか入っていなかった…")
         yield from _after_pill(ctx, 10, DAREtomo)  # :54（RESULT:0 = 0）
         if _female(ctx):  # :56–57（RESULT:0 は AFTER_PILL の 0：原作どおり）
-            _ninsin(ctx, div(st.result[0], 2) + 2, 100, DAREtomo)
+            yield from _ninsin(ctx, div(st.result[0], 2) + 2, 100, DAREtomo)
     else:  # :59–74 野良犬
         out.printl("公衆便所（野良犬）")
         out.printl()
@@ -1302,7 +1302,7 @@ def idol_prostitution(ctx: Ctx) -> InputGen:
             idol_charmup(ctx, 12, 8, 6)
             c.cflag[283] += 2
             if nakadashi and _female(ctx):
-                _ninsin(ctx, 5, 80, NOZOMANAI)
+                yield from _ninsin(ctx, 5, 80, NOZOMANAI)
     elif _rand(ctx, 3) == 0:  # :77–132 Ｐへの枕
         if st.time == 0:
             producer_blowjob()
@@ -1325,7 +1325,7 @@ def idol_prostitution(ctx: Ctx) -> InputGen:
             c.cflag[283] += 2
             yield from _after_pill(ctx, 35, NOZOMANAI)
             if _female(ctx):
-                _ninsin(ctx, 5, 40, NOZOMANAI)
+                yield from _ninsin(ctx, 5, 40, NOZOMANAI)
     elif _rand(ctx, 2) == 0:  # :135–183 お偉いさん
         if _rand(ctx, 2) == 0 and _girly(ctx):  # V
             _msg(ctx, "MESSAGE_SEISAN_IDOL_PROSTITUTION_VIP_V")
@@ -1342,7 +1342,7 @@ def idol_prostitution(ctx: Ctx) -> InputGen:
             _exp_add(ctx, "精液経験", 13 + _rand(ctx, 3))
             _exp_add(ctx, "絶頂経験", 3 + _rand(ctx, 3))
             if _female(ctx):
-                _ninsin(ctx, 10, 5, NOZOMANAI)
+                yield from _ninsin(ctx, 10, 5, NOZOMANAI)
         else:  # A
             _msg(ctx, "MESSAGE_SEISAN_IDOL_PROSTITUTION_VIP_A")
             calc_seisan(ctx, MAKURA, MAKURA_A)
@@ -1382,7 +1382,7 @@ def idol_prostitution(ctx: Ctx) -> InputGen:
             out.printl(f"人気度が{local2}上がった")
         yield from _after_pill(ctx, 10, DAREtomo)
         if _female(ctx):
-            _ninsin(ctx, 15, 80, DAREtomo)
+            yield from _ninsin(ctx, 15, 80, DAREtomo)
     if _rand(ctx, 100) < 50:  # :234–235
         c.cflag[285] += 1
 

@@ -5,6 +5,7 @@ expected は ERB 原文から逐行推導（路徑相對 `source/earGVP/ERB/`、
 """
 
 from __future__ import annotations
+from _gen_driver import run_no_input
 
 import tempfile
 from pathlib import Path
@@ -98,7 +99,7 @@ def test_tentacle_syasei_check_below_threshold(ctx):
     st.tflag[4] = 2
     st.tflag[5] = 99
     st.rng = FixedRng([])
-    assert tentacle_syasei_check(ctx) == (0, 0, 0, 0)
+    assert run_no_input(tentacle_syasei_check(ctx)) == (0, 0, 0, 0)
     assert st.tflag[5] == 0
 
 
@@ -113,7 +114,7 @@ def test_tentacle_syasei_check_gaman(ctx, data):
     st.tflag[4] = 0
     st.tflag[20] = 0
     st.rng = FixedRng([50])  # SYASEI_UP:67 RAND:100（50 → 変化なし）
-    assert tentacle_syasei_check(ctx) == (0, 0, 0, 0)
+    assert run_no_input(tentacle_syasei_check(ctx)) == (0, 0, 0, 0)
     assert st.flag[15] == 850
 
 

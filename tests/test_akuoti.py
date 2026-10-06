@@ -5,6 +5,7 @@ expected は ERB 原文から逐行推導（路徑相對 `source/earGVP/ERB/`、
 """
 
 from __future__ import annotations
+from _gen_driver import as_generator, run_no_input
 
 import pytest
 
@@ -83,12 +84,12 @@ def branches(monkeypatch):
         return f
 
     for name in ("_bus", "_woman", "_girl", "_couple", "_drug_shop", "_video", "_pet_shop", "_trained"):
-        monkeypatch.setattr(akuoti, name, rec(name))
+        monkeypatch.setattr(akuoti, name, as_generator(rec(name)) if name == "_trained" else rec(name))
     monkeypatch.setattr(akuoti, "_hunt", rec("_hunt", True))  # 狩りは TIMES DAMAGE, 1.50（:243 相当）を行う側
     monkeypatch.setattr(akuoti, "_water", rec("_water"))
     monkeypatch.setattr(akuoti, "_kidnap_woman", rec("_kidnap_woman", 0))
     monkeypatch.setattr(akuoti, "_kidnap_man", rec("_kidnap_man", 0))
-    monkeypatch.setattr(akuoti, "_apply", rec("_apply"))
+    monkeypatch.setattr(akuoti, "_apply", as_generator(rec("_apply")))
     return called
 
 
@@ -121,7 +122,7 @@ def test_akuoti_event_branch(ctx, branches, time, rolls, expected, damage):
     st.flag[852] = 2500
     st.flag[111] = ENEMY
     st.rng = FixedRng(rolls)
-    akuoti.akuoti_event(ctx)
+    run_no_input(akuoti.akuoti_event(ctx))
     assert st.rng.snapshot() == []
     assert branches == expected
     assert st.flag[852] == 2500 - damage  # :456–462／:1602–1607
@@ -141,7 +142,7 @@ def test_akuoti_event_gameover_mode_has_no_trained_branch(ctx, branches):
     st.flag[111] = ENEMY
     # 防衛力 0：昼 SELECT_N:0 = 40、SELECT_N:1 = 80
     st.rng = FixedRng([80])
-    akuoti.akuoti_event(ctx)
+    run_no_input(akuoti.akuoti_event(ctx))
     assert branches == []
     assert texts(ctx.out) == []
 
@@ -152,7 +153,7 @@ def test_akuoti_event_zero_defense_no_damage_line(ctx, branches):
     st.flag[852] = 0
     st.flag[111] = ENEMY
     st.rng = FixedRng([39, 1, 1, 0])  # 39 < 40 → 市街地、一般女性
-    akuoti.akuoti_event(ctx)
+    run_no_input(akuoti.akuoti_event(ctx))
     assert branches == ["_woman", "_apply"]
     assert not any("防衛力が" in x for x in texts(ctx.out))
     assert st.flag[852] == 0
@@ -210,8 +211,8 @@ def test_apply_runs_ninsin_with_tentacle_father(ctx, monkeypatch):
     calls = []
     monkeypatch.setattr(pc, "common_prison", lambda c, up: calls.append(("prison", c.state.target, tuple(up))))
     monkeypatch.setattr(pc, "common_prison_exp", lambda c, n, v: v and calls.append(("exp", c.state.target, n, v)))
-    monkeypatch.setattr(ninsin, "ninsin_hantei", lambda c, *a: calls.append(("ninsin", c.state.target, a)))
-    akuoti._apply(ctx, {120: 4, 123: 9}, 9)
+    monkeypatch.setattr(ninsin, "ninsin_hantei", as_generator(lambda c, *a: calls.append(("ninsin", c.state.target, a))))
+    run_no_input(akuoti._apply(ctx, {120: 4, 123: 9}, 9))
     assert calls == [
         ("prison", ENEMY, (0,) * 12),
         ("exp", ENEMY, 120, 4),
@@ -251,11 +252,11 @@ def test_trained(ctx, data, monkeypatch, cflag20, cflag21, flag110, flag111):
     seen = []
     monkeypatch.setattr(pe, "_msg", lambda c, name, code: seen.append(("msg", name, c.state.target, c.state.flag[0])))
     monkeypatch.setattr(pe, "tentacle_access_prison", lambda c, who, key: seen.append(("routine", who, key)) or 0)
-    monkeypatch.setattr(pc, "prison_comable", lambda c, n: seen.append(("com", n)))
+    monkeypatch.setattr(pc, "prison_comable", as_generator(lambda c, n: seen.append(("com", n))))
     before = e.exp[E(data, "被姦経験")]
     # CFLAG:220 == 0 → :1646 の RAND:100 は引かない（&& 短絡）。[:1657 RAND:100 = 50 → < 60 → PRISON_COMABLE 4、:1697 RAND:4]
     st.rng = FixedRng([50, 2])
-    akuoti._trained(ctx)
+    run_no_input(akuoti._trained(ctx))
     assert st.rng.snapshot() == []
     assert seen == [
         ("msg", "MESSAGE_PRISON_PRISENTENCE", ENEMY, 0),  # :1615–1616 TARGET = 悪堕ちキャラ、FLAG:0 = 0
@@ -523,10 +524,10 @@ def test_lose_to_corrupted_is_raped_not_imprisoned(ctx, data, monkeypatch):
     st, c, e = _lose_setup(ctx, data)
     e.talent[T(data, "寄生")] = 0
     got = []
-    monkeypatch.setattr(source_check, "palam_cal", lambda cx, *a: got.append(a))
+    monkeypatch.setattr(source_check, "palam_cal", as_generator(lambda cx, *a: got.append(a)))
     before = c.exp[E(data, "被姦経験")]
     with pytest.raises(BeginAfterTrain):
-        source_check._battle_lose(ctx)
+        run_no_input(source_check._battle_lose(ctx))
     assert got == [(0, 0, 0, 0, 0, 0, 0, 0, 2000, 2000, 0, 0)]  # LOCAL:8 屈服・LOCAL:9 恥情 = 2000
     assert c.exp[E(data, "被姦経験")] == before + 1
     assert c.cflag[0] == 0 and st.flag[799] == 3  # 幽閉されない
@@ -550,7 +551,7 @@ def test_lose_to_akuoti_imprisoned(ctx, data, enemy_state, kisei, maniac13, cfla
     e.talent[T(data, "寄生")] = kisei
     st.flag.set_bit(850, 13, not maniac13)  # CONFIG_CHECK_MANIAC_F(13) = 1 - GETBIT(FLAG:850, 13)
     with pytest.raises(BeginAfterTrain):
-        source_check._battle_lose(ctx)
+        run_no_input(source_check._battle_lose(ctx))
     assert c.cflag[0] == 1
     assert c.cflag[20] == {"e20": 0}.get(cflag20, cflag20)
     assert c.cflag[21] == {"e21": 4, "e240": 33}[cflag21]
@@ -686,9 +687,9 @@ def test_akuoti_attack_negative_defence_sqrt_as_zero(ctx, monkeypatch):
     st.flag[852] = -100
     st.time = 0  # LOCAL = 40（:7–13）
     called: list = []
-    monkeypatch.setattr(akuoti, "akuoti_event", lambda ctx: called.append(ctx.state.flag[111]))
+    monkeypatch.setattr(akuoti, "akuoti_event", as_generator(lambda ctx: called.append(ctx.state.flag[111])))
     st.rng = FixedRng([19, 0])  # RAND:20 → 19 < 40、:28 RANDCHOOSE_F（候補 1 人）
-    turnend.akuoti_attack(ctx)
+    run_no_input(turnend.akuoti_attack(ctx))
     assert called == [ENEMY]
     assert st.rng.snapshot() == []
 
@@ -709,7 +710,7 @@ def test_akuoti_event_negative_defence_sqrt_as_zero(ctx, branches, rolls, expect
     st.flag[111] = ENEMY
     st.time = 0
     st.rng = FixedRng(rolls)
-    akuoti.akuoti_event(ctx)
+    run_no_input(akuoti.akuoti_event(ctx))
     assert branches == expected
     assert st.rng.snapshot() == []
     assert st.flag[852] == -100

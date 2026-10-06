@@ -1,6 +1,6 @@
 # 完整遊玩現況盤點
 
-停止點與搜尋統計基線：S55 `8a77ee8`；系統現況已更新至S70驗收（25歲人工基線，範圍見STATUS）。下一工作與順序只看[PLAN](PLAN.md)，本頁不另排優先序。
+停止點與搜尋統計基線：S55 `8a77ee8`；系統現況包含S71妊娠TS接線（25歲人工基線，最終驗收範圍見STATUS）。下一工作與順序只看[PLAN](PLAN.md)，本頁不另排優先序。
 範圍是本機瀏覽器與原作已完成、可達功能；「已接通」表示有實作與測試，**不等於全瀏覽器驗收完成**。沒有完成比例。
 
 ## 系統現況與證據
@@ -17,7 +17,7 @@ Python路徑以下相對`src/eragvt/`；測試相對`tests/`。原作路徑相�
 | 成就／紀錄 | S57共用取得／保存、GET_STATE判定、catalog／原生呼叫者、SHOP[800]六頁；S58的20欄紀錄、模式通關數、ENDLESS紀錄與六觸發；[證據](wiki/era/achievements.md) | S59已按裁決修正新全域版本／最高總評113；未移植解鎖互動端屬W02 | W01 |
 | 戰鬥／事件 | 普通戰、雜魚／市民／悪堕ち、襲擊／救援；`test_battle.py`／`test_mob_battle.py`／`test_citizen_battle.py`／`test_raid.py` | 觀眾妨礙、返り血、裝備零件／觸手服、部分救出、ISGIRLY、動態敵方安全網與模式分支 | W03、W05、W06 |
 | 末王／終局 | Ｋ触手、天使の樹、SCORE、結局1–6函式及引繼；`test_lastboss.py`／`test_angel_tree.py`／`test_succession.py` | 不等於六結局全能自然到達；原作ENDING_6前置停用。末王強化已有HP／回合回復，敵行動回復待核對；全模式終局待驗 | W05、W06、W08 |
-| 身體／生命週期 | 身體／裏プロフィール、妊娠出産／子供、幽閉／救出、寄生／悪堕ち、夜間與強制事件；對應測試 | S70三種TS原生轉換與幽閉首次事件／catalog等待已接通（68案）；妊娠TS呼叫者、女體受容、特殊裝備後續仍缺，不宣稱全TS生命週期或B05完成 | W02、W03、W05 |
+| 身體／生命週期 | 身體／裏プロフィール、妊娠出産／子供、幽閉／救出、寄生／悪堕ち、夜間與強制事件；對應測試 | S70三種TS／首次事件、S71妊娠TS與共用結算／幽閉／catalog等待已接通；女體受容、特殊裝備後續仍缺，不宣稱全TS生命週期或B05完成 | W02、W03、W05 |
 | 設定 | config 1–3、各開關／篩選、GLOBAL；`test_config.py` | 分類指令、返り血、男女平等OFF、能力降低等開啟後的分支，逐項ON/OFF與相依組合驗收 | W03、W05–W08 |
 | 口上／顯示 | catalog 13,384函式可執行，另有雜魚194／市民10；INPUT／INPUTS已有；`test_kojo_input.py`／`test_narration*.py` | 開局MESSAGE_FIRST、COUNT、同步失敗回復、字型／HTML／圖樣、WAIT、SHOP／戰鬥資訊簡化；可執行率不保證呼叫成功 | W04、W07 |
 | 非NORMAL與除錯 | 引繼`succession.py:463–495`已可選SOLO／HARDCORE／SURVIVAL／FREEPLAY／INSTANT；GameMode／GameOption已有 | ENDLESS／能力降低等仍停止；除錯輸入／顯示未完成；不能說目前不可到達而排除 | W06、W08 |
@@ -59,10 +59,10 @@ Python路徑以下相對`src/eragvt/`；測試相對`tests/`。原作路徑相�
 - `battle/enemy.py:660–661`末王回復固定除2，原文`ERB/ゲーム内_戦闘処理/LASTBOSS_POWERUP.ERB@LASTBOSS_REST:16–22`強化時回8；W05／W08核對呼叫可達性與測試，詳見unresolved新增項。這是無raise的待查證差異。
 - 過時說明例：`commands.py:1458`仍提COM47，但`restraint.py`已有COM47分派；`core.py:566`仍稱雜魚未移植。W05只核對遺留guard可達性；已完成系統不能由舊註解重新算成缺口。
 
-## 停止語句的完整歸屬（S55基線118，S70現為113）
+## 停止語句的完整歸屬（S55基線118，S71現為111）
 
 M＝已知移植／互動缺口；O＝已證實原作未完成且已有處置；G＝通用抽象介面；U＝可達性、原作錯誤或資料／catalog失敗尚需逐項核對。U不是豁免。
-一行主歸屬一包；共享依賴看PLAN。S60移除兩處個別入口停止、新增一處細分子選單分派與兩處姓名原作錯誤安全網；S61新增一般身體頁剩餘分支一處停止；S66移除初始狀態與人數兩處停止；S67移除SIZE_SETTING選項停止；S68移除已無呼叫者的selfcall_default及兩個停止。S70移除幽閉首次事件／TS hook兩處停止。合計W02=1、W03=9、W04=3、W05=22、W06=6、W07=20、W08=52，總數113；W01原先沒有raise的成就／紀錄缺口已接通，最終驗收見STATUS。
+一行主歸屬一包；共享依賴看PLAN。S60移除兩處個別入口停止、新增一處細分子選單分派與兩處姓名原作錯誤安全網；S61新增一般身體頁剩餘分支一處停止；S66移除初始狀態與人數兩處停止；S67移除SIZE_SETTING選項停止；S68移除已無呼叫者的selfcall_default及兩個停止。S70移除幽閉首次事件／TS hook兩處停止；S71移除妊娠TS兩處停止。合計W02=1、W03=7、W04=3、W05=22、W06=6、W07=20、W08=52，總數111；W01原先沒有raise的成就／紀錄缺口已接通，最終驗收見STATUS。
 
 | Python檔案@函式 | 行號 | 工作包／分類 | 內容 |
 |---|---|---|---|
@@ -128,8 +128,6 @@ M＝已知移植／互動缺口；O＝已證實原作未完成且已有處置；
 | `game/battle/mob.py@message_gen` | 105,109 | W07／U | catalog／文字支援或缺資料的失敗路徑 |
 | `game/battle/mob.py@mob_tentacle_battle` | 127 | W08／M | 除錯輸入／顯示 |
 | `game/battle/ninsin.py@ninsin_hantei` | 175 | W08／M | 除錯輸入／顯示 |
-| `game/battle/ninsin.py@ninsin_flag` | 279 | W03／M | TS轉換 |
-| `game/battle/ninsin.py@ninsin_ts_fix` | 296 | W03／M | TS轉換 |
 | `game/battle/ninsin.py@after_pill` | 452 | W08／M | 除錯輸入／顯示 |
 | `game/battle/palam.py@palam_up_enemy_reaction` | 544 | W08／M | 除錯輸入／顯示 |
 | `game/battle/palam.py@endure_ecstasy` | 608 | W08／M | 除錯輸入／顯示 |

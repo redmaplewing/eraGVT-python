@@ -5,10 +5,11 @@ S13：受精成立後の `@NINSIN_SUBMIT`:752–767、`@NINSIN_FLAG`:195–257�
 `@NINSIN_CHECK_AFTER`:169–190、`@NUM_CHILD_TENTACLE`:579–601、`@PREGNANT_RANDOM_SIZE`:826–840、
 `@PREGNANCY_BOOB_EXPAND`／`@PREGNANCY_BELLY_EXPAND`:844–893 もここ。妊娠の進行・出産は `eragvt.game.pregnancy`、
 子供は `eragvt.game.child`（狀態機：`docs/wiki/era/pregnancy.md`）。路徑相對 `source/earGVP/ERB/`。
-TS 変身キャラの女体化（`ヒロイン関連/TRANS_SEX.ERB@TS_MtoF`）は未移植で停止する。
+S71：TS轉換依 `ERB/ヒロイン関連/TRANS_SEX.ERB@TS_MtoF` 等待外貌輸入，完成後續行。
 """
 
 from __future__ import annotations
+from collections.abc import Generator
 
 from ...state import GameState
 from ..action import Ctx, config_check_other, print_callname, print_transcallname
@@ -90,21 +91,27 @@ def _juel_add(ctx: Ctx, c, name: str, value: int) -> None:
 _PREG_PER = ("NINSIN_HANTEI:PREG_PER", 0)
 
 
-def ninsin_hantei(ctx: Ctx, arg0: int, arg1: int, arg2: int = 0) -> int:
+def ninsin_hantei(ctx: Ctx, arg0: int, arg1: int, arg2: int = 0) -> Generator[None, int, int]:
     """`@NINSIN_HANTEI, ARG:0（射精量）, ARG:1（係数）, ARG:2 = 0（父親）`:11–165。受精したら 1。"""
+    # RETURN 0/1：reference/emuera-1824/Emuera/GameProc/Function/Instraction.Child.cs:1997–2023。
     st = ctx.state
     c = tc(ctx)
     if is_male(ctx.data, c):  # :16–21
+        st.result[0] = 0
         return 0
     if t(ctx, c, "未熟") > 0:
+        st.result[0] = 0
         return 0
     if t(ctx, c, "妊娠") > 0:
+        st.result[0] = 0
         return 0
     if config_check_other(st, 2) > 0:  # :23–24 常時避妊モード
+        st.result[0] = 0
         return 0
     if check_hinin(ctx, st.target, arg2) == 1:  # :26–36
         if st.flag[700] > 0:
             st.tflag[6] += arg0
+        st.result[0] = 0
         return 0
     if st.flag[700] > 0:
         arg0 += st.tflag[6]
@@ -180,7 +187,7 @@ def ninsin_hantei(ctx: Ctx, arg0: int, arg1: int, arg2: int = 0) -> int:
         c.cflag[232] = 0
         c.cflag[233] = 0
         c.cflag[230] = papa  # :148
-        ninsin_flag(ctx)  # :149
+        yield from ninsin_flag(ctx)  # :149
         if st.flag[700] == 1:  # :150–162
             if str(tentacle_access(ctx, "GETNAME")) == "Ｈ触手" and (c.tcvarn[12] & HAIRAN):
                 out = ctx.out
@@ -192,8 +199,10 @@ def ninsin_hantei(ctx: Ctx, arg0: int, arg1: int, arg2: int = 0) -> int:
                 out.printw()
                 _set_t(ctx, c, "妊娠", 1)
                 out.printw(f"{name}は[妊娠]した")
-                ninsin_ts_fix(ctx)
+                yield from ninsin_ts_fix(ctx)
+        st.result[0] = 1
         return 1
+    st.result[0] = 0
     return 0
 
 
@@ -228,7 +237,7 @@ def _tentacle_or_other(ctx: Ctx, cond_tentacle: bool) -> None:
         c.cflag[228] = pregnant_random_size(ctx, ctx.state.target)
 
 
-def ninsin_flag(ctx: Ctx) -> None:
+def ninsin_flag(ctx: Ctx) -> Generator[None, int, None]:
     """`@NINSIN_FLAG`:195–257：妊娠フラグ（素質 妊娠）を立てて地の文。
 
     妊娠 = 1 触手の幼体、2 触手（戦闘中：判明は戦闘後）、3 触手の子種による娘（育児機能 ON）、4 人間の子（無自覚）、
@@ -266,7 +275,7 @@ def ninsin_flag(ctx: Ctx) -> None:
             _tentacle_or_other(ctx, True)
         ctx.out.printl()
         _message_ninnsin(ctx)
-        ninsin_ts_fix(ctx)
+        yield from ninsin_ts_fix(ctx)
     # :248–257 ＴＳ変身時の正常妊娠
     if is_female(ctx.data, c) and t(ctx, c, "変身時ＴＳ") > 0 and c.cflag[1] > 0 and t(ctx, c, "妊娠") == 4:
         out = ctx.out
@@ -276,7 +285,11 @@ def ninsin_flag(ctx: Ctx) -> None:
         out.printl()
         out.printl(f"{print_callname(st, st.target, 1)}は[オトコ]に戻れなくなった")
         out.printw()
-        raise NotImplementedError("TS_MtoF（ＴＳ変身時の正常妊娠で女体化）は未移植")
+        from ..trans_sex import ts_mtof
+
+        yield from ts_mtof(ctx, st.target)
+    # 原作自然終端：reference/emuera-1824/Emuera/GameProc/Process.ScriptProc.cs:61–67。
+    ctx.state.result[0] = 0
 
 
 def _message_ninnsin(ctx: Ctx) -> None:
@@ -286,19 +299,23 @@ def _message_ninnsin(ctx: Ctx) -> None:
     run_chinobun(ctx, "MESSAGE_NINNSIN")
 
 
-def ninsin_ts_fix(ctx: Ctx) -> None:
+def ninsin_ts_fix(ctx: Ctx) -> Generator[None, int, None]:
     """`@NINSIN_TS_FIX`:262–271：ＴＳ魔法少女が妊娠すると男に戻れない／変身できない。"""
     from .core import run_chinobun
 
     c = tc(ctx)
     if is_female(ctx.data, c) and t(ctx, c, "変身時ＴＳ") > 0 and c.cflag[1] > 0:
         run_chinobun(ctx, "MESSAGE_NINNSIN_TS_FIX")
-        raise NotImplementedError("TS_MtoF（妊娠による女体化）は未移植")
+        from ..trans_sex import ts_mtof
+
+        yield from ts_mtof(ctx, ctx.state.target)
     elif is_female(ctx.data, c) and t(ctx, c, "変身時ＴＳ") > 0 and c.cflag[1] == 0:
         run_chinobun(ctx, "MESSAGE_NINNSIN_TS_FIX")
+    # 原作自然終端：reference/emuera-1824/Emuera/GameProc/Process.ScriptProc.cs:61–67。
+    ctx.state.result[0] = 0
 
 
-def ninsin_check_after(ctx: Ctx) -> None:
+def ninsin_check_after(ctx: Ctx) -> Generator[None, int, None]:
     """`@NINSIN_CHECK_AFTER`:169–190：戦闘中に受精した（妊娠 = 2）なら戦闘後に判明。"""
     st = ctx.state
     c = tc(ctx)
@@ -309,7 +326,9 @@ def ninsin_check_after(ctx: Ctx) -> None:
             _tentacle_or_other(ctx, True)
         ctx.out.printl()
         _message_ninnsin(ctx)
-        ninsin_ts_fix(ctx)
+        yield from ninsin_ts_fix(ctx)
+    # 原作自然終端：reference/emuera-1824/Emuera/GameProc/Process.ScriptProc.cs:61–67。
+    ctx.state.result[0] = 0
 
 
 def num_child_tentacle(ctx: Ctx) -> int:

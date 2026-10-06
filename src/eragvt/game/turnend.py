@@ -159,9 +159,9 @@ def event_turnend(ctx: Ctx) -> Generator[None, int, Step]:
     yield from prison(ctx)  # :103
     yield from birth_hantei(ctx)  # :105（ヒロイン関連/PREGNANT_SOURCE_NINSIN.ERB@BIRTH_HANTEI）
     yield from grow_hantei(ctx)  # :107（ヒロイン関連/PREGNANT_CHILD_BIRTH.ERB@GROW_HANTEI）
-    akuoti_attack(ctx)  # :110
+    yield from akuoti_attack(ctx)  # :110
     yield from lovesex_night(ctx)  # :112
-    self_night(ctx)  # :116
+    yield from self_night(ctx)  # :116
     if config_check_event(st, 2) > 0:  # :116–117（FORCE_夜這い.ERB、S18）
         yield from yobai(ctx)
     daily_defence_change(ctx)  # :120
@@ -362,7 +362,7 @@ def boss_tentacle_recover(ctx: Ctx) -> None:
 # --- 夜間イベント（開始条件のみ） ------------------------------------------------------
 
 
-def akuoti_attack(ctx: Ctx) -> None:
+def akuoti_attack(ctx: Ctx) -> Generator[None, int, None]:
     """`ゲーム内_イベント発生/強制発生イベント/FORCE_悪堕ちキャラの淫謀.ERB@AKUOTI_ATTACK`:5–29 の候補抽選。
     候補（CFLAG:0 == 3 かつ ISHOLE かつ `MIN(RAND:(SQRT(FLAG:852)/2+20), 100) < LOCAL`、`&&` は短絡なので RAND は前の条件が
     真のときだけ引く：reference/emuera-1824/Emuera/GameData/Expression/OperatorMethod.cs:524–555）が居れば
@@ -393,10 +393,10 @@ def akuoti_attack(ctx: Ctx) -> None:
 
     ctx.out.drawline()  # :27–29
     st.flag[111] = randchoose_f(st)
-    akuoti_event(ctx)
+    yield from akuoti_event(ctx)
 
 
-def self_night(ctx: Ctx) -> None:
+def self_night(ctx: Ctx) -> Generator[None, int, None]:
     """`FORCE_夜間自慰.ERB@SELF_NIGHT`:5–61。LOCAL:3（最初の 1 人の前だけ DRAWLINE）は :6 VARSET LOCAL で毎回 0。"""
     from .battle.ablup import ablup
     from .battle.core import run_chinobun
@@ -439,7 +439,7 @@ def self_night(ctx: Ctx) -> None:
                 ctx.out.drawline()
             # :53 地の文/MESSAGE_SEX.ERB@MESSAGE_SELF_NIGHT:1070–1089（本文＋:1088 KOJO_ROOT）
             run_chinobun(ctx, "MESSAGE_SELF_NIGHT", fallback=lambda: kojo_root(ctx, "SELF_NIGHT"))
-            self_kind(ctx, st.target, 0)  # :54
+            yield from self_kind(ctx, st.target, 0)  # :54
             ablup(ctx, 0)  # :55
             ctx.out.printw()  # :56
             c.palam.clear()  # :57 VARSET PALAM（TARGET = c）

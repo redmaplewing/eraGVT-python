@@ -2,9 +2,13 @@
 import importlib.util
 import json
 import random
+import subprocess
+import sys
 from collections import Counter
 from pathlib import Path
 from types import SimpleNamespace
+
+import pytest
 
 spec = importlib.util.spec_from_file_location("sim_isolation_driver", Path(__file__).parents[1] / "tools/sim.py")
 sim = importlib.util.module_from_spec(spec)
@@ -45,3 +49,45 @@ def test_batch_seeds_have_independent_global_files(monkeypatch, tmp_path):
     assert results[0] == results[1]
     assert results[0][1] == results[2][1]
     assert all(r["prior_global"] is None for r in results[0].values())
+
+
+@pytest.mark.parametrize("result", [0, 1])
+def test_pregnancy_counter_waits_for_generator_return(result):
+    """計數器須等 RETURN 0／1；不能把 generator 物件當成功。
+
+    對應 ERB/ヒロイン関連/PREGNANT_SOURCE_NINSIN.ERB@NINSIN_HANTEI:163–165。
+    隔離全域 instrumentation，避免污染其他遊戲測試。
+    """
+    script = r'''
+import sys
+from eragvt.game import seisan
+from tools.sim import install_event_counters
+
+result = int(sys.argv[1])
+received = []
+def probe(ctx, *args):
+    assert ctx == "context" and args == (3, 800, -1)
+    received.append((yield None))
+    return result
+
+seisan._ninsin = probe
+counts = install_event_counters()
+gen = seisan._ninsin("context", 3, 800, -1)
+assert not counts
+assert next(gen) is None
+assert not counts
+try:
+    gen.send(7)
+except StopIteration as done:
+    assert done.value == result
+else:
+    raise AssertionError("generator did not finish")
+assert received == [7]
+key = "特別活動 妊娠判定" + ("→受精" if result else "")
+assert dict(counts) == {key: 1}
+'''
+    completed = subprocess.run(
+        [sys.executable, "-X", "utf8", "-c", script, str(result)],
+        cwd=Path(__file__).parents[1], capture_output=True, text=True, encoding="utf-8",
+    )
+    assert completed.returncode == 0, completed.stdout + completed.stderr

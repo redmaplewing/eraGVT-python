@@ -6,6 +6,7 @@ KYOU = FORCE_クズ市民の脅迫.ERB、YOBAI = FORCE_夜這い.ERB、SMALL = F
 """
 
 from __future__ import annotations
+from _gen_driver import as_generator
 
 import tempfile
 from pathlib import Path
@@ -269,7 +270,7 @@ def com_stubs(monkeypatch):
         yield  # pragma: no cover
 
     monkeypatch.setattr(ninsin, "after_pill", pill)
-    monkeypatch.setattr(ninsin, "ninsin_hantei", lambda ctx, a, b, c=0: rec["ninsin"].append((a, b, c)))
+    monkeypatch.setattr(ninsin, "ninsin_hantei", as_generator(lambda ctx, a, b, c=0: rec["ninsin"].append((a, b, c))))
 
     def prof(data, c, result=None):
         rec["profile"] += 1
@@ -644,7 +645,7 @@ def act(monkeypatch):
     rec: list = []
     monkeypatch.setattr(Y, "_prison", lambda ctx, L: rec.append(("prison", ctx.state.target, {i: v for i, v in enumerate(L[:200]) if v})))
     monkeypatch.setattr(Y, "_ablup1", lambda ctx: rec.append(("ablup", ctx.state.target)))
-    monkeypatch.setattr(Y, "_ninsin", lambda ctx, l123, father: rec.append(("ninsin", ctx.state.target, l123, father)))
+    monkeypatch.setattr(Y, "_ninsin", as_generator(lambda ctx, l123, father: rec.append(("ninsin", ctx.state.target, l123, father))))
 
     def pill(ctx, who, father):
         rec.append(("pill", who, father))
@@ -988,7 +989,7 @@ def test_yobai_action_all_paths_run(data, monkeypatch, variant):
                     rec: list = []
                     monkeypatch.setattr(Y, "_prison", lambda ctx, L: rec.append("p"))
                     monkeypatch.setattr(Y, "_ablup1", lambda ctx: rec.append("a"))
-                    monkeypatch.setattr(Y, "_ninsin", lambda *a: rec.append("n"))
+                    monkeypatch.setattr(Y, "_ninsin", as_generator(lambda *a: rec.append("n")))
                     monkeypatch.setattr(Y, "_after_pill", gen_recorder(rec))
                     _setup_pair(data, ctx, ex, pa, v)
                     _run_action(ctx, arg, arg1)
@@ -1004,7 +1005,7 @@ def test_yobai_houshi_all_paths_run(data, monkeypatch, houshi):
                     ctx = _fresh(data)
                     monkeypatch.setattr(Y, "_prison", lambda ctx, L: None)
                     monkeypatch.setattr(Y, "_ablup1", lambda ctx: None)
-                    monkeypatch.setattr(Y, "_ninsin", lambda *a: None)
+                    monkeypatch.setattr(Y, "_ninsin", as_generator(lambda *a: None))
                     monkeypatch.setattr(Y, "_after_pill", gen_recorder([]))
                     _setup_pair(data, ctx, ex, pa, _VARIANTS[variant])
                     r = getattr(Y, f"yobai_houshi_{houshi}")(ctx, suimin, 0, 1 if ex == "ts_female" else 0)

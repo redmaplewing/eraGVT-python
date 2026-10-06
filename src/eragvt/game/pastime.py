@@ -1997,7 +1997,7 @@ def calc_inkioukyu(ctx: Ctx, bui: int, shojo: int = 0, s_sei: int = 0) -> InputG
     elif shojo == 5:
         s_sei += min(local[120] + local[120] * _rand(ctx, 4), local[123])
     if _female(ctx) and t("処女") < 1:  # :545–546
-        st.result[0] = ninsin_hantei(ctx, s_sei, 100, NOZOMANAI)
+        st.result[0] = (yield from ninsin_hantei(ctx, s_sei, 100, NOZOMANAI))
     if s_sei > 0:  # :548–552
         if _female(ctx) and t("処女") < 1:
             yield from after_pill(ctx, st.target, 20, NOZOMANAI)

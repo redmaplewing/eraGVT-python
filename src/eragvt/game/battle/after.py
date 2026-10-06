@@ -128,13 +128,13 @@ def subevent_release_ecstasy(ctx: Ctx) -> None:
     c.tcvarn[40] = 0  # :224
 
 
-def subevent_battleend(ctx: Ctx) -> None:
+def subevent_battleend(ctx: Ctx) -> Generator[None, int, None]:
     """`SUBEVENT_BATTLEE.ERB@SUBEVENT_BATTLEEND`:6–13。"""
     st = ctx.state
     if tc(ctx).tcvarn[40] > 0:
         subevent_release_ecstasy(ctx)
     if st.tflag[98] in (0, 1):
-        self_battleend(ctx, st.target)  # :13（FORCE_夜間自慰.ERB@SELF_BATTLEEND:65–72）
+        yield from self_battleend(ctx, st.target)  # :13（FORCE_夜間自慰.ERB@SELF_BATTLEEND:65–72）
 
 
 def douga_ryusutu(ctx: Ctx, arg: int) -> None:
@@ -266,7 +266,7 @@ def _tofull(n: int) -> str:
     return str(n).translate(str.maketrans("0123456789-", "０１２３４５６７８９－"))
 
 
-def _event_end_lose(ctx: Ctx) -> None:
+def _event_end_lose(ctx: Ctx) -> Generator[None, int, None]:
     """:335–422 敗北時（TFLAG:98 == 2）。"""
     st, data, out = ctx.state, ctx.data, ctx.out
     c = tc(ctx)
@@ -294,7 +294,7 @@ def _event_end_lose(ctx: Ctx) -> None:
     out.printl("人気度が3低下した")
     if st.flag[45] > 0:  # :379–390（CATCH：無指定なら敗北時はミッション失敗）
         mission_check(ctx, 0)
-    ninsin_check_after(ctx)  # :393
+    yield from ninsin_check_after(ctx)  # :393
     if c.cflag[0] > 0:  # :397–410
         if (t(ctx, c, "変身時ＴＳ") > 0 and config_check_prison(st, 0) > 0) or st.flag[73] > 0:
             pass
@@ -356,7 +356,7 @@ def event_end(ctx: Ctx) -> Generator[None, int, Step]:
                     st.charas[i].cflag[71] = 1
         if st.flag[45] > 0:  # :187–198（CATCH：無指定なら敗北時以外はミッション達成）
             mission_check(ctx, 1)
-        ninsin_check_after(ctx)  # :204
+        yield from ninsin_check_after(ctx)  # :204
         transform(ctx, 0)  # :206
         _transform_enemy_off(ctx)
         event_battle_reset_costume(ctx, st.target)  # :213
@@ -377,7 +377,7 @@ def event_end(ctx: Ctx) -> Generator[None, int, Step]:
         st.flag[852] = max(st.flag[852]+local,0)
         out.printl(f"防衛力が{abs(local)}"+("低下した" if local<0 else "上昇した"))
         out.printl()
-        ninsin_check_after(ctx)
+        yield from ninsin_check_after(ctx)
         transform(ctx,0)
         _transform_enemy_off(ctx)
         event_battle_reset_costume(ctx,st.target)
@@ -398,14 +398,14 @@ def event_end(ctx: Ctx) -> Generator[None, int, Step]:
         out.printl("人気度が3上昇した！")
         if st.flag[45] > 0:  # :286–297
             mission_check(ctx, 1)
-        ninsin_check_after(ctx)
+        yield from ninsin_check_after(ctx)
         transform(ctx, 0)
         _transform_enemy_off(ctx)
         event_battle_reset_costume(ctx, st.target)
         if game_option(st, GameOption.ENDLESS):  # :311–333
             raise NotImplementedError("エンドレスモードの期日短縮は未移植")
     elif st.tflag[98] == 2:  # :335–422 敗北
-        _event_end_lose(ctx)
+        yield from _event_end_lose(ctx)
     # :425–440 勝てなかったボスの蓄積ダメージと解析度を保持
     if enemy_type_check(st, "BOSS") == 1 and st.tflag[98] != 1:
         n = st.flag[11]
@@ -429,7 +429,7 @@ def event_end(ctx: Ctx) -> Generator[None, int, Step]:
         c.cflag[99] += st.tflag[99]
         out.printl(f"{print_callname(st, st.target)}の身体の底に疲労が蓄積した……（＋{_tofull(st.tflag[99])}）")
         st.tflag[99] = 0
-    subevent_battleend(ctx)  # :476
+    yield from subevent_battleend(ctx)  # :476
     c.base[20] = 0  # :479–480
     c.base[21] = 0
     # :484–492 空中ダッシュ最大値を戻す

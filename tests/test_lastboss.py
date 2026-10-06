@@ -4,6 +4,8 @@ expected は ERB 原文から推導（路徑相對 `source/earGVP/ERB/`、行號
 """
 
 from __future__ import annotations
+from _gen_driver import run_no_input
+from eragvt.game.prison.event import prison_routine
 
 import tempfile
 from pathlib import Path
@@ -264,7 +266,7 @@ def test_prison_by_k_tentacle(ctx):
     # :338–339 は TENTACLE_BOSS_{CFLAG:21}_PALAM_HOSEI（Ｃ触手：TENTACLE_BOSS_1_Ｃ触手.ERB:96–125）
     assert tentacle_access_prison(ctx, 1, "PALAM_HOSEI") == (120, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100)
     st.rng = FixedRng([85])  # TENTACLE_LASTBOSS_1_Ｋ触手.ERB:237–238 ELSE → RETURN 0
-    assert tentacle_access_prison(ctx, 1, "PRISON_ROUTINE") == 0
+    assert run_no_input(prison_routine(ctx, 1)) == 0
 
 
 # --- SHOP 表示 -----------------------------------------------------------------------------------

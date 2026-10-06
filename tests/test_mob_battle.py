@@ -1,4 +1,5 @@
 """S33：依 ENCOUNT 及各 TENTACLE_MOB 原文推導的固定案例。"""
+from _gen_driver import as_generator, run_no_input
 
 import pytest
 
@@ -112,7 +113,7 @@ def test_special_command_offsets(ctx, monkeypatch, number, command, expected, sc
         yield
     captured=[]
     monkeypatch.setattr(mob_special,"create_com",zero)
-    monkeypatch.setattr(palam,"palam_cal",lambda ctx,*values,losebase:captured.append((*values,losebase)))
+    monkeypatch.setattr(palam,"palam_cal",as_generator(lambda ctx,*values,losebase:captured.append((*values,losebase))))
     ctx.state.flag[11] = number
     ctx.state.result[90] = 9
     assert list(mob_special.special_command(ctx,command,0)) == []
@@ -209,7 +210,7 @@ def test_mob_after_rewards(ctx, monkeypatch, rolls, level, points, money, defens
     st.flag[852] = 0
     recorded=[]
     for name in ("_battle_marks","get_exp_battle","ninsin_check_after","_transform_enemy_off"):
-        monkeypatch.setattr(after,name,lambda *args:None)
+        monkeypatch.setattr(after,name,as_generator(lambda *args:None) if name == "ninsin_check_after" else lambda *args:None)
     monkeypatch.setattr(after,"ablup",lambda *args:None)
     monkeypatch.setattr(after,"transform",lambda *args:None)
     monkeypatch.setattr(after,"tentacle_level",lambda st:level)
@@ -230,7 +231,7 @@ def test_mob_901_threshold(ctx, monkeypatch):
     st.flag[10],st.flag[11],st.flag[14],st.flag[15] = 2,901,100,150
     st.tflag[3] = 0
     monkeypatch.setattr(syasei,"tentacle_sakusei",lambda *args:(0,0,0,0))
-    assert syasei.tentacle_syasei_check(ctx) == (0,0,0,0)
+    assert run_no_input(syasei.tentacle_syasei_check(ctx)) == (0,0,0,0)
     assert (st.flag[15],st.tflag[3]) == (50,100)
 
 

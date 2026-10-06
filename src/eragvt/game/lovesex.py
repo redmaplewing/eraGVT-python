@@ -129,7 +129,7 @@ def lovesex_kind(ctx: Ctx, arg: int, arg1: int) -> InputGen:
         yield from sex_v(ctx, arg, 0)
         sex_twice += 1
     elif t(ctx, c, "淫尻") > 0:  # :117–118
-        sex_a(ctx, arg)
+        yield from sex_a(ctx, arg)
     tc(ctx).nowex.clear()  # :122
     if abl(ctx, c, "Ａ感覚") > 1:  # :125–126
         l0 = 1
@@ -141,7 +141,7 @@ def lovesex_kind(ctx: Ctx, arg: int, arg1: int) -> InputGen:
         if l1 >= 50:
             yield from sex_v(ctx, arg, 1 if sex_twice == 1 else 0)
         else:
-            sex_a(ctx, arg)
+            yield from sex_a(ctx, arg)
     return 1
 
 
@@ -210,13 +210,13 @@ def sex_v(ctx: Ctx, arg: int, arg1: int = 0) -> InputGen:
     L[7] = _tbl(_YOKUJOU, houshi)  # :293–303
     L[6] = _tbl(_SHUTOKU, houshi)  # :307–319
     L[12] = 150  # :322
-    palam_cal(ctx, *L[:12], losebase=L[12])  # :325
+    yield from palam_cal(ctx, *L[:12], losebase=L[12])  # :325
     if config_check_event(st, 6) == 1 and l100 == 1:  # :328–337
         return 0
     tcc.cflag[218] += 1  # :331
     yield from after_pill(ctx, st.target, 75, AISURU_HITO)  # :333
     if is_female(data, tcc):  # :335–336
-        ninsin_hantei(ctx, 6, 800, AISURU_HITO)
+        yield from ninsin_hantei(ctx, 6, 800, AISURU_HITO)
     return 0
 
 
@@ -236,7 +236,7 @@ def message_sex_v(ctx: Ctx, arg0: int) -> None:
 # --- @SEX_A（:341–447）---------------------------------------------------------------------
 
 
-def sex_a(ctx: Ctx, arg: int) -> None:
+def sex_a(ctx: Ctx, arg: int) -> Generator[None, int, None]:
     """`@SEX_A, ARG`:341–447。"""
     st, data = ctx.state, ctx.data
     c = st.charas[arg]
@@ -256,7 +256,7 @@ def sex_a(ctx: Ctx, arg: int) -> None:
     L[7] = _tbl(_YOKUJOU, houshi)  # :415–425
     L[6] = _tbl(_SHUTOKU, houshi)  # :429–441
     L[12] = 150  # :444
-    palam_cal(ctx, *L[:12], losebase=L[12])  # :447
+    yield from palam_cal(ctx, *L[:12], losebase=L[12])  # :447
 
 
 def message_sex_a(ctx: Ctx) -> None:

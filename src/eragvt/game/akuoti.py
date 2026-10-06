@@ -20,6 +20,7 @@
 """
 
 from __future__ import annotations
+from collections.abc import Generator
 
 from .action import Ctx, config_check_screen, print_callname, print_transcallname
 from .battle.core import (
@@ -76,7 +77,7 @@ def self_call(ctx: Ctx, who: int = 0) -> str:
     return self_call_list(div(v, 5) % 20, v % 5)
 
 
-def akuoti_event(ctx: Ctx) -> None:
+def akuoti_event(ctx: Ctx) -> Generator[None, int, None]:
     """`@AKUOTI_EVENT`:33–1711（FLAG:111 = 悪堕ちキャラ）。"""
     st = ctx.state
     out = ctx.out
@@ -126,7 +127,7 @@ def akuoti_event(ctx: Ctx) -> None:
             _girl(ctx)
         else:  # :385 一般男女カップルの末路
             _couple(ctx)
-        _apply(ctx, loc, v_sex)  # :437–455
+        yield from _apply(ctx, loc, v_sex)  # :437–455
     elif select < sel_n1:  # :464–1607 暗躍系
         damage = sq * 1 + div(f852_term * 10, 100)  # :465（DEVIATION：上記 D2）
         pl(f"妖しい霧が立ち込め、蠢く異形のシルエットが{locals_}の街に不穏な影を落とす。")
@@ -148,12 +149,12 @@ def akuoti_event(ctx: Ctx) -> None:
             v_sex = _kidnap_woman(ctx)
         else:  # :1318 男を攫って快楽攻め
             v_sex = _kidnap_man(ctx, loc)
-        _apply(ctx, loc, v_sex)  # :1582–1600
+        yield from _apply(ctx, loc, v_sex)  # :1582–1600
     else:
         from .shop import check_gameover
 
         if check_gameover(st) == 0:  # :1609–1710 被調教系
-            _trained(ctx)
+            yield from _trained(ctx)
             return
         return
     if damage:  # :456–462／:1602–1607 防衛力にダメージ
@@ -163,7 +164,7 @@ def akuoti_event(ctx: Ctx) -> None:
         pw(f"防衛力が{damage}低下した！")
 
 
-def _apply(ctx: Ctx, loc: dict[int, int], v_sex: int) -> None:
+def _apply(ctx: Ctx, loc: dict[int, int], v_sex: int) -> Generator[None, int, None]:
     """:437–454／:1582–1600：TARGET を悪堕ちキャラにして COMMON_PRISON・COMMON_PRISON_EXP・妊娠判定。"""
     from .battle.ninsin import ninsin_hantei
     from .prison.commands import common_prison, common_prison_exp
@@ -176,7 +177,7 @@ def _apply(ctx: Ctx, loc: dict[int, int], v_sex: int) -> None:
         common_prison_exp(ctx, cc, loc.get(cc, 0))
     ctx.out.printl()
     if v_sex:  # :450–451 TRYCALL NINSIN_HANTEI, V_SEX, 20, 200（父親 200 = 雑魚触手）
-        ninsin_hantei(ctx, v_sex, 20, 200)
+        yield from ninsin_hantei(ctx, v_sex, 20, 200)
     st.target = saved
 
 
@@ -1365,12 +1366,12 @@ def _kidnap_man(ctx: Ctx, loc: dict[int, int]) -> int:
 # --- 被調教系 --------------------------------------------------------------------------------------
 
 
-def _trained(ctx: Ctx) -> None:
+def _trained(ctx: Ctx) -> Generator[None, int, None]:
     """:1609–1710 被調教系（CHECK_GAMEOVER_F() == 0 のとき）。PRISON_EVENT と違い、聖処女・ISHOLE の判定、
     START/FIRST の地の文、淫紋・陥落判定・変身解除が無い。:1700 の LOCAL:2 はこの関数の LOCAL（:40 で 0）で
     変わらないので搾精強化は起きない（CONFIG_CHECK_BALANCE_F は副作用なし）。"""
     from .prison.commands import prison_comable
-    from .prison.event import _msg, tentacle_access_prison
+    from .prison.event import _msg, prison_routine
     from .battle.core import KANKAKU_NUM
 
     st = ctx.state
@@ -1395,16 +1396,16 @@ def _trained(ctx: Ctx) -> None:
     for i in range(KANKAKU_NUM):  # :1636–1642
         st.shield[i] = 1 if c.base[i + 30] > 0 else 0
     if c.cflag[220] > 0 and rand(100) < 30:  # :1646–1648
-        prison_comable(ctx, 7)
+        yield from prison_comable(ctx, 7)
     else:
-        if int(tentacle_access_prison(ctx, st.target, "PRISON_ROUTINE")) == 0:  # :1651–1655
+        if int((yield from prison_routine(ctx, st.target))) == 0:  # :1651–1655
             l1 = rand(100)
             for bound, com in ((12, 0), (24, 1), (36, 2), (48, 3), (60, 4), (72, 5), (84, 6), (89, 104), (94, 300)):
                 if l1 < bound:
-                    prison_comable(ctx, com)
+                    yield from prison_comable(ctx, com)
                     break
             else:
-                prison_comable(ctx, 301)
+                yield from prison_comable(ctx, 301)
     c.exp[data.index_of("EXP", "被姦経験")] += 1  # :1694–1697
     c.cflag[31] += 1
     c.cflag[30] += 3 + rand(4)

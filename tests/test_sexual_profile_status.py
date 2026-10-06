@@ -1,4 +1,5 @@
 """S34：預期值由 SEXUAL_PROFILE／ABL_UP_CHECK／BATTLE_SHOW_STATUS／PALAM_UP 原文推導。"""
+from _gen_driver import run_no_input
 import pytest
 from test_gaping import ctx, data
 from eragvt.game import sexual_profile as profile
@@ -252,10 +253,10 @@ def test_palam_up_actual_display_and_static_before(ctx):
     ctx.state.flag[700]=0
     ctx.state.rng=GameRng(3)
     ctx.state.temp.up[0]=1
-    palam_up(ctx)
+    run_no_input(palam_up(ctx))
     assert get_local(ctx.state,"PALAM_UP.BEFORE_PALAM_CVAB",0)==123
     assert any("快Ｃ：" in l.text and "123" in l.text for l in ctx.out.lines)
     assert ctx.out.wait_count>0
     c.palam[0]=777
-    palam_up(ctx)  # UP:0 == 0，保留 #DIM 的前次值。
+    run_no_input(palam_up(ctx))  # UP:0 == 0，保留 #DIM 的前次值。
     assert get_local(ctx.state,"PALAM_UP.BEFORE_PALAM_CVAB",0)==123

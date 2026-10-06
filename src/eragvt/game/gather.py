@@ -624,7 +624,7 @@ def _buy_body(ctx: Ctx, name: str, man: str, gb, hantei: int) -> Generator[None,
             if st.temp.locals.get(_KEY_NAKADASHI, 0) > 0:  # :825–831（NAKADASHI は静的で 0 に戻らない：原作どおり）
                 yield from after_pill(ctx, st.target, 35, -1)
                 if is_female(data, c):
-                    ninsin_hantei(ctx, 2, 800, -1)
+                    yield from ninsin_hantei(ctx, 2, 800, -1)
             out.printw()
             return gather, 1
         if r == 3:  # :834–901 本番
@@ -654,7 +654,7 @@ def _buy_body(ctx: Ctx, name: str, man: str, gb, hantei: int) -> Generator[None,
             gather = _honban_reward(ctx, gather, gb)
             yield from after_pill(ctx, st.target, 35, -1)  # :896
             if is_female(data, c):
-                ninsin_hantei(ctx, 2, 800, -1)
+                yield from ninsin_hantei(ctx, 2, 800, -1)
             out.printw()
             return gather, 1
         # :902–903 GOTO INPUT_2_2

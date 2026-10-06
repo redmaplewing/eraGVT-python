@@ -5,6 +5,7 @@ expected は ERB 原文から手計算（路徑相對 `source/earGVP/ERB/`、行
 """
 
 from __future__ import annotations
+from _gen_driver import as_generator, run_no_input
 
 import re
 import tempfile
@@ -182,7 +183,7 @@ def test_lovesex_kind(ctx, data, monkeypatch, setup, rolls, expected):
         yield  # noqa: B901
 
     monkeypatch.setattr(lovesex, "sex_v", sex_v)
-    monkeypatch.setattr(lovesex, "sex_a", lambda ctx, arg: calls.append(("A",)))
+    monkeypatch.setattr(lovesex, "sex_a", as_generator(lambda ctx, arg: calls.append(("A",))))
     c.nowex[0] = 3
     st.rng = FixedRng(rolls)
     assert run_gen(lovesex.lovesex_kind(ctx, 1, 0)) == 1
@@ -197,8 +198,8 @@ def test_lovesex_kind(ctx, data, monkeypatch, setup, rolls, expected):
 @pytest.fixture
 def captured(monkeypatch):
     got = {}
-    monkeypatch.setattr(lovesex, "palam_cal", lambda ctx, *a, losebase=0: got.update(args=a, losebase=losebase))
-    monkeypatch.setattr(lovesex, "ninsin_hantei", lambda ctx, *a: got.update(ninsin=a))
+    monkeypatch.setattr(lovesex, "palam_cal", as_generator(lambda ctx, *a, losebase=0: got.update(args=a, losebase=losebase)))
+    monkeypatch.setattr(lovesex, "ninsin_hantei", as_generator(lambda ctx, *a: got.update(ninsin=a)))
     return got
 
 
@@ -271,7 +272,7 @@ def test_sex_a(ctx, data, captured):
     for name, v in (("Ａ感覚", 3), ("技巧", 3), ("露出癖", 2)):
         c.abl[A(data, name)] = v
     st.rng = FixedRng([0])  # MESSAGE_SEX_A:1419 RAND:2 = 0（CASE 0：RAND:10 なし）
-    lovesex.sex_a(ctx, 1)
+    run_no_input(lovesex.sex_a(ctx, 1))
     # 快A 4000 × 1.25 = 5000、屈服・恥情 500、欲情 0（奉仕 0）・習得 200
     assert captured["args"] == (0, 0, 5000, 0, 0, 0, 200, 0, 500, 500, 0, 0)
     assert [c.exp[E(data, n)] for n in ("精液経験", "Ａ経験", "フェラ経験")] == [1, 1, 1]
@@ -331,12 +332,12 @@ def test_ninsin_hantei_human_father(ctx, roll, pregnant):
     if pregnant:
         # S13：受精成立 → NINSIN_SUBMIT（出産経験 0：屈服 +2500・恐怖 +1500、:765–766）、:144–148、
         # NINSIN_FLAG（普通の人間・寄生なし → 妊娠 = 4、CFLAG:228 = 266 × (80 + RAND:41) / 100：:214–218、:837–839）
-        assert ninsin.ninsin_hantei(ctx, 6, 800, -3) == 1
+        assert run_no_input(ninsin.ninsin_hantei(ctx, 6, 800, -3)) == 1
         assert c.cflag[233] == 0 and c.cflag[221] == 0 and c.cflag[232] == 0 and c.cflag[230] == -3
         assert c.talent[T(ctx.data, "妊娠")] == 4 and c.cflag[228] == 266
         assert c.juel[ctx.data.index_of("PALAM", "屈服")] == 2500 and c.juel[ctx.data.index_of("PALAM", "恐怖")] == 1500
     else:
-        assert ninsin.ninsin_hantei(ctx, 6, 800, -3) == 0
+        assert run_no_input(ninsin.ninsin_hantei(ctx, 6, 800, -3)) == 0
         assert c.cflag[233] == 6 and c.cflag[221] == 6 and c.cflag[232] == 0
 
 
