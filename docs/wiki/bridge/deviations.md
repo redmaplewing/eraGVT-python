@@ -85,7 +85,7 @@ S56現況歸屬：各未勾選項的W編號指向`docs/PLAN.md`；仍待實作�
 - [ ] `W07` **SHOW_SHOP 簡化**：狀態條（`COLOR_BAR` 的色階與長度）以 20 格單色近似；`SHOW_SHOP_STATUS_SIGN`（生理周期・疲勞等標記）、隊伍列表的欄寬對齊與第 2 行詳細未移植；`SHOP_NG_ACTION_INFO` 的紅字在函式結尾重設顏色（原作不重設）。（Python：`eragvt.game.shop`）
   S46 已接通出場／候補列表與編成選擇，候補列表沿用相同欄寬、數值條與狀態標記簡化；來源 `ERB/インターミッション画面/SHOP_SHOW_STATUS_LIST.ERB@SHOP_SHOW_STATUS_RESERVE_LIST:52–86`。
 - [x] **SHOP[800]未實作**（S57解決）：成就4頁／紀錄2頁、切換、循環換頁、返回均接通；紀錄寫入仍見W01上項。
-- [ ] `W07` **WAIT／PRINTW 不阻塞**：Web 一次顯示到下一個 INPUT 為止，WAIT 位置以虛線標示，不需按鍵繼續。（Python：`eragvt.game.session`、`eragvt.web`）S44引退名簿／報告、S45設施擴充、S49武器自訂已依原作局部補上PRINTW／WAIT等待；S57成就PRINTW亦已真正等待並在確認後保存，但仍沿用Web的required數字欄（`web/templates/index.html:32`）：須輸入0等數字提交，並非原引擎ReadAnyKey的任意鍵確認，且無[0]提示；此輸入差異仍屬W07。其他系統的既有簡化仍保留，見`docs/wiki/era/retirement.md`與`facilities.md`。
+- [ ] `W07` **WAIT／PRINTW 不阻塞**：Web 一次顯示到下一個 INPUT 為止，WAIT 位置以虛線標示，不需按鍵繼續。（Python：`eragvt.game.session`、`eragvt.web`）S44引退名簿／報告、S45設施擴充、S49武器自訂已依原作局部補上PRINTW／WAIT等待；S85已將成就、ENDLESS新紀錄、SCORE保存前／收尾共四處同步包裝改為明確Enter確認，確認期間保留歷史標籤並停用舊選項按鈕；RESULT(S)與RNG不因等待改變。此四處不再要求數字；其餘舊等待尚未全面遷移，不能勾選結案，詳[共用輸入](generic-input.md)。其他系統的既有簡化仍保留，見`docs/wiki/era/retirement.md`與`facilities.md`。
   S70首次事件`ERB/地の文/MESSAGE_PRISON.ERB@MESSAGE_PRISON_PRISENTENCE_FIRST`與`ERB/ヒロイン関連/TRANS_SEX.ERB@TS_NORMAL:361`錯誤路徑的舊PRINTW仍沿本項等待簡化，未新增批准；TS選單文字與尾端全形空白已按原文保留。
 - [ ] `W08` **存檔格式與檔名**：JSON（`saves/saveNN.json`），不是 Emuera 的 `.sav`；存檔說明文字（日時＋`@SAVEINFO`）與一覽格式照原作。
 - [ ] `W08` **Web 專用按鈕**：頁尾「タイトルに戻る」（重建 session）是原作沒有的。

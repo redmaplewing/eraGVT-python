@@ -25,3 +25,12 @@
 - 更新generic-input與既有deviations等待原項，精確說明已解／仍未解範圍；有新UNVERIFIED依規則記錄，不以文件刪掉問題。
 - STATUS／PLAN由主代理收口；其餘必要PLAYABILITY／wiki同步，避免新增巨型日誌。
 - 繁體中文、LF／UTF-8無BOM、source／reference唯讀；子代理自查範圍、不commit/push；三段回報成果／依據／需要裁決。
+
+## 子代理交付證據
+- 四處同步等待全部傳遞WaitInputRequest；模板確認期間只呈現歷史選項文字；既有catalog明確等待通道不重寫。RESULT(S)／RNG及保存順序按原作保留。
+- 定向`280 passed, 1 warning in 5.45s`；模擬器明確型別契約`1 passed, 5 deselected in 0.07s`，詳細指令與來源見[共用輸入](../wiki/bridge/generic-input.md)。
+- tmp/s85/browser_fixture.py兩入口API冒煙通過；mixed為中性catalog，achievement為全新25歲人工資料真GET_STATE_TROPHY。產品／測試／fixture凍結後才交主代理真瀏覽器與一次全pytest。
+- source／reference未動；UTF-8無BOM／LF及git diff --check通過。無新增UNVERIFIED／DEVIATION；未逐處核對的舊等待仍列W07，不宣稱整包完成。
+
+- 主代理兩路真瀏覽器通過，catalog／console0、RNG不變、RESULT(S)及保存順序正確，完成後worker／journal清空；完整pytest `5404 passed, 1 warning in 181.72s (0:03:01)`。
+- 正常INPUT轉送前wait_bridge會恢復callback，工具只改確認型別辨識、無策略改變；本階段不跑500，沿用S84基線。下一成果S86決策資訊與分類，W07未結包。

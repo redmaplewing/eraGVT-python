@@ -1,13 +1,23 @@
-# 共用 Web 輸入（S60b）
+# 共用 Web 輸入（S60b／S85）
 
 ## 明確請求與邊界
 
 - `WaitInputRequest` 表示 Enter 確認；`TextInputRequest` 表示文字；既有 `yield None` 仍表示數字輸入。
 - 不根據 `TextOutput.wait_count`、歷史行的 `wait` 或 `yield None` 推定 WAIT。輸出可能已被略過，接著的 yield 可能是真正 INPUT。
-- 本次僅將 `ERB/ゲーム内_イベント発生/オープニング処理.ERB@TUTORIAL` 的五個 PRINTW（483／501／516／540／575）接到明確等待標記。
-- tutorial 原先以 `TextInputRequest` 等待，已可接受空字；本次改成獨立確認按鈕及正確的 `input_kind=wait`。**沒有全面修復其他舊 WAIT 必須輸入數字的問題**。
+- S60b僅將 `ERB/ゲーム内_イベント発生/オープニング処理.ERB@TUTORIAL` 的五個 PRINTW（483／501／516／540／575）接到明確等待標記。
+- S60b的tutorial 原先以 `TextInputRequest` 等待，已可接受空字；本次改成獨立確認按鈕及正確的 `input_kind=wait`。S85再修復下列四處同步包裝；其他舊等待仍未全面遷移。
 - `TextOutput.printw`／`wait` 保留既有輸出及計數功能，不自行暫停 generator。其他呼叫者須逐處核對後遷移。
 - 不變更 INPUT 數字解析、INPUTS 空字／空白規則、遊戲狀態、RNG 或選單預設。不依賴未提交 S60 角色編輯器。
+
+## S85：同步確認與當前控制項
+
+- 已查證的同步包裝共有四個呼叫點：`game/achievements.py@unlock`，以及`game/ending.py@_endless_record`與`score`的兩處等待；全部由`wait(None)`改傳`WaitInputRequest()`。包裝只轉送明確請求，不依輸出計數或generator的`None`猜測。
+- 原作依據：`ERB/インターミッション画面/SHOP_TROPHY.ERB@UNLOCK_ACHIEVEMENT:15–19`（成就保存前），`ERB/ゲーム内_イベント発生/エンディング/ENDING.ERB@ENDING_1:270–277`（新紀錄保存前；共用ENDING_3／ENDING_6），`ERB/ゲーム内_イベント発生/エンディング/SCORE.ERB@SCORE:694–698、738–749`（最高評分及通關數保存前）。
+- WAIT不寫RESULT(S)或消耗RNG。`unlock`確認後函式流落的RESULT:0=0仍保留；ENDLESS進等待前LOADGLOBAL失敗寫RESULT:0=0仍保留，依`reference/emuera-1824/Emuera/GameProc/Function/Instraction.Child.cs:1293–1299`，不錯歸為WAIT的寫入。
+- 等待頁保留歷史選單的標籤及樣式，但不建立可提交的選項按鈕；頁尾只提供確認與返回標題。恢復INPUT後按原輸入類型顯示控制項，不清空敘事歷史，也不新增選項值白名單。
+- S79／S80的catalog `waits=True`既有通道直接沿用；混合WAIT／INPUT／INPUTS／FORCEWAIT及catalog呼叫原生成就的雙層通道，均保留原請求型別與順序。沒有全面啟用尚未逐處核對的舊catalog／同步printw。
+- 模擬器只認`session.input_kind == "wait"`，移除以`achievement_wait` callback存在推斷確認的舊捷徑；真正數字INPUT仍使用策略選項，確認不消耗策略RNG。正常包裝在轉送數字INPUT前已恢復callback，舊捷徑只覆蓋四處同步確認，故此工具改動不改正常數字選擇策略。
+- 未完成範圍：既有只印分隔、不真正等待的同步printw／wait，以及其他舊以數字輸入包裝的等待，仍屬W07。S85不是WAIT全數遷移或W07結包。
 
 ## 引擎依據
 
@@ -35,3 +45,18 @@
 - 真瀏覽器8871：Enter推進第一等待、按鈕推進第二等待；數字空白顯示必填且不推進，12進文字，空字提交顯示空字；60行長頁焦點在確認按鈕，等待中返回標題成功。
 - S60角色編輯改動保持未提交；本次無新增UNVERIFIED或需裁決偏離。舊WAIT偏離仍未完成。
 - 父代理於HEAD隔離複本（僅覆蓋S60b檔案）獨立重跑：`54 passed, 2 deselected, 1 warning in 1.89s`；不含S60新角色編輯模組，相關舊模組逐byte與HEAD一致，確認本次不依賴未提交S60。
+
+## S85定向驗收與瀏覽器入口
+
+- 先紅：新明確請求與模板契約`8 failed, 137 passed`；另模擬器「callback存在但請求為number」合成前態的契約亦先紅後綠，並非已發現正常流程可達的誤選。
+- 定向：`python -m pytest tests/test_generic_input.py tests/test_explicit_wait.py tests/test_achievements.py tests/test_records.py tests/test_opening_sequence.py tests/test_battle_side_events.py tests/test_tutorial.py -q` → `280 passed, 1 warning in 5.45s`。
+- 工具契約：`python -m pytest tests/test_sim_isolation.py -q -k achievement_confirmation_preserves_policy_rng` → `1 passed, 5 deselected in 0.07s`。沒有重跑無關模擬工具批次。
+- 新增六案驗成就保存前後RESULT(S)／RNG、三種文字值、catalog巢狀成就的正常／中止；沿用S60b重送與重啟、S79／S80明確等待測試。ENDLESS新紀錄及SCORE兩等待的既有案例補RESULT(S)／RNG斷言。
+- 臨時瀏覽器fixture：`python tmp/s85/browser_fixture.py --scenario mixed --port 8885`，中性catalog順序為Enter→數字空白必填→[12]→確認→空字Enter→60行尾端確認→標題；任一等待也可返回標題。
+- 另一入口：`python tmp/s85/browser_fixture.py --scenario achievement --port 8886`，全新25歲人工角色正常初始化後施攻擊500前態，真`get_state_trophy`等待→確認→[7]數字INPUT→標題。確認前GLOBAL220=0／未保存；之後GLOBAL220=1／已保存；RNG全程不變。
+- fixture的`/audit`提供RESULT(S)、保存／RNG／catalog失敗／worker狀態；臨時存檔不碰既有存檔，未設定的另一形態年齡-1保留。上述fixture API冒煙通過；主代理真瀏覽器及提交前全pytest結果由STATUS收口。
+- 此修改只傳遞原有四個停止點的請求型別及呈現，未新增狀態寫入／排程／RNG／存讀行為，W07尚未結包，依分級驗證不跑500局。無新增UNVERIFIED／DEVIATION。
+
+- S85主代理兩路真瀏覽器已通過：mixed的Enter、數字空白必填、[12]、確認、空文字、60行尾端焦點與捲動、返回標題；achievement確認前後GLOBAL220／保存及[7]數字輸入均符合上述expected。等待期間歷史選項僅文字；普通數字／文字期間既有歷史按鈕行為未改。
+- 兩路catalog／console失敗0，完成後worker空、journal深度0；RNG不變、RESULT(S)尾格保留。證據tmp/s85/browser-summary.json／browser-achievement-wait.png／browser-mixed-tail.png；主代理只加/audit-view HTML呈現稽核資料，不改流程。
+- 主代理全pytest：`5404 passed, 1 warning in 181.72s (0:03:01)`。此階段沒有重跑500，沿用S84最近完整基線；不把本次fixture初始化當新一次完整開局驗收。

@@ -1,6 +1,7 @@
 """S57：預期取自 ERB/インターミッション画面/SHOP_TROPHY.ERB。"""
 import threading
 import pytest
+from eragvt.game.input_request import WaitInputRequest
 from test_clothing_menu import data, ctx
 from eragvt.game.achievements import get_state_trophy, show_trophy
 from eragvt.game.battle.core import unlock_achievement
@@ -44,7 +45,7 @@ def test_wait_before_save_and_close(ctx,tmp_path,abort):
     ctx.globals.mem.globals_[9]="保留"
     ctx.globals.mem.mob_global[5]=42
     g=with_achievement_wait(_obtain(ctx),ctx.out)
-    assert next(g) is None
+    assert isinstance(next(g), WaitInputRequest)
     assert ctx.globals.mem.global_[220]==0
     assert not ctx.globals.exists()
     if not abort:

@@ -1,5 +1,6 @@
 """S58：預期依 SHOP_TURNEND@UPDATE_STATUS_RECORD、SCORE@SCORE、ENDING@ENDING_1。"""
 import pytest
+from eragvt.game.input_request import WaitInputRequest
 from test_clothing_menu import data, ctx
 from eragvt.game import achievements, ending
 from eragvt.state.constants import GameMode, MODE_OPTIONS
@@ -132,11 +133,20 @@ def test_new_record_wait_before_save(ctx):
     def run():
         ending._endless_record(ctx)
         yield "done"
+    ctx.state.result[0],ctx.state.result[1]=73,74
+    ctx.state.results[0],ctx.state.results[1]="kept","other"
+    rng=ctx.state.rng.snapshot()
+    def assert_unchanged():
+        assert (ctx.state.result[0],ctx.state.result[1])==(0,74)  # ENDING_1:270 LOADGLOBAL失敗寫RESULT:0=0，WAIT本身保留。
+        assert (ctx.state.results[0],ctx.state.results[1])==("kept","other")
+        assert ctx.state.rng.snapshot()==rng
     gen=with_achievement_wait(run(),ctx.out)
-    assert next(gen) is None
+    assert isinstance(next(gen), WaitInputRequest)
     assert ctx.globals.mem.global_[114]==0
     assert not ctx.globals.exists()
+    assert_unchanged()
     assert gen.send(0)=="done"
+    assert_unchanged()
     assert ctx.globals.mem.global_[114]==9
     gen.close()
 
@@ -157,12 +167,22 @@ def test_score_confirm_before_writes(ctx,monkeypatch):
     def run():
         ending.score(ctx)
         yield "done"
+    ctx.state.result[0],ctx.state.result[1]=73,74
+    ctx.state.results[0],ctx.state.results[1]="kept","other"
+    rng=ctx.state.rng.snapshot()
+    def assert_unchanged():
+        assert (ctx.state.result[0],ctx.state.result[1])==(73,74)
+        assert (ctx.state.results[0],ctx.state.results[1])==("kept","other")
+        assert ctx.state.rng.snapshot()==rng
     gen=with_achievement_wait(run(),ctx.out)
-    assert next(gen) is None  # SCORE:694 PRINTW
+    assert isinstance(next(gen), WaitInputRequest)  # SCORE:694 PRINTW
     assert not ctx.globals.exists()
-    assert gen.send(0) is None  # SCORE:738 PRINTW
+    assert_unchanged()
+    assert isinstance(gen.send(0), WaitInputRequest)  # SCORE:738 PRINTW
     assert ctx.globals.mem.global_[113]==3
+    assert_unchanged()
     assert ctx.globals.mem.global_[101]==0
     assert gen.send(0)=="done"
+    assert_unchanged()
     assert ctx.globals.mem.global_[101]==1
     gen.close()

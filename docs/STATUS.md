@@ -1,6 +1,6 @@
 # 現況（唯一真相，≤120行）
 
-更新：2026-10-06（S84完成W06；下一項S85接W07真確認等待）
+更新：2026-10-06（S85真確認等待完成；下一項S86補決策資訊）
 
 ## 完成標的與下一步
 
@@ -32,7 +32,8 @@
 - S82兩末王八種終端、四類正常行動實抽與事件4完整進出已驗；父全pytest5285及16路真瀏覽器通過，W05結包500局通過，W05範圍完成。
 - S83接通ENDLESS擊破／期限、敵行動與PALAM能力降低、INSTANT真等待；父全pytest5364及六路25歲真瀏覽器通過，局部規則依分級驗證未跑500。
 - S84七模式生命週期34案、六路真瀏覽器已通過；沒有產品改動，主全pytest5396加後補2案與結包500通過，W06範圍完成。
-- 依固定佇列進W07，下一成果S85真確認等待與有效輸入；既有W02／W04具體阻塞與完整B矩陣保留。
+- S85四處成就／紀錄／評分等待改明確確認，等待期間停用歷史按鈕；父全pytest5404、兩路真瀏覽器通過，依分級驗證不跑500。
+- 下一成果S86留W07，補SHOP／戰鬥決策資訊與分類指令；既有W02／W04具體阻塞與完整B矩陣保留。
 - [8]經歷／初始經驗涉及直接按未成年年齡／學生類型生成性經驗，保留未實作停止；具體依據見[角色編輯](wiki/era/character-editor.md)，不冒充原作未完成或25歲驗證失敗。
 - 使用者已裁決本次500局採全新25歲人工資料並建立獨立基線；產品年齡規則不變，與S59原始資料不宣稱逐seed等價。
 
@@ -57,14 +58,14 @@
 
 ## 最新驗收
 
-- S84主代理全pytest：`5396 passed, 1 warning in 384.36s (0:06:24)`；後補獨立2案另驗`2 passed in 0.90s`，共5398案已驗，不把兩次合成單次全pytest摘要。無產品修改，未重跑全套。
-- 新增32案：七模式跨日／權限7、期限8、通關讀回新周6、周回K增援4、全滅守衛7；原32案與相關定向`523 passed, 1 warning in 32.88s`。另2案補SURVIVAL／FREEPLAY全滅8體評分；FREEPLAY無引繼禁止消費端，保留原控制流。
-- 六路真瀏覽器通過：NORMAL真新局→SHOP施明示人工敵存活／研究／攻擊優勢→原生行動與Ｋ触手戰→評分存槽5→新session標題讀回→引繼新周SHOP；GLOBAL101=1，新周FLAG854=1、普通敵bit127、自動99定向一致。
-- SURVIVAL7次擊破期限失敗回標題，8次進評分並保留7敵存活；FREEPLAY／SANDBOX相同期限前態續行第82日；HARDCORE新周K勝利增援天使樹、總期限106、FLAG4=2／21=1／101=2，成就確認後回SHOP。
-- 六路使用全新25歲人工資料、原生另一形態未設定-1保留；完整catalog執行僅遮蔽敘事，失敗0、console警告／錯誤0。臨時存檔，頁籤與伺服器已關，證據tmp/s84/browser-summary.json／browser-audit.json／browser-new-cycle.png及[模式生命週期](wiki/era/mode-lifecycle.md)。
-- W06 DoD與結包500已通過：default247上限／3回標題、tokusou250上限；catalog／fixture失敗0。兩入口各seed0–249、max-shop200、actions101–108前景50局一批，十批exit0／seed／log／參數全核對。
-- 最新完整模擬基線tmp/s84/adult25-v1/audit.json：500局的完整輸出欄位與S82逐seed相同，不宣稱完整GameState等價、自然長局通關或完整B矩陣完成。
-- 成就／評分仍以舊數字確認並殘留TRAIN按鈕，S84逐次真輸入通過，W07由S85修共用等待；沒有新增UNVERIFIED／DEVIATION。W02／W04既有阻塞及W09門檻不變。
+- S85主代理全pytest：`5404 passed, 1 warning in 181.72s (0:03:01)`；新增6案，定向`280 passed, 1 warning in 5.45s`，模擬器輸入契約`1 passed, 5 deselected in 0.07s`。
+- 兩路真瀏覽器：中性catalog混合PRINTW／INPUT／WAIT／INPUTS與60行長頁；25歲人工角色由真GET_STATE_TROPHY取得成就。Enter／點按確認、數字空白必填、選12、空文字、尾端焦點與捲動均通過。
+- 確認期間舊選項保留文字但無提交按鈕；恢復數字／文字時沿原控制項，未宣稱所有歷史選項都已去除。成就確認前GLOBAL220=0／未保存、後為1／已保存；RESULT0原函式流落0、下一數字INPUT7，尾格及RESULTS保留，RNG不變。
+- catalog失敗0、console警告／錯誤0，兩路完成後worker空、journal深度0；重送／等待中重啟另有定向與S60b既有瀏覽器證據。開局是fixture準備，本次不宣稱重驗完整開局。
+- 證據tmp/s85/browser-summary.json／browser-achievement-wait.png／browser-mixed-tail.png；主代理只加/audit-view可見HTML，未改fixture流程。臨時存檔、頁籤與伺服器已關。
+- 模擬器改只認input_kind；已核對wait_bridge普通INPUT轉送前恢復callback，四同步確認不寫RESULT(S)且不耗RNG，因此正常選擇策略不變。本階段無新增跨系統狀態／排程／RNG／存讀行為，不重跑500，W07仍未結包。
+- 最近完整模擬基線為S84：default247上限／3回標題、tokusou250上限；catalog／fixture0，十批seed／參數／log／exit0核對，全部輸出欄位逐seed同S82。產物tmp/s84/adult25-v1/audit.json；S85不冒充重新模擬。
+- S85只解四處同步包裝及明確等待頁的歷史按鈕；其他舊WAIT／PRINTW仍屬W07，既有deviations等待原項未勾選。無新增UNVERIFIED／DEVIATION；W02／W04阻塞及W09完整門檻不變。
 
 ## 剩餘工作概況
 
@@ -73,7 +74,7 @@
 - S59已裁決：最高總評讀寫113，魅了仍110；現行檔已有113保留，污染110不猜回填。W01已通過最終驗收，S60已完成W02共用入口及命名／一人稱／武器UI整合，接續同包其餘子選單。
 - W02–W04：個別角色經歷、套組10及序章觀看的具體範圍阻塞；完整出生／加入驗收未完成。W03範圍、其他12套組、序章略過及開局FIRST接線已完成。
 - W05範圍已完成；W06六處規則缺口、七模式生命週期及結包500已通過，W06範圍完成。
-- W07：SHOP／戰鬥決策資訊、指令分類、WAIT與顯示簡化、COUNT與catalog失敗處理。
+- W07：S85已解四處同步確認；S86續補SHOP／戰鬥決策資訊與指令分類，其他舊WAIT／顯示簡化、COUNT與catalog失敗仍待完成。
 - W08–W09：未決引擎／原作錯誤與安全網查證、既有偏離裁決、真正瀏覽器端到端驗收與使用說明。
 - 94行`raise NotImplementedError`包含未移植、原作錯誤、安全網、catalog失敗與抽象方法；不能當94個功能。
 - 醫療室隱藏AMPUTEE支線依既有裁決提示未完成並截斷；其他原作不完整項須按具體原文範圍保留。

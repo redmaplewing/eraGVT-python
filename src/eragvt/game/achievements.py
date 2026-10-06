@@ -1,4 +1,5 @@
 """原作共用成就；GLOBAL 保存沿用 GlobalStore。"""
+from .input_request import WaitInputRequest
 from ..state.constants import GameOption
 from .opening import game_option
 from .achievements_data import NAMES, PAGES, GET_STATE_ABLUP, GET_STATE_EXPUP
@@ -172,7 +173,7 @@ def unlock(ctx, num, name):
         ctx.out.printw()
         wait = getattr(ctx.out, "achievement_wait", None)
         if wait is not None:
-            wait(None)
+            wait(WaitInputRequest())
         ctx.globals.mem.global_[num] = 1
         ctx.globals.save()
     ctx.state.result[0] = 0

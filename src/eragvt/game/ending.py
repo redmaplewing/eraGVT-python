@@ -12,6 +12,7 @@ from __future__ import annotations
 
 from collections.abc import Generator
 
+from .input_request import WaitInputRequest
 from ..state.constants import GameOption
 from .action import Ctx, config_check_maniac, print_callname, print_transname
 from .battle.core import t, tc
@@ -478,7 +479,7 @@ def _endless_record(ctx: Ctx, _unused: bool = False) -> bool:
         out.printw(f"　{ctx.globals.mem.global_[114]}体 → {local}体")
         wait = getattr(out, "achievement_wait", None)
         if wait is not None:
-            wait(None)
+            wait(WaitInputRequest())
         out.printl()
         ctx.globals.mem.global_[114] = local
         ctx.globals.save()
@@ -734,7 +735,7 @@ def score(ctx: Ctx) -> int:
             out.printl(line)
     wait = getattr(out, "achievement_wait", None)
     if wait is not None:
-        wait(None)  # SCORE:694 PRINTW，保存之前確認
+        wait(WaitInputRequest())  # SCORE:694 PRINTW，保存之前確認
     # DEVIATION: S59 已批准總評改113，依 ERB/バージョン間互換処理.ERB@UPDATE_GLOBAL:52 的遷移意圖；不回填110。
     if local > ctx.globals.mem.global_[113]:  # SCORE:695–698
         ctx.globals.mem.global_[113] = local
@@ -778,7 +779,7 @@ def score(ctx: Ctx) -> int:
         unlock(ctx, 211, "覇者の証")
     out.printw()  # :738
     if wait is not None:
-        wait(None)
+        wait(WaitInputRequest())
     from .shop import game_mode_check
     from ..state.constants import GameMode
     slot = {GameMode.SOLO:100, GameMode.NORMAL:101, GameMode.HARDCORE:102}.get(game_mode_check(st))

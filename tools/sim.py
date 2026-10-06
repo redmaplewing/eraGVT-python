@@ -564,8 +564,6 @@ def _input_choice(session, policy, buttons):
     """成就 PRINTW 僅確認；不得以舊選項額外消耗策略 RNG。"""
     if session.input_kind == "wait":
         session.input("")
-    elif getattr(session.out, "achievement_wait", None) is not None:
-        session.input(0)
     else:
         session.input(policy.choice(buttons) if buttons else 0)
 

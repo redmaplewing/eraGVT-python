@@ -20,12 +20,12 @@ def test_achievement_confirmation_preserves_policy_rng():
     before = policy.getstate()
     inputs = []
     session = SimpleNamespace(
-        input_kind="number", out=SimpleNamespace(achievement_wait=lambda _: None), input=inputs.append,
+        input_kind="wait", out=SimpleNamespace(achievement_wait=lambda _: None), input=inputs.append,
     )
     sim._input_choice(session, policy, [9, 10, 30])
-    assert inputs == [0]
+    assert inputs == [""]
     assert policy.getstate() == before
-    session.out.achievement_wait = None
+    session.input_kind = "number"  # 即使包裝 callback 存在，真正 INPUT 仍須走選擇。
     sim._input_choice(session, policy, [9, 10, 30])
     assert inputs[-1] == random.Random(7).choice([9, 10, 30])
     assert policy.getstate() != before
