@@ -165,6 +165,9 @@ def character_editor(ctx, who, bonus=0, restricted=0):
         elif r==7:
             from .character_personality import personality_setting
             yield from personality_setting(ctx,who)
+        elif r in (4,10,23):
+            from .character_build import race_setting, transformation_setting, status_bonus
+            yield from {4:race_setting,10:transformation_setting,23:status_bonus}[r](ctx,who)
         elif r==12:
             if c.cflag[2]==1:
                 c.cflag[3]=1
@@ -173,7 +176,7 @@ def character_editor(ctx, who, bonus=0, restricted=0):
             yield from clothing_setting_gen(ctx,who,r+24)
             st.result[0]=0
         else:
-            names={0:'FIRSTSETTING_CHARA_SEX',4:'FIRSTSETTING_CHARA_SYUZOKU',8:'FIRSTSETTING_CHARA_EXP',10:'FIRSTSETTING_CHARA_TRANSABILITY',23:'FIRSTSETTING_STATUS_BONUS',999:'FIRSTSETTING_CHARA_LOADCSV'}
+            names={0:'FIRSTSETTING_CHARA_SEX',8:'FIRSTSETTING_CHARA_EXP',999:'FIRSTSETTING_CHARA_LOADCSV'}
             raise NotImplementedError(names[r]+' 尚未移植')
 
 def kojo_setting(ctx,who):
