@@ -655,10 +655,17 @@ def _enemy_action_once(ctx: Ctx) -> Generator[None, int, bool]:
             if c.cflag[1] != 2:
                 v[6] += limit(isqrt(max(c.base[11] - 100, 0)), 0, 20) + 5
     elif action == 4:  # :574–628 距離をとる（敵の体力回復）
-        l3 = times(st.flag[12], "0.08")
-        if not enemy_type_check(st, "AKUOTI"):
-            # LASTBOSS_REST（LASTBOSS_POWERUP.ERB:16–22）：ボス戦は 0（悪堕ちキャラは割らない：:578–579）
-            l3 = div(l3, 2 + 0)
+        # ERB/ゲーム内_戦闘処理/ENEMY_ACTION.ERB@ENEMY_ACTION:577–593。
+        # 先按敵類取比例並截斷，再除以2+回復係數；強化HP已在遭遇時套用。
+        if enemy_type_check(st, "AKUOTI"):
+            l3 = times(st.flag[12], "0.08")
+        else:
+            lastboss = enemy_type_check(st, "LASTBOSS") >= 1
+            rate = "0.04" if lastboss else "0.16" if enemy_type_check(st, "MOB") == 1 else "0.08"
+            l3 = times(st.flag[12], rate)
+            # ERB/ゲーム内_戦闘処理/LASTBOSS_POWERUP.ERB@LASTBOSS_REST:16–22。
+            st.result[0] = 8 if config_check_balance(st, 5) > 0 and lastboss else 0
+            l3 = div(l3, 2 + st.result[0])
         if st.flag[13] + l3 > st.flag[12]:
             l3 = st.flag[12] - st.flag[13]
         st.flag[13] += l3

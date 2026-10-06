@@ -83,7 +83,7 @@
 
 ## S56盤點新增
 
-- [ ] `W05／W08` 末王強化時敵方回復是否漏套係數 — `ERB/ゲーム内_戦闘処理/LASTBOSS_POWERUP.ERB@LASTBOSS_REST:16–22`在強化且末王時回8，`game/battle/enemy.py:657–661`行動4目前固定除以`2+0`；HP強化在`battle/encount.py:325–327`、跨回合回復在`game/turnend.py:354–356`已處理。已查這三處Python與LASTBOSS_POWERUP原文；尚需核對`TENTACLE_COM`呼叫鏈、兩末王行動4可達性與定向expected，不能判整套強化未移植，也不在文件階段擅改規則。
+- [x] `W05／W08` 末王強化時敵方回復漏翻（S81結案）— `ERB/ゲーム内_戦闘処理/ENEMY_ACTION.ERB@ENEMY_ACTION:574–617`依敵類先取末王4%／雜魚16%／其他8%，再按`ERB/ゲーム内_戦闘処理/LASTBOSS_POWERUP.ERB@LASTBOSS_REST:16–22`套除數；已修正固定8%／除2。真鏈為SELECT_TENTACLE_ACTION→SOURCE_CHECK→ENEMY_ACTION（全ERB／ERH的TENTACLE_COM精確搜尋0）；末王1直接抽4，末王2可經FLAG902把2轉4。兩末王ON/OFF、截斷／封頂與真run_train已測，詳[戰鬥分派](../era/battle-dispatch.md)。HP強化與跨回合既有處理不變，無新偏離。
 
 
 ## S78套組10索引（W04／W08）

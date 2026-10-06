@@ -498,9 +498,9 @@ def raid_hantei(ctx: Ctx) -> Generator[None, int, "Step | None"]:
 
 def _ishole(ctx: Ctx, who: int) -> bool:
     """`汎用関数/SEX_GENDER.ERB@ISHOLE`:52–66。"""
-    if config_check_maniac(ctx.state, 5) == 1:
-        return True
-    raise NotImplementedError("ISGIRLY（男女平等オプション OFF 時）は未移植")
+    from .battle.core import is_hole
+
+    return is_hole(ctx, who)
 
 
 # --- 防衛力・人気度 ------------------------------------------------------------------
