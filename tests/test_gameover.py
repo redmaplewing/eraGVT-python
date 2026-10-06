@@ -167,7 +167,7 @@ def test_prison_solo_brainwash_ending_4_breaks_loop(ctx, comable):
     c.cflag[30] = 1000  # > CHECK_CONTAMINATION
     c.cflag[23] = 5
     st.rng = FixedRng([99, 0, 0] + [0] * 10)
-    event.prison(ctx)
+    list(event.prison(ctx))
     t = texts(ctx.out)
     assert c.cflag[0] == 2  # :341
     assert "　　ＧＡＭＥ　ＯＶＥＲ" in t
@@ -187,7 +187,7 @@ def test_prison_solo_lost_ending_5(ctx, comable):
     c.cflag[31] = 19
     c.cflag[23] = 5
     st.rng = FixedRng([99, 0, 0, 1])  # :295 ソロ・5 日超の脱出判定 RAND:4 = 1（脱出しない）
-    event.prison(ctx)
+    list(event.prison(ctx))
     assert c.cflag[0] == 9
     assert "　　ＧＡＭＥ　ＯＶＥＲ" in texts(ctx.out)
     assert (st.flag[0], st.flag[999]) == (0, -998)
@@ -213,7 +213,7 @@ def test_prison_targets_in_gameover_mode(ctx, comable, flag0, flag999, states, p
         imprison(st, i)
         st.charas[i].cflag[0] = s
     st.rng = FixedRng([10, 0] * 3)  # :116 ルーチン → RAND:100 = 10（<12 → C 中心）、汚染 +3
-    event.prison(ctx)
+    list(event.prison(ctx))
     assert st.flag[999] == flag999_after
     assert tuple(i for i in (1, 2, 3) if st.charas[i].cflag[31] == 1) == processed  # :165
     assert [st.charas[i].cflag[0] for i in (1, 2, 3)] == list(states)  # 陥落判定は CFLAG:0 == 1 のみ（:187）

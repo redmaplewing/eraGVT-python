@@ -279,7 +279,7 @@ def test_night_events_not_triggered_in_opening_state(ctx):
     st = ctx.state
     st.time = 1
     st.rng = FixedRng([])  # 乱数を消費しない（消費したら FixedRng が例外）
-    turnend.prison(ctx)  # 幽閉中（CFLAG:0 == 1）なし
+    list(turnend.prison(ctx))  # 幽閉中（CFLAG:0 == 1）なし
     list(turnend.birth_hantei(ctx))  # 妊娠なし
     list(turnend.grow_hantei(ctx))  # 育児なし
     turnend.akuoti_attack(ctx)  # 悪堕ちなし
@@ -306,7 +306,7 @@ def test_night_events_unported(ctx, data, setup, func):
     ctx.state.time = 1
     setup(ctx.state, data)
     with pytest.raises(NotImplementedError):
-        func(ctx)
+        list(func(ctx))
 
 
 # --- EVENTSHOP の下位関数 --------------------------------------------------------------------

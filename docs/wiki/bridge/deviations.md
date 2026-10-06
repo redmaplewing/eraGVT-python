@@ -41,8 +41,8 @@ S56現況歸屬：各未勾選項的W編號指向`docs/PLAN.md`；仍待實作�
 - [ ] `W05／W08` **S04未翻行動的停止處理**：8類行動、鍛錬排程、結局／引繼等已接通；目前`action.py:304,420`是不存在預約值與REST狀態安全網，不能沿用舊S04缺口清單。Web遇到未移植仍進HALTED；現存分支統一見`docs/PLAYABILITY.md`，逐項核對可達性。
 - [x] ~~**襲撃／救援 會被跳過**~~（S20 解決）：`RAID_HANTEI` 成立時照原作 `JUMP RAID_RESCUE／RAID_ATTACK` → イベント戦（`eragvt.game.raid`）。ラスボス出現後（FLAG:100 = 0）の襲来は S27 接上（生存ラスボス 0 で原作無限ループの路だけ停止）。
 - [ ] `W03／W05／W06` **未移植的戰鬥分岐會停止遊戲**：主幹、雜魚／市民／悪堕ち、兩隻末王皆已有實作。剩餘裝備／觸手服、觀眾妨礙、返り血、模式與動態分派安全網見`docs/PLAYABILITY.md`完整歸屬表；依既定規格明確停止，不自行發明行為。
-- [ ] `W03／W05` **幽閉未移植分岐會停止遊戲**：TS_MtoF／TS_NORMAL／TS_FtoM仍停止。悪堕ち、容姿／回復、Ｋ触手與天使の樹幽閉已接通；其餘資料分派guard需核對，不能再把整個末王2列未移植。見`game/prison/event.py:87,122,141,233,241`與盤點表。
-- [ ] `W03／W08` **妊娠／子供未移植分岐會停止遊戲**：TS轉換與除錯妊娠輸入仍缺；命名INPUTS、變身命名及隨機命名已接通，不再列停止。來源`ERB/ヒロイン関連/TRANS_SEX.ERB@TS_MtoF`，Python `battle/ninsin.py:175,279,296,452`。
+- [ ] `W03／W05` **幽閉資料分派guard仍待核對**：S70三種TS原生轉換、首次事件generator及catalog三hook已接通；悪堕ち、容姿／回復、Ｋ触手與天使の樹幽閉亦已接通。剩`game/prison/event.py@_boss_prison_routine`／`@tentacle_access_prison`資料分派guard歸W05，不把整個末王2列未移植。妊娠TS呼叫者仍見下項。
+- [ ] `W03／W08` **妊娠／子供未移植分岐會停止遊戲**：三種TS轉換本體於S70完成，但NINSIN_FLAG／NINSIN_TS_FIX呼叫者及除錯妊娠輸入仍缺；命名INPUTS、變身命名及隨機命名已接通，不再列停止。來源`ERB/ヒロイン関連/TRANS_SEX.ERB@TS_MtoF`，Python `battle/ninsin.py:175,279,296,452`。
 - [x] **振り解く判定的 `LOCAL:O`**（S06 新增；**已裁決 2026-10-03：視為打錯字，當 `0` 處理＝`LOCAL:0`**）：`ゲーム内_戦闘処理/COMMON_BATTLE_HANTEI.ERB`:241／:245
   `SIF LOCAL:5 <= 45 && LOCAL:O > 49` 的 `O` 是英文字母，全作沒有這個識別子（grep 僅此 2 處）。1.824 在執行到該行時
   報錯停止（`GameProc/Process.ScriptProc.cs`:38–42、`GameData/Expression/ExpressionParser.cs`:264–269、
@@ -92,6 +92,7 @@ S56現況歸屬：各未勾選項的W編號指向`docs/PLAN.md`；仍待實作�
   S46 已接通出場／候補列表與編成選擇，候補列表沿用相同欄寬、數值條與狀態標記簡化；來源 `ERB/インターミッション画面/SHOP_SHOW_STATUS_LIST.ERB@SHOP_SHOW_STATUS_RESERVE_LIST:52–86`。
 - [x] **SHOP[800]未實作**（S57解決）：成就4頁／紀錄2頁、切換、循環換頁、返回均接通；紀錄寫入仍見W01上項。
 - [ ] `W07` **WAIT／PRINTW 不阻塞**：Web 一次顯示到下一個 INPUT 為止，WAIT 位置以虛線標示，不需按鍵繼續。（Python：`eragvt.game.session`、`eragvt.web`）S44引退名簿／報告、S45設施擴充、S49武器自訂已依原作局部補上PRINTW／WAIT等待；S57成就PRINTW亦已真正等待並在確認後保存，但仍沿用Web的required數字欄（`web/templates/index.html:32`）：須輸入0等數字提交，並非原引擎ReadAnyKey的任意鍵確認，且無[0]提示；此輸入差異仍屬W07。其他系統的既有簡化仍保留，見`docs/wiki/era/retirement.md`與`facilities.md`。
+  S70首次事件`ERB/地の文/MESSAGE_PRISON.ERB@MESSAGE_PRISON_PRISENTENCE_FIRST`與`ERB/ヒロイン関連/TRANS_SEX.ERB@TS_NORMAL:361`錯誤路徑的舊PRINTW仍沿本項等待簡化，未新增批准；TS選單文字與尾端全形空白已按原文保留。
 - [ ] `W08` **存檔格式與檔名**：JSON（`saves/saveNN.json`），不是 Emuera 的 `.sav`；存檔說明文字（日時＋`@SAVEINFO`）與一覽格式照原作。
 - [ ] `W08` **Web 專用按鈕**：頁尾「タイトルに戻る」（重建 session）是原作沒有的。
 - [ ] `W07` **無效輸入訊息**：Emuera 以「刪一行＋暫時行」顯示「無効な値です」，這裡以一般行輸出。

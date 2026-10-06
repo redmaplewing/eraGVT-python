@@ -64,9 +64,39 @@ PRISON_COMABLE 依身體（男の娘・オトコ・聖処女・經驗不足）�
 - AFTER_RESCUED:23 寫的是 `FLAG:32 = 0`（不是 CFLAG）。SHOP_SHOW_SITUATION_LIST 不還原 FLAG:11。
 - TFLAG:9（救出時間切れ）全作沒有代入處（grep）→ KYUSHUTU_TIMEUP 的地の文不會出現。
 
-## 未移植而停止之處
+## 三種TS與首次事件（S70，W03／B05）
 
-ラスボス 的幽閉、TS 性別變化。拡張度於 S11、ゲームオーバーモード於 S12、受精／RESCUE_CHILD 於 S13 接上。
-S21：悪堕ちキャラによる幽閉（CFLAG:20 = 2）的 PALAM_HOSEI 讀共用 RESULT 殘值（`docs/wiki/python/result.md`）；容貌變化
-（CORRUPT_CHANGE_LOOKS_MAIN）與救出後的 RECOVER_CORRUPTION 移植於 `eragvt.game.corruption`（設定 F(4)〜F(8)；旗標見模組 docstring）。
-一覽見 `docs/STATUS.md`。
+原生邏輯位於`game/trans_sex.py`。`ERB/ヒロイン関連/TRANS_SEX.ERB@TS_MtoF:4–173`、
+`@TS_FtoM:179–346`、`@TS_NORMAL:352–925`保持逐題INPUT，不插入SIZE_SETTING或代按。
+`ERB/地の文/MESSAGE_PRISON.ERB@MESSAGE_PRISON_PRISENTENCE_FIRST:97／113／150`三hook共用此實作。
+`event_turnend → prison → prison_event → _msg_first`均以yield from傳遞；catalog用既有run_event_gen，Null按相同條件分派。
+
+| 函式 | 形態與數值 | 外貌輸入 |
+|---|---|---|
+| TS_MtoF | 必要時先變身；清體格／胸差值、BASE年齡取MAXBASE；兩次AIRPLUS間沒有裝備改動；性別變化1、TS=-1；有曲線只重算通常尺寸 | 髮型、髮／瞳／膚色均逐題選擇通常形態保留或取變身形態 |
+| TS_FtoM | 必要時先變身；性別變化10、TS=-1；MAXBASE年齡取BASE；按原式讀通常體格、清差值、複製外見；有曲線只重算變身尺寸 | 髮型改通常形態，其他三組顏色改變身形態；不可反向統一 |
+| TS_NORMAL | 先解除變身；通常胸／體格／外見；有變身能力且無TS時另詢問變身值；有曲線依序重算變身→通常 | 髮型改通常；每組顏色先通常後條件式詢問變身，前題使兩者相等時後題消失 |
+
+原先CFLAG1>0只記為TRANS=1，結尾回到1；普通形態則維持0。成功恢復原TARGET、RETURN1。
+TS_NORMAL普通形態已為女性時，原文:357–362先令TARGET=ARG再錯誤PRINTW／RETURN0，**沒有恢復TARGET**；照原作保留。
+TS_NORMAL:566–572的部分胸差值及:628–631的體格差值採相加，照原式保留。
+「配合另一形態」的普通胸／普通體格分支沒有對應賦值，不能自行補清零。
+外見顯示1–6以外走ELSE「普通」；這是原文fallback，不是額外驗證規則。
+
+引擎依據：`reference/emuera-1824/Emuera/GameProc/Process.cs:249–252`的INPUT只寫RESULT0；
+`reference/emuera-1824/Emuera/GameProc/Function/Instraction.Child.cs:1997–2023`與
+`reference/emuera-1824/Emuera/GameData/Variable/VariableEvaluator.cs:1732–1740`的RETURN只覆寫提供的格；
+`reference/emuera-1824/Emuera/GameProc/Process.ScriptProc.cs:61–67`函式終端只寫RESULT0=0。
+尺寸共用既有GENERATE_CHAR_SIZE，保留RESULT1–7；RESULT8與RESULTS尾值不清除。
+
+`tests/test_trans_sex.py`68案使用全新25歲兩形態，涵蓋選項／無效值、尺寸／尾值、原變身狀態、
+Null／catalog三種真hook及完整EVENTTURNEND恢復到SHOP（seed70、結界前態隔離妊娠，未mock下游）。
+初次六檔定向362通過，文字修正後四檔定向253通過；`tmp/s70/browser_fixture.py`是Null／臨時存檔的首次事件TS函式邊界，
+不是自然幽閉全流程。主代理真瀏覽器、全pytest及正式500紀錄見STATUS；未宣稱整列B05完成。
+TS選單尾端全形空白依原文保留，含`ERB/ヒロイン関連/TRANS_SEX.ERB@TS_NORMAL:642／682`通常／變身後[6]的不同尾空白；文字邊界測試直接取原文比對。舊PRINTW等待差異仍見既有[WAIT偏離](../bridge/deviations.md)。
+
+## 剩餘範圍
+
+兩隻末王、悪堕ち幽閉、容貌變化／回復皆已接；資料分派guard仍依PLAYABILITY歸W05核對。
+TS本體完成不等於整個生命週期完成：`battle/ninsin.py@ninsin_flag`／`@ninsin_ts_fix`仍由W03後續接，
+SUPART_BLOOD仍W05；女體受容與裝備相依仍W03。W02經歷既有範圍阻塞不因本項解除。

@@ -224,7 +224,7 @@ def test_prison_event_first(ctx, data, comable):
     c.base[31] = 300  # Ｖ結界だけ残っている
     st.flag[110] = 5
     st.rng = FixedRng([99, 50, 2])
-    event.prison(ctx)
+    list(event.prison(ctx))
     t = texts(ctx.out)
     assert "Ｃ触手幽閉：紅葉" in t  # :43–44（NAME は改行なし）
     assert t.count("・・・・・・・・・") == 1  # PRISON:18–24
@@ -263,7 +263,7 @@ def test_prison_event_routine(ctx, data, comable, boss, rng, expected):
     imprison(st, 1, boss=boss)
     st.charas[1].cflag[31] = 3
     st.rng = FixedRng(rng)
-    event.prison_event(ctx)
+    list(event.prison_event(ctx))
     assert comable == [expected]
 
 
@@ -273,7 +273,7 @@ def test_prison_event_child_tentacle(ctx, comable):
     st.charas[1].cflag[31] = 3
     st.charas[1].cflag[220] = 2  # 出産した子触手
     st.rng = FixedRng([29, 0])  # :111 RAND:100 < 30
-    event.prison_event(ctx)
+    list(event.prison_event(ctx))
     assert comable == [7]
 
 
@@ -287,7 +287,7 @@ def test_prison_event_brainwash(ctx, data, comable):
     c.cflag[23] = 5
     st.flag.set_bit(804, 1, True)
     st.rng = FixedRng([99, 0, 0, 7])  # ルーチン 0 → C 中心、汚染 +3、:378 RAND:25 = 7
-    event.prison_event(ctx)
+    list(event.prison_event(ctx))
     assert c.cflag[0] == 2  # :341
     assert "紅葉は経験値を127％得た" in texts(ctx.out)  # :378 20 * (5 + Lv1) + 7
     assert c.cflag[23] == 0  # :386
@@ -304,7 +304,7 @@ def test_prison_event_corruption(ctx, data, comable):
     st.flag.set_bit(804, 1, True)
     # ルーチン 0、C 中心、汚染 RAND:4、SAVE_TATTOO の RAND:19 = 4、:380 RAND:50 = 0
     st.rng = FixedRng([99, 0, 0, 4, 0])
-    event.prison_event(ctx)
+    list(event.prison_event(ctx))
     assert c.cflag[0] == 3
     assert c.exp[ei(data, "陥落経験")] == 1
     assert c.cflag[41] == 401  # :353–354 変身能力 == 1
@@ -320,7 +320,7 @@ def test_prison_event_lost(ctx, data, comable):
     imprison(st, 1)
     c.cflag[31] = 19
     st.rng = FixedRng([99, 0, 0])
-    event.prison_event(ctx)
+    list(event.prison_event(ctx))
     assert c.cflag[31] == 20
     assert c.cflag[0] == 9
     assert c.talent[ti(data, "苗床化")] == 1
@@ -339,7 +339,7 @@ def test_prison_event_escape(ctx, data, comable):
     c.cflag[220] = 1
     st.flag.set_bit(0, 8, True)
     st.rng = FixedRng([99, 0, 0, 0])
-    event.prison_event(ctx)
+    list(event.prison_event(ctx))
     t = texts(ctx.out)
     assert "最後の力を温存していた紅葉はこの機を逃さず、" in t
     assert [c.base[i] for i in range(3)] == [0, 0, 0]  # :314–316
@@ -360,7 +360,7 @@ def test_prison_event_not_hole_uses_previous_fall_flag(ctx, data, comable):
     st.flag.set_bit(804, 1, True)
     set_local(st, "PRISON_EVENT", "今回陥落するフラグ", 1)  # type: ignore[arg-type]
     st.rng = FixedRng([3])  # :378 RAND:25
-    event.prison_event(ctx)
+    list(event.prison_event(ctx))
     assert comable == []
     assert c.cflag[31] == 0  # :164–165 は飛ばされる
     assert c.cflag[0] == 2
@@ -372,7 +372,7 @@ def test_prison_loop_targets(ctx, comable):
         imprison(st, i)
         st.charas[i].cflag[31] = 3
     st.rng = FixedRng([10, 0, 10, 0])
-    event.prison(ctx)
+    list(event.prison(ctx))
     assert comable == [0, 0]
     assert st.target == 3  # PRISON:17 TARGET は戻さない
     assert texts(ctx.out).count("・・・・・・・・・") == 1  # :18–24 は最初の 1 人だけ

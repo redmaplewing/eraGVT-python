@@ -156,7 +156,7 @@ def event_turnend(ctx: Ctx) -> Generator[None, int, Step]:
         elif c.cflag[0] == CharaState.KIDNAPPED:
             st.target = i
             yield from kidnapping(ctx)
-    prison(ctx)  # :103
+    yield from prison(ctx)  # :103
     yield from birth_hantei(ctx)  # :105（ヒロイン関連/PREGNANT_SOURCE_NINSIN.ERB@BIRTH_HANTEI）
     yield from grow_hantei(ctx)  # :107（ヒロイン関連/PREGNANT_CHILD_BIRTH.ERB@GROW_HANTEI）
     akuoti_attack(ctx)  # :110

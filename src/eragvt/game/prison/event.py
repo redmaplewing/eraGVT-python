@@ -9,6 +9,8 @@
 
 from __future__ import annotations
 
+from collections.abc import Generator
+
 from ...state import GameState
 from ...state.constants import GameOption
 from ..action import (
@@ -18,6 +20,7 @@ from ..action import (
     get_exp,
     get_syuren,
     kojo_root,
+    kojo_root_gen,
     print_callname,
     print_transcallname,
 )
@@ -36,7 +39,7 @@ from ..battle.core import (
     t,
     tc,
 )
-from ..chara_common import charatalent
+from ..chara_common import charatalent, is_female
 from ..era import div, isqrt
 from ..opening import game_option
 from ..shop import check_gameover
@@ -186,7 +189,7 @@ def check_contamination(ctx: Ctx) -> int:
 # --- @PRISON ------------------------------------------------------------------------------------------
 
 
-def prison(ctx: Ctx) -> None:
+def prison(ctx: Ctx) -> Generator[None, int, None]:
     """`@PRISON`:3–34：幽閉中（CFLAG:0 == 1）のキャラごとに TARGET を移して PRISON_EVENT。TARGET は戻さない。"""
     st, out = ctx.state, ctx.out
     local = 0
@@ -207,7 +210,7 @@ def prison(ctx: Ctx) -> None:
                 out.printl("・・・・・・・・・")
                 out.printl()
             local = 1
-            prison_event(ctx)
+            yield from prison_event(ctx)
             local += 1
         if st.flag[999] == -998:
             break
@@ -217,33 +220,36 @@ def _msg(ctx: Ctx, name: str, code: str) -> None:
     run_chinobun(ctx, name, fallback=lambda: kojo_root(ctx, code))
 
 
-def _msg_first(ctx: Ctx) -> None:
-    """`地の文/MESSAGE_PRISON.ERB@MESSAGE_PRISON_PRISENTENCE_FIRST`:7–187。
+def _msg_first(ctx: Ctx) -> Generator[None, int, None]:
+    """ERB/地の文/MESSAGE_PRISON.ERB@MESSAGE_PRISON_PRISENTENCE_FIRST:7–187。
 
-    catalog で実行できない場合の代わり：:65–134／:135–162 の TS 分岐（TS_MtoF／TS_NORMAL／TS_FtoM による性別変化）は
-    状態を変えるので停止、それ以外は末尾の KOJO_ROOT のみ。:9 UNLOCK_ACHIEVEMENT は実績（GLOBAL）のみ。
+    catalog三個hook及Null分派共用原生TS，等待期間不先執行幽閉後續。
     """
+    from ..achievements import unlock
+    from ..trans_sex import ts_mtof, ts_normal, ts_ftom
+
+    # DEVIATION: FIRST既有PRINTW仍由catalog標示而不阻塞；見docs/wiki/bridge/deviations.md「WAIT／PRINTW 不阻塞」（W07）。
+    if (yield from ctx.narration.run_event_gen(ctx, "MESSAGE_PRISON_PRISENTENCE_FIRST")):
+        return
     st, data = ctx.state, ctx.data
     c = tc(ctx)
-
-    def fallback() -> None:
-        from ..achievements import unlock
-        unlock(ctx, 275, "女性の宿命")
-        if c.cflag[6] == -1:
-            return  # :12–64 娘キャラの地の文（口上呼び出しなし）
-        if (charatalent(data, c, 0, "オトコ") > 0 or charatalent(data, c, 1, "オトコ") > 0) and config_check_prison(st, 0) > 0:
-            raise NotImplementedError("幽閉時の TS 処理（TS_MtoF／TS_NORMAL／TS_FtoM）は未移植")
-        kojo_root(ctx, "PRISON_PRISENTENCE_FIRST")
-
-    run_chinobun(ctx, "MESSAGE_PRISON_PRISENTENCE_FIRST", fallback=fallback)
-
-
-def ts_change(ctx: Ctx, *args) -> None:
-    """地の文中の `CALL TS_MtoF／TS_NORMAL／TS_FtoM, TARGET`（hook）：性別変化は未移植。"""
-    raise NotImplementedError("幽閉時の TS 処理（TS_MtoF／TS_NORMAL／TS_FtoM）は未移植")
+    unlock(ctx, 275, "女性の宿命")
+    if c.cflag[6] == -1:
+        st.result[0] = 0
+        return  # :12–64既有分支，沒有TS或口上呼叫。
+    if charatalent(data, c, 0, "オトコ") > 0 and config_check_prison(st, 0) > 0:
+        if is_female(data, c) and t(ctx, c, "変身時ＴＳ") > 0 and c.cflag[1] > 0:
+            yield from ts_mtof(ctx, st.target)  # :82–97
+        else:
+            yield from ts_normal(ctx, st.target)  # :105–113
+    elif charatalent(data, c, 1, "オトコ") > 0 and config_check_prison(st, 0) > 0:
+        yield from ts_ftom(ctx, st.target)  # :135–150
+    yield from kojo_root_gen(ctx, "PRISON_PRISENTENCE_FIRST")
+    # 函式終端只寫RESULT:0：reference/emuera-1824/Emuera/GameProc/Process.ScriptProc.cs:61–67。
+    st.result[0] = 0
 
 
-def prison_event(ctx: Ctx) -> None:
+def prison_event(ctx: Ctx) -> Generator[None, int, None]:
     """`@PRISON_EVENT`:38–427。"""
     from ..battle.func import transform
     from ..battle.sexcom import check_holyvirgin
@@ -276,11 +282,11 @@ def prison_event(ctx: Ctx) -> None:
     # :64–91
     if (charatalent(data, c, 0, "オトコ") > 0 or charatalent(data, c, 1, "オトコ") > 0) and config_check_prison(st, 0) > 0:
         c.cflag[220] = 0
-        _msg_first(ctx)
+        yield from _msg_first(ctx)
     elif c.cflag[31] == 0:
         c.cflag[220] = 0
         if exp(ctx, c, "幽閉経験") <= 1:
-            _msg_first(ctx)
+            yield from _msg_first(ctx)
         else:
             _msg(ctx, "MESSAGE_PRISON_PRISENTENCE_START", "PRISON_PRISENTENCE_START")
     else:

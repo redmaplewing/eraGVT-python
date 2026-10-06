@@ -23,3 +23,10 @@
 - 凍結後由主代理跑全pytest、真瀏覽器及正式500，default／tokusou各seed0–249、max-shop200、actions101–108，每50局前景一批，與S69完整JSON及停止原因比對。子代理不啟動500。
 - 更新相關wiki、PLAYABILITY及必要bridge，精確保留W02阻塞／W03未完呼叫者與其他包；STATUS／PLAN由主代理收口。
 - 文件繁體中文、LF／UTF-8無BOM，source／reference唯讀。凍結後核對diff並回報成果／依據／裁決，不commit/push。
+
+## 完成驗收
+- 新增68案，含三hook、完整EVENTTURNEND返回SHOP及原文選單尾空白；主代理全pytest：4462 passed, 1 warning in 157.94s (0:02:37)。
+- 主代理真瀏覽器以全新25歲人工角色走MtoF／FtoM／NORMAL，成就確認、無效重試、外貌選擇、原變身狀態及RESULT尾格通過；console錯誤0。
+- 瀏覽器為Null首次事件TS函式邊界；證據tmp/s70/browser-{mtof,ftom,normal}.json及ts-options-complete.jpg，不稱自然幽閉全流程。
+- 正式500：default247上限／3回標題，tokusou250上限；catalog／fixture失敗0，完整JSON與S69逐seed一致。十批退出、seed、參數與log已核對。
+- 無新增UNVERIFIED／規則偏離；原文TS_NORMAL錯誤TARGET殘值照留，舊PRINTW等待差異仍見W07。W03後續S71見獨立規格。

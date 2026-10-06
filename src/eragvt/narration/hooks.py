@@ -165,9 +165,9 @@ HOOK_LINES: dict[tuple[str, int], tuple[str, str, str]] = {
 # tests/test_prison.py::test_prison_hook_table_matches_erb が原文一致と「表外の代入が無い」ことを確認する。
 PRISON_HOOK_LINES: dict[tuple[str, int], tuple[str, str]] = {
     ("MESSAGE_PRISON_PRISENTENCE_FIRST", 9): ('CALL UNLOCK_ACHIEVEMENT(275,"女性の宿命")', "実績のみ"),
-    ("MESSAGE_PRISON_PRISENTENCE_FIRST", 97): ("CALL TS_MtoF, TARGET", "TS（未移植・停止）"),
-    ("MESSAGE_PRISON_PRISENTENCE_FIRST", 113): ("CALL TS_NORMAL, TARGET", "TS（未移植・停止）"),
-    ("MESSAGE_PRISON_PRISENTENCE_FIRST", 150): ("CALL TS_FtoM, TARGET", "TS（未移植・停止）"),
+    ("MESSAGE_PRISON_PRISENTENCE_FIRST", 97): ("CALL TS_MtoF, TARGET", "TS（原生generator）"),
+    ("MESSAGE_PRISON_PRISENTENCE_FIRST", 113): ("CALL TS_NORMAL, TARGET", "TS（原生generator）"),
+    ("MESSAGE_PRISON_PRISENTENCE_FIRST", 150): ("CALL TS_FtoM, TARGET", "TS（原生generator）"),
     ("MESSAGE_PRISON_COM_1", 813): ("FLAG:900 = 1", "口上分岐"),
     ("MESSAGE_PRISON_COM_1", 830): ("FLAG:900 = 32", "口上分岐"),
     ("MESSAGE_PRISON_COM_1", 846): ("FLAG:900 = 22", "口上分岐"),
@@ -357,9 +357,9 @@ HOOK_CALLS = {
     "NINSIN_HANTEI": ("eragvt.game.battle.ninsin", "ninsin_hantei"),
     "LOSTVIRGIN": ("eragvt.game.battle.sexcom", "lostvirgin"),
     "UNLOCK_ACHIEVEMENT": ("eragvt.game.battle.core", "unlock_achievement"),
-    "TS_MTOF": ("eragvt.game.prison.event", "ts_change"),
-    "TS_NORMAL": ("eragvt.game.prison.event", "ts_change"),
-    "TS_FTOM": ("eragvt.game.prison.event", "ts_change"),
+    "TS_MTOF": ("eragvt.game.trans_sex", "ts_mtof"),
+    "TS_NORMAL": ("eragvt.game.trans_sex", "ts_normal"),
+    "TS_FTOM": ("eragvt.game.trans_sex", "ts_ftom"),
     # S28c2（NANPA_HOOK_LINES）
     "COMMON_PRISON": ("eragvt.game.pastime_nanpa", "hook_common_prison"),
     "COMMON_PRISON_EXP": ("eragvt.game.pastime_nanpa", "hook_common_prison_exp"),
