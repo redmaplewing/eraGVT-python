@@ -85,10 +85,8 @@ ADD_CHILD：ADDCHARA 0 → 名前（INPUT）→ 一人称 → 種族（母依存
 - **RECALC_PARTYMEMBER の RESCUE_CHILD**：施設に預けた（DELCHARA）とき `CCOUNT -= RESULT`（RESULT = −1）で 1 人余分に飛ばす。
 - **PREG_PER は static**：父親 ID が 0（戦闘外・非幽閉で ARG:2 = 0）や該当する仲間がいないときは前回の確率を使う（:72–97）。
 
-## 未移植（停止）
+## 入口現況與剩餘停止
 
 - TS 変身キャラの女体化（`TRANS_SEX.ERB@TS_MtoF`：NINSIN_TS_FIX:263–267、NINSIN_FLAG:248–256）。
-- 手入力（INPUTS）：子供の名前 [1]、変身後名 [1]〜[4]（ランダム命名画面 FIRSTSETTING_RANDOMNAMING(_ALL) を含む）、
-  変身後呼び名・かけ声・名乗り口上の「自分で設定」。
 - デバッグモードの妊娠確率入力（NINSIN_HANTEI:125–138）。
-- 子供的SIZE_SETTING仍由`firstsetting.size_setting_default`代按預設99（deviations.md）；S68已接`ERB/ヒロイン関連/PREGNANT_CHILD_BIRTH.ERB@ADD_CHILD:515`的一人稱真實輸入，見[角色編輯](character-editor.md)。
+- 子供命名／變身命名／掛聲／名乗的手輸已接通；S68接`ERB/ヒロイン関連/PREGNANT_CHILD_BIRTH.ERB@ADD_CHILD:515`一人稱，S69接同函式:1075–1107身體收尾，均等待真實輸入。S69只驗25歲人工尾段函式邊界，不代表完整出生／加入或B05整列，見[角色編輯](character-editor.md)。

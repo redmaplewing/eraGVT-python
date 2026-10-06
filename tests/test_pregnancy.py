@@ -505,7 +505,26 @@ def _add_child_run(ctx, data, inputs, papa=-3, sex=0):
     m.mark[data.index_of("MARK", "血族補正")] = 2
     m.talent[T(data, "人間")] = 0  # 母親はケモミミ族（209）→ 変身能力は RAND:4 == 0 のときだけ
     st.rng = GameRng(7)
-    run_inputs(child.grow_hantei(ctx), inputs)
+    from eragvt.game.body_editor import size_setting
+
+    def at_body_input(gen):
+        # 真實yield from鏈：GROW_HANTEI→ADD_CHILD→收尾→SIZE_SETTING。
+        # 舊輸入尾端有供可選變身流程使用的0，不能流入新增的身體頁。
+        while gen is not None:
+            if getattr(gen, 'gi_code', None) is size_setting.__code__:
+                return True
+            gen = getattr(gen, 'gi_yieldfrom', None)
+        return False
+
+    gen = child.grow_hantei(ctx)
+    next(gen)
+    for value in inputs:
+        if at_body_input(gen):
+            break
+        gen.send(value)
+    assert at_body_input(gen), '尚未到達真實SIZE_SETTING等待邊界'
+    with pytest.raises(StopIteration):
+        gen.send(99)  # ERB/ヒロイン関連/PREGNANT_CHILD_BIRTH.ERB@ADD_CHILD:1078。
     return m, st.charas[4]
 
 
@@ -660,17 +679,6 @@ def test_feat_select_ui(ctx, data):
     run_inputs(firstsetting.feat_select_ui(ctx, 1, 201), [5, 100, 200, 0])
     assert c.talent[1100] == 1 and c.talent[1200] == 1
     assert sum(c.talent[f] for f in range(1100, 1300)) == 2
-
-
-def test_size_setting_default(ctx, data):
-    """SIZE_SETTING を [99] で決定：パーソナリティを前に詰める（:1731–1745）。変身能力なし → MAXBASE:年齢 = −1 のまま。"""
-    c = ctx.state.charas[1]
-    c.talent[T(data, "変身能力")] = 0
-    c.cstr[40], c.cstr[41], c.cstr[42] = "", "", "明るい"
-    c.maxbase[41] = -1
-    firstsetting.size_setting_default(ctx, 1)
-    assert (c.cstr[40], c.cstr[41], c.cstr[42]) == ("明るい", "", "")
-    assert c.maxbase[41] == -1
 
 
 def test_tentacle_bitvalue(ctx):

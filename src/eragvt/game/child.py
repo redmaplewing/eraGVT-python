@@ -4,7 +4,7 @@
 （`@TRAINING_HOSEI_CHILD`:32–47 は S04 で `eragvt.game.action.training_hosei_child` に移植済み。）
 
 INPUT を含むのでジェネレータ。S35：名前の手入力は Web 文字輸入を待つ。
-キャラ設定画面（一人称・プロフィール）は `eragvt.game.firstsetting` の「何も変えずに決定」を使う。
+一人稱（S68）與プロフィール（S69）均接既有共用編輯器，等待真實輸入。
 
 Emuera 語意：
 - `ADDCHARA 0` は CSV 番号 0 のキャラを末尾に追加（reference/emuera-1824/Emuera/GameData/Variable/VariableEvaluator.cs@AddCharacter:1026）、
@@ -441,10 +441,9 @@ _COLORS = ("赤", "緑", "青", "黄", "紫", "橙", "桃")
 def add_child(ctx: Ctx, arg: int) -> InputGen:
     """`@ADD_CHILD, ARG`（ARG = 母親の index）:278–1107：子供を新キャラとして加入させる。"""
     from .firstsetting import (
-        feat_select_ui, nanori, set_feat_default, size_setting_default, trans_after_callname,
+        feat_select_ui, nanori, set_feat_default, trans_after_callname,
         trans_after_name, trans_call,
     )
-    from .relation import check_all_relation
     from .self_call_setting import selfcall_gen
     from .tentacle import tentacle_bitvalue, tentacle_survive_check
 
@@ -834,9 +833,24 @@ def add_child(ctx: Ctx, arg: int) -> InputGen:
             c.cstr[42] = s(30500 + rand(500))
             if not (c.cstr[42] == "" or c.cstr[42] == "CSTR:40" or c.cstr[42] == "CSTR:41"):
                 break
+    yield from add_child_finish(ctx, arg)
+
+
+def add_child_finish(ctx: Ctx, arg: int) -> InputGen:
+    """ERB/ヒロイン関連/PREGNANT_CHILD_BIRTH.ERB@ADD_CHILD:1075–1107。
+
+    ADD_CHILD原位置呼叫的收尾：TARGET已指向新角色，ARG是親的index。
+    身體編輯確認後才執行原有復歸／關係處理；不重跑前段生成。
+    """
+    from .body_editor import size_setting
+    from .relation import check_all_relation
+
+    st, data, out = ctx.state, ctx.data, ctx.out
+    me = st.target
+    m, c = st.charas[arg], st.charas[me]
     if c.cflag[34] == 0:  # :1076–1078
         generate_bodyline(st, data, c)
-    size_setting_default(ctx, me)
+    yield from size_setting(ctx, me)
     if m.cflag[0] == CharaState.CHILDCARE:  # :1083–1092
         out.printl(f"{print_callname(st, arg)}は育児を終了しました。通常状態に復帰します")
         out.printl(f"{print_callname(st, me)}が組織に加入しました")
@@ -855,6 +869,9 @@ def add_child(ctx: Ctx, arg: int) -> InputGen:
         m.cflag[224] = 0
         c.cflag[6] = -1
         check_all_relation(ctx)
+    # :1107 RETURN；只寫RESULT:0，不清RESULT／RESULTS尾格。
+    # reference/emuera-1824/Emuera/GameProc/Function/Instraction.Child.cs:1997–2023。
+    st.result[0] = 0
 
 
 def child_grow_1(ctx: Ctx) -> None:

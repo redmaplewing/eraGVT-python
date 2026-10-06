@@ -38,7 +38,6 @@ from .firstsetting import (
     convert_age,
     convert_colorcstr,
     nanori,
-    size_setting_default,
     trans_after_callname,
     trans_after_name,
     trans_call,

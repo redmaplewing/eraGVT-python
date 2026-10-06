@@ -1,8 +1,8 @@
-# 一般身體與外貌編輯（W02，S61／S67一般操作）
+# 一般身體與外貌編輯（W02，S61／S67／S69）
 
 來源：`ERB/SYSTEM/キャラメイキング関連/CHARA_SIZE_UI.ERB@SIZE_SETTING:2–2142`；原生實作`game/body_editor.py`。
-已接共用角色編輯[6]與狀態PAGE5[20]，開局／招募／醫療／引繼原有共用呼叫者均可抵達；子供原作獨立流程保留原範圍。
-S67已接2／12、3／13、46、70–76、80–86，SIZE_SETTING選項分派不再有未移植停止。子供獨立流程仍待W02接通；TS與特殊裝備生命週期仍W03，W07排版差異仍保留。
+已接共用角色編輯[6]與狀態PAGE5[20]，開局／招募／醫療／引繼原有共用呼叫者均可抵達；S69子供原作獨立收尾亦接同一編輯器。
+S67已接2／12、3／13、46、70–76、80–86，SIZE_SETTING選項分派不再有未移植停止。S69子供獨立身體入口已接通；尾段人工驗收不代表完整出生／加入流程。TS與特殊裝備生命週期仍W03，W07排版差異仍保留。
 
 ## 已接操作與依據
 
@@ -47,6 +47,17 @@ S67第一輪60新案，同階段補完另85案（先紅85 failed，再綠）；�
 editor步驟：6進入，2／12測性別循環、3／13測體型、46測配件、86循環到0；5→46→5測子頁取消保留配件；20關閉／20開啟，99→6確認重入，再99→99→1000→1到SHOP。status為20進入，99返回，20重入，99→999到SHOP。fixed手輸2後只輸25；unique的46顯示但不改值；locked不顯示86且初態0手輸86不變。
 補完步驟：unlocked人工GLOBAL另開244／245／253／255，70–84欄位從0開始；70–74各按三次回0，75／80／82／83／84各按兩次回0，76按三次回0，女性且變身能力1／TS0時81按四次回兩形態0。可在5子頁按75後5取消，99確認後重入核對保留。locked不顯示81–84但手輸可切換；male且TS0不顯示70／72／81／82，70／72手輸不變，82仍可手輸。`/fixture/state`新增traits與cleanup_counter純數值；不產生經歷或敘事。
 主代理全pytest4365、25歲真瀏覽器雙入口及限制／隱藏手輸驗收通過；正式500完整JSON逐seed與S66一致，catalog／fixture失敗0。證據tmp/s67/browser-*.json、body-settings-complete.jpg與adult25-v1/audit.json；無新增UNVERIFIED／DEVIATION，既有W07排版差異維持。
+
+## S69 子供實際收尾入口
+
+- `ERB/ヒロイン関連/PREGNANT_CHILD_BIRTH.ERB@ADD_CHILD:1075–1107`由`child.add_child_finish(ctx, parent)`實作，ADD_CHILD在原位置呼叫。CFLAG34為0才執行`ERB/SYSTEM/キャラメイキング関連/CHARA_SIZE.ERB@GENERATE_BODYLINE:475–540`；先RAND535627332240，再60次RAND726（滿9另重抽），之後進SIZE_SETTING等待真實輸入。非零曲線不抽數。
+- `ERB/ヒロイン関連/PREGNANT_CHILD_BIRTH.ERB@ADD_CHILD:1083–1092`先恢復親、清親CFLAG224、恢復隊員、CHECK_ALL_RELATION。`ERB/ヒロイン関連/RECOVER_TO_PARTY.ERB@RECOVER_TO_PARTY:3–23`保持原有PARTY_MAX判斷。CHILDCARE優先於CFLAG22分支；:1093–1106原清理保留，其純狀態案同樣以25歲前態驗證，不新增敘事內容。一般分支均不符合時直接返回，不清224或更新關係。
+- `ERB/SYSTEM/キャラメイキング関連/CHARA_SIZE_UI.ERB@SIZE_SETTING:2141`還原的是進入編輯時TARGET；本尾段已指向新角色，所以確認後仍為2，不還原成親1。外層`ERB/ヒロイン関連/PREGNANT_CHILD_BIRTH.ERB@GROW_HANTEI:27`原還原另有其責任，未移入尾段。
+- `ERB/ヒロイン関連/PREGNANT_CHILD_BIRTH.ERB@ADD_CHILD:1107`的RETURN只清RESULT0，保留其他結果格；依據`reference/emuera-1824/Emuera/GameProc/Function/Instraction.Child.cs:1997–2023`。身體顯示原本寫入的RESULT1／RESULTS0仍保留；關係判定沿`ERB/ヒロイン関連/CHARA_RELATION.ERB@CHECK_ALL_RELATION:576–588、931–949`。
+- 新12案先紅後綠，再補原第三分支及IF優先序2案，`14 passed, 1 warning in 0.75s`。新案涵蓋真實等待、一般外貌／色彩／人格文字、空字返回、99確認、一般／育兒／原第三分支、復歸次序、關係、TARGET／RESULT尾值、生成RNG及Web文字／數字／重送。凍結版六檔定向`243 passed, 1 warning in 63.74s (0:01:03)`（尾段、一人稱、身體編輯三檔與狀態頁）；警告為既有Starlette/httpx提示。主代理全pytest`4394 passed, 1 warning in 176.82s (0:02:56)`；真瀏覽器ordinary與childcare+unset-body均通過，確認一般編輯、空字返回、原復歸／關係、TARGET／RESULT尾格、RNG及25歲，console錯誤0。正式500完整JSON與S68逐seed一致：default247上限／3回標題，tokusou250上限，catalog／fixture失敗0。證據tmp/s69/browser-*.json、body-tail-childcare.jpg及adult25-v1/audit.json。
+- 重現：`python -X utf8 tmp/s69/browser_fixture.py --branch ordinary --port 8783`；育兒尾段改`--branch childcare`，另可加`--unset-body`驗原曲線初始化。fresh-adult-25-v1、Null敘事、臨時存檔；直接呼叫真實產品尾段，沒有替換產品generator或改動既存角色年齡。
+- 代表操作4→601→60→20→「沉穩」→99；人格輸入空字返回候選，再20重輸可驗取消。`/fixture/state`只讀25歲四格、一般外貌／色彩／人格、TARGET／RESULT(S)、RNG剩餘及復歸／關係數值。ordinary完成仍保留親224=9、隊員狀態11且不加關係；childcare完成兩者狀態0／party1、親224=0與雙向親子bit20。尾段完成後fixture拒絕POST，不繼續外層流程。
+- 此成果只稱**ADD_CHILD尾段函式邊界驗收**，不是完整子供加入、自然流程、B05整列或W02完成；不執行前段固定年齡生成，不事後改齡，不重新分類S67已查證的一般欄位。無新增UNVERIFIED／DEVIATION；既有[8]具體範圍阻塞與W07顯示差異維持。
 
 ## 色盤
 

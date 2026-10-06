@@ -1,4 +1,4 @@
-# 共用個別角色編輯（S60–S66／W02）
+# 共用個別角色編輯（S60–S69／W02）
 
 ## 已接通與入口
 
@@ -9,7 +9,7 @@
 - `ERB/ゲーム内_行動実行処理/ACTIONsub_TSUIKAYOUSEI_NORMAL.ERB@TSUIKAYOUSEI_NORMAL:29–39`：[0]/[1]進入編輯器；[2]原作略過，特徵選單後才FINALIZE。
 - `ERB/ゲーム内_行動実行処理/ACTIONsub_DRUG_PREPARATION.ERB@DRUG_PREPARATION:303–315`：傳ARG:2=1，只鎖種族與CSV，不鎖姓名、衣裝等。
 - `ERB/ゲーム内_イベント発生/エンディング/SUCCESSION.ERB@SUCCESSION:1491–1560`：先調整修練點，再傳周回bonus進CHARA_MAKE_MAIN。MAIN的ARG:1只在999讀CSV返回後:323補回bonus*10（含取消）；進入／99不加。
-- `ERB/ヒロイン関連/PREGNANT_CHILD_BIRTH.ERB@ADD_CHILD`無FIRSTSETTING_CHARA_MAIN呼叫。保留獨立命名／一人稱／變身名／SIZE_SETTING流程，不插入不存在的主選單；S68一人稱已接真實輸入，身體代按仍留同W02後續。
+- `ERB/ヒロイン関連/PREGNANT_CHILD_BIRTH.ERB@ADD_CHILD`無FIRSTSETTING_CHARA_MAIN呼叫。保留獨立命名／一人稱／變身名／SIZE_SETTING流程，不插入不存在的主選單；S68一人稱與S69身體尾段已接真實輸入；S69只驗成人尾段函式邊界，不代表完整子供加入。
 - `ERB/武器と衣装/武器カスタマイズ関連/WEAPON_CUSTOMIZE.ERB@WEAPON_CUSTOMIZE:8–80`雖接受ARG:1=1，但函式不讀它，故共用既有customize。
 
 ## 狀態次序與查證
@@ -34,7 +34,7 @@
 - S61接通[6]的年齡、身高、一般外貌、髮型／色彩、人格文字、重抽參數與確認／重入；共用編輯及狀態PAGE5[20]均等待真實輸入。完整範圍與未完成分支見[身體編輯](body-editor.md)。
 - S62接通[7]的19種性格與十組精神素質、隨機設定／限定口上抽選、200確認與重入；不是S61的CSTR人格描述。原文、CSV重置／確認補正及亂數副作用見[性格編輯](character-personality.md)。
 - S63接通[4]種族／feat、[10]變身能力與[23]基礎點；確認／重入、固有／醫療限制及扣還保持原文。隱藏種族11、機器種錯跳、重置未清特定結界與亂數超上限均保留；依據與定向驗證見[數值編輯](character-build.md)。
-- W02後續：8經歷／初始經驗與子供獨立編輯；主製作初始狀態／人數已於S66接通，SIZE_SETTING選項已於S67補完，子供入口尚未接通，TS／裝備生命週期仍W03。
+- W02後續：8經歷／初始經驗的具體範圍阻塞維持；主製作初始狀態／人數已於S66接通，SIZE_SETTING選項已於S67補完，S68／S69子供獨立一人稱／身體入口已接通。尾段成人人工前態不構成完整出生／加入驗收；TS／裝備生命週期仍W03。
 - S64接通[999]CSV候選／分頁／取消／整筆替換及回共用編輯；男性汎用初始化、非固有NO重置、取消後bonus均依原文，見[CSV模板載入](character-csv.md)。
 - CSV讀入與既有`export_csv.py`不同；EXPORT_CSV安全網仍屬原先W08。TS／特殊裝備生命週期仍W03。
 
@@ -63,6 +63,12 @@
 - 代表步驟：501五次可看全部狀態與保留值；300→1／7拒絕→99取消，300→6新增，300→2刪尾再手輸506拒絕。300→5，再501一次／502兩次／503三次／504四次，1000→1至SHOP，狀態為1／3／4／9／0。這是人工前態操作，不冒充自然取得成就、自然通關或W03完整生命週期。
 
 ## 驗收與重現
+
+### S69 子供身體尾段
+
+- `ERB/ヒロイン関連/PREGNANT_CHILD_BIRTH.ERB@ADD_CHILD:1075–1107`抽為`child.add_child_finish`，原ADD_CHILD於同位置`yield from`呼叫；先檢查CFLAG34／生成曲線，再進既有`body_editor.size_setting`等待99，然後依原分支完成復歸／關係。前段出生、年齡、經歷、敘事原封不動；未插入共用角色主選單。
+- 詳細順序、RNG與結果格、25歲人工前態及瀏覽器重現見[身體編輯S69](body-editor.md#s69-子供實際收尾入口)。這是**ADD_CHILD尾段函式邊界驗收**，不宣稱完整子供加入、自然流程、B05整列或W02完成。
+- 搜尋src／tests／tools確認`size_setting_default`只有ADD_CHILD實際呼叫；status_screen僅有未用匯入。一併移除舊helper／匯入及1個專用測試，既有四組回歸由測試driver辨識真實SIZE_SETTING等待邊界再送99，避免舊可選流程多餘的0流入身體頁；原inputs及expected不改。新驗證全部使用25歲人工角色。
 
 ### S68 子供獨立一人稱
 

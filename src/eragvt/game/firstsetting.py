@@ -8,7 +8,7 @@
   `@CONVERT_AGE`:2213–2224
 - `口上/口上システム関係/SELF_CALL.ERB@SELF_CALL_LIST`:721–798
 
-子供的プロフィール設定仍依原作預設[99]執行（見deviations.md「子供加入時的キャラ設定畫面」）。
+S69子供プロフィール設定改由body_editor.size_setting等待真實輸入。
 命名INPUTS已於S35接通；S68一人稱改由self_call_setting.selfcall_gen等待真實輸入。
 """
 
@@ -17,8 +17,8 @@ from __future__ import annotations
 from collections.abc import Generator
 
 from .action import Ctx
-from .body import AGE, BREAST_WEIGHT, BUST, HEIGHT, HIP, REAL_AGE, WAIST, WEIGHT, generate_char_size, set_profile
-from .chara_common import is_female, seikaku_check, talent
+from .body import AGE, HIP, set_profile
+from .chara_common import seikaku_check, talent
 from .era import format_percent
 from .input_request import inputs, input_number
 from .naming import random_naming, random_naming_all
@@ -682,79 +682,4 @@ def _talent_change(ctx: Ctx, c) -> int:
     if T("変身時体格変動") != 0 or T("変身時胸サイズ変動") != 0 or T("変身時ＴＳ") != 0:
         return 1
     return 1 if T("外見") != T("変身時外見") else 0
-
-
-_SLOTS = (HEIGHT, WEIGHT, BUST, WAIST, HIP, BREAST_WEIGHT)
-
-
-def size_setting_default(ctx: Ctx, who: int) -> None:
-    """`@SIZE_SETTING, ARG`（プロフィール設定画面）で何も変えずに [99]「決定して戻る」を押した場合の状態変化。
-
-    :22–24 CONVERT_COLORCSTR／CONVERT_AGE、:29–55 CFLAG・BASE → 作業変数、:58–61 変身能力なしなら 年齢値:1 = -1、
-    :62–63 通常時と変身時が同一なら 年齢値:1 = -1。DO の 1 周目（:67–）：:68–70 BASE:年齢・MAXBASE:年齢・BASE:実年齢 を
-    作業変数から書き戻し、DISPLAY_FLAG = 3 なので :76–95 GENERATE_CHAR_SIZE（通常／年齢値:1 >= 0 なら変身時）で作業変数を
-    再計算（表示部分 :133–1452 は代入・RAND なし）。INPUT 99（INPUT_MODE = -1）→ :1731–1753 パーソナリティ CSTR:40–42 を
-    前に詰め、女性または変身時ＴＳなしなら 変身時濡れやすさ変動／変身時Ｖ感覚変動 = 0、BREAK。:2110–2139 書き戻し。
-    """
-    st, data = ctx.state, ctx.data
-    c = st.charas[who]
-    keep = st.target  # :20–21
-    st.target = who
-    convert_colorcstr(c)
-    convert_age(c)
-    real = c.base[REAL_AGE]
-    age0, age1 = c.base[AGE], c.maxbase[AGE]
-    v0 = [c.base[s] for s in _SLOTS]
-    v1 = [c.maxbase[s] for s in _SLOTS]
-    if talent(data, c, "変身能力") < 1:  # :58–61
-        age1 = -1
-        disp1 = False
-    else:
-        disp1 = True
-    if (  # :62–63
-        age0 == age1 and _talent_change(ctx, c) == 0 and v0[0] == v1[0] and v0[1] == v1[1] and v0[2] == v1[2]
-        and v0[3] == v1[3] and v0[4] == v1[4]
-        and c.cstr[13] == c.cstr[14] and c.cstr[30] == c.cstr[31] and c.cstr[32] == c.cstr[34]
-        and c.cstr[33] == c.cstr[35] and c.cstr[36] == c.cstr[37]
-    ):
-        age1 = -1
-    # DO 1 周目
-    c.base[AGE] = age0
-    c.maxbase[AGE] = age1
-    c.base[REAL_AGE] = real
-    v0 = list(generate_char_size(data, c, 0, st.result)[2:])  # :76–85
-    if age1 >= 0 and disp1:  # :87–95
-        v1 = list(generate_char_size(data, c, 1, st.result)[2:])
-    # :1731–1753 [99]
-    while True:
-        if c.cstr[40] == "" and (c.cstr[41] != "" or c.cstr[42] != ""):
-            c.cstr[40] = c.cstr[41]
-            c.cstr[41] = c.cstr[42]
-            c.cstr[42] = ""
-            continue
-        if c.cstr[41] == "" and c.cstr[42] != "":
-            c.cstr[41] = c.cstr[42]
-            c.cstr[42] = ""
-            continue
-        break
-    if is_female(data, c) or talent(data, c, "変身時ＴＳ") == 0:
-        c.talent[data.index_of("TALENT", "変身時濡れやすさ変動")] = 0
-        c.talent[data.index_of("TALENT", "変身時Ｖ感覚変動")] = 0
-    # :2110–2139
-    if age1 == age0 and _talent_change(ctx, c) == 0 and v1[0] == v0[0] and v1[2] == v0[2]:
-        if c.cstr[30] == c.cstr[31] and c.cstr[32] == c.cstr[34] and c.cstr[33] == c.cstr[35] and c.cstr[36] == c.cstr[37]:
-            age1 = -1
-    c.base[AGE] = age0
-    c.base[REAL_AGE] = real
-    for s, v in zip(_SLOTS, v0):
-        c.base[s] = v
-    if age1 >= 0:
-        c.maxbase[AGE] = age1
-        for s, v in zip(_SLOTS, v1):
-            c.maxbase[s] = v
-    elif talent(data, c, "変身能力") == 1:
-        c.maxbase[AGE] = age0
-        for s, v in zip(_SLOTS, v0):
-            c.maxbase[s] = v
-    st.target = keep  # :2141
 

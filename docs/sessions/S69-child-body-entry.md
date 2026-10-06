@@ -20,3 +20,11 @@
 - 凍結後主代理全pytest、真瀏覽器及正式500；default／tokusou各seed0–249、max-shop200、actions101–108，每50局前景一批，與S68完整JSON比較。子代理不啟動500。
 - 更新相關wiki、PLAYABILITY及既有偏離的剩餘範圍；不把局部完成寫成W02完成。STATUS／PLAN由主代理收口。
 - 文件繁體中文、LF／UTF-8無BOM，source／reference唯讀。不commit/push；核對diff，回報成果／依據／裁決。
+
+## 主代理驗收
+
+- 全pytest：`4394 passed, 1 warning in 176.82s (0:02:56)`；新14案、刪舊helper1案。
+- 真瀏覽器ordinary及childcare+unset-body通過：外貌／色彩／人格、空字返回、99、原回隊／關係；25歲、TARGET、RESULT尾格及RNG核對，console錯誤0。
+- 證據tmp/s69/browser-ordinary.json、browser-childcare.json、body-tail-childcare.jpg；全新成人人工前態、Null及臨時存檔，只驗ADD_CHILD真實尾段。
+- 正式500：default247上限／3回標題，tokusou250上限；catalog／fixture失敗0，十批退出0；完整JSON與S68逐seed一致，seed／log／參數核對通過。
+- source/reference未動；無新增未決或偏離。W02保留[8]既有阻塞，S70依PLAN先行下一包W03可獨立TS成果，不將W02標完成。

@@ -11,7 +11,7 @@ Python路徑以下相對`src/eragvt/`；測試相對`tests/`。原作路徑相�
 |---|---|---|---|
 | 啟動／存讀 | `__main__.py`、`web/app.py`、`game/session.py:381–492`；`test_main.py`／`test_web.py`／`test_state_game.py` | 乾淨安裝、新程序讀回、損毀／版本限制、瀏覽器實測矩陣尚未完成 | W08、W09 |
 | 開局／模式 | 共通角色製作、HEROINE_PRESET 0–3、關係、說明；`opening.py`／`creation_menu.py`；`test_creation_menu.py`／`test_tutorial.py` | 新局二擇捷徑固定NORMAL、完整模式與序章；`opening.py:83–98` | W04、W06 |
-| 角色製作 | 主題命名、生成設定、姓名／變身命名、一人稱、武器、關係；各同名測試 | S60共用入口及12項子選單已接開局／招募／醫療／引繼；S61一般身體／外貌、S62性格／精神素質、S63種族／feat／變身能力／基礎點、S64共用CSV模板、S65性別、S66初始狀態／人數及GLOBAL權限、S67身體其餘操作已接通。經歷仍缺；S68子供獨立一人稱已接真實輸入，身體入口仍代按，見[角色編輯](wiki/era/character-editor.md) | W02 |
+| 角色製作 | 主題命名、生成設定、姓名／變身命名、一人稱、武器、關係；各同名測試 | S60共用入口及12項子選單已接開局／招募／醫療／引繼；S61一般身體／外貌、S62性格／精神素質、S63種族／feat／變身能力／基礎點、S64共用CSV模板、S65性別、S66初始狀態／人數及GLOBAL權限、S67身體其餘操作已接通。經歷仍缺；S68子供獨立一人稱、S69實際身體收尾入口均已接真實輸入；S69僅25歲人工尾段函式邊界驗收，不代表完整出生／加入，見[角色編輯](wiki/era/character-editor.md) | W02 |
 | 套組 | 0_特捜戦隊；`opening.py:334`、`test_opening.py` | 其餘1–11與14（12套）、6／7／8動態說明；不能由缺號推測待實作12／13 | W04 |
 | SHOP／日常 | 8類行動、編成／排程、衣裝購買／穿戴、強化／醫療／設施／招募引退；`session.py:214–302`、各模組／測試 | 決策資訊、各子選單預設代按與特殊條件（SHOP[800]已於S57接通） | W01–W03、W07 |
 | 成就／紀錄 | S57共用取得／保存、GET_STATE判定、catalog／原生呼叫者、SHOP[800]六頁；S58的20欄紀錄、模式通關數、ENDLESS紀錄與六觸發；[證據](wiki/era/achievements.md) | S59已按裁決修正新全域版本／最高總評113；未移植解鎖互動端屬W02 | W01 |
@@ -51,7 +51,7 @@ Python路徑以下相對`src/eragvt/`；測試相對`tests/`。原作路徑相�
 
 ## 無操作與略過：不能被停止點統計遮住
 
-- 真缺口：新UI解鎖消費端→W02（W01成就／紀錄與S59兩項已裁決修正已接通）；S60已消除共用編輯入口／引繼代按；`firstsetting.size_setting_default`及其他個別子選單→W02；模式／序章／MESSAGE_FIRST→W04、W06；資訊與WAIT／圖樣→W07。
+- 真缺口：新UI解鎖消費端→W02（W01成就／紀錄與S59兩項已裁決修正已接通）；S60已消除共用編輯入口／引繼代按；S68／S69子供一人稱及身體代按已消除；[8]經歷具體範圍阻塞→W02；模式／序章／MESSAGE_FIRST→W04、W06；資訊與WAIT／圖樣→W07。
 - AST找到的`pass`多為原作空分支、條件不改值、例外捕捉與標記類別。例如`body.py:94,108`保持成長值，`input_request.py:7`請求標記，`narration/nodes.py:241,246`節點類別，`battle/train.py:1007`捕捉流程轉移；不計作待翻功能。
 - `battle/restraint.py@_need_boss:79`是雜魚／市民接通後的空守衛；不能據此重做整套戰鬥。`battle/sexmsg.py`多處空分支只保留狀態fallback，原文顯示已有catalog；W07檢查fallback與缺資料行為。
 - `narration/runtime.py:203`對CALL方法型別的空分支與註解不一致→W08核對合法呼叫與引擎規則，不在本次擅自定義修正。
