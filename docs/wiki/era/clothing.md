@@ -136,6 +136,22 @@ Python仍以原生COM0執行遊戲規則；`commands._msg_nanori_byousha`接既�
 
 `tmp/s75/browser_fixture.py --mode cost|event`提供臨時存檔、原按鈕、唯讀數值端點與遮蔽輸出。cost預期體氣700、耐性93；event預期stage1／事件經驗1及後續體氣耐性下降；共同敵HP3000、變身1、TARGET1、遠尾格RESULT99=345、先制餘額減1。僅人工回合邊界，主代理獨立全pytest／真瀏覽器／500由STATUS收口，不宣稱自然遭遇或B04／B05整列完成。
 
+## 初始衣裝與無內衣判定（S76／W03）
+
+`ERB/SYSTEM/キャラメイキング関連/CHARA_MAKE_DEFAULT.ERB@CHARA_MAKE_FINALIZE:225–232、387–418`依指定角色或全部角色執行初始化。外衣0補100、明確-1歸0；變身能力恰為1且另一形態外衣0才補200。內衣0才呼叫判定，當前形態與變身形態**任一**兼用就保留0，兩次皆0才補300；內衣-1歸0、既有編號不改。第二次判定之後形態固定回0，不還原舊值；能力非1時不執行第二次，也不改形態。沒有本次亂數。
+
+`ERB/武器と衣装/衣装関連/CLOTH_BATTLE.ERB@CLOTH_NO_INNER:452–455`只有形態看ARG，外層省略角色的CFLAG取TARGET衣裝；`ERB/武器と衣装/衣装関連/CLOTH_衣装カスタマイズ共通処理.ERB@CLOTH_HOSEI:8–153`再讀TARGET自訂值。沒有把TARGET改成SELECT。這與作者註解描述的角色衣裝直覺不同，已證實索引語意照原文保留，不推斷作者意圖或擅修。引擎省略角色依據：`reference/emuera-1824/Emuera/GameData/Variable/VariableParser.cs:107–119`。
+
+普通100／200無NOINNER，110／199／202／299／401／402為1；106／115／117／153由第14位恰為1決定，裝備索引仍看TARGET形態。依據：`ERB/武器と衣装/衣装関連/CLOTHDATAアウター_通常.ERB@CLOTH_HOSEI_NOINNER_106:1133–1140`、`@CLOTH_HOSEI_NOINNER_115:2875–2882`、`@CLOTH_HOSEI_NOINNER_117:3317–3324`、`@CLOTH_HOSEI_NOINNER_153:8525–8532`；其他靜態字串的來源行在`battle/cloth.py`。
+
+finalize的CALL包裝同步RESULT0與SUBSTRING寫入的RESULTS0；無NOINNER或特殊函式不做SUBSTRING，保留字串。一般NOINNER1留下字串`1`，之後無該欄位的衣裝不清掉它；SAVESTR0仍是最後讀取的衣裝字串。尾格不清，finalize自然落尾RESULT0歸0。引擎：`reference/emuera-1824/Emuera/GameProc/Function/Instraction.Child.cs:393–404、1997–2024`、`reference/emuera-1824/Emuera/GameData/Variable/VariableEvaluator.cs:1732–1740`、`reference/emuera-1824/Emuera/GameProc/Process.ScriptProc.cs:61–67`。
+
+既有helper定義1＋呼叫5（戰鬥衣裝2、變身1、自由行動2）皆傳TARGET；S76修正helper衣裝索引並新增finalize呼叫，既有呼叫者的Python回傳值／暫存管理方式保留。無ctx的招募／醫療及有ctx的角色製作／開局仍共用同一finalize。
+
+新增82案，先紅63（首輪前態漏清修練P已修正；有效紅含原停止、索引差異及新增CALL介面），綠82；定向合計`764 passed, 1 warning in 4.62s`。四年齡欄皆25的人工前態覆蓋0／-1／既有內衣、兩形態、能力精確值、自訂第14位、TARGET≠ARG、全員／指定角色、字串暫存、真編輯確認→finalize→SHOP→人工戰鬥。fixture的Web邊界smoke通過，真瀏覽器與全pytest／500由主代理獨立驗收。
+
+`tmp/s76/browser_fixture.py --mode shop|battle`：兩路原按鈕1→18→2→99→1000→1。shop第一人補300；battle第一人維持0，到SHOP後接人工BOSS遭遇，998保持狀態與RNG、201變身後回戰鬥選單，內衣耐久0／0、兼用旗標1、外衣耐久90／90。其餘兩人既有300保留。Null與文字遮蔽、臨時存檔，只驗B02／B04的衣裝邊界；W03的TS／妊娠／幽閉／救出串接及B05存讀／設定矩陣仍沒有完整鏈證據。
+
 ## 衣裝購買（S40）
 
 入口 `ERB/インターミッション画面/SHOP.ERB@USERSHOP:267–269`：非遊戲結束模式且FLAG:63=0。

@@ -164,8 +164,11 @@ def _special_hosei(ctx: Ctx, cid: int, mode: str) -> int:
     raise ValueError((cid, mode))
 
 
-def cloth_hosei(ctx: Ctx, who: int, cid: int, mode: str, shopr: int = 0) -> int:
-    """`CLOTH_衣装カスタマイズ共通処理.ERB@CLOTH_HOSEI(ARG,ID,MODE,SHOPR)`:8–153。"""
+def cloth_hosei(ctx: Ctx, who: int, cid: int, mode: str, shopr: int = 0, *, registers: bool = False) -> int:
+    """`CLOTH_衣装カスタマイズ共通処理.ERB@CLOTH_HOSEI(ARG,ID,MODE,SHOPR)`:8–153。
+
+    registers供CALL包裝者同步SUBSTRING的RESULTS:0；數值RESULT仍由呼叫者接回傳值。
+    """
     st = ctx.state
     if cid in (990, 991, 992):
         # イベント専用装備（CLOTHDATA※イベント専用装備.ERB@CLOTH_STATUS_990〜992：S20 `raid.battle_event_cloth_status`）
@@ -191,14 +194,25 @@ def cloth_hosei(ctx: Ctx, who: int, cid: int, mode: str, shopr: int = 0) -> int:
         if _find(text, "!", sp) == sp:
             pass
         elif ep > -1:
-            res = _toint(_substring(text, sp, ep - sp))
+            value = _substring(text, sp, ep - sp)
+            if registers:
+                st.results[0] = value
+            res = _toint(value)
             if st.charas[who].cflag[1] > 0:
                 sp = ep + 1
                 ep = _find(text, ",", sp)
-                res = _toint(_substring(text, sp, ep - sp))
+                value = _substring(text, sp, ep - sp)
+                if registers:
+                    st.results[0] = value
+                res = _toint(value)
         else:
             ep = _find(text, ",", sp)
-            res = _toint(_substring(text, sp, ep - sp))
+            value = _substring(text, sp, ep - sp)
+            if registers:
+                # 原文:88–91 SUBSTRING→RESULTS；引擎
+                # reference/emuera-1824/Emuera/GameProc/Function/Instraction.Child.cs:393–404。
+                st.results[0] = value
+            res = _toint(value)
     if res == -99999:
         if shopr == 1:
             return res
@@ -273,10 +287,22 @@ def cloth_battle_hosei(ctx: Ctx, mode: str, who: int = -999) -> int:
         st.target = keep
 
 
-def cloth_no_inner(ctx: Ctx, who: int) -> int:
-    """`@CLOTH_NO_INNER, ARG`（CLOTH_BATTLE.ERB:452–455）：ARG の変身状態で着ている服。"""
-    c = ctx.state.charas[who]
-    return cloth_hosei(ctx, ctx.state.target, c.cflag[41] if c.cflag[1] > 0 else c.cflag[40], "NOINNER")
+def cloth_no_inner(ctx: Ctx, who: int, *, registers: bool = False) -> int:
+    """`CLOTH_BATTLE.ERB@CLOTH_NO_INNER`:452–455。
+
+    ARG只決定形態，省略角色的外層CFLAG讀TARGET衣裝；引擎
+    reference/emuera-1824/Emuera/GameData/Variable/VariableParser.cs:107–119。
+    既有原生呼叫者自行管理暫存；finalize以registers=True模擬CALL邊界。
+    """
+    st = ctx.state
+    if registers:
+        st.result[0] = 0
+    cid = st.target_chara.cflag[41 if st.charas[who].cflag[1] > 0 else 40]
+    result = cloth_hosei(ctx, st.target, cid, "NOINNER", registers=registers)
+    if registers:
+        # RETURN只覆寫傳入格：reference/emuera-1824/Emuera/GameProc/Function/Instraction.Child.cs:2014–2023。
+        st.result[0] = result
+    return result
 
 
 def cloth_check(ctx: Ctx, who: int) -> int:

@@ -466,7 +466,7 @@ def chara_make_finalize(state: GameState, data: GameData, arg: int = 0, *, ctx=N
         c.base[Base.HP] = c.maxbase[Base.HP]
         c.base[Base.ENERGY] = c.maxbase[Base.ENERGY]
         c.base[Base.SEX_RESIST] = c.maxbase[Base.SEX_RESIST]
-        # 初期衣装（:402–429）
+        # 初期衣裝（:387–418）
         if c.cflag[40] == 0:
             c.cflag[40] = 100
         if c.cflag[40] == -1:
@@ -476,8 +476,20 @@ def chara_make_finalize(state: GameState, data: GameData, arg: int = 0, *, ctx=N
         if c.cflag[41] == -1:
             c.cflag[41] = 0
         if c.cflag[42] == 0:
-            # CLOTH_NO_INNER（武器と衣装/衣装関連/CLOTH_BATTLE.ERB:452）は未移植。初期セット 0・汎用キャラ（Chara000 CSV `フラグ,42,300`）とも 300 が入っている。
-            raise NotImplementedError("CFLAG:42 == 0（CLOTH_NO_INNER）は未移植")
+            from .action import Ctx
+            from .battle.cloth import cloth_no_inner
+            from ..text import NullNarrationService
+
+            clothing_ctx = ctx or Ctx(state, data, TextOutput(), NullNarrationService())
+            # :400–412 先讀目前形態；變身能力恰為1才再讀另一形態，最後固定回0。
+            # CLOTH_NO_INNER原文讀TARGET衣裝，不在此將TARGET改成SELECT。
+            no_inner = int(cloth_no_inner(clothing_ctx, sel, registers=True) != 0)
+            if talent(data, c, "変身能力") == 1:
+                c.cflag[1] = 1
+                no_inner += int(cloth_no_inner(clothing_ctx, sel, registers=True) != 0)
+                c.cflag[1] = 0
+            if no_inner == 0:
+                c.cflag[42] = 300
         if c.cflag[42] == -1:
             c.cflag[42] = 0
         if c.cflag[43] == -1:
@@ -527,6 +539,8 @@ def chara_make_finalize(state: GameState, data: GameData, arg: int = 0, *, ctx=N
             c.exp[v_exp] = 1 + state.rng.rand(4)
         else:
             c.exp[v_exp] = 0
+    # 原文:489自然落尾；reference/emuera-1824/Emuera/GameProc/Process.ScriptProc.cs:61–67。
+    state.result[0] = 0
 
 
 def _set_basic_values(data: GameData, c) -> None:

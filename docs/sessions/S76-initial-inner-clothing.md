@@ -22,3 +22,11 @@
 - 定向測試完成後凍結產品／測試／fixture；主代理獨立全pytest、真瀏覽器與正式500：兩入口各seed0–249、max-shop200、actions101–108、前景50局一批，比對S75完整JSON。
 - 更新必要既有wiki／PLAYABILITY／bridge；STATUS／PLAN由主代理收口。繁體中文、LF／UTF-8無BOM、source／reference唯讀。
 - 子代理核對git status／diff後回報成果／依據／裁決與紅綠摘要，不commit/push；主代理驗收後明確stage並推main。
+
+## 完成驗收
+- 接通初始內衣0判定、保留-1／既有衣裝，修正helper的TARGET衣裝／ARG形態索引；finalize接原CALL的RESULT(S)副作用。原作與引擎完整依據見wiki/era/clothing.md的S76段。
+- 有效紅63→綠82（初次前態漏清修練P已先修正），定向`764 passed, 1 warning in 4.62s`；父獨立全pytest：`5019 passed, 1 warning in 149.18s (0:02:29)`，既有Starlette/httpx警告。
+- 兩路真瀏覽器按1→18→2→99→1000→1，確認一般外衣內衣0→300且到SHOP；兼用外衣保持0，保留SHOP快照後注入人工BOSS、998無效狀態／RNG不變、201變身返回戰鬥選單。
+- 戰鬥TARGET1／NOINNER1、耐久[100,100,90,90,0,0]、內衣0；兩路四年齡欄25、console錯誤0，Null與遮蔽敘事、原按鈕、臨時存檔。證據tmp/s76/browser-{shop,battle}-*.json與完成截圖，頁籤／伺服器已關。
+- 正式500前景50局一批：default247上限／3回標題、tokusou250上限；停止表及完整JSON與S75逐seed一致，catalog／fixture失敗0，十批退出0與seed／log／參數核對，見tmp/s76/adult25-v1/audit.json。
+- 無新增UNVERIFIED／DEVIATION，原作不直覺索引照原文，bridge既有裁決維持；source／reference未動。W03停止0不代表完成，S77補25歲生命週期與既有救出／存讀連續證據。
