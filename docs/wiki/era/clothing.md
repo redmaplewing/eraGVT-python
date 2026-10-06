@@ -99,6 +99,23 @@ Python仍以原生COM0執行遊戲規則；`commands._msg_nanori_byousha`接既�
 新案例全為25歲人工兩形態；顯示只比原文PRINT節點行號，無敘事摘錄。定向連同戰鬥及衣裝選單共326項通過。
 `tmp/s73/browser_fixture.py`提供三槽外衣200搭601／602／661、真戰鬥入口；無效998不改狀態，可見原[201]（COM0別名）完成後體氣500→700、變身1、EX12、外衣耐久130保留，回原戰鬥選單。本次catalog、其餘Null、輸出遮敘事；只是人工邊界，完整瀏覽器與500局由主代理獨立驗收，見STATUS。
 
+## 特殊裝備回合效果（S74／W03）
+
+`ERB/ゲーム内_戦闘処理/BATTLE_COM_AFTER.ERB@SOURCE_CHECK:12–40、117、439–447、717–835`：先疲勞，再依`CFLAG:43`獨立判506／507／509，之後才末王形態、勝利、運動結算與敵方行動。沒有變身或體力門檻；未裝相關物品不抽本次亂數，也不額外清RESULT。
+
+三函式皆位於`ERB/ゲーム内_戦闘処理/MISC_PATCH.ERB`，遊戲規則由`battle/special_equipment.py`手翻，只有選定的PRINT節點沿原catalog：
+
+- `@TK_DRONE:3–39`：先抽`RAND:26`，暫清`TCVARn:3`的bit0，呼叫既有`DAMAGE,"ATTACK_RANGE_LONG"`後還原；其餘位元保留。傷害是`RESULT*亂數/100`，亂數0–4加50、5–19加100、20–25加250。`FLAG:73>0`強制本次扣血0，但仍完整執行DAMAGE並抽其亂數。敵體力直接相減、不封0；正傷害才顯示數字，最後FONTREGULAR也會清斜體，色彩不改。
+- `@HP_AUTOREGAIN:43–52`：抽`2+RAND:7`，乘最大體力除100；加回後大於等於上限，改以「最大值−目前值」回復。沒有下限修正，因此超上限會扣回，負上限按原算式處理；只有正回復顯示。
+- `@SERVANT:56–83`：抽`RAND:25`直接加到`TFLAG:3`，若`FLAG:17+TFLAG:3<FLAG:16`再加25。前段顯示依`ENEMY_TYPE_CHECK_F("CITIZEN")`，後段分支依`FLAG:73>0`，兩者不能合併：`ERB/汎用関数/コモン関数.ERB@ENEMY_TYPE_CHECK_F:1356–1371`還要求`FLAG:110==0`。
+- `ERB/ゲーム内_戦闘処理/COMMON_BATTLE_HANTEI.ERB@DAMAGE:1175–1546`保留既有原生傷害補正、靜態LOCAL與`RAND:100`；只有bit0攻擊增幅被裝備暫停，bit1防禦、戰技／風格等照舊。`ERB/ゲーム内_戦闘処理/PALAM_UP.ERB@PALAM_UP_ENEMY_REACTION:1823–1852`在後續結算消耗509的`TFLAG:3`。
+
+全ERB精確搜尋三個函式名共6筆：3個定義＋SOURCE_CHECK的3個呼叫，無其他呼叫者。MISC_PATCH沒有INPUT、KOJO或其他隱藏分派；PRINTW沿既有顯示行為，W07的一般WAIT議題不在本次改動。
+引擎依據：自然落尾`RESULT:0=0`見`reference/emuera-1824/Emuera/GameProc/Process.ScriptProc.cs:61–67`；RETURN多值只覆寫傳入格見`reference/emuera-1824/Emuera/GameProc/Function/Instraction.Child.cs:1997–2024`與`GameData/Variable/VariableEvaluator.cs:1732–1740`；除法朝零見`reference/emuera-1824/Emuera/GameData/Expression/OperatorMethod.cs:298–312`；字型見`reference/emuera-1824/Emuera/GameProc/Function/Instraction.Child.cs:1084–1121`。片段額外的CALL落尾不外洩，保留原inline時的RESULT，裝備函式完成才歸0，尾格／RESULTS不清。
+
+`tests/test_special_equipment.py`158案使用全新人工25歲、兩形態25歲，覆蓋門檻、負值／超限、位元、RNG次序、疲勞與勝利順序、原catalog節點／字型、三路真實COM201→COM0→SOURCE_CHECK→下一戰鬥輸入及Web邊界。
+`tmp/s74/browser_fixture.py --equipment 506|507|509`提供臨時存檔、原數字按鈕與唯讀狀態端點。無效998不改狀態；可見201後三路變身1／EX12／氣力700，506敵HP2950、507體力720、509的FLAG17=24與TFLAG3=0。本次顯示用原catalog，其餘Null且遮蔽文字；只稱人工B04回合邊界，主代理獨立全pytest、真瀏覽器及500後由STATUS收口。
+
 ## 衣裝購買（S40）
 
 入口 `ERB/インターミッション画面/SHOP.ERB@USERSHOP:267–269`：非遊戲結束模式且FLAG:63=0。

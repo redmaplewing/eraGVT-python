@@ -22,3 +22,13 @@
 - 子代理完成定向測試後凍結產品／測試／fixture，主代理獨立全pytest、真瀏覽器與正式500：兩入口各seed0–249、max-shop200、actions101–108、前景50局一批，比對S73完整JSON。
 - 更新必要既有wiki／PLAYABILITY／bridge；STATUS／PLAN由主代理收口；繁體中文、LF／UTF-8無BOM、source／reference唯讀。
 - 子代理自行核對git status／diff，回報成果／依據／裁決，不commit/push；主代理驗收後明確stage並推main。
+
+## 完成驗收
+- 手翻TK_DRONE／HP_AUTOREGAIN／SERVANT，接回SOURCE_CHECK原位置；原文完整路徑／行號與引擎依據見wiki/era/clothing.md的S74段。
+- 實作前首案紅燈：`1 failed in 0.23s`，裝備507在source_check.py:81觸發既有NotImplementedError；後新增158案，定向`517 passed, 1 warning in 5.29s`。
+- 主代理獨立全pytest：`4795 passed, 1 warning in 148.20s (0:02:28)`；產品／測試凍結後驗收，既有Starlette/httpx警告。
+- 三路真瀏覽器皆998不改狀態／RNG、按原201後返回戰鬥選單；變身1、EX12、先制9→8、氣力700、TARGET1與尾格保留。
+- 506敵HP2950／體力700，507體力720，509反應24／增量0；全部年齡欄25、catalog失敗0、console錯誤0。只驗人工B04回合邊界，不宣稱自然遭遇／完整B04。
+- 證據tmp/s74/browser-{506,507,509}-{pending,invalid,complete}.json及equipment-*-complete.png；原catalog純顯示，其餘Null／遮敘事，臨時存檔，測試頁與伺服器已關。
+- 正式500局每50局前景一批，default247上限／3回標題、tokusou250上限；與S73停止表及完整JSON逐seed一致，catalog／fixture失敗0，十批退出0、seed／log／參數核對，見tmp/s74/adult25-v1/audit.json。
+- 無新增UNVERIFIED／DEVIATION，bridge既有裁決保持；source／reference未動。下一份S75仍在W03，接外衣199運動／回合結算。

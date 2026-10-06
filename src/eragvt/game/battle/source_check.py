@@ -77,8 +77,14 @@ def source_check(ctx: Ctx) -> Generator[None, int, None]:
         out.printw()
         st.tflag[99] = 0
     # :28–35 装備効果
-    if c.cflag[43] in (506, 507, 509):
-        raise NotImplementedError(f"装備 {c.cflag[43]} の効果（MISC_PATCH.ERB）は未移植")
+    from .special_equipment import hp_autoregain, servant, tk_drone
+
+    if c.cflag[43] == 506:
+        tk_drone(ctx)
+    if c.cflag[43] == 507:
+        hp_autoregain(ctx)
+    if c.cflag[43] == 509:
+        servant(ctx)
     # :40–112 裏ボス形態変化
     if enemy_type_check(st, "LASTBOSS") >= 2:
         from .angel_tree import change_phase
