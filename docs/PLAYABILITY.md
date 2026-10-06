@@ -1,6 +1,6 @@
 # 完整遊玩現況盤點
 
-停止點與搜尋統計基線：S55 `8a77ee8`；系統現況已更新至S64驗收（25歲人工基線，範圍見STATUS）。下一工作與順序只看[PLAN](PLAN.md)，本頁不另排優先序。
+停止點與搜尋統計基線：S55 `8a77ee8`；系統現況已更新至S65驗收（25歲人工基線，範圍見STATUS）。下一工作與順序只看[PLAN](PLAN.md)，本頁不另排優先序。
 範圍是本機瀏覽器與原作已完成、可達功能；「已接通」表示有實作與測試，**不等於全瀏覽器驗收完成**。沒有完成比例。
 
 ## 系統現況與證據
@@ -11,7 +11,7 @@ Python路徑以下相對`src/eragvt/`；測試相對`tests/`。原作路徑相�
 |---|---|---|---|
 | 啟動／存讀 | `__main__.py`、`web/app.py`、`game/session.py:381–492`；`test_main.py`／`test_web.py`／`test_state_game.py` | 乾淨安裝、新程序讀回、損毀／版本限制、瀏覽器實測矩陣尚未完成 | W08、W09 |
 | 開局／模式 | 共通角色製作、HEROINE_PRESET 0–3、關係、說明；`opening.py`／`creation_menu.py`；`test_creation_menu.py`／`test_tutorial.py` | 新局二擇捷徑固定NORMAL、完整模式與序章；`opening.py:83–98` | W04、W06 |
-| 角色製作 | 主題命名、生成設定、姓名／變身命名、一人稱、武器、關係；各同名測試 | S60共用入口及12項子選單已接開局／招募／醫療／引繼；S61一般身體／外貌、S62性格／精神素質、S63種族／feat／變身能力／基礎點、S64共用CSV模板載入已接通。其餘身體、性別／經歷及初始狀態／人數仍缺；子供仍獨立，見[角色編輯](wiki/era/character-editor.md) | W02 |
+| 角色製作 | 主題命名、生成設定、姓名／變身命名、一人稱、武器、關係；各同名測試 | S60共用入口及12項子選單已接開局／招募／醫療／引繼；S61一般身體／外貌、S62性格／精神素質、S63種族／feat／變身能力／基礎點、S64共用CSV模板及S65性別已接通。其餘身體、經歷及初始狀態／人數仍缺；子供仍獨立，見[角色編輯](wiki/era/character-editor.md) | W02 |
 | 套組 | 0_特捜戦隊；`opening.py:334`、`test_opening.py` | 其餘1–11與14（12套）、6／7／8動態說明；不能由缺號推測待實作12／13 | W04 |
 | SHOP／日常 | 8類行動、編成／排程、衣裝購買／穿戴、強化／醫療／設施／招募引退；`session.py:214–302`、各模組／測試 | 決策資訊、各子選單預設代按與特殊條件（SHOP[800]已於S57接通） | W01–W03、W07 |
 | 成就／紀錄 | S57共用取得／保存、GET_STATE判定、catalog／原生呼叫者、SHOP[800]六頁；S58的20欄紀錄、模式通關數、ENDLESS紀錄與六觸發；[證據](wiki/era/achievements.md) | S59已按裁決修正新全域版本／最高總評113；未移植解鎖互動端屬W02 | W01 |
@@ -72,7 +72,7 @@ M＝已知移植／互動缺口；O＝已證實原作未完成且已有處置；
 | `game/config.py@update` | 189 | W08／U | 非法值／原作錯誤或版本限制；逐項核對 |
 | `game/creation_menu.py@preset_menu` | 221,232 | W04／M | 動態說明／其他套組 |
 | `game/creation_menu.py@creation_menu` | 265,266 | W02／M | 初始狀態／人數 |
-| `game/character_editor.py@character_editor` | names分派 | W02／M | 性別／經歷2子選單；S63已接數值編輯，S64已接[CSV模板載入](wiki/era/character-csv.md) |
+| `game/character_editor.py@character_editor` | 經歷停止 | W02／M | [8]經歷維持未移植；S65已接[0]性別，具體範圍阻塞一次記於[角色編輯](wiki/era/character-editor.md)；非原作未完成 |
 | `game/body_editor.py@size_setting` | 未移植選項分派 | W02／M | SIZE_SETTING的2／12、3／13、46、70–76、80–86；一般身體／外貌分支已接通，整個UI尚未完成 |
 | `game/character_name.py@character_name、random_character_name` | CHARANUM／空姓守衛 | W08／U | 姓名原作越界及無窮重抽；[具體依據](wiki/era/character-editor.md) |
 | `game/drug_preparation.py@drug_preparation_gen` | 320 | W08／O | AMPUTEE已裁決保留截斷 |

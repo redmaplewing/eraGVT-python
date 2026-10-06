@@ -161,7 +161,10 @@ def character_editor(ctx, who, bonus=0, restricted=0):
             st.result[0]=0
             ctx.out.clearline(ctx.out.linecount)
             return 0
-        if r==1:
+        if r==0:
+            from .character_sex import sex_setting
+            yield from sex_setting(ctx,who)
+        elif r==1:
             from .character_name import character_name
             yield from character_name(ctx,who)
         elif r in (2,3,11,13,14,24):
@@ -197,8 +200,7 @@ def character_editor(ctx, who, bonus=0, restricted=0):
                 chara_make_age_setting(st,data,c)
                 chara_size_default(data,c,st.result)
         else:
-            names={0:'FIRSTSETTING_CHARA_SEX',8:'FIRSTSETTING_CHARA_EXP'}
-            raise NotImplementedError(names[r]+' 尚未移植')
+            raise NotImplementedError('FIRSTSETTING_CHARA_EXP 尚未移植')
 
 def kojo_setting(ctx,who):
     """FIRSTSETTING_CHARA.ERB@FIRSTSETTING_CHARA_KOJO:1108–1200。"""
