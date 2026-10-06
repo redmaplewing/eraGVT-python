@@ -511,10 +511,10 @@ def _add_child_run(ctx, data, inputs, papa=-3, sex=0):
 
 def test_add_child_full(ctx, data):
     """育児中の母親（キャラ 3）：+1 で 10 → ADD_CHILD（:14）。INPUT：名前 [0] ランダム → [1] 英語 → [1] はい →
-    フルネーム [0] 苗字なし → フィート [1] 設定しない（変身能力が付けば変身後名 [0] → かけ声 [0] → 名乗り [0]）。"""
+    フルネーム [0] 苗字なし → 一人稱[99] → フィート [1] 設定しない（変身能力が付けば変身後名 [0] → かけ声 [0] → 名乗り [0]）。"""
     st = ctx.state
     before8 = st.flag[8]
-    m, c = _add_child_run(ctx, data, [0, 1, 1, 0, 1, 0, 0, 0])
+    m, c = _add_child_run(ctx, data, [0, 1, 1, 0, 99, 1, 0, 0, 0])
     assert st.charanum == 5 and c.no == 0
     assert st.flag[8] == before8 + 1 and c.cflag[240] == st.flag[8]  # :307–308
     assert c.cflag[7] == m.cflag[240] and c.cflag[9] == -3  # :310、:701
@@ -543,7 +543,7 @@ def test_add_child_full(ctx, data):
 
 def test_add_child_male_and_surname(ctx, data):
     """CFLAG:ARG:226 > 0 → オトコ（:312–314）、Ｖ系の素質なし（:786–793）。フルネーム [1]：母姓 苗字 名前（:473–475）。"""
-    m, c = _add_child_run(ctx, data, [0, 0, 1, 1, 1, 0, 0, 0], sex=1)
+    m, c = _add_child_run(ctx, data, [0, 0, 1, 1, 99, 1, 0, 0, 0], sex=1)
     assert c.talent[T(data, "オトコ")] == 1 and c.talent[T(data, "処女")] == 0 and c.talent[T(data, "Ｖ鈍感")] == 0
     assert c.cstr[10] == m.cstr[10] and c.name == f"{m.cstr[10]} {c.callname}"
     assert m.cflag[226] == 0  # :319
@@ -566,7 +566,7 @@ def test_add_child_manual_name_waits(ctx, data):
 
 def test_add_child_manual_full_continues(ctx, data):
     """PREGNANT_CHILD_BIRTH.ERB@ADD_CHILD:421–503：輸入→否決→重輸入→確認→無姓→續行。"""
-    m, c = _add_child_run(ctx, data, [1, "初名", 0, 1, "小星", 1, 0, 1, 0, 0, 0])
+    m, c = _add_child_run(ctx, data, [1, "初名", 0, 1, "小星", 1, 0, 99, 1, 0, 0, 0])
     assert c.name == c.callname == "小星"
     assert c.cstr[200] == ""  # 原文:470–491只寫NAME/CALLNAME，不寫200
     assert m.cflag[0] == c.cflag[0] == 0
@@ -577,7 +577,7 @@ def test_add_child_manual_full_continues(ctx, data):
 )
 def test_add_child_papa_power(ctx, data, papa, power):
     """:704–784 父親別の PAPA_POWER → :796–803 BASE:体力基礎 = 母×6/10 + 15×P + RAND:(40×P)（P = 0 なら加算なし）。"""
-    m, c = _add_child_run(ctx, data, [0, 0, 1, 0, 1, 0, 0, 0], papa=papa)
+    m, c = _add_child_run(ctx, data, [0, 0, 1, 0, 99, 1, 0, 0, 0], papa=papa)
     lo = m.base[50] * 6 // 10 + 15 * power
     assert lo <= c.base[50] < lo + max(40 * power, 1)
     assert ctx.state.temp.locals[("ADD_CHILD:PAPA_POWER", 0)] == power
@@ -660,16 +660,6 @@ def test_feat_select_ui(ctx, data):
     run_inputs(firstsetting.feat_select_ui(ctx, 1, 201), [5, 100, 200, 0])
     assert c.talent[1100] == 1 and c.talent[1200] == 1
     assert sum(c.talent[f] for f in range(1100, 1300)) == 2
-
-
-@pytest.mark.parametrize("c8, call", [(0, "私"), (27, "ボク"), (31, "おれ")])
-def test_selfcall_default(ctx, data, c8, call):
-    """FIRSTSETTING_CHARA_SELFCALL を [99] で決定：CFLAG:8 は同値、CSTR:4 = SELF_CALL_LIST(CFLAG:8/5%20, CFLAG:8%5)。"""
-    c = ctx.state.charas[1]
-    c.cflag[8] = c8
-    c.cstr[4] = ""
-    firstsetting.selfcall_default(ctx, 1)
-    assert c.cflag[8] == c8 and c.cstr[4] == call
 
 
 def test_size_setting_default(ctx, data):

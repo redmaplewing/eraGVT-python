@@ -8,9 +8,8 @@
   `@CONVERT_AGE`:2213–2224
 - `口上/口上システム関係/SELF_CALL.ERB@SELF_CALL_LIST`:721–798
 
-画面（一人称設定・プロフィール設定）は AGENTS.md「暫時跳過 UI 時走原作預設路徑」により、表示せず
-「何も変えずに [99] 決定」した場合の状態変化だけを行う（deviations.md「子供加入時のキャラ設定画面」）。
-S35：命名の INPUTS は既有 generator を通して Web 文字輸入へ接続。
+子供的プロフィール設定仍依原作預設[99]執行（見deviations.md「子供加入時的キャラ設定畫面」）。
+命名INPUTS已於S35接通；S68一人稱改由self_call_setting.selfcall_gen等待真實輸入。
 """
 
 from __future__ import annotations
@@ -38,27 +37,6 @@ def self_call_list(prn: int, shw: int) -> str:
     if 0 <= prn < len(_SELF_CALL_LIST) and 0 <= shw <= 2:
         return _SELF_CALL_LIST[prn][shw]
     return ""
-
-
-def selfcall_default(ctx: Ctx, who: int) -> None:
-    """`@FIRSTSETTING_CHARA_SELFCALL, ARG` で何も変えずに [99] 決定した場合（:1462–1487）。
-
-    :1215–1218 CALL_VAR:0 = CFLAG:8 / 5 % 20、CALL_VAR:1 = CFLAG:8 % 5、CALL_STR:1 = SELF_CALL(0, 0, ARG)
-    （CSTR:4 が空なら SELF_CALL_LIST：SELF_CALL.ERB:51–60）。:1465–1466 INRANGE(CALL_VAR:0, 0, 一人称_最大〔20〕) なら
-    CFLAG:8 = CALL_VAR:0 * 5 + CALL_VAR:1（CFLAG:8 < 100 では元の値と同じ）、:1475 CSTR:4 = CALL_STR:1。
-    CALL_STR:0（読み = SELF_CALL(7, …)）が空だと [99] は受け付けられない（:1463–1465）が、ADD_CHILD の一人称
-    （CFLAG:8 = 0、25–27、30–32 → PRN 0／5／6）はすべて読みの符号がある（SELF_CALL.ERB@SELF_CALL_SUBSTRING:140–159）。
-    """
-    c = ctx.state.charas[who]
-    cv0 = (c.cflag[8] // 5) % 20 if c.cflag[8] >= 0 else None
-    if cv0 is None:
-        raise NotImplementedError("FIRSTSETTING_CHARA_SELFCALL：CFLAG:8 が負")
-    cv1 = c.cflag[8] % 5
-    call1 = c.cstr[4] if c.cstr[4] != "" else self_call_list(cv0, cv1)
-    if call1 == "":
-        raise NotImplementedError("FIRSTSETTING_CHARA_SELFCALL：一人称が空（[99] を受け付けない）")
-    c.cflag[8] = cv0 * 5 + cv1
-    c.cstr[4] = call1
 
 
 def chara_callname(ctx: Ctx, who: int) -> Generator[None, int, int]:

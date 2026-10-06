@@ -8,7 +8,7 @@
 
 ## 查證與測試
 - 讀AGENTS、STATUS、PLAN及本規格，限查ADD_CHILD一人稱前後分派、既有selfcall_gen及必要引擎引用；不重新調查既有年齡來源。
-- 從ERB原文推導前態／expected，table-driven先紅後綠，確認現在會等待真實輸入，無效／取消不越過該流程，99才回原下一提示。
+- 從ERB原文推導前態／expected，table-driven先紅後綠，確認現在會等待真實輸入；無效／文字取消不越過該流程，99提交、98取消不提交後均回原下一提示（ADD_CHILD:515無回傳值分派）。
 - 新測試用全新25歲人工資料；只驗一般文字／控制流程，不新增或測試未成年性內容。不得修改產品年齡規則來遷就測試。
 - 現有回歸若因多了一段真正輸入而需要調整，只補原作一人稱確認輸入，不修改其原有expected來迎合產品。
 - 清理或保留selfcall_default前先查實際其他呼叫者；無使用者的舊捷徑不要繼續宣稱必要，既有測試工具用途需如實區分。
@@ -19,3 +19,11 @@
 - 凍結後通知主代理；主代理獨立全pytest、真瀏覽器，並以同fresh-adult-25-v1跑正式500，與tmp/s67/adult25-v1比對。子代理不重複啟動500。
 - 更新相關wiki、PLAYABILITY與必要bridge；STATUS／PLAN由主代理收口，LF／UTF-8無BOM，文件繁體中文。
 - 不commit/push，核對實際diff及source/reference唯讀，回報成果／依據／裁決。若此一般輸入也有具體不可獨立交付的依賴，先停止修改並回報精確原因，不擴大範圍。
+
+## 主代理驗收
+
+- 全pytest：`4381 passed, 1 warning in 168.25s (0:02:48)`；新增19案、刪除舊捷徑3案。
+- 真瀏覽器：自訂顯示／讀音、文字取消／Enter、99提交、改選後98取消，均按原文回下一提示；25歲、TARGET2、RESULT0=209及RNG耗用符合，console錯誤0。
+- 全新25歲人工資料、Null敘事、臨時存檔；只驗一般文字邊界。證據tmp/s68/browser-confirm.json、browser-cancel.json與selfcall-confirmed.jpg。
+- 正式500：default247上限／3回標題，tokusou250上限；catalog／fixture失敗0，十批退出0；seed／log／參數核對，完整JSON與S67逐seed一致。
+- source/reference未動；無新增未決或偏離。下一S69仍W02，接實際身體收尾入口。

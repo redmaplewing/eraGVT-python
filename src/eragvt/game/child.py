@@ -441,10 +441,11 @@ _COLORS = ("赤", "緑", "青", "黄", "紫", "橙", "桃")
 def add_child(ctx: Ctx, arg: int) -> InputGen:
     """`@ADD_CHILD, ARG`（ARG = 母親の index）:278–1107：子供を新キャラとして加入させる。"""
     from .firstsetting import (
-        feat_select_ui, nanori, selfcall_default, set_feat_default, size_setting_default, trans_after_callname,
+        feat_select_ui, nanori, set_feat_default, size_setting_default, trans_after_callname,
         trans_after_name, trans_call,
     )
     from .relation import check_all_relation
+    from .self_call_setting import selfcall_gen
     from .tentacle import tentacle_bitvalue, tentacle_survive_check
 
     st, data, out = ctx.state, ctx.data, ctx.out
@@ -539,7 +540,8 @@ def add_child(ctx: Ctx, arg: int) -> InputGen:
         c.cflag[21] = m.cflag[22]
     if rand(20) == 0 or is_male(data, c):  # :508–514（|| は短絡：RAND:20 が先）
         c.cflag[8] = 25 + rand(3) if rand(2) == 0 else 30 + rand(3)
-    selfcall_default(ctx, me)  # :515
+    # :515 單次 CALL；99提交、98取消後皆續行，不插入共用角色主選單。
+    yield from selfcall_gen(ctx, me)
     # :523–532 種族（母親の最後の種族素質を CFLAG:231 に記録）
     for k in range(201, 250):
         if m.talent[k] > 0:
@@ -549,6 +551,9 @@ def add_child(ctx: Ctx, arg: int) -> InputGen:
     else:
         c.talent[c.cflag[231]] = 1
     race = syuzoku_check(c)  # :534–535
+    # ERB/ヒロイン関連/CHARA_SYUZOKU.ERB@SYUZOKU_CHECK:5–24 的 RETURN 覆寫一人稱回傳值。
+    # reference/emuera-1824/Emuera/GameProc/Function/Instraction.Child.cs:1997–2023。
+    st.result[0] = race
     pn = print_callname(st, me)
     out.printl(f"{pn}の種族は『{data.names['TALENT'].get(race, '')}』です")
     out.printl("フィートを設定しますか？")

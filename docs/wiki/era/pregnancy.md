@@ -91,5 +91,4 @@ ADD_CHILD：ADDCHARA 0 → 名前（INPUT）→ 一人称 → 種族（母依存
 - 手入力（INPUTS）：子供の名前 [1]、変身後名 [1]〜[4]（ランダム命名画面 FIRSTSETTING_RANDOMNAMING(_ALL) を含む）、
   変身後呼び名・かけ声・名乗り口上の「自分で設定」。
 - デバッグモードの妊娠確率入力（NINSIN_HANTEI:125–138）。
-- 子供のキャラ設定画面（一人称 FIRSTSETTING_CHARA_SELFCALL、プロフィール SIZE_SETTING）は表示せず「何も変えずに [99] 決定」
-  （`firstsetting.selfcall_default`／`size_setting_default`、deviations.md）。
+- 子供的SIZE_SETTING仍由`firstsetting.size_setting_default`代按預設99（deviations.md）；S68已接`ERB/ヒロイン関連/PREGNANT_CHILD_BIRTH.ERB@ADD_CHILD:515`的一人稱真實輸入，見[角色編輯](character-editor.md)。

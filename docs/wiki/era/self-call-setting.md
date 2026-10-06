@@ -7,7 +7,7 @@
   `ERB/SYSTEM/キャラメイキング関連/FIRSTSETTING_CHARA.ERB@FIRSTSETTING_CHARA_SELFCALL:1203–1492`。
 - 實作：`game.self_call_setting.selfcall_gen`；固定顯示與音節表由 `tools/extract_self_call_text.py` 抽取至 `self_call_text.py`。
 - 選擇過程只更動函式暫存；[99] 確認才寫 `CFLAG:8` 與 `CSTR:4`。[98] 取消保留角色資料，`RETURN 98`。
-- 原有子供加入等非互動呼叫仍使用 `firstsetting.selfcall_default` 的既有預設路徑，這次只接通狀態設定入口。
+- S68已將`ERB/ヒロイン関連/PREGNANT_CHILD_BIRTH.ERB@ADD_CHILD:515`接回真實一人稱輸入並移除`selfcall_default`；98／99均回種族／feat提示，取消不提交，詳見[角色編輯](character-editor.md)。
 
 ## 操作
 

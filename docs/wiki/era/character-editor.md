@@ -9,7 +9,7 @@
 - `ERB/ゲーム内_行動実行処理/ACTIONsub_TSUIKAYOUSEI_NORMAL.ERB@TSUIKAYOUSEI_NORMAL:29–39`：[0]/[1]進入編輯器；[2]原作略過，特徵選單後才FINALIZE。
 - `ERB/ゲーム内_行動実行処理/ACTIONsub_DRUG_PREPARATION.ERB@DRUG_PREPARATION:303–315`：傳ARG:2=1，只鎖種族與CSV，不鎖姓名、衣裝等。
 - `ERB/ゲーム内_イベント発生/エンディング/SUCCESSION.ERB@SUCCESSION:1491–1560`：先調整修練點，再傳周回bonus進CHARA_MAKE_MAIN。MAIN的ARG:1只在999讀CSV返回後:323補回bonus*10（含取消）；進入／99不加。
-- `ERB/ヒロイン関連/PREGNANT_CHILD_BIRTH.ERB@ADD_CHILD`無FIRSTSETTING_CHARA_MAIN呼叫。保留既有獨立命名／一人稱／變身名／SIZE_SETTING流程，不插入不存在的主選單；身體與一人稱代按仍留同W02後續。
+- `ERB/ヒロイン関連/PREGNANT_CHILD_BIRTH.ERB@ADD_CHILD`無FIRSTSETTING_CHARA_MAIN呼叫。保留獨立命名／一人稱／變身名／SIZE_SETTING流程，不插入不存在的主選單；S68一人稱已接真實輸入，身體代按仍留同W02後續。
 - `ERB/武器と衣装/武器カスタマイズ関連/WEAPON_CUSTOMIZE.ERB@WEAPON_CUSTOMIZE:8–80`雖接受ARG:1=1，但函式不讀它，故共用既有customize。
 
 ## 狀態次序與查證
@@ -63,6 +63,15 @@
 - 代表步驟：501五次可看全部狀態與保留值；300→1／7拒絕→99取消，300→6新增，300→2刪尾再手輸506拒絕。300→5，再501一次／502兩次／503三次／504四次，1000→1至SHOP，狀態為1／3／4／9／0。這是人工前態操作，不冒充自然取得成就、自然通關或W03完整生命週期。
 
 ## 驗收與重現
+
+### S68 子供獨立一人稱
+
+- `ERB/ヒロイン関連/PREGNANT_CHILD_BIRTH.ERB@ADD_CHILD:508–515`先按原順序抽RAND20與必要的RAND2／3，再以TARGET呼叫既有`selfcall_gen`；暫存選擇不寫角色，[99]提交，[98]取消不提交。呼叫者沒有判斷回傳值，兩者均到:523–545的種族／feat提示；自訂文字或讀音的空字／文字99取消則留在一人稱選單。
+- `ERB/SYSTEM/キャラメイキング関連/FIRSTSETTING_CHARA.ERB@FIRSTSETTING_CHARA_SELFCALL:1460–1491`是取消／確認與無效值分派依據；無效數字跳讀音輸入，缺讀音的99不能提交，沿用既有自訂重入裁決。
+- 下一提示按`ERB/ヒロイン関連/CHARA_SYUZOKU.ERB@SYUZOKU_CHECK:5–24`覆寫RESULT0為種族值；TARGET及RNG不因一人稱編輯改動，RESULT(S)尾格保留。引擎：`reference/emuera-1824/Emuera/GameProc/Process.cs:249–260`（INPUT(S)）；`reference/emuera-1824/Emuera/GameProc/Function/Instraction.Child.cs:1997–2023`（RETURN指定格）。
+- 搜尋src／tests／tools確認`selfcall_default`唯一產品呼叫者是ADD_CHILD；移除這個舊捷徑及其3個專用測試，改以真實入口的25歲人工案例覆蓋。既有四組回歸只在姓名確認後補99，不改expected。
+- 新增19案先紅後綠，涵蓋RAND順序、標準讀音／字形、自訂顯示／讀音、文字取消、無效輸入、98／99、Web文字／數字切換及重送；相關三檔`216 passed, 1 warning in 2.24s`。主代理全pytest`4381 passed, 1 warning in 168.25s (0:02:48)`；真瀏覽器自訂文字／讀音、文字取消、99提交及98取消均回原提示，TARGET／RESULT0／RNG與25歲核對，console錯誤0。正式500完整JSON與S67逐seed一致，default247上限／3回標題、tokusou250上限；catalog／fixture失敗0。證據tmp/s68/browser-*.json、selfcall-confirmed.jpg及adult25-v1/audit.json。
+- 瀏覽器前態：`python -X utf8 tmp/s68/browser_fixture.py --port 8782`（另有`--male`）；fresh-adult-25-v1、Null敘事、臨時存檔，真實ADD_CHILD手動命名後停一人稱。`/fixture/state`只讀TARGET、各人一人稱編碼／顯示與四格年齡、RESULT0／RESULTS0、RNG剩餘序列、輸入種類與是否到下一提示。代表操作22→星→ほし→99；或6→98取消。到feat提示後fixture拒絕後續提交，僅驗一般文字邊界，不操作後段成長／身體生成，不稱完整子供加入或自然流程驗收。
 
 - S60定向：`531 passed, 1 warning in 17.41s`（編輯器31、招募／醫療／引繼／共通製作／一人稱／武器）。新入口從紅測試起步，expected取原文。
 - Web代表案例涵蓋男女個別開局、取消呼稱、文字修改、99完成、重入及SHOP追加招募；未把API案例當真瀏覽器。

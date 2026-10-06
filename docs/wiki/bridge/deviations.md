@@ -119,12 +119,11 @@ S56現況歸屬：各未勾選項的W編號指向`docs/PLAN.md`；仍待實作�
 - [ ] `W07` **HTML_PRINT 的子集**（S11 新增，只影響顯示）：只支援原作用到的 `<font color>`／`<nonbutton title>`（tooltip 以 Web 的
   title 屬性顯示）；S25 加 `<br>`（照 `GameView/HtmlManager.cs`:672–676、`PrintStringBuffer.cs`:189–196 分行）、`<nobr>`（Web 不折行，
   無差）、`<shape type='space' param='n'>`（原作寬 n% × 字型大小：`ConsoleShapePart.cs`:40–53；**近似為半角空白 n/50 個**）。其他タグ停止。（Python：`eragvt.text.TextOutput.html_print`）
-- [ ] `W02` **子供加入時的キャラ設定畫面**（S13 新增，只影響顯示）：`ADD_CHILD`:515 的一人称設定（`FIRSTSETTING_CHARA_SELFCALL`）與
-  :1078 的プロフィール設定（`CHARA_SIZE_UI.ERB@SIZE_SETTING`）不顯示，照 AGENTS.md 以「什麼都不改、直接按 [99] 決定」的狀態變化執行
-  （CSTR:4 = 一人称、パーソナリティ前詰め、身體資料照 GENERATE_CHAR_SIZE 重算；顯示部分無代入・無 RAND）。フィート選擇畫面
+- [ ] `W02` **子供加入時的キャラ設定畫面**（S13新增，剩餘身體入口）：`ERB/ヒロイン関連/PREGNANT_CHILD_BIRTH.ERB@ADD_CHILD:1078`的プロフィール設定（`ERB/SYSTEM/キャラメイキング関連/CHARA_SIZE_UI.ERB@SIZE_SETTING`）仍不顯示，照 AGENTS.md 以「什麼都不改、直接按 [99] 決定」的狀態變化執行
+  （パーソナリティ前詰め、身體資料照 GENERATE_CHAR_SIZE 重算）。フィート選擇畫面
   （[0]はい）有移植，種族／フィート說明（`SYUZOKU_INFO`／`FEAT_INFO`）走 catalog，不可執行時印「〈SYUZOKU_INFO n〉」。
-  （Python：`eragvt.game.firstsetting.selfcall_default`／`size_setting_default`／`feat_select_ui`）
-  S61：狀態PAGE5[20]（`SHOW_STATUS_CHARA_SELECT_PAGE5.ERB@CMD_STATUS_CHARA_SELECT_PAGE5:73–79`）保留GENERATE_BODYLINE／CHARA_MAKE_AGE_SETTING／CHARA_SIZE_DEFAULT，接回SIZE_SETTING的一般身體／外貌真實輸入；不再代按99。其餘未移植分支明確停止，整頁未完成。PAGE1[12]一人稱S47已接通；子供獨立流程的代按仍未解除，見`era/body-editor.md`。
+  （Python：`eragvt.game.firstsetting.size_setting_default`／`feat_select_ui`）
+  S61接狀態PAGE5[20]真實輸入、S67補完SIZE_SETTING操作；S68接ADD_CHILD:515的一人稱真實輸入並刪除selfcall_default，該處代按已解除。剩餘子供身體獨立入口見`era/body-editor.md`。
 - [ ] `W08` **Web 停止狀態**：遇到未移植處理時顯示「（未實作のため停止しました：…）」並停住，是原作沒有的畫面（見上「S04 未翻的行動」）。
   （S08 的全滅／ソロ結局後停止已於 S12 解除：照原作進入ゲームオーバーモード繼續。）
 
