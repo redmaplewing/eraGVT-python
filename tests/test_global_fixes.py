@@ -33,10 +33,10 @@ def test_clean_session_first_achievement_survives_restart(data,tmp_path):
     from eragvt.game.action import Ctx
     from eragvt.text import TextOutput
     s=GameSession(data,tmp_path,rng=GameRng(0),narration=NullNarrationService())
-    for value in (0,0,1000,1): s.input(value)
+    for value in (0,1,1000,1,0): s.input(value)
     unlock(Ctx(s.state,data,TextOutput(),NullNarrationService(),s.globals),220,"腕力自慢")
     assert s.globals.mem.global_[3]==s.identity.version
     s2=GameSession(data,tmp_path,rng=GameRng(0),narration=NullNarrationService())
-    for value in (0,0,1000,1): s2.input(value)
+    for value in (0,1,1000,1,0): s2.input(value)
     assert s2.globals.mem.global_[220]==1
     assert s2.globals.mem.global_[3]==s2.identity.version

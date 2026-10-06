@@ -157,11 +157,14 @@ def test_web_count_and_initial_states_to_shop(data,tmp_path,preset,second_state)
     def send(v):
         response=client.post('/api/input',json={'value':v});assert response.status_code==200
         assert_ages(s.state);return response.json()
-    for v in (0,preset,300,99,300,6,501,502,502):send(v)
+    send(0);send(1)
+    if preset:
+        for v in (200,0,1):send(v)
+    for v in (300,99,300,6,501,502,502):send(v)
     if second_state==4:send(502)
     for v in (503,503,503,503,300,5,300,99):send(v)
     assert [c.cflag[0] for c in s.state.charas[1:]]==[1,second_state,9,0,0]
-    for v in (1000,1):screen=send(v)
+    for v in (1000,1,0):screen=send(v)
     assert screen['phase']=='shop' and s.state.charanum==6 and s.state.flag[8]==5
     assert [c.cflag[0] for c in s.state.charas[1:]]==[1,second_state,9,0,0]
     assert all(c.callname!='汎用キャラ' and c.cflag[240]>0 for c in s.state.charas[1:])
@@ -173,7 +176,7 @@ def test_succession_creation_count_and_state(data,tmp_path):
     from eragvt.game.succession import succession_gen
     from eragvt.game.action import Step
     s=GameSession(data,tmp_path,rng=GameRng(66),narration=NullNarrationService())
-    for value in (0,0,1000,1):s.input(value)
+    for value in (0,1,1000,1,0):s.input(value)
     st=s.state;st.flag[854]=1;old=st.charas[2]
     s.globals.mem.global_[100]=s.globals.mem.global_[258]=1;s.globals.save()
     ctx=Ctx(st,data,TextOutput(),NullNarrationService(),s.globals)

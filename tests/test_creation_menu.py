@@ -198,14 +198,14 @@ def test_extract_reproducible():
 def test_mode_return_preserves_original_flag8(data,tmp_path):
     from eragvt.game.session import GameSession
     s=GameSession(data,tmp_path,narration=NullNarrationService())
-    s.input(0);s.input(0)
+    s.input(0);s.input(1)
     assert s.state.charanum==4 and s.state.flag[8]==3
     s.input(999)
     assert s.state.charanum==1 and s.state.flag[8]==3
     assert (s.state.flag[100],s.state.flag[101],s.state.flag[852])==(0,0,5000)
-    s.input(0)
+    s.input(1)
     assert s.state.charanum==4 and s.state.flag[8]==6
-    s.input(1000);s.input(1)
+    s.input(1000);s.input(1);s.input(0)
     assert s.phase.name=='SHOP'
 
 @pytest.mark.parametrize('preset',[0,1])
@@ -217,7 +217,10 @@ def test_web_settings_save_reload(data,tmp_path,preset):
     def send(v):
         response=client.post('/api/input',json={'value':v});assert response.status_code==200
         return response.json()
-    for v in (0,preset,1001,2,'共通主題',1003,1,2,1,1008,1009,170,0,'',1000,1):send(v)
+    send(0);send(1)
+    if preset:
+        for v in (200,0,1):send(v)
+    for v in (1001,2,'共通主題',1003,1,2,1,1008,1009,170,0,'',1000,1,0):send(v)
     assert app.state.session.phase.name=='SHOP'
     st=app.state.session.state
     assert (st.flag[820],st.flag[824],st.flag[825],st.savestr[10])==(3,1,1,'共通主題')
@@ -227,6 +230,6 @@ def test_web_settings_save_reload(data,tmp_path,preset):
     assert app.state.session.state.flag[824]==1
     fresh=create_app(data,tmp_path,rng_factory=lambda:GameRng(7))
     c2=TestClient(fresh)
-    for v in (0,0):c2.post('/api/input',json={'value':v})
+    for v in (0,1):c2.post('/api/input',json={'value':v})
     st=fresh.state.session.state
     assert (st.flag[820],st.flag[824],st.flag[825],st.savestr[10])==(3,1,1,'共通主題')

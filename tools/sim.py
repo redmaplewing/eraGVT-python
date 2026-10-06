@@ -1,6 +1,6 @@
 """隨機方針模擬（S11 起各階段共用）：`python tools/sim.py --preset default --seeds 0-249`。
 
-每一場：新遊戲（`--preset default` = 標題 [0]→[0] おまかせ；`tokusou` = [0]→[1] 初期セット）→ 每次 SHOP 時
+每一場：新遊戲（`--preset default` = 標題[0]→NORMAL[1]→不改角色設定；`tokusou`再用角色製作[200]→[0]→[1]載入套組）→ 每次 SHOP 時
 對全員隨機預約 101–103（休憩・鍛錬・出撃）後 [100] 確認；其他畫面從最近輸出的按鈕中隨機選一個（沒有按鈕就送 0）。
 遊戲 RNG = `GameRng(seed)`，方針 RNG = `random.Random(seed)`（兩者獨立）。口上／地の文用 catalog（Web 預設）。
 
@@ -561,7 +561,9 @@ def _corrupt(state, data, who: int) -> None:
 
 def _input_choice(session, policy, buttons):
     """成就 PRINTW 僅確認；不得以舊選項額外消耗策略 RNG。"""
-    if getattr(session.out, "achievement_wait", None) is not None:
+    if session.input_kind == "wait":
+        session.input("")
+    elif getattr(session.out, "achievement_wait", None) is not None:
         session.input(0)
     else:
         session.input(policy.choice(buttons) if buttons else 0)
@@ -574,9 +576,12 @@ def run_one(data, narration, seed: int, preset: str, max_shop: int, max_steps: i
     policy = random.Random(seed)
     s = GameSession(data, save_dir, rng=GameRng(seed), narration=narration)
     s.input(0)
-    s.input(0 if preset == "default" else 1)
+    s.input(1)  # MODE_SELECT NORMAL
+    if preset == "tokusou":
+        for value in (200, 0, 1): s.input(value)  # 角色製作：套組0確認
     s.input(1000)  # CHARA_MAKE_MAIN：不改設定、直接完成。
     s.input(config_preset)  # HEROINE_PRESET（S24）
+    s.input(0)  # EVENTFIRST 序章略過
     for f, b in clear_bits:
         s.state.flag.set_bit(f, b, False)
     if enable_intimidation:

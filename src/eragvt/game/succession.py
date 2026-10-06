@@ -5,7 +5,7 @@
 """
 from dataclasses import dataclass, field
 
-from ..state.constants import GameMode, GameOption, MODE_OPTIONS, PARTY_MAX
+from ..state.constants import GameMode, GameOption, PARTY_MAX
 from ..state.sparse import IntArray
 from .action import Ctx, Step, kojo_root_gen, seikaku_hosei
 from .chara_common import talent, seikaku_check, baseup_cal_shield
@@ -461,38 +461,9 @@ def succession_gen(ctx: Ctx, rank: int):
                 if q==1:
                     continue
             out.printl("次周を開始するにあたって、ゲームモードを選択し直すことができます")
-            out.set_bold(True)
-            out.set_color((0,255,255))
-            out.printl("◆ゲームモードの選択")
-            out.set_bold(False)
-            out.reset_color()
-            descriptions={
-                1:"複数人のキャラクターで敵の全滅を目指す通常プレイです",
-                2:"１人のキャラクターで挑むシンプルモードです　お手軽プレイ向け",
-                3:"難易度の高い上級者向けのチャレンジモードです",
-                4:"無限に出現するボス相手に可能な限り抗うモードです　難易度はNORMAL並み",
-                5:"ボス撃破期限が存在しません　難易度はNORMAL並み、クリア後の周回は不可",
-                6:"※※引継ぎでは選択できません※※",
-                7:"プレイ中にキャラクターの新規作成と引退を行えるモードです",
-            }
-            if s.values[10]>1:
-                descriptions[2]="※※引継ぎ人数が1人でないと選択できません※※"
-            for mode in GameMode:
-                if mode!=GameMode.GAMEOVER:
-                    if mode==GameMode.SANDBOX or mode==GameMode.SOLO and s.values[10]>1:
-                        out.set_color((105,105,105))
-                    out.printl(f"[{int(mode)}] 【{mode.name}】")
-                    out.reset_color()
-                    out.printl("　　　　┗"+descriptions[mode])
-            out.printl("[100] 引き継ぎ選択に戻る")
-            q=yield from _input(ctx)
-            while q not in (1,2,3,4,5,7,100) or (q==2 and s.values[10]>1):
-                q=yield from _input(ctx)
-            if q==100:
-                st.result[0]=999
+            from .opening import mode_select_gen
+            if (yield from mode_select_gen(ctx, inherited=True, count=s.values[10])) == 999:
                 continue
-            st.flag[0]=MODE_OPTIONS[GameMode(q)]
-            st.result[0]=0  # MODE_SELECT 函式終端。
             break
         out.clearline(out.linecount-start_line)
     reset_data(ctx,s)

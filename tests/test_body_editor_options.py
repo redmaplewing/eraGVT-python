@@ -258,7 +258,7 @@ def test_real_web_entry_confirm_reentry_and_shop(data, tmp_path, entry):
         assert response.status_code == 200
         assert_ages(session.state)
         return response.json()
-    for value in ((0, 0, 1) if entry == 'editor' else (0, 0, 1000, 1)):
+    for value in ((0, 1, 1) if entry == 'editor' else (0, 1, 1000, 1,0)):
         send(value)
     c = session.state.charas[1]
     for name, value in (('変身能力', 1), ('オトコ', 0), ('変身時ＴＳ', 0), ('アクセサリ', 0), ('固有キャラ', 0)):
@@ -285,7 +285,7 @@ def test_real_web_entry_confirm_reentry_and_shop(data, tmp_path, entry):
     assert c.talent[data.index_of('TALENT', 'アクセサリ')] == 2
     assert [x.to_json() for i, x in enumerate(session.state.charas) if i != 1] == others
     if entry == 'editor':
-        for value in (6, 99, 99, 1000, 1): send(value)
+        for value in (6, 99, 99, 1000, 1,0): send(value)
     else:
         for value in (20, 99, 999): send(value)
     assert session.phase.name == 'SHOP'

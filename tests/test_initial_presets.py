@@ -107,7 +107,7 @@ def test_preset10_retains_explicit_stop(ctx):
 def test_session_start_to_shop(data,tmp_path,preset,ids,title,call):
  from eragvt.game.session import GameSession
  s=GameSession(data,tmp_path,narration=NullNarrationService(),rng=GameRng(78))
- for value in (0,0,200,preset,1,1000,1):s.input(value)
+ for value in (0,1,200,preset,1,1000,1,0):s.input(value)
  assert s.phase.name=='SHOP'
  assert tuple(c.no for c in s.state.charas[1:])==ids
  assert s.state.target==1
@@ -151,10 +151,10 @@ def test_web_dynamic_description(data,tmp_path):
  from eragvt.web import create_app
  app=create_app(data,tmp_path,rng_factory=lambda:GameRng(78),narration=NullNarrationService())
  client=TestClient(app)
- for v in (0,0,200,6):assert client.post('/api/input',json={'value':v}).status_code==200
+ for v in (0,1,200,6):assert client.post('/api/input',json={'value':v}).status_code==200
  html=client.get('/').text
  assert 'font-family:' in html and 'ＭＳ Ｐゴシック' in html
- for v in (0,14,1,1,99,1000,1):assert client.post('/api/input',json={'value':v}).status_code==200
+ for v in (0,14,1,1,99,1000,1,0):assert client.post('/api/input',json={'value':v}).status_code==200
  assert app.state.session.phase.name=='SHOP'
 
 

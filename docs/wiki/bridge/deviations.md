@@ -28,13 +28,8 @@ S56現況歸屬：各未勾選項的W編號指向`docs/PLAN.md`；仍待實作�
 - [x] `W01` **全域資料（GLOBAL）：成就／紀錄接通，兩項原作缺陷已修正**（S59；使用者2026-10-05同意）：設定與角色製作GLOBAL存讀、共用成就取得／等待／保存、GET_STATE三組判定及SHOP[800]已接通，見[成就](../era/achievements.md)。
   S58已接通：`ERB/インターミッション画面/SHOP_TURNEND.ERB@UPDATE_STATUS_RECORD`；`ERB/ゲーム内_イベント発生/エンディング/SCORE.ERB@SCORE:695–698／740–747`的GLOBAL:110最高總評與GLOBAL:100–102模式通關數；`ERB/ゲーム内_イベント発生/エンディング/ENDING.ERB@ENDING_1／ENDING_3／ENDING_6`的GLOBAL:114 ENDLESS最高擊破紀錄。20欄紀錄及結算寫入已接通。另`ERB/ゲーム内_戦闘処理/BATTLE_COM_AFTER.ERB@SOURCE_CHECK`原先整段省略的救援271／273與全boss259／260／261／265六處成就已補齊。S59最高總評已改讀寫113，魅了維持110，不拆分回填舊110；對應程式均標DEVIATION。
   既有角色製作權限／引繼解鎖消費端已核對；未移植互動端由W02接續驗收。首次全域檔的GLOBAL:3原作問題見本頁S24怪處；GLOBAL:110碰撞見成就wiki，兩項已於2026-10-05獲使用者「好，依建議」批准；W01最終驗收見STATUS。
-- [ ] `W02／W04／W06` **開局的 UI 跳過**（S10 改寫、S24 縮小）：狀態已照原作預設路徑（NORMAL → キャラメイク不設定直接 `[1000]`＝汎用キャラ 3 名おまかせ生成
-  → HEROINE_PRESET `[1]` 基本セット → 序章 `[0]`，`docs/wiki/era/flow.md` §1）。**S24**：HEROINE_PRESET 畫面照原文顯示並接受 [0]〜[3]・[10]
-  （[20+]／[30] 已於 S25／S51 接通）。S55 已接通角色製作主選單與共通設定。仍略過模式選擇／序章畫面，保留 `@EVENTFIRST` 中 MODE_SELECT 位置的
-  2 択「[0] おまかせで開始（原作既定）／[1] 初期セット『特装戦隊』で開始」（後者先載入原作 `[200]`→`[0]`→`[1]はい` 的角色，再進製作主選單；兩者均需按 `[1000]` 完成），
-  其下照 MODE_SELECT:360–368 附 [100] タイトルに戻る／[200] グローバルコンフィグの編集（照原作）／[300] ゲームの説明（S52 已接通）。
-  模式固定 NORMAL（MODE_SELECT 沒有預設值，[1] 是第一個選項）。（Python：`eragvt.game.opening.event_first_gen`、`session._title_input`）
-  開局 `MESSAGE_FIRST` 口上仍不輸出（見下「口上」）。
+- [ ] `W02／W04／W06` **開局UI剩餘範圍**：S79已移除汎用／特装戦隊二擇，接回新局與引繼共用七模式選單、角色製作返回、序章選擇與略過、MESSAGE_FIRST既有派發及輸入等待。角色來源由角色製作[200]選擇，預設不改設定仍是3名汎用角色。
+  序章觀看具體未成年受襲／強制繁殖敘事保留明確停止，不改寫、不稱原作未完成；七模式完整生命週期留W06，見[開局控制](../era/opening-sequence.md)。
   S60已取消開局個別編輯／醫療加入／追加招募[0]/[1]／引繼的主選單代按，接通12項子選單；
   招募[2]仍照原作略過個別編輯。子供原作獨立流程不插入共用主選單，S68／S69一人稱及身體尾段已接真實輸入；W02經歷仍未完成。見[角色編輯](../era/character-editor.md)。
 
@@ -62,8 +57,7 @@ S56現況歸屬：各未勾選項的W編號指向`docs/PLAN.md`；仍待實作�
 ## 只影響顯示
 
 - [ ] `W04／W07` **口上**（S07 更新）：SHOP 一口メッセージ・行動・戰鬥中的口上改由 catalog 輸出（`eragvt.narration`）。仍未輸出的：
-  unsupported 的口上（S30 起 0；實行時失敗者見下項）、開局 `MESSAGE_FIRST`（`opening.event_first_gen` 仍略過此處輸出，
-  維持 FLAG:62＝0・FLAG:900＝0 的「找不到」處理）。無 `ERB/` 目錄時回落 `NullNarrationService`。
+  unsupported 的口上（S30 起0；實行時失敗者見下項）。S79開局MESSAGE_FIRST已沿既有派發輸出並接受輸入／確認；無 `ERB/` 目錄時仍回落 `NullNarrationService`。
 - [ ] `W07` **口上 catalog 的實行時失敗**（S07 新增；S29 改寫）：執行中才發現的子集外（動態 CALLFORM 的呼叫先不可執行、generator 以外遇到 INPUT）
   或引擎會報錯停止的狀況（除以 0、範圍外參照），catalog 會回復輸出・亂數・LOCAL・RESULT(S)，S29 起連 **GameState 的書き込み**（ジャーナル
   `runtime.StateJournal`，含 KOJO_ROOT 的 FLAG:62／900）也完整回復，口上當「找不到」、地の文印佔位。原作會報錯停止或照常執行。
@@ -379,3 +373,5 @@ S56現況歸屬：各未勾選項的W編號指向`docs/PLAN.md`；仍待實作�
 - 備查：同檔`@FIRSTSETTING_CHARA_NAME:656`允許CHARANUM角色索引，原作即越界，Python明確停止；沒有猜修為<。固定姓名順序不影響回傳、中文第二字被覆寫等其餘原作怪處均保留，詳見[角色編輯](../era/character-editor.md)。
 
 S60b補充：tutorial的PRINTW改為明確確認請求及Enter按鈕；其他舊WAIT未全面遷移，既有等待偏離仍未完成，不能勾選結案。[範圍與驗收](generic-input.md)。
+
+- S79：開局與引繼FIRST的WAIT／PRINTW／PRINTDATAW已接確認請求；其餘舊catalog等待簡化仍留W07。中性人工catalog只驗分派／輸入，不是原作全部敘事驗收。

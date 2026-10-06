@@ -103,7 +103,7 @@ def test_web_restart_cancels_wait(data,tmp_path):
     from eragvt.web import create_app
     app=create_app(data,tmp_path)
     with TestClient(app) as client:
-        for value in (0,0,1000,1):
+        for value in (0,1,1000,1,0):
             client.post('/api/input',json={'value':value})
         old=app.state.session
         old._run_gen(_obtain(old._ctx()),old._show_shop)
@@ -176,7 +176,7 @@ def test_nested_catalog_web_restart(data,tmp_path):
     from eragvt.data import default_csv_dir
     app=create_app(data,tmp_path)
     with TestClient(app) as client:
-        for value in (0,0,1000,1):
+        for value in (0,1,1000,1,0):
             client.post('/api/input',json={'value':value})
         s=app.state.session
         ctx=s._ctx()

@@ -254,7 +254,7 @@ def test_web_text_wait_save_and_escape(data, tmp_path):
     from eragvt.web import create_app
     app = create_app(data, tmp_path, narration=None)
     client = TestClient(app)
-    for v in (0, 0, 1000, 1):
+    for v in (0,1, 1000, 1,0):
         client.post("/api/input", json={"value": v})
     session = app.state.session
     session._run_gen(firstsetting.trans_after_name(session._ctx(), 1), session._show_shop)
@@ -297,7 +297,7 @@ def test_web_real_status_entry_numeric_name(data, tmp_path, via_form):
     client = TestClient(app)
     def send(v):
         return client.post("/input", data={"value": str(v)}) if via_form else client.post("/api/input", json={"value": v})
-    for v in (0, 0, 1000, 1):
+    for v in (0,1, 1000, 1,0):
         send(v)
     session = app.state.session
     session.state.charas[1].talent[data.index_of("TALENT", "変身能力")] = 1

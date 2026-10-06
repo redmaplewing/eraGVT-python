@@ -127,6 +127,8 @@ class CatalogNarrationService:
         py.update(PY_FUNCS)  # S30：RANDCHOOSE 系・UNLOCK_ACHIEVEMENT（narration.pyfuncs）
         env = Env(ctx.state, ctx.data, ctx.out, py, hooks or {}, ctx, inputs, journal=self.journal)
         env.input_fn = getattr(self._event, "input_fn", None)
+        if getattr(self._event, "first_waits", False):
+            env.wait_fn = env.input_fn
         return Interp(self.catalog, env)
 
     def _run(self, ctx, fn: Callable[[Interp], Any], what: str, hooks: Optional[dict] = None):
@@ -157,7 +159,10 @@ class CatalogNarrationService:
 
         reference/emuera-1824/Emuera/GameProc/Function/Instraction.Child.cs:616–640。
         """
-        return (yield from self._run_waiting(lambda: self.call_kojo(ctx, c_no, code), f"KOJO_{c_no}_{code}"))
+        def run():
+            self._event.first_waits = code == "FIRST"
+            return self.call_kojo(ctx, c_no, code)
+        return (yield from self._run_waiting(run, f"KOJO_{c_no}_{code}"))
 
     def call_kojo(self, ctx, c_no: int, code: str) -> int:
         from ..game.chara_common import seikaku_check

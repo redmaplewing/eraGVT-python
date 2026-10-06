@@ -629,9 +629,11 @@ def _buttons(s: GameSession) -> list[int]:
 def test_e2e_sp_transform_then_release(data):
     s = GameSession(data, Path(tempfile.mkdtemp()), rng=GameRng(12))
     s.input(0)
-    s.input(1)  # 初期セット『特装戦隊』
+    s.input(1)  # MODE_SELECT NORMAL
+    for value in (200, 0, 1): s.input(value)  # CHARA_MAKE_MAIN 套組0確認
     s.input(1000)  # CHARA_MAKE_MAIN 完成
     s.input(1)  # HEROINE_PRESET [1] 基本セット
+    s.input(0)  # EVENTFIRST 序章略過
     s.state.flag[47] = s.state.flag[46]  # ENCOUNT.ERB:159 ボス遭遇条件
     s.input(101)
     s.input(100)

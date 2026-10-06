@@ -45,9 +45,10 @@ def test_new_game_default_opening_to_shop_and_save(client):
     """S10：タイトル [0] → [0] おまかせ（原作の既定経路：汎用キャラ 3 名）→ SHOP、存檔・讀檔。"""
     c, app, _ = client
     c.post("/api/input", json={"value": 0})
-    c.post("/api/input", json={"value": 0})
+    c.post("/api/input", json={"value": 1})  # NORMAL
     shop = c.post("/api/input", json={"value": 1000})  # CHARA_MAKE_MAIN 完成
-    shop = c.post("/api/input", json={"value": 1}).json()  # HEROINE_PRESET [1] 基本セット
+    c.post("/api/input", json={"value": 1})  # HEROINE_PRESET [1] 基本セット
+    shop = c.post("/api/input", json={"value": 0}).json()  # 序章略過
     assert shop["phase"] == "shop"
     st = app.state.session.state
     assert [ch.no for ch in st.charas[1:]] == [0, 0, 0]
@@ -69,14 +70,17 @@ def test_new_game_shop_action_save_load(client):
     assert buttons(title) == [0, 1]
 
     new_game = c.post("/api/input", json={"value": 0}).json()
-    # 2 択（DEVIATION）＋ MODE_SELECT:360–368 の [100]／[200]／[300]
-    assert new_game["phase"] == "new_game" and set(buttons(new_game)) == {0, 1, 100, 200, 300}
-    assert any("おまかせで開始" in x for x in texts(new_game))
-    c.post("/api/input", json={"value": 1})  # 初期セット
+    # MODE_SELECT七模式＋頁尾；SystemProc:206–207保留標題歷史行。
+    assert new_game["phase"] == "new_game" and set(buttons(new_game)) == {0, 1, 2, 3, 4, 5, 6, 7, 100, 200, 300}  # 標題舊[0]仍在歷史行
+    assert any("ゲームモードの選択" in x for x in texts(new_game))
+    c.post("/api/input", json={"value": 1})  # NORMAL
+    for v in (200,0,1):
+        c.post("/api/input", json={"value": v})
     hp = c.post("/api/input", json={"value": 1000}).json()  # 完成『特装戦隊』
     assert hp["phase"] == "new_game"  # HEROINE_PRESET（オープニング処理.ERB:617–）
     assert {0, 1, 2, 3, 10, 20, 21, 22, 30}.issubset(buttons(hp))
-    shop = c.post("/api/input", json={"value": 1}).json()  # [1]「基本セット」
+    c.post("/api/input", json={"value": 1})  # [1]基本セット
+    shop = c.post("/api/input", json={"value": 0}).json()  # 序章略過
     assert shop["phase"] == "shop"
     t = texts(shop)
     assert any("インターミッション" in x and "1 日目" in x for x in t)
@@ -111,9 +115,12 @@ def test_new_game_shop_action_save_load(client):
 def test_html_page_renders_buttons(client):
     c, _, _ = client
     c.post("/input", data={"value": 0})
-    c.post("/input", data={"value": 1})
+    c.post("/input", data={"value": 1})  # NORMAL
+    for v in (200,0,1):
+        c.post("/input", data={"value": v})
     c.post("/input", data={"value": 1000})
     c.post("/input", data={"value": 1})
+    c.post("/input", data={"value": 0})  # 序章略過
     html = c.get("/").text
     assert 'name="value" value="100"' in html
     assert "インターミッション" in html
@@ -132,9 +139,12 @@ def test_full_turn_rest_back_to_shop(client):
     """開局 → 全員休憩（EVENTFIRST:165 で初期値が 予定_休憩）→ [100][9] → 1 ターン後 SHOP（夜）→ 再度 [100] → 翌日昼。"""
     c, app, save_dir = client
     c.post("/api/input", json={"value": 0})
-    c.post("/api/input", json={"value": 1})  # 初期セット『特装戦隊』
+    c.post("/api/input", json={"value": 1})  # NORMAL
+    for v in (200,0,1):
+        c.post("/api/input", json={"value": v})
     c.post("/api/input", json={"value": 1000})  # CHARA_MAKE_MAIN 完成
     c.post("/api/input", json={"value": 1})  # HEROINE_PRESET [1] 基本セット
+    c.post("/api/input", json={"value": 0})  # 序章略過
     s = c.post("/api/input", json={"value": 100}).json()  # USERSHOP_ACTION_CONFIRM の確認
     assert s["phase"] == "action_confirm"
     s = c.post("/api/input", json={"value": 9}).json()  # [9] → FLAG:40 = 2（出撃なし）→ JUMP ACTION_MAIN
@@ -155,9 +165,12 @@ def test_training_input_and_unported_halt(client, monkeypatch):
 
     c, app, _ = client
     c.post("/api/input", json={"value": 0})
-    c.post("/api/input", json={"value": 1})  # 初期セット『特装戦隊』
+    c.post("/api/input", json={"value": 1})  # NORMAL
+    for v in (200,0,1):
+        c.post("/api/input", json={"value": v})
     c.post("/api/input", json={"value": 1000})  # CHARA_MAKE_MAIN 完成
     c.post("/api/input", json={"value": 1})  # HEROINE_PRESET [1] 基本セット
+    c.post("/api/input", json={"value": 0})  # 序章略過
     c.post("/api/input", json={"value": 102})  # 紅葉 → 鍛錬
     c.post("/api/input", json={"value": 100})
     s = c.post("/api/input", json={"value": 9}).json()
@@ -190,9 +203,12 @@ def test_sortie_battle_retreat_back_to_shop(client):
     """出撃 → ボス遭遇（探索度をノルマに設定）→ 戦闘画面で攻撃・撤退 → EVENTEND → TURNEND → SHOP → セーブ／ロード。"""
     c, app, save_dir = client
     c.post("/api/input", json={"value": 0})
-    c.post("/api/input", json={"value": 1})  # 初期セット『特装戦隊』
+    c.post("/api/input", json={"value": 1})  # NORMAL
+    for v in (200,0,1):
+        c.post("/api/input", json={"value": v})
     c.post("/api/input", json={"value": 1000})  # CHARA_MAKE_MAIN 完成
     c.post("/api/input", json={"value": 1})  # HEROINE_PRESET [1] 基本セット
+    c.post("/api/input", json={"value": 0})  # 序章略過
     st = app.state.session.state
     st.flag[47] = st.flag[46]  # ENCOUNT.ERB:159 のボス遭遇条件（探索度 >= ノルマ）
     c.post("/api/input", json={"value": 101})  # 紅葉 → 出撃
@@ -235,9 +251,12 @@ def test_sortie_restraint_battle_save_load(tmp_path, data):
     app = create_app(data, tmp_path, rng_factory=lambda: GameRng(12), now=lambda: datetime(2026, 9, 29, 12, 34, 56))
     c = TestClient(app)
     c.post("/api/input", json={"value": 0})
-    c.post("/api/input", json={"value": 1})  # 初期セット『特装戦隊』
+    c.post("/api/input", json={"value": 1})  # NORMAL
+    for v in (200,0,1):
+        c.post("/api/input", json={"value": v})
     c.post("/api/input", json={"value": 1000})  # CHARA_MAKE_MAIN 完成
     c.post("/api/input", json={"value": 1})  # HEROINE_PRESET [1] 基本セット
+    c.post("/api/input", json={"value": 0})  # 序章略過
     app.state.session.state.flag[47] = app.state.session.state.flag[46]  # ENCOUNT.ERB:159
     c.post("/api/input", json={"value": 101})
     s = c.post("/api/input", json={"value": 100}).json()
@@ -276,9 +295,10 @@ def test_shop_status_screen_web(client):
     """S25：SHOP [110] ステータス表示 → [2] 次ページ → [5000] 個人 → [999] 戻る → SHOP（SHOP.ERB:247–249）。"""
     c, app, _ = client
     c.post("/api/input", json={"value": 0})
-    c.post("/api/input", json={"value": 0})
+    c.post("/api/input", json={"value": 1})  # NORMAL
     c.post("/api/input", json={"value": 1000})
     c.post("/api/input", json={"value": 1})
+    c.post("/api/input", json={"value": 0})  # 序章略過
     s = c.post("/api/input", json={"value": 110}).json()
     assert s["phase"] == "turn"
     assert any(t.endswith("PAGE(1/5)") for t in texts(s))

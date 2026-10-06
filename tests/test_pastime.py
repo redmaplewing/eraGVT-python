@@ -533,9 +533,11 @@ def test_shop_pastime_turnend(data):
     with tempfile.TemporaryDirectory() as tmp:
         s = GameSession(data, Path(tmp), rng=GameRng(7), narration=CatalogNarrationService(ERB, data))
         s.input(0)
-        s.input(1)  # 初期セット『特装戦隊』
+        s.input(1)  # MODE_SELECT NORMAL
+        for value in (200, 0, 1): s.input(value)  # CHARA_MAKE_MAIN 套組0確認
         s.input(1000)  # CHARA_MAKE_MAIN 完成
         s.input(1)  # 基本セット
+        s.input(0)  # EVENTFIRST 序章略過
         assert s.phase == Phase.SHOP
         st = s.state
         day = st.day[0]

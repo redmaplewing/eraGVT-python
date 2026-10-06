@@ -391,9 +391,10 @@ def test_kataomoi_null_fallback(ctx, data):
 def test_e2e_default_opening_lovesex_night(data, svc):
     s = GameSession(data, Path(tempfile.mkdtemp()), rng=GameRng(3), narration=svc)
     s.input(0)
-    s.input(0)  # おまかせ
+    s.input(1)  # MODE_SELECT NORMAL
     s.input(1000)  # CHARA_MAKE_MAIN 完成
     s.input(1)  # HEROINE_PRESET [1] 基本セット
+    s.input(0)  # EVENTFIRST 序章略過
     st = s.state
     c = st.charas[1]
     assert c.talent[T(data, "交際相手")] == 4  # seed 3：柊心美は人妻（CHARA_MAKE_DEFAULT）

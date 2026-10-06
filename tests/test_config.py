@@ -125,7 +125,7 @@ def _start_heroine_preset(data, store=None, chara=1):
     out = TextOutput()
     store = store or GlobalStore()
     gen = event_first_gen(st, data, out, store)
-    done, _ = _drive(gen, [chara, 1000])
+    done, _ = _drive(gen, [1] + ([200,0,1] if chara else []) + [1000])
     assert not done
     return st, out, store, gen
 
@@ -144,8 +144,9 @@ def test_heroine_preset_screen(data):
     gen.send(4)
     gen.send(-1)
     assert len(out.lines) == n
+    gen.send(2)
     with pytest.raises(StopIteration):
-        gen.send(2)
+        gen.send(0)
     assert st.flag[802] == 31
 
 
@@ -168,8 +169,9 @@ def test_heroine_preset_10_config_mainmenu(data):
     assert st.flag.get_bit(804, 1) == 1
     gen.send(999)  # 戻る → HEROINE_PRESET 再表示
     assert _texts(out).count("◆ヒロインデータ確認") == 2
+    gen.send(1)
     with pytest.raises(StopIteration):
-        gen.send(1)
+        gen.send(0)
     assert st.flag[804] == 1  # CONFIG_INIT(1)
 
 
@@ -181,7 +183,7 @@ def test_mode_select_footer_and_title(data):
     gen = event_first_gen(st, data, out, GlobalStore())
     done, _ = _drive(gen, [])
     assert not done
-    assert {0, 1, 100, 200, 300} == set(_buttons(out))
+    assert {1, 2, 3, 4, 5, 6, 7, 100, 200, 300} == set(_buttons(out))
     done, value = _drive_send(gen, 100)
     assert done and value is False  # :82–85 RESETDATA → BEGIN TITLE
 
@@ -524,9 +526,10 @@ def test_session_inyoku_set_and_shop_config(data):
         app = create_app(data, Path(tmp), rng_factory=lambda: GameRng(5), now=lambda: datetime(2026, 10, 2))
         c = TestClient(app)
         c.post("/api/input", json={"value": 0})
-        c.post("/api/input", json={"value": 0})  # おまかせ
+        c.post("/api/input", json={"value": 1})  # NORMAL
         c.post("/api/input", json={"value": 1000})
-        s = c.post("/api/input", json={"value": 2}).json()  # [2]「淫獄セット」
+        c.post("/api/input", json={"value": 2})  # [2]「淫獄セット」
+        s = c.post("/api/input", json={"value": 0}).json()  # 序章略過
         assert s["phase"] == "shop"
         st = app.state.session.state
         assert tuple(st.flag[k] for k in FLAGS) == (0, 25, 31, 391, 247, 67)
@@ -547,9 +550,11 @@ def test_session_global_autoload_on_load(data):
     with tempfile.TemporaryDirectory() as tmp:
         s = GameSession(data, Path(tmp), rng=GameRng(2), now=lambda: datetime(2026, 10, 2))
         s.input(0)
-        s.input(1)
+        s.input(1)  # MODE_SELECT NORMAL
+        for value in (200, 0, 1): s.input(value)  # CHARA_MAKE_MAIN 套組0確認
         s.input(1000)  # CHARA_MAKE_MAIN 完成
         s.input(0)  # [0] グローバルコンフィグを引き継いで開始（初回起動 → 全 0）
+        s.input(0)  # EVENTFIRST 序章略過
         assert s.phase == Phase.SHOP
         assert tuple(s.state.flag[k] for k in FLAGS) == (1, 0, 0, 0, 0, 0)
         s.input(200)
@@ -585,7 +590,8 @@ def test_session_mode_select_back_to_title(data):
     s.input(100)
     assert s.phase == Phase.TITLE and s.state is None
     s.input(0)
-    s.input(0)
+    s.input(1)  # MODE_SELECT NORMAL
     s.input(1000)  # CHARA_MAKE_MAIN 完成
     s.input(1)
+    s.input(0)  # EVENTFIRST 序章略過
     assert s.phase == Phase.SHOP

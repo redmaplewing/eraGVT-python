@@ -25,7 +25,7 @@ def data():
 @pytest.fixture
 def ctx(data, tmp_path):
     s = GameSession(data, tmp_path, rng=GameRng(0), narration=NullNarrationService())
-    for v in (0, 0, 1000, 1):
+    for v in (0,1, 1000, 1,0):
         s.input(v)
     return Ctx(s.state, data, TextOutput(), NullNarrationService())
 
@@ -131,7 +131,7 @@ def test_special_cloth_hosei(ctx, cid, equip, mode, expected):
 
 def test_real_shop_entry(data, tmp_path):
     s = GameSession(data, tmp_path, rng=GameRng(0), narration=NullNarrationService())
-    for value in (0, 0, 1000, 1, 112, 1, 11, "衣装名", 999, 999):
+    for value in (0,1, 1000, 1,0, 112, 1, 11, "衣装名", 999, 999):
         s.input(value)
     assert s.state.charas[1].cstr[8] == "衣装名"
     assert s.phase.value == "shop"

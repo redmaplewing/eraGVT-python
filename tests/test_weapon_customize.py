@@ -233,7 +233,7 @@ def test_web_and_save(data, tmp_path):
     def send(v):
         return client.post("/api/input", json={"value": v}).json()
 
-    for v in (0, 0, 1000, 1, 1, 110, 3000, 0):
+    for v in (0,1, 1000, 1,0, 1, 110, 3000, 0):
         send(v)
     assert "ＷＥＡＰＯＮ" in client.get("/").text
     for v in (10, 0, "<星>", 999, 12, 10, 999):

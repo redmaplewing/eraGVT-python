@@ -154,7 +154,7 @@ def test_web_status_wait_save(data,tmp_path):
     from eragvt.web import create_app
     app=create_app(data,tmp_path,narration=None);client=TestClient(app)
     def send(v): return client.post("/api/input",json={"value":v}).json()
-    for v in (0,0, 1000,1,1,110,12): send(v)
+    for v in (0,1, 1000,1,0,1,110,12): send(v)
     session=app.state.session
     assert "一人称を設定" in client.get("/").text
     send(22);send("<星>");send("漢")
@@ -211,7 +211,7 @@ def test_web_reentry_and_saved_reentry(data,tmp_path):
     from eragvt.web import create_app
     app=create_app(data,tmp_path,narration=None);client=TestClient(app)
     def send(v): return client.post("/api/input",json={"value":v}).json()
-    for v in (0,0, 1000,1,1,110,12,22,"星","キャキュキョイェ",99): send(v)
+    for v in (0,1, 1000,1,0,1,110,12,22,"星","キャキュキョイェ",99): send(v)
     session=app.state.session;code=104130128126*100+98
     assert session.state.charas[1].cflag[8]==code
     for v in (12,99,999,200,0,300,0,110,12,99):send(v)

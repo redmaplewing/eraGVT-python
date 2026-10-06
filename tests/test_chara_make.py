@@ -287,9 +287,10 @@ def test_session_default_opening_reaches_shop(data):
     s = GameSession(data, Path(tempfile.mkdtemp()), rng=GameRng(2))
     s.input(0)
     assert s.phase == Phase.NEW_GAME
-    s.input(0)  # おまかせで開始
+    s.input(1)  # MODE_SELECT NORMAL
     s.input(1000)
     assert s.phase == Phase.NEW_GAME  # HEROINE_PRESET の入力待ち（S24）
     s.input(1)  # [1]「基本セット」
+    s.input(0)  # EVENTFIRST 序章略過
     assert s.phase == Phase.SHOP
     assert all(c.no == 0 for c in s.state.charas[1:])

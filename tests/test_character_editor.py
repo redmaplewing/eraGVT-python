@@ -150,10 +150,10 @@ def test_opening_editor_web_and_recruitment(data,tmp_path,sex):
         response=client.post('/api/input',json={'value':value})
         assert response.status_code==200
         return response.json()
-    for value in (0,0,101 if sex else 1,2,1,'入口呼稱',99,1):
+    for value in (0,1,101 if sex else 1,2,1,'入口呼稱',99,1):
         send(value)
     assert app.state.session.state.charas[1].callname=='入口呼稱'
-    for value in (99,1000,1):send(value)
+    for value in (99,1000,1,0):send(value)
     assert app.state.session.phase.name=='SHOP'
     st=app.state.session.state
     st.flag[0]|=512

@@ -213,13 +213,14 @@ def test_real_editor_finalize_shop_and_battle(data,tmp_path,combined,inner):
     s.out = QuietOutput()
     # FIRSTSETTING_CHARA_MAIN:305–309、CLOTH_SETTING_INNER:568–571，清零後99返回；
     # CHARA_MAKE_MAIN:206–210完成，再由EVENTFIRST:135再次FINALIZE。
-    for value in (0,1,1,18,2,99):
+    for value in (0,1,200,0,1,1,18,2,99):
         s.input(value)
         assert_ages(s.state)
     assert s.state.charas[1].cflag[42] == 0
     s.input(1000)
     assert s.state.charas[1].cflag[42] == inner
     s.input(1)
+    s.input(0)
     assert s.phase == Phase.SHOP
     assert s.state.charas[1].cflag[42] == inner
     ctx = s._ctx()

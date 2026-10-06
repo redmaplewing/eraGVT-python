@@ -427,9 +427,11 @@ def test_session_eventshop_input(data):
     """@EVENTSHOP（SHOP_TURNEND.ERB:161）の共生取得 INPUT を Phase.TURN で受け、終了後にオートセーブ → SHOP。"""
     s = GameSession(data, Path(tempfile.mkdtemp()), rng=GameRng(1))
     s.input(0)
-    s.input(1)
+    s.input(1)  # MODE_SELECT NORMAL
+    for value in (200, 0, 1): s.input(value)  # CHARA_MAKE_MAIN 套組0確認
     s.input(1000)  # CHARA_MAKE_MAIN 完成
     s.input(1)  # HEROINE_PRESET [1] 基本セット
+    s.input(0)  # EVENTFIRST 序章略過
     st = s.state
     c = st.charas[2]
     _parasitize(data, c)

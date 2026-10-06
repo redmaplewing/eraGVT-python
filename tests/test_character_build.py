@@ -325,13 +325,13 @@ def test_web_three_menus_wait_reentry_and_shop(data,tmp_path):
     def send(value):
         r=client.post('/api/input',json={'value':value});assert r.status_code==200
         return r.json()
-    for v in (0,0,1,4,11,0,4,0,100,0,10,2):screen=send(v)
+    for v in (0,1,1,4,11,0,4,0,100,0,10,2):screen=send(v)
     assert screen['input_kind']=='wait'
     send('');send(23);send(201);send(0);send(200)
     c=app.state.session.state.charas[1]
     assert c.talent[201]==1 and c.talent[1100]==1 and c.talent[200]==-1 and c.cflag[50]==-5
     send(23);send(200);send(10);send(0);send('')
-    for v in (99,1000,1):screen=send(v)
+    for v in (99,1000,1,0):screen=send(v)
     assert screen['phase']=='shop' and c.base[40]==c.base[41]==25
 
 

@@ -145,8 +145,11 @@ def test_web_global_genre_and_save_load(data,tmp_path,preset):
         response=client.post("/api/input",json={"value":value})
         assert response.status_code==200
         return response.json()
-    send(0);send(preset);send(1000)
-    assert send(1)["phase"]=="shop"
+    send(0);send(1)
+    if preset:
+        for v in (200,0,1):send(v)
+    send(1000)
+    send(1);assert send(0)["phase"]=="shop"
     st=app.state.session.state
     assert st.flag[820]==3
     names=[c.cstr[0] for c in st.charas[1:]]

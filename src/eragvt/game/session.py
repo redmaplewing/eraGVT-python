@@ -38,7 +38,7 @@ AUTOSAVE = True
 
 class Phase(str, Enum):
     TITLE = "title"
-    NEW_GAME = "new_game"  # @EVENTFIRST 中の INPUT 待ち（開局経路の 2 択・HEROINE_PRESET・コンフィグ）
+    NEW_GAME = "new_game"  # @EVENTFIRST 中の INPUT 待ち（模式／角色製作／HEROINE_PRESET／序章與FIRST）
     SHOP = "shop"
     ACTION_CONFIRM = "action_confirm"
     TURN = "turn"  # ACTION_MAIN〜TURNEND・@EVENTSHOP 中の INPUT 待ち

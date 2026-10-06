@@ -127,5 +127,5 @@ def test_web_hidden_entry_cancel_reentry_and_shop(data,tmp_path):
     def send(v):
         response=client.post('/api/input',json={'value':v});assert response.status_code==200
         return response.json()
-    for v in (0,0,1,0,3,0,2,1,0,0,1,99,1,99,1000,1):screen=send(v)
+    for v in (0,1,1,0,3,0,2,1,0,0,1,99,1,99,1000,1,0):screen=send(v)
     assert screen['phase']=='shop'

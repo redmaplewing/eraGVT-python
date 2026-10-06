@@ -130,7 +130,10 @@ def test_web_opening_continue(data,tmp_path,preset):
     assert app.state.session.input_kind == "number"
     send(300)
     send(999)
-    send(preset)
+    send(1)
+    if preset:
+        for v in (200,0,1):send(v)
     send(1000)
     send(1)
+    send(0)
     assert app.state.session.phase.name == "SHOP"

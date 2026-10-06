@@ -63,7 +63,7 @@ def test_party_capacity(ctx,active,status,expected):
 @pytest.mark.parametrize("enabled",[False,True])
 def test_session_entry(data,tmp_path,enabled):
     s=GameSession(data,tmp_path,rng=GameRng(0),narration=NullNarrationService())
-    for v in (0,0, 1000,1): s.input(v)
+    for v in (0,1, 1000,1,0): s.input(v)
     s.state.flag[0]=512 if enabled else 0
     before=s.state.charanum
     s.input(180)

@@ -211,14 +211,14 @@ def test_web_editor_tooltip_confirm_reenter_shop(data,tmp_path):
     def send(value):
         response=client.post('/api/input',json={'value':value});assert response.status_code==200
         return response.json()
-    for value in (0,0,1,7,0,300,100):send(value)
+    for value in (0,1,1,7,0,300,100):send(value)
     html=client.get('/').text
     from eragvt.game.status_talent import talent_info
     assert 'value="100" title="'+talent_info(600)+'"' in html
     send(200);send(7)
     c=app.state.session.state.charas[1]
     assert c.talent[10]==c.talent[600]==1 and c.base[40]==c.base[41]==25
-    for value in (200,99,1000,1):screen=send(value)
+    for value in (200,99,1000,1,0):screen=send(value)
     assert screen['phase']=='shop'
 
 

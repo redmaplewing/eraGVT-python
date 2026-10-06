@@ -122,7 +122,7 @@ def test_original_reversed_warning(ctx):
 
 def test_session_visible_and_save(data,tmp_path):
     s=GameSession(data,tmp_path,rng=GameRng(0),narration=NullNarrationService())
-    for value in (0,0, 1000,1,50): s.input(value)
+    for value in (0,1, 1000,1,0,50): s.input(value)
     assert s.phase==Phase.TURN and s.state.target==0
     assert '[50] パーティ編成を完了する' in str(s.screen())
     s.input(1); s.input(100)
@@ -138,7 +138,7 @@ def test_session_visible_and_save(data,tmp_path):
 def test_shop_entry_guard(data,tmp_path,count,status,allowed):
     """SHOP.ERB@USERSHOP:208–213：SAFE 計數包含 10/11；不要求 ACTIVE。"""
     s=GameSession(data,tmp_path,rng=GameRng(0),narration=NullNarrationService())
-    for value in (0,0, 1000,1): s.input(value)
+    for value in (0,1, 1000,1,0): s.input(value)
     s.state.charas=s.state.charas[:count]
     for c in s.state.charas[1:]: c.cflag[0]=status
     s.input(50)
@@ -164,7 +164,7 @@ def test_web_party_buttons(data,tmp_path):
     from eragvt.web import create_app
     app=create_app(data,tmp_path,rng_factory=lambda:GameRng(0),narration=NullNarrationService())
     client=TestClient(app)
-    for value in (0,0, 1000,1,50,1):
+    for value in (0,1, 1000,1,0,50,1):
         assert client.post('/api/input',json={'value':value}).status_code==200
     html=client.get('/').text
     assert 'パーティ編成を完了する' in html and 'パーティから外す' in html
@@ -178,7 +178,7 @@ def test_web_party_buttons(data,tmp_path):
 
 def test_show_shop_reserve_view(data,tmp_path):
     s=GameSession(data,tmp_path,rng=GameRng(0),narration=NullNarrationService())
-    for value in (0,0, 1000,1): s.input(value)
+    for value in (0,1, 1000,1,0): s.input(value)
     s.state.charas[3].cflag[999]=0
     s.state.charas[3].callname='候補表示確認'
     s.state.flag[61]=1

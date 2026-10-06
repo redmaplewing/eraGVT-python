@@ -428,9 +428,11 @@ def test_e2e_annihilation_to_gameover_mode(data):
     tmp = Path(tempfile.mkdtemp())
     s = GameSession(data, tmp, rng=GameRng(0))
     s.input(0)
-    s.input(1)  # 初期セット『特装戦隊』
+    s.input(1)  # MODE_SELECT NORMAL
+    for value in (200, 0, 1): s.input(value)  # CHARA_MAKE_MAIN 套組0確認
     s.input(1000)  # CHARA_MAKE_MAIN 完成
     s.input(1)  # HEROINE_PRESET [1] 基本セット
+    s.input(0)  # EVENTFIRST 序章略過
     st = s.state
     st.flag.set_bit(805, 2, True)
     for i in (2, 3):

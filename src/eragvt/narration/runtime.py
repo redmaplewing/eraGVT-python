@@ -164,6 +164,7 @@ class Env:
     inputs: Optional[list] = None  # INPUTS に与える入力（None = INPUTS 不可）
     input_fn: Optional[Callable] = None  # S28c2 run_event_gen：f(yield する値) → 入力値（中断して待つ）
     journal: Optional[StateJournal] = None  # S29：状態書き込みの記録（None なら記録しない新しいジャーナル）
+    wait_fn: Optional[Callable] = None  # S79：FIRST派發啟用確認等待，其餘舊WAIT留W07。
 
 
 class Interp:
@@ -372,6 +373,7 @@ class Interp:
                 self.st.results[0] = str(value)  # RESULTS は共用（GameState.results、S22）
         elif t is N.Wait:
             self.out.wait()
+            self._wait()
         elif t is N.For:
             self._for(s, fr)
         elif t is N.While:
@@ -564,6 +566,13 @@ class Interp:
                 self.out.printl("")  # NewLine（EmueraConsole.Print.cs:315–326）
             self.out.print(p)
 
+    def _wait(self) -> None:
+        # reference/emuera-1824/Emuera/GameView/EmueraConsole.cs:497–508、707–734。
+        # WAIT／PRINTW不寫RESULT(S)，沿既有事件通道中斷且不重放。
+        if self.env.wait_fn is not None:
+            from ..game.input_request import WaitInputRequest
+            self.env.wait_fn(WaitInputRequest())
+
     def _print(self, s: N.Print, fr: Frame) -> None:
         text = self._text(s.kind, s.arg, fr)
         saved = None
@@ -577,6 +586,7 @@ class Interp:
                 self._emit(text)
             if s.wait:
                 self.out.printw("")
+                self._wait()
             elif s.newline:
                 self.out.printl("")
         finally:
@@ -601,6 +611,7 @@ class Interp:
                     self.out.printl("")
             if s.wait:
                 self.out.printw("")
+                self._wait()
             elif s.newline:
                 self.out.printl("")
         finally:

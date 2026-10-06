@@ -19,7 +19,9 @@ def test_achievement_confirmation_preserves_policy_rng():
     policy = random.Random(7)
     before = policy.getstate()
     inputs = []
-    session = SimpleNamespace(out=SimpleNamespace(achievement_wait=lambda _: None), input=inputs.append)
+    session = SimpleNamespace(
+        input_kind="number", out=SimpleNamespace(achievement_wait=lambda _: None), input=inputs.append,
+    )
     sim._input_choice(session, policy, [9, 10, 30])
     assert inputs == [0]
     assert policy.getstate() == before

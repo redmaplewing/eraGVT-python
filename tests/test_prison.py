@@ -658,9 +658,11 @@ def test_e2e_defeat_prison_shop_save_load(data):
     tmp = Path(tempfile.mkdtemp())
     s = GameSession(data, tmp, rng=GameRng(0))
     s.input(0)
-    s.input(1)  # 初期セット『特装戦隊』で開始
+    s.input(1)  # MODE_SELECT NORMAL
+    for value in (200, 0, 1): s.input(value)  # CHARA_MAKE_MAIN 套組0確認
     s.input(1000)  # CHARA_MAKE_MAIN 完成
     s.input(1)  # HEROINE_PRESET [1] 基本セット
+    s.input(0)  # EVENTFIRST 序章略過
     for _ in range(400):
         st = s.state
         if s.phase == Phase.SHOP and any(c.cflag[0] == 1 for c in st.charas[1:]):
@@ -748,9 +750,11 @@ def test_session_halts_on_eventshop_stop(data, monkeypatch):
     """@EVENTSHOP 内の未移植イベントは例外で落とさず「停止」にする。"""
     s = GameSession(data, Path(tempfile.mkdtemp()), rng=GameRng(1))
     s.input(0)
-    s.input(1)  # 初期セット『特装戦隊』で開始
+    s.input(1)  # MODE_SELECT NORMAL
+    for value in (200, 0, 1): s.input(value)  # CHARA_MAKE_MAIN 套組0確認
     s.input(1000)  # CHARA_MAKE_MAIN 完成
     s.input(1)  # HEROINE_PRESET [1] 基本セット
+    s.input(0)  # EVENTFIRST 序章略過
 
     def boom(*a, **k):
         raise NotImplementedError("テスト用")

@@ -63,11 +63,11 @@ def event_first(
 ) -> None:
     """`event_first_gen` を固定の入力で最後まで実行する（テスト・模擬用）。
 
-    輸入：開局二擇（None 為 [0]、初期セット為 [1]）→ CHARA_MAKE_MAIN [1000] → HEROINE_PRESET [config_preset]。
+    輸入：[1] NORMAL → 選擇性載入套組[200] → CHARA_MAKE_MAIN [1000] → HEROINE_PRESET → 序章[0]。
     `store` 省略時は空のメモリ上グローバル（ファイルなし＝真の初回起動）。
     """
     gen = event_first_gen(state, data, out or TextOutput(), store or GlobalStore(identity=GameIdentity.from_data(data)), narration)
-    inputs = [0 if preset is None else 1, 1000, config_preset]
+    inputs = [1] + ([] if preset is None else [200, preset, 1]) + [1000, config_preset, 0]
     try:
         next(gen)
         for v in inputs:
@@ -80,17 +80,90 @@ def event_first(
 MODE_SELECT_FOOTER = ("[100] タイトルに戻る　　　　　　　　", "[200] グローバルコンフィグの編集　　　　　　　　", "[300] ゲームの説明")
 
 
-def _show_mode_select(out: TextOutput) -> None:
-    # DEVIATION: 模式選擇仍由既有開局二擇代替；S55 已接通後續角色製作主選單。
-    # （[0] が原作の既定＝何も変えずに確定した場合、[1] はキャラメイクで初期セットを読み込んだ場合）。
-    # 末尾の [100]／[200]／[300] は MODE_SELECT:360–368 の原文。
-    out.drawline()
-    out.printl("[0] おまかせで開始（原作の既定：汎用キャラ 3 名をランダム生成）")
-    out.printl("[1] 初期セット『特装戦隊』で開始")
-    out.printl()
-    for text in MODE_SELECT_FOOTER:
-        out.print(text)
-    out.printl()
+def mode_select_gen(ctx, *, inherited=False, count=0):
+    """ERB/ゲーム内_イベント発生/オープニング処理.ERB@MODE_SELECT:297–409。
+
+    新局與引繼共用選單。模式完整生命週期另由W06驗收。
+    """
+    from .input_request import input_number
+    descriptions = {
+        1: "複数人のキャラクターで敵の全滅を目指す通常プレイです",
+        2: "１人のキャラクターで挑むシンプルモードです　お手軽プレイ向け",
+        3: "難易度の高い上級者向けのチャレンジモードです",
+        4: "無限に出現するボス相手に可能な限り抗うモードです　難易度はNORMAL並み",
+        5: "ボス撃破期限が存在しません　難易度はNORMAL並み、クリア後の周回は不可",
+        6: "ゲームオーバーもエンディングも発生しません　難易度はNORMAL並み、実績解除なし",
+        7: "プレイ中にキャラクターの新規作成と引退を行えるモードです",
+    }
+    st, out = ctx.state, ctx.out
+    disabled = {6} | ({2} if count > 1 else set()) if inherited else set()
+    if inherited:
+        descriptions[6] = "※※引継ぎでは選択できません※※"
+        if count > 1:
+            descriptions[2] = "※※引継ぎ人数が1人でないと選択できません※※"
+    while True:
+        out.set_bold(True)
+        out.set_color((0, 255, 255))
+        out.printl("◆ゲームモードの選択")
+        out.set_bold(False)
+        out.reset_color()
+        for mode in list(GameMode)[1:]:
+            out.printl()
+            if mode in disabled:
+                out.set_color((105, 105, 105))
+                out.print_plain(f"[{int(mode)}] 【{mode.name}】")
+            else:
+                out.print(f"[{int(mode)}] 【{mode.name}】")
+            out.reset_color()
+            out.printl()
+            out.button("　　　　┗　" + descriptions[mode] + "　　　", int(mode))
+            out.printl()
+        if inherited:
+            out.printl("[100] 引き継ぎ選択に戻る")
+        else:
+            for text in MODE_SELECT_FOOTER:
+                out.print(text)
+            out.printl()
+        while True:
+            r = yield from input_number(ctx)
+            # 引擎回顯輸入後CLEARLINE才刪該行，不能刪掉選單頁尾。
+            # reference/emuera-1824/Emuera/GameView/EmueraConsole.cs:733–735。
+            out.printl(str(r))
+            if 1 <= r <= 7 and r not in disabled:
+                st.flag[0] = MODE_OPTIONS[GameMode(r)]
+                out.printl(f"{GameMode(r).name}モードでプレイします")
+                st.result[0] = 0  # 自然RETURN：reference/emuera-1824/Emuera/GameProc/Process.ScriptProc.cs:61–67。
+                return 0
+            if r == 100:
+                st.result[0] = 999
+                return 999
+            if not inherited and r == 200:
+                for i in range(5):
+                    st.flag[801 + i] = ctx.globals.mem.global_[11 + i]
+                update_global(st, ctx.globals, out, GameIdentity.from_data(ctx.data).version)
+                yield from config_gen(st, ctx.data, out, ctx.globals, "mainmenu")
+                break
+            if not inherited and r == 300:
+                from .tutorial import tutorial
+                yield from tutorial(st, out)
+                break
+            out.clearline(1)
+
+
+def prologue_gen(ctx):
+    """EVENTFIRST:177–238原生選擇；觀看敘事的具體範圍見wiki/era/opening-sequence.md。"""
+    from .input_request import input_number
+    ctx.out.printl("プロローグを表示しますか？")
+    ctx.out.printl("[0]いいえ")
+    ctx.out.printl("[1]はい")
+    while True:
+        choice = yield from input_number(ctx)
+        ctx.out.printl(str(choice))
+        if choice == 0:
+            ctx.out.printl()
+            return
+        if choice == 1:
+            raise NotImplementedError("序章觀看敘事涉及未成年受襲與強制繁殖，保留未移植；一般開局可選[0]略過")
 
 
 def event_first_gen(
@@ -125,30 +198,11 @@ def event_first_gen(
         state.flag[100] = 0
         state.flag[101] = 0
         state.flag[852] = 5000
-        preset: int | None = None
-        _show_mode_select(out)
-        while True:  # MODE_SELECT:369 $INPUT_LOOP_MODE
-            r = yield
-            if r in (0, 1):
-                preset = None if r == 0 else PRESET_TOKUSOU
-                break
-            if r == 100:  # :391–392 RETURN 999 → :82–85 RESETDATA・BEGIN TITLE
-                return False
-            if r == 200:  # :393–402（引継ぎフラグ == 0）
-                for i in range(5):
-                    state.flag[801 + i] = store.mem.global_[11 + i]
-                update_global(state, store, out, version)
-                yield from config_gen(state, data, out, store, "mainmenu")
-                _show_mode_select(out)  # GOTO MASTER_LOOP（MODE_SELECT:300）
-                continue
-            if r == 300:  # :403–405 CALL TUTORIAL
-                from .tutorial import tutorial
-                yield from tutorial(state, out)
-                _show_mode_select(out)  # :405 GOTO MASTER_LOOP
-                continue
-            out.clearline(1)
-            out.printl("無効な値です")
-        state.flag[0] = MODE_OPTIONS[GameMode.NORMAL]  # MODE_SELECT:372–376
+        from .action import Ctx
+        from ..text import NullNarrationService
+        generation_ctx = Ctx(state, data, out, narration, store)
+        if (yield from mode_select_gen(generation_ctx)) == 999:
+            return False
         # :90–105
         state.flag[50] = 1
         state.flag[51] = 1
@@ -164,9 +218,8 @@ def event_first_gen(
         # :127 CALL CHARA_MAKE_MAIN, 0
         from .action import Ctx
         # 保留同一輸出與口上服務；非互動 helper 未提供時，由性格初始化按需載入 catalog。
-        generation_ctx = Ctx(state, data, out, narration, store)
         from .creation_menu import creation_menu
-        result = yield from creation_menu(generation_ctx, preset)
+        result = yield from creation_menu(generation_ctx)
         if result == -1:  # EVENTFIRST:128–132：清除角色但不歸零 FLAG:8。
             for _ in range(state.charanum - 1):
                 state.del_chara(1)
@@ -203,9 +256,8 @@ def event_first_gen(
     set_limit_day(state)
     # :173 HEROINE_PRESET（:617–759）→ 選んだプリセットで CONFIG_INIT（:758）
     yield from heroine_preset_gen(state, data, out, store)
-    # :177–238 プロローグ：表示のみ。:241–250 デフォルト悪堕ち（`GROUPMATCH(CFLAG:LOCAL:0, 状態_悪堕ち,)`：末尾の空引数は
-    # 引数にならない＝ExpressionParser.cs@ReduceArguments:63–117）。既定の開局では該当なし（CFLAG:0 はすべて 0）。
-    # event_first は出力を持たない（deviations「開局 MESSAGE_FIRST」）ので表示は捨てる。
+    yield from prologue_gen(generation_ctx)
+    # :241–250 既有裁決：開局預設悪堕ち外貌轉換保留，輸出丟棄。
     for i in range(1, state.charanum):
         if state.charas[i].cflag[0] == CharaState.CORRUPTED:
             from ..text import NullNarrationService, TextOutput
@@ -213,6 +265,7 @@ def event_first_gen(
             from .corruption import corrupt_change_looks_main
 
             corrupt_change_looks_main(Ctx(state, data, TextOutput(), NullNarrationService()), i)
+    generation_ctx.narration = narration or NullNarrationService()
     # :254–267 口上の初期設定
     for i in range(state.charanum):
         if i == GameState.MASTER:
@@ -221,11 +274,10 @@ def event_first_gen(
         c = state.charas[i]
         if c.cflag[0] != CharaState.SAFE and c.cflag[20] == 0 and c.cflag[21] == 0:
             c.cflag[21] = state.rng.rand(7) + 1
-        # CALL MESSAGE_FIRST（地の文/MESSAGE.ERB:4）→ KOJO_ROOT(CFLAG:6, "FIRST")。
-        # 状態への影響は FLAG:62 = 0 と FLAG:900 = 0 のみ（口上/口上システム関係/KOJO_ROOT.ERB:50–90）。
-        # DEVIATION: 口上テキストは未移植（S07）。表示は @LB で流されるため画面上の差もない。
-        state.flag[62] = 0
-        state.flag[900] = 0
+        # ERB/地の文/MESSAGE.ERB@MESSAGE_FIRST:4–6，與引繼相同的原生派發。
+        from .action import kojo_root_gen
+        yield from kojo_root_gen(generation_ctx, "FIRST")
+        state.result[0] = 0  # 自然RETURN：reference/emuera-1824/Emuera/GameProc/Process.ScriptProc.cs:61–67。
         if i <= PARTY_MAX:
             c.cflag[999] = 1
     # :269–283 初期キャラの衣装を所持品に

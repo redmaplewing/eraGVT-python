@@ -80,8 +80,8 @@ MODE_SELECT（:297）沒有預設值，`[1] NORMAL` 是第一個選項（S03 起
 - `CFLAG:240`（固有番號）= 登錄 index（CHARA_MAKE_DEFAULT.ERB:242–243）。
 
 S55 已接通 `CHARA_MAKE_MAIN` 的主選單與共通設定、全域存讀、完成與返回；詳見
-`creation-menu.md`。既有二擇開局後先顯示製作畫面，按 `[1000]` 才繼續 HEROINE_PRESET；
-非互動 helper 與標準模擬只多送這個直接確定步驟。
+`creation-menu.md`。S79已移除二擇捷徑，先選MODE_SELECT，再顯示製作畫面；按 `[1000]` 才繼續HEROINE_PRESET與序章選擇。
+非互動helper與標準模擬選NORMAL、不改角色設定、確認配置後略過序章；套組需在原[200]選單明確載入，見[開局控制](opening-sequence.md)。
 
 初期セット（**不是**預設，是キャラメイク畫面的 `[200]` 選項；本程式 `event_first(preset=PRESET_TOKUSOU)`）：`SYSTEM/キャラメイキング関連/初期セット/*.ERB@SHOKISET_SELECT_n` 以
 `ADDCHARA <CSV番号>` 加入 CSV 角色，例如 `0_特捜戦隊.ERB@SHOKISET_SELECT_0` 加 301/302/303，
@@ -235,7 +235,7 @@ S55 已接通 `CHARA_MAKE_MAIN` 的主選單與共通設定、全域存讀、完
 - **HEROINE_PRESET**（:617–759）：[20+n] ステータス（S25）、[30] 相関関係設定（S51，見 [關係設定](relation-setting.md)）、[10] `CONFIG("mainmenu")`、
   [0]〜[3] → CONFIG_INIT；其他值無聲重新輸入。本程式預設輸入仍是 [1]。
 - **MODE_SELECT [200]**（:393–402）：FLAG:801〜805 = GLOBAL:11〜15 → UPDATE_GLOBAL → CONFIG("mainmenu")。FLAG 之後會被 CONFIG_INIT 覆寫，
-  留下的只有 GLOBAL（與 :291 UPDATE 讀回的 FLAG:850／MOB_FLAG）。本程式放在開局 2 択畫面（deviations「開局的 UI 跳過」）。
+  留下的只有 GLOBAL（與 :291 UPDATE 讀回的 FLAG:850／MOB_FLAG）。S79已接回原MODE_SELECT七模式畫面。
 - **CONFIG(FROM)**（CONFIG_SYSTEM.ERB:68–513）：2 頁。[0] FLAG:800 bit0、[10–17] FLAG:801、[30–34] FLAG:802（[33] 關掉時連 bit5 清除）、
   [35] 只在 bit3 ON 時反轉、[36]、[50–58] FLAG:803、[60–71] FLAG:804、[72–80] FLAG:805（[74]／[75] 互斥）；[1] 存 GLOBAL、[2] 讀 GLOBAL＋UPDATE_GLOBAL、
   [1000]／[2000]／[3000] 各フィルタ（存 GLOBAL:4／MOB_GLOBAL／GLOBAL:51〜59 並 SAVEGLOBAL）、[999] 返回、[9999] 存 GLOBAL 後返回。

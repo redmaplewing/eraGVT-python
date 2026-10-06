@@ -216,11 +216,11 @@ def test_web_and_save(data,tmp_path):
     client=TestClient(app)
     def send(value):
         return client.post("/api/input",json={"value":value}).json()
-    for value in (0,0,1000,30,1,2,30,200,""):
+    for value in (0,1,1000,30,1,2,30,200,""):
         send(value)
     st=app.state.session.state
     assert st.charas[1].relation[2] & (1<<30)
-    send(99); send(1)
+    send(99); send(1); send(0)  # 序章略過
     for value in (110,4000):send(value)
     assert "友人" in client.get("/").text
     for value in (999,200,0):send(value)

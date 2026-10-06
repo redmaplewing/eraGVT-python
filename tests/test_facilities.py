@@ -148,7 +148,7 @@ def test_purchased_relax_effect(ctx):
 @pytest.mark.parametrize('gameover',[False,True])
 def test_session(data,tmp_path,gameover):
     s=GameSession(data,tmp_path,rng=GameRng(0),narration=NullNarrationService())
-    for v in (0,0, 1000,1): s.input(v)
+    for v in (0,1, 1000,1,0): s.input(v)
     if gameover: s.state.flag[0]=0
     s.input(150)
     assert s.phase==(Phase.SHOP if gameover else Phase.TURN)
@@ -202,7 +202,7 @@ def test_purchase_final_relax_returns_main(ctx):
 
 def test_session_wait_visible_and_no_active_needed(data,tmp_path):
     s=GameSession(data,tmp_path,rng=GameRng(0),narration=NullNarrationService())
-    for v in (0,0, 1000,1): s.input(v)
+    for v in (0,1, 1000,1,0): s.input(v)
     st=s.state; st.charas=st.charas[:1]; st.target=0; st.money=10000; st.flag[50]=1
     st.result[7]=456; st.results[0]='保留'
     for v in (150,0,0): s.input(v)
@@ -219,7 +219,7 @@ def test_web_wait_empty_enter(data,tmp_path):
     from eragvt.web import create_app
     app=create_app(data,tmp_path,rng_factory=lambda:GameRng(0),narration=NullNarrationService())
     client=TestClient(app)
-    for v in (0,0, 1000,1): client.post('/api/input',json={'value':v})
+    for v in (0,1, 1000,1,0): client.post('/api/input',json={'value':v})
     st=app.state.session.state; st.money=10000; st.flag[50]=1
     for v in (150,0,0): client.post('/api/input',json={'value':v})
     html=client.get('/').text

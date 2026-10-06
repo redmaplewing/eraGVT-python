@@ -255,10 +255,10 @@ def test_web_load_wait_cancel_reentry_and_shop(data,tmp_path):
     def send(v):
         r=client.post('/api/input',json={'value':v});assert r.status_code==200
         return r.json()
-    for v in (0,0,1,999,-2,-1,70):screen=send(v)
+    for v in (0,1,1,999,-2,-1,70):screen=send(v)
     assert screen['input_kind']=='wait'
     send('');send(999);send(99);send(99);send(1);send(99)
-    for v in (1000,1):screen=send(v)
+    for v in (1000,1,0):screen=send(v)
     assert screen['phase']=='shop'
     assert app.state.session.state.charas[1].no==70
 
