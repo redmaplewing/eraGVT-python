@@ -34,7 +34,7 @@ class NarrationService(Protocol):
         """同 `run_function`，但允許 INPUTS（generator；以 `yield from` 呼叫）。"""
         ...
 
-    def run_event_gen(self, ctx: Any, name: str, args: Optional[list] = None) -> Generator[Any, Any, bool]:
+    def run_event_gen(self, ctx: Any, name: str, args: Optional[list] = None, *, waits: bool = False) -> Generator[Any, Any, bool]:
         """S28c2：允許 INPUT／INPUTS 之前有狀態變化（中斷等待，不重新執行）。不可執行時回傳 False（什麼都不做）。"""
         ...
 
@@ -62,6 +62,6 @@ class NullNarrationService:
         return False
         yield  # pragma: no cover
 
-    def run_event_gen(self, ctx: Any, name: str, args: Optional[list] = None) -> Generator[Any, Any, bool]:
+    def run_event_gen(self, ctx: Any, name: str, args: Optional[list] = None, *, waits: bool = False) -> Generator[Any, Any, bool]:
         return False
         yield  # pragma: no cover

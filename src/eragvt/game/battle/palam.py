@@ -1216,7 +1216,7 @@ def palam_up(ctx: Ctx) -> Generator[None, int, None]:
     from ..achievements import get_state_expup
     get_state_expup(ctx, st.target)  # PALAM_UP.ERB@PALAM_UP:352
     if st.flag[13] <= 0 and st.flag[700] == 1:  # :355–356 JUMP SOURCE_CHECK
-        source_check_jump(ctx)
+        yield from source_check_jump(ctx)
         return
     palam_up_enemy_reaction(ctx)
     if c.cflag[1] > 0 and t(ctx, c, "処女") == -1 and is_female(ctx.data, c) and t(ctx, c, "変身時非処女") == 0:

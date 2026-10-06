@@ -195,7 +195,7 @@ def test_victory_lastboss_perfect(ctx):
     cap = st.charas[2]
     cap.cflag[0], cap.cflag[20], cap.cflag[21] = 1, 1, 1
     with pytest.raises(BeginTurnend):
-        source_check._victory(ctx)
+        next(source_check._victory(ctx))
     assert (st.flag[64], st.flag[101], st.flag[401], st.flag[18], st.flag[49]) == (-1, 0, 0, 0, 1)
     assert st.tflag[98] == 1 and st.flag[700] == 1
     assert cap.cflag[0] == -1
@@ -213,7 +213,7 @@ def test_victory_last_boss_tentacle_makes_lastboss_appear(ctx):
     st.flag[10], st.flag[11], st.flag[13] = 0, 1, 0
     st.savestr[13] = "BOSS"
     with pytest.raises(BeginAfterTrain):
-        source_check._victory(ctx)
+        next(source_check._victory(ctx))
     assert (st.flag[100], st.flag[101], st.flag[64]) == (0, 1, 0)
     t = texts(ctx.out)
     assert f"全ての{data.str_defaults.get(2502, '')}を殲滅しました！" in t
@@ -232,7 +232,7 @@ def test_victory_lastboss_hardcore_second_cycle(ctx):
     st.flag.set_bit(0, GameOption.HARDCORE, True)
     f1, f4 = st.flag[1], st.flag[4]
     with pytest.raises(BeginAfterTrain):
-        source_check._victory(ctx)
+        next(source_check._victory(ctx))
     assert (st.flag[4], st.flag[1], st.flag[21], st.flag[101], st.flag[64]) == (f4 + 1, f1 + 5, 1, 2, 0)
     assert "なにやら様子がおかしい……" in texts(ctx.out)
 

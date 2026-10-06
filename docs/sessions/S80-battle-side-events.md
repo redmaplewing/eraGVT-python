@@ -18,8 +18,9 @@
 ## 驗收與收尾
 - 提供tmp/s80/browser_fixture.py、可見前態控制表單、精確操作與原文expected；B04／B05／B09一般戰鬥操作與設定ON/OFF用真瀏覽器驗收。
 - 人工遭遇／救出前態明確標示，不宣稱自然長局、完整救出系統或整列B矩陣完成；臨時存檔與本機服務隔離。
-- 子代理完成定向測試及文件後凍結；主代理獨立全pytest、真瀏覽器與正式500，禁止同時跑全pytest與500。
-- 正式500沿fresh-adult-25-v1，default／tokusou各seed0–249，max-shop200，actions101–108，前景50局一批，與S79逐seed比較。
+- 子代理完成定向測試及文件後凍結；主代理獨立全pytest、真瀏覽器驗收。
+- 2026-10-06使用者改採AGENTS分級驗證；S80工具修正沿用已通過全pytest／瀏覽器，採修正後完整批次default0–249與tokusou0–99共350局及78／88定向重跑；其餘停止，不重跑完整500。
+- 模擬沿fresh-adult-25-v1、max-shop200、actions101–108、前景50局一批，與S79相同seed比較；未完成批次不計入正式350局，完整500基線仍為S79。
 - 更新必要wiki／PLAYABILITY／bridge；STATUS／PLAN由主代理收口；有新未決／偏離據實列出，既有裁決不重開。
 - LF、UTF-8無BOM、繁體中文；source／reference唯讀。自查git status／diff，只回報實際變更，不commit/push。
 - 最後三段回報：做了什麼／已查證的依據／需要使用者決定（UNVERIFIED／DEVIATION），附測試摘要與範圍限制。

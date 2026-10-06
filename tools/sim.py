@@ -506,10 +506,11 @@ def install_event_counters() -> Counter:
 
     def rd(ctx):
         n0 = len(ctx.out.lines)
-        orig_rd(ctx)
+        r = yield from orig_rd(ctx)
         counts["S30 MESSAGE_BATTLE_END_RESCUE_DEADNUM"] += 1
         if any("【肉体回収】" in ln.text for ln in ctx.out.lines[n0:]):
             counts["S30 ロストキャラの発見（肉体回収）"] += 1
+        return r
 
     sc._rescue_deadnum = rd
     wrap_plain(sc, "_hatujou_to_hairan", lambda ctx, r: (

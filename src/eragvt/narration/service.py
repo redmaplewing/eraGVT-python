@@ -127,7 +127,7 @@ class CatalogNarrationService:
         py.update(PY_FUNCS)  # S30：RANDCHOOSE 系・UNLOCK_ACHIEVEMENT（narration.pyfuncs）
         env = Env(ctx.state, ctx.data, ctx.out, py, hooks or {}, ctx, inputs, journal=self.journal)
         env.input_fn = getattr(self._event, "input_fn", None)
-        if getattr(self._event, "first_waits", False):
+        if getattr(self._event, "first_waits", False) or getattr(self._event, "event_waits", False):
             env.wait_fn = env.input_fn
         return Interp(self.catalog, env)
 
@@ -217,13 +217,15 @@ class CatalogNarrationService:
         done, _ = self._run(ctx, lambda it: it.call(name, list(args or [])), name, hooks)
         return done
 
-    def run_event_gen(self, ctx, name: str, args: Optional[list] = None):
+    def run_event_gen(self, ctx, name: str, args: Optional[list] = None, *, waits: bool = False):
         """S28c2（モジュール docstring）。`ok = yield from service.run_event_gen(...)`。yield する値は INPUT なら None、
         hook の Python 移植（AFTER_PILL 等）が yield した値はそのまま。送られた値が入力。"""
         if not self.catalog.exists(name) or self.catalog.unsupported_reason(name) is not None:
             return False
 
         def run():
+            # S80明確移植的事件啟用PRINTW／FORCEWAIT；其他舊路徑仍由W07逐處核對。
+            self._event.event_waits = waits
             self._interp(ctx).call(name, list(args or []))
             return True
 

@@ -93,3 +93,59 @@ assert dict(counts) == {key: 1}
         cwd=Path(__file__).parents[1], capture_output=True, text=True, encoding="utf-8",
     )
     assert completed.returncode == 0, completed.stdout + completed.stderr
+
+
+@pytest.mark.parametrize("waits", [0, 2])
+def test_discovery_counter_delegates_generator_until_completion(waits):
+    """S80：計數包裝不可丟棄 generator，空候選／等待均須能續行。
+
+    驗模擬器契約：傳遞等待、send 與返回值，完成後才計數一次。
+    全域 instrumentation 放在子程序，避免污染產品測試。
+    """
+    script = r'''
+import sys
+from types import SimpleNamespace
+from eragvt.game.battle import source_check as sc
+from eragvt.game.input_request import WaitInputRequest
+from tools.sim import install_event_counters
+
+waits = int(sys.argv[1])
+received = []
+ctx = SimpleNamespace(out=SimpleNamespace(lines=[SimpleNamespace(text="【肉体回収】")]))
+requests = [WaitInputRequest() for _ in range(waits)]
+def probe(actual):
+    assert actual is ctx
+    for request in requests:
+        received.append((yield request))
+    if waits:
+        ctx.out.lines.append(SimpleNamespace(text="【肉体回収】"))
+    return 17
+
+sc._rescue_deadnum = probe
+counts = install_event_counters()
+def caller():
+    return (yield from sc._rescue_deadnum(ctx))
+
+gen = caller()
+assert not counts
+for index, request in enumerate(requests):
+    value = next(gen) if index == 0 else gen.send(index)
+    assert value is request
+    assert not counts
+try:
+    gen.send(waits) if waits else next(gen)
+except StopIteration as done:
+    assert done.value == 17
+else:
+    raise AssertionError("generator did not finish")
+assert received == list(range(1, waits + 1))
+expected = {"S30 MESSAGE_BATTLE_END_RESCUE_DEADNUM": 1}
+if waits:
+    expected["S30 ロストキャラの発見（肉体回収）"] = 1
+assert dict(counts) == expected
+'''
+    completed = subprocess.run(
+        [sys.executable, "-X", "utf8", "-c", script, str(waits)],
+        cwd=Path(__file__).parents[1], capture_output=True, text=True, encoding="utf-8",
+    )
+    assert completed.returncode == 0, completed.stdout + completed.stderr

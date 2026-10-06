@@ -25,6 +25,16 @@ from .symbols import UserVar, load_erh
 # 只抽取已手翻函式中的顯示段落。遊戲觸發條件與狀態更新仍由遊戲模組負責。
 # 原文：ゲーム内_戦闘処理/SUBEVENT_BATTLEE.ERB@HATUJOU_TO_HAIRAN:528–582。
 _TEXT_FRAGMENTS = {
+    # S80：只讀顯示片段；條件、選人、狀態與TS由battle.side_events手翻。
+    "MESSAGE_AUDIENCE_INTERFERENCE": ("ACT_LIMIT", 284, 287),
+    **{f"MESSAGE_BLOOD_{first}": ("SUPART_BLOOD", first, last)
+       for first,last in ((3,3),(5,6),(8,9),(13,14),(18,22),(27,28),
+                          (32,36),(41,42),(46,50),(55,56),(63,64),
+                          (68,69),(85,86),(89,90),(96,97),(99,100),
+                          (105,106),(108,109),(117,118))},
+    "MESSAGE_DISCOVERY_START": ("MESSAGE_BATTLE_END_RESCUE_DEADNUM", 1749, 1749),
+    "MESSAGE_DISCOVERY_BODY": ("MESSAGE_BATTLE_END_RESCUE_DEADNUM", 1751, 1785),
+    "MESSAGE_DISCOVERY_END": ("MESSAGE_BATTLE_END_RESCUE_DEADNUM", 1810, 1810),
     # SUBEVENT_BATTLEE.ERB：純顯示；條件／狀態／KOJO在tentacle_suit.py。
     **{f"MESSAGE_TENTACLE_SUIT_{first}": ("SUBEVENT_BATTLE_ACTTENTACLESUIT", first, last)
        for first, last in ((338,339), (341,341), (342,342), (395,398),
@@ -230,7 +240,8 @@ class Catalog:
 
     # --- 報告 ---
     def narration_functions(self) -> list[str]:
-        return [n for n, e in self.index.items() if e.rel.startswith(NARRATION_DIRS)]
+        # 顯示切片是既有函式的別名，不能重複計入原文覆蓋率。
+        return [n for n, e in self.index.items() if e.rel.startswith(NARRATION_DIRS) and n not in _TEXT_FRAGMENTS]
 
     def report(self) -> dict:
         """覆蓋率：函式數・可執行數・unsupported 原因（第一原因）的前 10 名・檔案別。

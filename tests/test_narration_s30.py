@@ -352,7 +352,15 @@ def test_rescue_deadnum_catalog(svc, ctx, data):
     c.talent[ti("貧乳")] = 1
     c.talent[ti("母乳体質")] = 0
     c.cflag[35] = 10
-    _rescue_deadnum(ctx)
+    from eragvt.game.input_request import WaitInputRequest
+    gen = _rescue_deadnum(ctx)
+    try:
+        request = next(gen)
+        while True:
+            assert isinstance(request, WaitInputRequest)
+            request = gen.send(None)
+    except StopIteration:
+        pass
     assert st.flag[112] == 3
     assert (c.cflag[0], c.cflag[20], c.cflag[21], c.cflag[30], c.cflag[31], c.cflag[100], c.cflag[220]) == (-1, 0, 0, 0, 0, 103, 0)
     assert (c.base[bi("体力")], c.base[bi("気力")], c.base[bi("性耐性")]) == (1, 1, 1)
@@ -366,7 +374,15 @@ def test_rescue_deadnum_no_candidate(svc, ctx):
     """候補なし → CHOICECOUNT_F() == 0 で RETURN（:1747–1748）：何も出さない。"""
     from eragvt.game.battle.source_check import _rescue_deadnum
 
-    _rescue_deadnum(ctx)
+    from eragvt.game.input_request import WaitInputRequest
+    gen = _rescue_deadnum(ctx)
+    try:
+        request = next(gen)
+        while True:
+            assert isinstance(request, WaitInputRequest)
+            request = gen.send(None)
+    except StopIteration:
+        pass
     assert texts(ctx.out) == []
 
 

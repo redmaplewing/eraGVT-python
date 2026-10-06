@@ -243,7 +243,7 @@ def test_unlock_only_after_hardcore_succession(ctx,cycles,hardcore,unlocks):
     st.flag[13]=0
     st.rng=GameRng(0)
     with pytest.raises(BeginAfterTrain if unlocks else BeginTurnend):
-        source_check._victory(ctx)
+        next(source_check._victory(ctx))
     assert (st.flag[101],st.flag[21])==((2,1) if unlocks else (0,0))
 
 

@@ -99,4 +99,4 @@ TS選單尾端全形空白依原文保留，含`ERB/ヒロイン関連/TRANS_SEX
 
 兩隻末王、悪堕ち幽閉、容貌變化／回復皆已接；資料分派guard仍依PLAYABILITY歸W05核對。
 S71已接`battle/ninsin.py@ninsin_flag`／`@ninsin_ts_fix`、幽閉命令與routine的輸入續行；`tentacle_access_prison`的NAME／PALAM_HOSEI保持同步，PRISON_ROUTINE由`prison_routine`等待後回傳（詳[妊娠](pregnancy.md)）。整個生命週期仍未完成，
-SUPART_BLOOD仍W05；女體受容與裝備相依仍W03。W02經歷既有範圍阻塞不因本項解除。
+SUPART_BLOOD及失去角色發現已由S80接通，見[戰鬥側事件](battle-side-events.md)；女體受容與裝備相依已由W03完成其範圍。W02經歷既有範圍阻塞不因本項解除。

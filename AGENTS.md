@@ -66,6 +66,16 @@ tohoTW(PY) 的 log／checklist／index 各膨脹到 450–700KB，每個 session
 - 資料與文字優先「抽取」而非手寫：CSV → 資料檔；口上／地の文 → 文字 catalog（見 PLAN）。
 - 新模組必須有實際呼叫者（接到遊戲流程或 Web），不做沒人用的 foundation。
 
+## 分級驗證（2026-10-06使用者裁決）
+
+- 一般功能修改：只跑受影響的定向測試；有互動或畫面變動才補必要真瀏覽器操作，不對每個小修改重跑全套。
+- 階段提交前：主代理獨立跑一次完整pytest；子代理負責定向測試。全綠後的純文件修改沿用結果，不重跑。
+- 標準500局只用於開局、回合排程、共用RNG、存讀檔等跨系統核心流程變動，或工作包完成／最終驗收；不是所有遊戲邏輯修改都觸發。
+- 開工規格先寫驗證層級與理由；不能只因碰到共用檔案就判為核心流程變動，也不要把小成果拆成多包來反覆跑500局。
+- 測試／模擬工具修正：重跑失敗案例與受影響批次；只有新變更、失敗或未解影響證據才擴大。產品沒再改就不重做已通過的瀏覽器驗收。
+- 需跑500局時沿用兩入口各seed0–249、max-shop200、actions101–108、前景50局一批與全新25歲人工資料；不與全pytest並行。
+- 沿用證據須標明來源與範圍；部分批次不得稱完整500局。此裁決取代舊session或排程中「任何遊戲流程變動一律500局」要求。
+
 ## 技術棧（沿用 tohoTW）
 
 - Python ≥ 3.10，套件 `src/eragvt/`，`pyproject.toml` + pytest。
@@ -94,7 +104,7 @@ tohoTW(PY) 的 log／checklist／index 各膨脹到 450–700KB，每個 session
 2. 用 Agent 工具開**一個全新子 agent** 執行該規格（prompt 只給：讀 AGENTS.md → 執行哪份規格 → 收尾清單 1–4，
    不要 push，最後回報三段）。主 session **不要**自己讀原作或寫產品程式碼。
 3. 子 agent 回來後，主 session 驗收：
-   - 自己跑 `pytest`，看 `git status`／`git diff --stat`（不信子 agent 自述）；確認 `source/`、`reference/` 未動。
+   - 依分級驗證於提交前自己跑一次完整 `pytest`，看 `git status`／`git diff --stat`（不信子 agent 自述）；確認 `source/`、`reference/` 未動。
    - 抽查 diff 裡有無憑推測的引擎行為、未標記的 DEVIATION／UNVERIFIED。有問題就開新子 agent 修正同一階段。
 4. 通過 → commit、推上 `main`，在 STATUS 寫下一階段，再回到 1。
 5. **停止條件**（停下並向使用者回報）：
@@ -106,7 +116,7 @@ tohoTW(PY) 的 log／checklist／index 各膨脹到 450–700KB，每個 session
 
 ## 完成一個 session 的收尾清單
 
-1. `pytest` 全綠（貼出摘要行）。
+1. 依分級驗證完成定向／必要瀏覽器與提交前完整 `pytest`（貼出摘要行）；純文件修改沿用最近一次適用結果。
 2. 更新 `docs/STATUS.md`（仍 ≤150 行）。
 3. 有新的未決事項 → `docs/wiki/bridge/unresolved.md`；有偏離原作 → `deviations.md`。
 4. 確認 `git status` 沒有動到 `source/`、`reference/`。

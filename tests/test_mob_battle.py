@@ -168,7 +168,7 @@ def test_mob_victory_research(ctx, monkeypatch, action, hunter, roll, expected):
     monkeypatch.setattr(actions,"research_progress",lambda ctx,value:values.append(value))
     monkeypatch.setattr(mob,"message",lambda *args:True)
     with pytest.raises(source_check.BeginAfterTrain):
-        source_check._victory(ctx)
+        next(source_check._victory(ctx))
     assert st.tflag[98] == 1
     assert values == [expected]
 

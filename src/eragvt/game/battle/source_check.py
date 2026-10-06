@@ -51,6 +51,7 @@ from .core import (
 )
 from .enemy import enemy_action, select_enemy_action, select_tentacle_action
 from .palam import palam_cal
+from .side_events import rescue_deadnum as _rescue_deadnum, supart_blood as _supart_blood
 
 
 def _fatigue_line(ctx: Ctx) -> None:
@@ -91,7 +92,7 @@ def source_check(ctx: Ctx) -> Generator[None, int, None]:
         change_phase(ctx)
     # :117–436 勝利
     if st.flag[13] <= 0:
-        _victory(ctx)
+        yield from _victory(ctx)
     if st.flag[700] == 0:  # :439–440
         return
     st.tflag[13] = st.tflag[11]  # :443
@@ -222,19 +223,16 @@ def source_check(ctx: Ctx) -> Generator[None, int, None]:
     st.temp.sh_com = 0
 
 
-def source_check_jump(ctx: Ctx) -> None:
-    """`PALAM_UP.ERB`:355–356 `JUMP SOURCE_CHECK`（FLAG:13 <= 0 の搾精撃破）。JUMP 先から戻ると呼び出し元も
-    即 RETURN する（reference/emuera-1824/Emuera/GameProc/Process.State.cs:370–378）。FLAG:13 <= 0 なので
-    SOURCE_CHECK は必ず勝利処理（:117–436）の `BEGIN AFTERTRAIN` に達し、入力待ちには到達しない。"""
-    gen = source_check(ctx)
-    try:
-        next(gen)
-    except StopIteration:
-        return
-    raise RuntimeError("JUMP SOURCE_CHECK が入力待ちに到達した")
+def source_check_jump(ctx: Ctx):
+    """PALAM_UP.ERB@PALAM_UP:355–356：JUMP的勝利鏈也保留輸入等待。
+
+    JUMP回傳後原呼叫者立即返回：reference/emuera-1824/Emuera/GameProc/Process.State.cs:370–378。
+    """
+    yield from source_check(ctx)
 
 
-def _victory(ctx: Ctx) -> None:
+
+def _victory(ctx: Ctx):
     """:117–436 勝利。"""
     st = ctx.state
     c = tc(ctx)
@@ -258,7 +256,7 @@ def _victory(ctx: Ctx) -> None:
         kojo_root(ctx, "BATTLE_END_WIN")
         # :1648 `CONFIG_CHECK_MANIAC_F(14)==1 && RAND(1) < 1`（RAND(1) は常に 0）
         if config_check_maniac(st, 14) == 1 and st.rng.rand(1) < 1:
-            _rescue_deadnum(ctx)
+            yield from _rescue_deadnum(ctx)
         out.printw()
         if enemy_type_check(st, "BOSS") == 1:  # :142–165
             if st.flag[18] == st.flag[11]:
@@ -269,7 +267,7 @@ def _victory(ctx: Ctx) -> None:
             if st.flag[11] > 0:
                 st.flag.set_bit(100, st.flag[11] - 1, False)
             # :165 TRYCALL SUPART_BLOOD（返り血）
-            _supart_blood(ctx)
+            yield from _supart_blood(ctx)
         elif enemy_type_check(st, "LASTBOSS") == 1 and get_lastboss_phase(st) >= 1:  # :167–193 ラスボス（Ｋ）／裏ボス撃破（S27）
             _victory_lastboss(ctx)
         if c.base[0] == c.maxbase[0] and c.base[1] == c.maxbase[1] and st.tflag[0] >= 10:  # :198–200
@@ -485,32 +483,6 @@ def _rescue_captives(ctx: Ctx) -> None:
                 run_chinobun(ctx, other)
                 st.target = saved
                 shown = 1
-
-
-def _rescue_deadnum(ctx: Ctx) -> None:
-    """`MESSAGE_BATTLE_END_RESCUE_DEADNUM`（MESSAGE_BATTLE.ERB:1739–1810）：取り込まれロストしたキャラの発見。
-    S30：地の文の catalog で全体を実行する（CLEARRANDCHOOSE／ADDRANDCHOOSE／RANDCHOOSE_F は `narration.pyfuncs`、
-    発見したキャラの CFLAG・BASE・TALENT と FLAG:112 は地の文の代入として GameState へ：S29）。catalog が使えない
-    （NullNarrationService 等）ときは従来どおり候補があれば停止。"""
-    from .core import add_randchoose, choicecount, clear_randchoose
-
-    if ctx.narration.run_function(ctx, "MESSAGE_BATTLE_END_RESCUE_DEADNUM", []):
-        return
-    st = ctx.state
-    clear_randchoose(st)
-    for i in range(1, st.charanum):
-        o = st.charas[i]
-        if o.cflag[0] == 9 and t(ctx, o, "苗床化"):
-            add_randchoose(st, i)
-    if choicecount(st) == 0:
-        return
-    raise NotImplementedError("ロストキャラの発見（MESSAGE_BATTLE_END_RESCUE_DEADNUM）は未移植")
-
-
-def _supart_blood(ctx: Ctx) -> None:
-    """`ゲーム内_戦闘処理/SUPART_BLOOD.ERB@SUPART_BLOOD`:1–（CONFIG_CHECK_BALANCE_F(4)：基本セットで OFF）。"""
-    if config_check_balance(ctx.state, 4) > 0 and ctx.state.flag[11] > 0:
-        raise NotImplementedError("ボスの返り血（SUPART_BLOOD）は未移植")
 
 
 def _motion_palam(ctx: Ctx) -> None:

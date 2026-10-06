@@ -374,4 +374,4 @@ S56現況歸屬：各未勾選項的W編號指向`docs/PLAN.md`；仍待實作�
 
 S60b補充：tutorial的PRINTW改為明確確認請求及Enter按鈕；其他舊WAIT未全面遷移，既有等待偏離仍未完成，不能勾選結案。[範圍與驗收](generic-input.md)。
 
-- S79：開局與引繼FIRST的WAIT／PRINTW／PRINTDATAW已接確認請求；其餘舊catalog等待簡化仍留W07。中性人工catalog只驗分派／輸入，不是原作全部敘事驗收。
+- S79開局／引繼FIRST、S80返血／發現事件的WAIT／PRINTW／PRINTDATAW已接確認請求；其餘舊catalog等待簡化仍留W07。人工25歲驗收只涵蓋各自分派／輸入／狀態，不是原作全部敘事驗收。

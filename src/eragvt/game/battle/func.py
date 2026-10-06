@@ -211,7 +211,15 @@ def act_limit(ctx: Ctx) -> int:
             ctx.out.printl("体が竦んでしまった・・・")
             return 1
     if st.flag[72] > 0 and st.flag[70] > 0 and st.tflag[30] > 2 and c.tcvarn[0] == 3:
-        raise NotImplementedError("ACT_LIMIT：クズ市民観衆による妨害は未移植")
+        local = st.rng.rand(100)
+        st.temp.locals[("ACT_LIMIT", 0)] = local
+        if local < 11:
+            # :279註解與:281不同：空中仍RETURN1，僅略過顯示；保留原執行結果。
+            if not c.tcvarn[216] & 1:
+                print_distance(ctx)
+                run_chinobun(ctx, "MESSAGE_AUDIENCE_INTERFERENCE")
+            st.result[0] = 1
+            return 1
     for count in range(5):
         m = c.mark[count]
         base = {0: 0, 1: 60, 2: 120, 3: 180, 4: 240, 5: 300}.get(m)
@@ -224,6 +232,7 @@ def act_limit(ctx: Ctx) -> int:
             local = 0
         elif st.flag[910]:
             local *= 2
+        st.temp.locals[("ACT_LIMIT", 0)] = local
         if local > 0:
             if st.rng.rand(10000) < local:
                 _land_and_print(ctx)
@@ -234,6 +243,7 @@ def act_limit(ctx: Ctx) -> int:
 
                     msg_other(ctx, f"BATTLE_DISACTION_{_DISACTION[count][0]}")
                 return 1
+    st.result[0] = 0
     return 0
 
 
