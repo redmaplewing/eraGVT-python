@@ -79,9 +79,9 @@ class GuardedOutput(TextOutput):
         assert_ages(self._fixture_state())
         return super().print_plain(text)
 
-    def button(self, label, value):
+    def button(self, label, value, *, title=None):
         assert_ages(self._fixture_state())
-        return super().button(label, value)
+        return super().button(label, value, title=title)
 
     def html_print(self, html):
         assert_ages(self._fixture_state())

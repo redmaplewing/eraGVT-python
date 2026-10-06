@@ -49,10 +49,12 @@ def test_output_guard_stops_before_appending_invalid_state_text():
     state = GameState.new(data)
     out = GuardedOutput(lambda: state)
     out.printl('safe')
+    out.button('choice', 100, title='說明');out.printl()
+    assert out.lines[1].to_json()['parts'][0]['title']=='說明'
     state.charas[0].base[41] = 17
     with pytest.raises(FixtureAgeError):
         out.printl('must not append')
-    assert [line.text for line in out.lines] == ['safe']
+    assert [line.text for line in out.lines] == ['safe','choice']
 
 
 @pytest.mark.parametrize('ability,valid', [(0, True), (1, True)])

@@ -15,7 +15,7 @@
   <div class="line align-{{ line.align }}{% if line.wait %} wait{% endif %}">
     {%- for part in line.parts -%}
       {%- if part.button is not none -%}
-      <form method="post" action="/input" class="btn"><input type="hidden" name="input_token" value="{{ screen.input_token }}"><button type="submit" name="value" value="{{ part.button }}">
+      <form method="post" action="/input" class="btn"><input type="hidden" name="input_token" value="{{ screen.input_token }}"><button type="submit" name="value" value="{{ part.button }}"{% if part.title %} title="{{ part.title }}"{% endif %}>
         {%- for seg in part.segments -%}<span style="{% if seg.color %}color: {{ seg.color }};{% endif %}{% if seg.bold %}font-weight: bold;{% endif %}{% if seg.italic %}font-style: italic;{% endif %}">{{ seg.text }}</span>{%- endfor -%}
       </button></form>
       {%- else -%}

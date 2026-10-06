@@ -95,7 +95,7 @@ def _draw(ctx, who, restricted):
     if restricted==0:out.printl('[999]CSVから読み込む')
 
 
-def _resist(ctx, who, person):
+def _resist(ctx, who, person, *, compact=False):
     """ヒロイン関連/CHARA_SEIKAKU.ERB@SHOW_RESISTSEX:1056–1168。"""
     from .battle.core import seikaku_hosei_palam
     c=ctx.state.charas[who];t=lambda n:bool(talent(ctx.data,c,n))
@@ -108,8 +108,10 @@ def _resist(ctx, who, person):
     for i,label in ((11,'恭'),(13,'欲'),(14,'屈'),(15,'恥'),(16,'苦'),(17,'恐')):
         value=seikaku_hosei_palam(person,i,100)+(changes[i] if person!=28 else 0)
         mark,color=next((m,col) for limit,m,col in ((90,'◎','#fa3c00'),(100,'○','#fab400'),(110,'－','#808080'),(120,'▽','#7878fa'),(float('inf'),'×','#003cfa')) if value<limit)
-        ctx.out.print(label+':');ctx.out.set_color(color);ctx.out.print(mark+'  ');ctx.out.reset_color()
-    ctx.out.printl();ctx.state.result[0]=0
+        if not compact:ctx.out.print(label+':')
+        ctx.out.set_color(color);ctx.out.print(mark+'  ');ctx.out.reset_color()
+    if not compact:ctx.out.printl()
+    ctx.state.result[0]=0
 
 
 def character_editor(ctx, who, bonus=0, restricted=0):
@@ -160,6 +162,9 @@ def character_editor(ctx, who, bonus=0, restricted=0):
         elif r==6:
             from .body_editor import size_setting
             yield from size_setting(ctx,who)
+        elif r==7:
+            from .character_personality import personality_setting
+            yield from personality_setting(ctx,who)
         elif r==12:
             if c.cflag[2]==1:
                 c.cflag[3]=1
@@ -168,7 +173,7 @@ def character_editor(ctx, who, bonus=0, restricted=0):
             yield from clothing_setting_gen(ctx,who,r+24)
             st.result[0]=0
         else:
-            names={0:'FIRSTSETTING_CHARA_SEX',4:'FIRSTSETTING_CHARA_SYUZOKU',7:'FIRSTSETTING_CHARA_SEIKAKU',8:'FIRSTSETTING_CHARA_EXP',10:'FIRSTSETTING_CHARA_TRANSABILITY',23:'FIRSTSETTING_STATUS_BONUS',999:'FIRSTSETTING_CHARA_LOADCSV'}
+            names={0:'FIRSTSETTING_CHARA_SEX',4:'FIRSTSETTING_CHARA_SYUZOKU',8:'FIRSTSETTING_CHARA_EXP',10:'FIRSTSETTING_CHARA_TRANSABILITY',23:'FIRSTSETTING_STATUS_BONUS',999:'FIRSTSETTING_CHARA_LOADCSV'}
             raise NotImplementedError(names[r]+' 尚未移植')
 
 def kojo_setting(ctx,who):

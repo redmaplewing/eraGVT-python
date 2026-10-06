@@ -369,10 +369,13 @@ class TextOutput:
         if text:
             self._parts.append(Part([Segment(text, self._color, self._bold, self._italic)]))
 
-    def button(self, label: str, value: int) -> None:
-        """PRINTBUTTON：明確指定按鈕值（@AppendButton:100）。"""
+    def button(self, label: str, value: int, *, title: str | None = None) -> None:
+        """PRINTBUTTON：明確指定按鈕值（@AppendButton:100）。
+
+        手翻HTML選單可直接傳title：reference/emuera-1824/Emuera/GameView/HtmlManager.cs:853–916。
+        """
         self._resolve_pending()
-        self._parts.append(Part([Segment(label, self._color, self._bold, self._italic)], value))
+        self._parts.append(Part([Segment(label, self._color, self._bold, self._italic)], value, title))
 
     def print_lc(self, text: str) -> None:
         """PRINTLC：左寄せ列。`PRINTCの文字数:25`（emuera.config）に対し、cp932 バイト数で 26 まで空白を補う
