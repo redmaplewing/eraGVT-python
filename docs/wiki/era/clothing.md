@@ -1,4 +1,4 @@
-# 衣裝設定與購買（S39／S40）
+# 衣裝設定、購買與變身零件描寫（S39／S40／S73）
 
 ## 入口與範圍
 
@@ -74,6 +74,30 @@ EQUIP未指定角色，讀TARGET；基礎變身分岐仍讀ARG。此處修正先
 - 定向測試 `tests/test_clothing_menu.py`：212項通過；含57件非零編碼矩陣、57個選單來回、相依修正、條件、部件、GameSession與瀏覽。
 - 主代理獨立完整 pytest：2491 passed, 1 warning；500 局標準模擬 default 246 上限＋4 標題返回、tokusou 250 上限，catalog_failure 0。
 - 10 批前景程序 exit=0；逐 seed 完整結果與 S38 相同，log／JSONL／exit／audit 留在 `tmp/s39/`。抽取器重跑前後 clothing_text.py SHA256 相同。
+
+## 變身零件描寫（S73／W03）
+
+`ERB/ゲーム内_戦闘処理/戦闘コマンド(ヒロイン)/COMF0.ERB@COM0:21–32、51–112`：
+名乗り標記`TCVARn:10 != 1`時先口上，再立標記、零件描寫、觀眾反應，然後才變身與回復。
+同場重複變身跳過名乗り與描寫。`@COM201／202／203:118–126`共用COM0。
+Python仍以原生COM0執行遊戲規則；`commands._msg_nanori_byousha`接既有地の文catalog。
+
+`ERB/地の文/MESSAGE_BATTLE.ERB@MESSAGE_BATTLE_CHARA_NANORI_BYOUSHA:216–342`全部分支：
+
+- `600–603`依序獨立輸出；先以四格總和計總數，再以恰等於1判斷每個零件，連接詞由LOCAL計數決定（221–267）。不把大於1或負數改成布林值。
+- `672／673`各自判斷恰等於1，可同時輸出（269–272）。
+- 外衣固定讀`CFLAG:41`，200／201／202／299／401／199有專用節點；41與42都為0時再依兩素質與能力門檻選節點，其餘取ITEMNAME（274–299）。不看變身旗標或耐久，不補零件有效性檢查。
+- 後段先判任一零件大於0，披肩類依660→661→664優先；都非1才走690／691／693及680／681的獨立描寫。LOCAL只計腳部，兩個手部之間不額外遞增（301–332）。
+- `CUSTOMIZABLE`僅有本函式的`#DIM`與333行讀取，全ERB精確搜尋2筆、沒有賦值；預設0，因此沒有334行節點。引擎預設STATIC：`reference/emuera-1824/Emuera/GameProc/UserDefinedVariable.cs:23–27`；零值整數陣列初始化：`reference/emuera-1824/Emuera/GameData/Variable/VariableToken.cs:1847–1857`。
+- 最後`CFLAG:TARGET:2 == 1`取`CSTR:0`，否則取`PRINT_TRANSCALLNAME(TARGET)`（338–342）。本函式沒有INPUT、RAND、色彩命令或遊戲狀態寫入，只有函式LOCAL。落尾`RESULT:0=0`，其他RESULT格與RESULTS保留：`reference/emuera-1824/Emuera/GameProc/Process.ScriptProc.cs:61–67`。Null也保留落尾值，文字沿既有catalog標籤回落。
+
+部件來源沿既有原生衣裝選單：`ERB/武器と衣装/衣装関連/CLOTH_WEAR.ERB@CLOTH_CUSTOMIZE_OUTER2:1240–1277`，切換0／1，660／670／680／690各十格類別互斥。
+描寫不重做選單限制；人工異常組合驗證原分支順序，沒有據此擴大遊戲可選範圍。
+其他四處呼叫是`ERB/口上/固有キャラ専用口上/kojo_158_森亜るるか.ERB@KOJO_158_BATTLE_CHARA_DEFENSE:700`、`@KOJO_158_BATTLE_CHARA_STEPIN:713`、`@KOJO_158_BATTLE_CHARA_SEETHROUGH:726`、`@KOJO_158_BATTLE_CHARA_TAKEAWAY:739`，已在原catalog內，未另加遊戲執行捷徑。
+
+新增`tests/test_transformation_parts.py`85項：四零件全部組合、披肩優先序、獨立腳／手部、非0／1值、六件專用外衣與一般／無外衣條件、三種變身旗標、重入、TARGET／RESULT(S)／色彩／RNG、COM0移動與回復、真實run_train及Web邊界。
+新案例全為25歲人工兩形態；顯示只比原文PRINT節點行號，無敘事摘錄。定向連同戰鬥及衣裝選單共326項通過。
+`tmp/s73/browser_fixture.py`提供三槽外衣200搭601／602／661、真戰鬥入口；無效998不改狀態，可見原[201]（COM0別名）完成後體氣500→700、變身1、EX12、外衣耐久130保留，回原戰鬥選單。本次catalog、其餘Null、輸出遮敘事；只是人工邊界，完整瀏覽器與500局由主代理獨立驗收，見STATUS。
 
 ## 衣裝購買（S40）
 

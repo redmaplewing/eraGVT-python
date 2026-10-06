@@ -24,3 +24,12 @@
 - 子代理完成定向測試後凍結產品／測試／fixture，主代理獨立全pytest、真瀏覽器與正式500：兩入口各seed0–249、max-shop200、actions101–108、前景50局一批，比對S72完整JSON。
 - 更新必要既有wiki／PLAYABILITY／bridge；STATUS／PLAN由主代理收口。繁體中文、LF／UTF-8無BOM、source／reference唯讀。
 - 子代理自行核對git status／diff，回報成果／依據／裁決，不commit/push；主代理驗收後明確stage並推main。
+
+## 完成驗收
+- 新增85案先紅後綠，定向326案通過；主代理全pytest：4637 passed, 1 warning in 160.67s (0:02:40)。
+- 描寫只有純文字與LOCAL，使用原catalog；COM0仍為Python。CUSTOMIZABLE原文無賦值，保留0；引擎落尾及STATIC零初值已附wiki。
+- 主代理真瀏覽器先998、再可見201（原COM0別名），回戰鬥選單；核對體氣500→700、EX12、耐久130、TARGET及尾格、兩形態25歲，catalog／console失敗0。
+- 本次原catalog、其餘Null、遮蔽敘事標籤，未替換產品規則；證據tmp/s73/browser-*.json與battle-complete.png，不稱自然遭遇或整列B04／B08完成。
+- 正式500：default247上限／3回標題、tokusou250上限；catalog／fixture失敗0；完整JSON與S72逐seed一致，十批退出／seed／log／參數核對。
+- 模擬曾因軟體更新中斷：保留已完成的前150局，中斷的default150–199批次封存後重跑，其餘批次依序接續；最終500局資料完整。
+- 無新增UNVERIFIED／DEVIATION；下一項S74特殊裝備回合效果仍屬W03。

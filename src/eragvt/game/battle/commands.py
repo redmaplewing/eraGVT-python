@@ -279,33 +279,15 @@ def _msg_nanori(ctx: Ctx) -> None:
 
 
 def _msg_nanori_byousha(ctx: Ctx) -> None:
-    """`@MESSAGE_BATTLE_CHARA_NANORI_BYOUSHA`:216–342（カスタムパーツ EQUIP:600–693 は未移植）。"""
-    st = ctx.state
-    c = tc(ctx)
-    out = ctx.out
-    if any(c.equip[i] for i in (600, 601, 602, 603, 660, 661, 664, 672, 673, 680, 681, 690, 691, 693)):
-        raise NotImplementedError("カスタムパーツを付けた変身描写は未移植")
-    suits = {200: "オリジナルスーツ", 201: "可愛らしいフリルスカート", 202: "動きやすいレオタード",
-             299: "薄いゴム状隠密スーツ", 401: "瘴気を帯びた禍々しいスーツ", 199: "触手細胞を利用した生体鎧"}
-    cid = c.cflag[41]
-    if cid in suits:
-        out.print(suits[cid])
-        out.printl("を纏い、")
-    elif cid == 0 and c.cflag[42] == 0:
-        from .core import abl
+    """原文地の文 catalog：`地の文/MESSAGE_BATTLE.ERB@MESSAGE_BATTLE_CHARA_NANORI_BYOUSHA`:216–342。
 
-        if (t(ctx, c, "淫乱") or abl(ctx, c, "露出癖") >= 3) and t(ctx, c, "初心") < 1:
-            out.printl("裸身を晒す快感に震え、")
-        else:
-            out.printl("裸身を晒し、")
-    else:
-        item = ctx.data.items.get(cid)
-        out.printl(f"{item.name if item else ''}を纏い、")
-    # CUSTOMIZABLE（#DIM、0）なので「光の中から」は出ない
-    if c.cflag[2] == 1:
-        out.printl(f"{c.cstr[0]}が現れた！")
-    else:
-        out.printl(f"{print_transcallname(st, st.target)}が現れた！")
+    EQUIP 組合只影響描寫，沒有輸入／亂數／色彩或遊戲狀態寫入；COM0 的變身與回復仍由 Python 執行。
+    #DIM CUSTOMIZABLE 未賦值，沿 catalog 的原文分支處理，不額外推定衣裝是否可自訂。
+    """
+    if not run_chinobun(ctx, "MESSAGE_BATTLE_CHARA_NANORI_BYOUSHA"):
+        # Null 回落也保留原函式落尾的 RESULT:0；尾格與 RESULTS 不改。
+        # reference/emuera-1824/Emuera/GameProc/Process.ScriptProc.cs:61–67。
+        ctx.state.result[0] = 0
 
 
 # --- COM0／COM201–203 変身（COMF0.ERB）、TRANSFORM_MOVESELECT（MOVESELECT.ERB）------------------
