@@ -2,7 +2,8 @@
 
 ## 完整成果與範圍
 - 保持W03佇列，接續S70／S71後仍未移植的女體受容；驗收B04／B05，只回填實測邊界。
-- 完成game/yobai.py@yobai與game/battle/ablup.py@_talents兩處既有取得停止，接到真實夜間與戰鬥能力更新入口。
+- 完成game/battle/ablup.py@_talents的取得停止，經既有yobai.py@_ablup1接真實夜間，並經EVENTEND接戰後能力更新。
+- 原列yobai.py@yobai:204實為候選列表覆寫後TARGET越界的原作錯誤，歸W08且保留停止；不是第二個女體受容取得點（見PLAYABILITY更正）。
 - 由停止點及精確原文搜尋查清原函式、全部條件、狀態修改與必要相依；不得預設只是單一TALENT賦值，也不得依名稱猜行為。
 - 同一成果完成此取得功能的可達呼叫與後續；若原函式有INPUT，使用S70／S71等待通道，不代選、不插入另一選單。
 - 保留變身／TARGET／能力與特徵相依、衣裝或尺寸重算的原次序；只處理原文實際要求的相依，不擴張成整個裝備工作包。
@@ -15,6 +16,7 @@
 - 所有新測試／瀏覽器為全新人工25歲、兩形態預先25歲，不改產品年齡規則、不執行未成年性內容、不生成或摘錄露骨敘事。
 - 覆蓋取得／不取得的原條件邊界、重複呼叫、兩形態與相依狀態，以及TARGET／RESULT(S)返回責任。
 - 至少各一個真實夜間與能力更新呼叫案例；若存在互動，驗無效重試、等待前後次序及返回，不以孤立函式或假generator代替整合。
+- 已查ERB/ヒロイン関連/ABL_UP_CHECK.ERB@_ABLUP:444–479五分支及SWAP；夜間ERB/ゲーム内_イベント発生/強制発生イベント/FORCE_夜這い.ERB@YOBAI_ACTION:1048、1063、2645呼叫共用取得。取得無INPUT，兩入口仍以原生夜間選擇／戰鬥撤退驗收。
 - 既有測試若需改driver，保留原expected與呼叫順序；不得在產品碼加入吞None或同步代答層迎合測試。
 
 ## 驗收與收尾
@@ -23,3 +25,10 @@
 - 產品／測試定向通過後凍結，主代理獨立全pytest及正式500局：兩入口各seed0–249、max-shop200、actions101–108、前景50局一批，與S71完整JSON比對。
 - 更新必要既有wiki／PLAYABILITY／bridge；STATUS／PLAN由主代理收口；文件繁體中文，LF／UTF-8無BOM，source／reference唯讀。
 - 子代理核對git status／diff，回報成果／依據／裁決，不commit/push。主代理驗收後明確stage並推main。
+
+## 完成驗收
+- 新增50案，先紅後綠；定向247案通過。主代理全pytest：4552 passed, 1 warning in 155.78s (0:02:35)。
+- 主代理真瀏覽器night／battle兩路通過無效998及原選項2／999，核對取得、交換、TARGET、解除變身、RESULT尾格及全員兩形態25歲；console錯誤0。
+- fixture只遮蔽文字與保留原數字按鈕，操作實際YOBAI／run_train；證據tmp/s72/browser-*.json與battle-complete.png，不稱自然遭遇或整列B04／B05完成。
+- 正式500：default247上限／3回標題、tokusou250上限；catalog／fixture失敗0；完整JSON與S71逐seed一致，十批退出／seed／log／參數核對。
+- 無新增UNVERIFIED／DEVIATION；RYOUTOU原派發CHARM照原文。夜間候選列表既有原作錯誤歸W08且保留停止；下一項S73變身衣裝零件仍屬W03。

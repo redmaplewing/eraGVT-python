@@ -119,3 +119,29 @@ DOTRAIN n：@EVENTCOM → @COMn → @SOURCE_CHECK → @EVENTCOMEND
 
 - `TFLAG:0`（戰鬥回合數）在 ERB 中找不到遞增處（見 unresolved）。
 - 雜魚／クズ市民戰在體力等歸零時的結束路徑（:955 排除了 MOB/CITIZEN）。
+
+## 9. S72 女體受容取得
+
+`ERB/ヒロイン関連/ABL_UP_CHECK.ERB@_ABLUP:444–479`：尚未取得，且性別變化值末位為1，或目前女性／有變身TS／正在變身，才依下表由上往下取第一個成立分支。
+
+| 優先序 | 原欄位條件 | 地の文代碼尾碼 |
+|---|---|---|
+| 1 | `触手の虜 > 0` | `TORIKO` |
+| 2 | `淫乱 > 0` 或 `淫壷 > 0`，或 `Ｖ感覚 >= 5` 且 `精液中毒 + 噴乳中毒 > 射精中毒` | `INRAN` |
+| 3 | `出産経験 > 0` 且 `CFLAG:230 == -3`，或同經驗條件且230小於-100、解析其角色ID後`LOVER_F`成立；或 `CFLAG:206 == 5` | `FEMININE` |
+| 4 | `魅了経験 >= 200` | `CHARM` |
+| 5 | `両刀 > 0` 且（`淫乱 > 0` 或 `淫壷 > 0` 或 `Ｖ感覚 >= 5`） | `RYOUTOU` |
+
+每一分支依序把`女体受容`設1、交換`男性苦手`與`女性苦手`，再呼叫`MESSAGE_GETTALENT_TSJYUYOU_*`。不改TARGET、不解除變身、不重算尺寸／衣裝；重複呼叫不再交換。`-3`來自`ERB/DIM.ERH:256`的`愛する人`。
+角色ID由`ERB/汎用関数/コモン関数.ERB@CHARAID_F:1062–1070`查`CFLAG:240`，不存在仍回0；關係照`ERB/SYSTEM/キャラメイキング関連/CHARA_RELATION.ERB@LOVER_F:1024–1028`讀TARGET對該索引的31–34位，不反查對方。
+
+`ERB/地の文/MESSAGE_SEX.ERB@MESSAGE_GETTALENT_TSJYUYOU_TORIKO:1795–1802`及`@MESSAGE_GETTALENT_TSJYUYOU_INRAN:1806–1814`、`@MESSAGE_GETTALENT_TSJYUYOU_FEMININE:1818–1824`、`@MESSAGE_GETTALENT_TSJYUYOU_CHARM:1828–1836`、`@MESSAGE_GETTALENT_TSJYUYOU_RYOUTOU:1840–1847`只有PRINT與口上派發，無INPUT／WAIT。最後一項原文:1846呼叫`GETTALENT_TSJYUYOU_CHARM`，原樣保留。
+精確搜尋取得14個同代碼口上定義：`ERB/口上/男性汎用口上/KOJO_1_13_元気っ子.ERB@KOJO_1_GETTALENT_TSJYUYOU_TORIKO_13:2176`起四個、`ERB/口上/女性汎用口上/KOJO_0_27_乱暴者.ERB@KOJO_0_GETTALENT_TSJYUYOU_TORIKO_27:3772`起五個均僅文字；`ERB/口上/KOJO_4_汎用豹変.ERB@KOJO_4_GETTALENT_TSJYUYOU_TORIKO:1416`起五個交給`@KOJO_4_ROOT_BATTLE_TO_PRISON:118–136`，其`@GET_SEIKAKU_KOJO_4:62–65`只回傳派發編號，無輸入。
+`ERB/口上/口上システム関係/KOJO_ROOT.ERB@KOJO_ROOT:46–90`的COLOR轉呼亦已核對：全部COLOR函式及所呼叫的361／364／366角色`PERSONALITY_CHANGE`函式沒有INPUT／TINPUT／WAIT，不新增同步代答。既有W07的PRINTW一般等待議題維持原範圍。
+
+引擎依據：`reference/emuera-1824/Emuera/GameProc/Process.ScriptProc.cs:341–364`的SWAP交換兩原值；同檔`:61–67`自然終端清RESULT:0；`reference/emuera-1824/Emuera/GameData/Expression/OperatorMethod.cs:324–328`餘數符號跟被除數。取得不額外清RESULT尾格／RESULTS；巢狀口上若原有RETURN多值仍沿原派發責任。
+
+實際呼叫者：戰鬥`ERB/ゲーム内_戦闘処理/BATTLE_TRAIN_AFTER.ERB@EVENTEND:131–137`先能力更新，`:204–206`才解除變身；夜間`ERB/ゲーム内_イベント発生/強制発生イベント/FORCE_夜這い.ERB@YOBAI_ACTION:1048、1063、2645`經`_ablup1`呼叫，結束時TARGET留在對象，`@YOBAI:90–95`才全員解除變身。
+`tests/test_female_acceptance.py`50案全部採全新人工25歲；包括原門檻／優先序、重複呼叫、兩形態、真實YOBAI及run_train撤退、原catalog派發節點與Web續行。定向回歸247案通過；全pytest／真瀏覽器／正式500證據由STATUS收口。
+瀏覽器前態`tmp/s72/browser_fixture.py`只遮蔽文字、保留實際數字按鈕，不替換遊戲generator；夜間選[2]、戰鬥撤退[999]觸發取得。本項不等於自然遭遇或整列B04／B05完成。
+原盤點`game/yobai.py@yobai:204`並非女體受容停止，是`@YOBAI_SELECT_PLAY:545`覆寫候選列表後的REROLL索引錯誤；沿用deviations的S18記錄，歸W08，未自行修正。

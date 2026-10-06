@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from ..action import Ctx, config_check_other, kojo_root, print_callname, print_transcallname
 from ..chara_common import is_female, is_male
-from ..era import div
+from ..era import div, mod
 from ...state.character import Character
 from .core import exp, mark, run_chinobun, t, tc
 
@@ -321,7 +321,7 @@ def _juel_from_palam(ctx: Ctx, c: Character) -> None:
 
 
 def _talents(ctx: Ctx, c: Character) -> None:
-    """:336–479 状態系素質。地の文が要るものは MESSAGE_SEX.ERB の文面を移植、未対応は停止。"""
+    """:336–479 狀態特徵；女體受容文字使用既有 catalog。"""
     data = ctx.data
     a = lambda n: _abl(ctx, c, n)  # noqa: E731
     tl = lambda n: t(ctx, c, n)  # noqa: E731
@@ -406,22 +406,46 @@ def _talents(ctx: Ctx, c: Character) -> None:
             set_t(f"{part}鈍感", 0)
         if tl(f"{part}敏感") == 0 and a(f"{part}感覚") >= 4:
             set_t(f"{part}敏感", 1)
-    # :444–479 女体受容
+    # ERB/ヒロイン関連/ABL_UP_CHECK.ERB@_ABLUP:444–479。
+    # 餘數：reference/emuera-1824/Emuera/GameData/Expression/OperatorMethod.cs:324–328。
     if tl("女体受容") == 0 and (
-        tl("性別変化") % 10 == 1 or (tl("変身時ＴＳ") > 0 and is_female(data, c) and c.cflag[1] > 0)
+        mod(tl("性別変化"), 10) == 1 or (tl("変身時ＴＳ") > 0 and is_female(data, c) and c.cflag[1] > 0)
     ):
-        if (
-            tl("触手の虜") > 0
-            or tl("淫乱") > 0
+        from ..relation import lover_f
+        from .ninsin import charaid
+
+        code = ""
+        if tl("触手の虜") > 0:
+            code = "TORIKO"
+        elif (
+            tl("淫乱") > 0
             or tl("淫壷") > 0
             or (a("Ｖ感覚") >= 5 and a("精液中毒") + a("噴乳中毒") > a("射精中毒"))
-            or exp(ctx, c, "出産経験") > 0
-            or c.cflag[206] == 5
-            or exp(ctx, c, "魅了経験") >= 200
-            or (tl("両刀") > 0 and a("Ｖ感覚") >= 5)
         ):
-            # 条件 3（:460）の LOVER_F 分岐は未移植のため、出産経験があれば安全側に停止する
-            raise NotImplementedError("女体受容の取得は未移植")
+            code = "INRAN"
+        elif (
+            (exp(ctx, c, "出産経験") > 0 and c.cflag[230] == -3)  # ERB/DIM.ERH:256 愛する人。
+            or (exp(ctx, c, "出産経験") > 0 and c.cflag[230] < -100
+                and lover_f(ctx.state, ctx.state.target, charaid(ctx, -c.cflag[230] - 100)))
+            or c.cflag[206] == 5
+        ):
+            code = "FEMININE"
+        elif exp(ctx, c, "魅了経験") >= 200:
+            code = "CHARM"
+        elif tl("両刀") > 0 and (tl("淫乱") > 0 or tl("淫壷") > 0 or a("Ｖ感覚") >= 5):
+            code = "RYOUTOU"
+        if code:
+            set_t("女体受容", 1)
+            male, female = data.index_of("TALENT", "男性苦手"), data.index_of("TALENT", "女性苦手")
+            # SWAP先讀兩值再寫回：reference/emuera-1824/Emuera/GameProc/Process.ScriptProc.cs:341–364。
+            c.talent[male], c.talent[female] = c.talent[female], c.talent[male]
+            # MESSAGE_SEX.ERB@MESSAGE_GETTALENT_TSJYUYOU_RYOUTOU:1846 原樣派發CHARM。
+            kojo_code = "CHARM" if code == "RYOUTOU" else code
+            run_chinobun(ctx, f"MESSAGE_GETTALENT_TSJYUYOU_{code}",
+                         fallback=lambda: kojo_root(ctx, f"GETTALENT_TSJYUYOU_{kojo_code}"))
+            # 地の文自然終端只清RESULT:0；尾格與RESULTS不動。
+            # reference/emuera-1824/Emuera/GameProc/Process.ScriptProc.cs:61–67。
+            ctx.state.result[0] = 0
 
 
 def _msg_naburare(ctx: Ctx) -> None:
