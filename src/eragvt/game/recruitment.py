@@ -52,6 +52,8 @@ def recruitment_gen(ctx):
             c.talent[data.index_of('TALENT','オトコ')]=1
             c.name='汎用キャラ(♂)'
         yield from character_editor(ctx,who)
+        # CSV載入會整筆替換；原作:39起均重新以who索引角色。
+        c=st.charas[who]
     # :39–40；[2]尚未INITIALIZE，race可能是0，不能提前生成種族。
     race=syuzoku_check(c); st.result[0]=race
     _say(ctx,45,46,47,48)

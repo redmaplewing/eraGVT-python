@@ -9,8 +9,9 @@ SOURCE=ROOT/'source/earGVP/ERB/SYSTEM/キャラメイキング関連/FIRSTSETTIN
 def extract():
     text={}
     for n,line in enumerate(SOURCE.read_text(encoding='utf-8-sig').splitlines(),1):
-        if n>1200:break
-        m=re.fullmatch(r'\s*PRINT(?:L|W)(?: (.*))?',line)
+        if n>1620:break
+        if 1200<n<1496:continue
+        m=re.fullmatch(r'\s*PRINT(?:LC|C|L|W)(?: (.*))?',line)
         if m and m[1]:text[n]=m[1]
     return '# 由 tools/extract_character_editor.py 產生；FIRSTSETTING_CHARA.ERB，key為行號。\nTEXT = '+pformat(text,sort_dicts=False)+'\n'
 

@@ -114,20 +114,29 @@ def _resist(ctx, who, person, *, compact=False):
     ctx.state.result[0]=0
 
 
+def _master_loop(ctx, who):
+    """MAIN:17–34；只有首次進入與CSV後汎用呼稱返回此處。"""
+    st, data = ctx.state, ctx.data
+    c = st.charas[who]
+    if c.cflag[240] == 0:
+        chara_make_initialize(st, data, who)
+    for dist in (1, 2, 3):
+        if c.cstr[14 + dist]:
+            st.result[0] = decode_weapon_data(data, st, who, dist)
+        c.cstr[14 + dist] = ''
+
+
 def character_editor(ctx, who, bonus=0, restricted=0):
     """ARG:2 只鎖種族/CSV；主選單沒有取消，99完成。TARGET不改。
 
-    bonus只供原文:323的CSV重載追加點數；進入/99不加點，該子選單仍未移植。
+    bonus只供原文:323的CSV返回追加點數（含取消）；進入/99不加點。
     WEAPON_CUSTOMIZE的ARG:1=1於原文:8–80未讀取，沿用共用customize。
     """
     st,data=ctx.state,ctx.data
     c=st.charas[who]
     items={i:st.item[i] for i in range(100,700) if i in data.items and data.items[i].name}
     for i in items:st.item[i]=1
-    if c.cflag[240]==0:chara_make_initialize(st,data,who)
-    for dist in (1,2,3):
-        if c.cstr[14+dist]:st.result[0]=decode_weapon_data(data,st,who,dist)
-        c.cstr[14+dist]=''
+    _master_loop(ctx,who)
     while True:
         _draw(ctx,who,restricted)
         while True:
@@ -175,8 +184,20 @@ def character_editor(ctx, who, bonus=0, restricted=0):
         elif r in (16,17,18):
             yield from clothing_setting_gen(ctx,who,r+24)
             st.result[0]=0
+        elif r==999:
+            from .character_csv import load_character_csv
+            from .body import chara_make_age_setting, chara_size_default
+            yield from load_character_csv(ctx,who)
+            c=st.charas[who]
+            # MAIN:323：每次子函式返回均加，包含99取消；不提前或重複追加。
+            c.juel[data.index_of('PALAM','修練P')]+=bonus*10
+            if c.callname=='汎用キャラ':
+                _master_loop(ctx,who)
+            elif c.cflag[34]==0:
+                chara_make_age_setting(st,data,c)
+                chara_size_default(data,c,st.result)
         else:
-            names={0:'FIRSTSETTING_CHARA_SEX',8:'FIRSTSETTING_CHARA_EXP',999:'FIRSTSETTING_CHARA_LOADCSV'}
+            names={0:'FIRSTSETTING_CHARA_SEX',8:'FIRSTSETTING_CHARA_EXP'}
             raise NotImplementedError(names[r]+' 尚未移植')
 
 def kojo_setting(ctx,who):

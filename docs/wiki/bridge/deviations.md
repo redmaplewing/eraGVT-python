@@ -83,7 +83,7 @@ S56現況歸屬：各未勾選項的W編號指向`docs/PLAN.md`；仍待實作�
   COUNT 放在口上專用的暫存（`state.temp.narr`），與 Python 移植部分不共用（原作是全域變數；Python 未模型化 COUNT）。RESULT（S21）・RESULTS（S22）
   已改為共用（`GameState.result`／`results`，`docs/wiki/python/result.md`）；Python 移植部分只同步寫 RESULT:1／RESULTS:1 以後的來源與「之後有人讀
   呼叫前值」的 RESULT:0／RESULTS:0。S22 全件確認：RESULTS:0 沒有讀呼叫前值的地方；RESULT:0 只有不發的 TRYCALL(FORM) 之後會讀，已移植者全部同步
-  （S22 追加 `BATTLE_COM_AFTER.ERB`:1159）。hook 的 CALL（SET_TENTACLE_SIZE_BY_MESSAGE 等）之後地の文不讀 RESULT（grep）。因此在已確認的讀取位置 RESULT／RESULTS 與原作一致，殘留差異是 COUNT。S60姓名生成僅重現本函式COUNT終值20用於LOCAL30索引，仍不寫catalog的共用COUNT；沿本項W07，未新增批准。S62的RAND_CHOOSE_KOJO_SEIKAKU:462–475同樣只保留局部FOR終值19，不寫catalog共用COUNT；仍沿本項。
+  （S22 追加 `BATTLE_COM_AFTER.ERB`:1159）。hook 的 CALL（SET_TENTACLE_SIZE_BY_MESSAGE 等）之後地の文不讀 RESULT（grep）。因此在已確認的讀取位置 RESULT／RESULTS 與原作一致，殘留差異是 COUNT。S60姓名生成僅重現本函式COUNT終值20用於LOCAL30索引，仍不寫catalog的共用COUNT；沿本項W07，未新增批准。S62的RAND_CHOOSE_KOJO_SEIKAKU:462–475同樣只保留局部FOR終值19，不寫catalog共用COUNT；仍沿本項。S64 LOADCSV的REPEAT4清SAVESTR同樣不寫catalog共用COUNT，沿本項W07。
   （Python：`eragvt.narration.runtime`）
   S14：`DRAWLINEFORM 文字列` 畫成與 DRAWLINE 相同的區切線（原作以該字串重複到畫面寬：`GameView/EmueraConsole.Print.cs@getStBar`:543–560；
   動画サイト :1335 的 `―`）；動画サイトの `PRINT_TAGSET_TEXT` 的 `@F:` フォント指定不反映（本作未使用），既定色的 `SETCOLOR 0x{GETCOLOR}`

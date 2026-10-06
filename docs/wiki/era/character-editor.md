@@ -1,4 +1,4 @@
-# 共用個別角色編輯（S60–S63／W02）
+# 共用個別角色編輯（S60–S64／W02）
 
 ## 已接通與入口
 
@@ -8,7 +8,7 @@
 - `ERB/SYSTEM/キャラメイキング関連/CHARA_MAKE.ERB@CHARA_MAKE_MAIN:142–145、202–204`：男女汎用角色、已存在角色共用入口。
 - `ERB/ゲーム内_行動実行処理/ACTIONsub_TSUIKAYOUSEI_NORMAL.ERB@TSUIKAYOUSEI_NORMAL:29–39`：[0]/[1]進入編輯器；[2]原作略過，特徵選單後才FINALIZE。
 - `ERB/ゲーム内_行動実行処理/ACTIONsub_DRUG_PREPARATION.ERB@DRUG_PREPARATION:303–315`：傳ARG:2=1，只鎖種族與CSV，不鎖姓名、衣裝等。
-- `ERB/ゲーム内_イベント発生/エンディング/SUCCESSION.ERB@SUCCESSION:1491–1560`：先調整修練點，再傳周回bonus進CHARA_MAKE_MAIN。MAIN的ARG:1只在999讀CSV後:323補回bonus*10，進入／99不能重複加。
+- `ERB/ゲーム内_イベント発生/エンディング/SUCCESSION.ERB@SUCCESSION:1491–1560`：先調整修練點，再傳周回bonus進CHARA_MAKE_MAIN。MAIN的ARG:1只在999讀CSV返回後:323補回bonus*10（含取消）；進入／99不加。
 - `ERB/ヒロイン関連/PREGNANT_CHILD_BIRTH.ERB@ADD_CHILD`無FIRSTSETTING_CHARA_MAIN呼叫。保留既有獨立命名／一人稱／變身名／SIZE_SETTING流程，不插入不存在的主選單；身體與一人稱代按仍留同W02後續。
 - `ERB/武器と衣装/武器カスタマイズ関連/WEAPON_CUSTOMIZE.ERB@WEAPON_CUSTOMIZE:8–80`雖接受ARG:1=1，但函式不讀它，故共用既有customize。
 
@@ -34,7 +34,8 @@
 - S61接通[6]的年齡、身高、一般外貌、髮型／色彩、人格文字、重抽參數與確認／重入；共用編輯及狀態PAGE5[20]均等待真實輸入。完整範圍與未完成分支見[身體編輯](body-editor.md)。
 - S62接通[7]的19種性格與十組精神素質、隨機設定／限定口上抽選、200確認與重入；不是S61的CSTR人格描述。原文、CSV重置／確認補正及亂數副作用見[性格編輯](character-personality.md)。
 - S63接通[4]種族／feat、[10]變身能力與[23]基礎點；確認／重入、固有／醫療限制及扣還保持原文。隱藏種族11、機器種錯跳、重置未清特定結界與亂數超上限均保留；依據與定向驗證見[數值編輯](character-build.md)。
-- W02後續：0性別、8經歷／初始經驗、999 CSV讀入，以及主製作初始狀態／人數；SIZE_SETTING其餘選項仍明確停止，不能稱整個身體編輯完成。
+- W02後續：0性別、8經歷／初始經驗，以及主製作初始狀態／人數；SIZE_SETTING其餘選項仍明確停止，不能稱整個身體編輯完成。
+- S64接通[999]CSV候選／分頁／取消／整筆替換及回共用編輯；男性汎用初始化、非固有NO重置、取消後bonus均依原文，見[CSV模板載入](character-csv.md)。
 - CSV讀入與既有`export_csv.py`不同；EXPORT_CSV安全網仍屬原先W08。TS／特殊裝備生命週期仍W03。
 
 ## 驗收與重現
