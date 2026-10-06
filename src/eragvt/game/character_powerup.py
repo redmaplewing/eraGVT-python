@@ -137,6 +137,8 @@ def character_powerup_gen(ctx):
         next(selection)
         while True:
             value=yield from input_number(ctx)
+            # @CHARA_LIST:343；EmueraConsole.cs:733–734 的 INPUT 回顯。
+            out.printl(str(value))
             try: selection.send(value)
             except StopIteration as done:
                 who=done.value
@@ -165,11 +167,13 @@ def character_powerup_gen(ctx):
         right=min((i for i in eligible if i>who),default=0)
         total,marks=_show(ctx,c,bonuses,costs,price,preview,digits,left,right)
         r=yield from input_number(ctx)
+        # @CHARA_POWERUP:334–346：26行包含INPUT回顯，少此行會侵蝕此前歷史。
+        # reference/emuera-1824/Emuera/GameView/EmueraConsole.cs:733–734。
+        out.printl(str(r))
         if r==999:
             st.target=old_target
             st.result[0]=0
             return
-        # DEVIATION: 沿用共用CLEARLINE僅刪已完成行；詳見deviations.md的顯示簡化。
         out.clearline(26)
         shield_lines=sum(c.talent[i] for i in range(190,194))+1
         if shield_lines>1:

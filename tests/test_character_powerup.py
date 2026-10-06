@@ -254,3 +254,52 @@ def test_plain_labels_are_not_clickable(ctx):
                 assert part.button is None
     base_row=next(line for line in rows if '体力' in line.text)
     assert [value for _,value in base_row.buttons]==[0,1,2,3]
+
+
+@pytest.mark.parametrize("shields", [0, 1, 2, 4])
+def test_powerup_redraw_keeps_history_and_one_current_panel(data, tmp_path, shields):
+    """@CHARA_POWERUP:62、92–331 為25行，結界另加1+n；:334–346刪含INPUT回顯。
+
+    原列表 @CHARA_LIST:305–350 不刪；回顯依
+    reference/emuera-1824/Emuera/GameView/EmueraConsole.cs:733–734。
+    """
+    from eragvt.game.action import Ctx
+    from eragvt.text import TextOutput
+    from tools.sim_adult import adult_data, assert_ages
+
+    adult = adult_data(data)
+    session = GameSession(adult, tmp_path, rng=GameRng(0), narration=NullNarrationService())
+    for answer in (0, 1, 1000, 1, 0):
+        session.input(answer)
+    assert_ages(session.state)
+    for i, c in enumerate(session.state.charas):
+        c.name = c.callname = f"人工成年{i}"
+        c.juel[20] = 1000
+        for offset in range(4):
+            c.talent[190 + offset] = int(offset < shields)
+    ctx = Ctx(session.state, adult, TextOutput(), NullNarrationService())
+    ctx.out.printl("此前敘事")
+    ctx.state.result[1] = 74
+    ctx.state.results[1] = "其他"
+    before_rng = ctx.state.rng.snapshot()
+    gen = character_powerup_gen(ctx)
+    next(gen)
+    # 原文27–30與CHARA_LIST產生的歷史；選角INPUT另印一行1。
+    history = [line.text for line in ctx.out.lines] + ["1"]
+    gen.send(1)
+    panel_lines = 25 + (shields + 1 if shields else 0)
+    for command in (None, 3, 200, 3, 100, 400, 500, 300):
+        if command is not None:
+            gen.send(command)
+        lines = ctx.out.lines
+        assert [line.text for line in lines[:len(history)]] == history
+        assert ctx.out.linecount == len(history) + panel_lines
+        assert sum("を選びました" in line.text for line in lines) == 1
+        assert sum("[999]戻る" in line.text for line in lines) == 1
+        assert (ctx.state.result[1], ctx.state.results[1]) == (74, "其他")
+        assert ctx.state.rng.snapshot() == before_rng
+    with pytest.raises(StopIteration):
+        gen.send(999)
+    assert ctx.out.lines[-1].text == "999"
+    assert ctx.out.linecount == len(history) + panel_lines + 1
+    session.close()

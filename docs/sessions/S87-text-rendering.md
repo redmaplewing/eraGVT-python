@@ -22,3 +22,16 @@
 - 若查到會改RNG／排程／存讀等跨系統核心行為，先回報具體證據再調整驗證，避免無依據擴大。
 - 更新deviations原項、PLAYABILITY及必要wiki，清楚分開已解與剩餘；新UNVERIFIED／DEVIATION照規則記錄。
 - STATUS／PLAN留主代理收口。繁體中文、LF／UTF-8無BOM；source／reference唯讀；自查範圍、不commit/push，最後三段回報。
+
+## 子代理交付證據
+- 新增18案；初始9失敗／3通過，CLEARLINE原本正確的3案直接綠，不偽稱先紅。定向830通過（63.34秒）；後補交易／模板與narration共98通過；最終受影響共用輸入／Web組67通過（6.77秒），皆1個既有Starlette警告。
+- 原生System.Drawing Font.ToHfont＋GetTabbedTextExtentW獨立80案，ctypes全相同；原字型26空白182px、54個―756px。已安裝MS Gothic，沒有新增字型或改系統設定。
+- CLEARLINE依引擎刪整個論理行，未換行緩衝原本就不清；HTML br屬同一組。先前偏離誤列已更正；LINECOUNT依VariableToken.cs:1529–1538與EmueraConsole.Print.cs:103。
+- 三路fixture為render／powerup／system；全新25歲人工資料，人工前態與操作見tmp/s87/browser_fixture.py；子代理只做fixture傳輸冒煙，不冒充真瀏覽器。
+- 非Windows與Web字形光柵化、個別精簡排版保留既有偏離；HTML只承諾原實用子集。無新增UNVERIFIED／DEVIATION，W07尚未結包，不跑500。
+- 主代理最終全pytest：`5465 passed, 1 warning in 212.31s (0:03:32)`；初次5461通過後因瀏覽器實際失敗而修正，最終全套已含追加4案。
+- 三路真瀏覽器通過：render保留60行歷史並清舊選項；system重複無效值／讀檔返回；powerup預約／清除／提交／返回，BASE50+100、點數900，前文不侵蝕。render／system沿用已過結果，只重驗修正路徑。
+- 三路RNG不變、catalog／console失敗0、journal0、無worker；tmp/s87/browser-summary.json及截圖。全新25歲資料，替代MAXBASE41依原初始化為-1；人工局部前態，不冒充完整開局。服務／頁籤已關。
+- source／reference未動，LF／UTF-8無BOM；不跑500，沿S84完整基線。未決13不變、未勾選偏離25→23，其他既有顯示差異保留；下一S88共用COUNT。
+
+- 第1輪瀏覽器修正：CHARA_POWERUP少INPUT回顯造成每次多刪前文一行，已局部補回，原角色列表按原文保留；追加4案先紅後綠，受影響141案通過（2.11秒，1個既有警告）。產品／測試／fixture已凍結，僅需重驗powerup路徑，render不重跑。

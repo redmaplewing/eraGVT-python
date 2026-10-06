@@ -141,7 +141,8 @@ def test_html_br_nobr_shape():
     out.html_print("A<br>B<br>")
     out.html_print("<br>")
     out.html_print("<nobr>C<shape type='space' param='150'>D</nobr>")
-    assert _texts(out.lines) == ["A", "B", "", "C   D"]
+    assert _texts(out.lines) == ["A", "B", "", "CD"]
+    assert out.lines[-1].parts[1].space_px == 21
 
 
 # --- TALENT_INFO / SHOW_STATUS_TALENT -----------------------------------------------------------
@@ -201,7 +202,8 @@ def test_show_status_talent_list_mode(data):
     t = _texts(out.lines)
     assert t[0] == "◆素質"
     assert t[1] == "[誘拐中][絶壁]"
-    assert t[2] == "   [中学生]"  # shape space 150 → 半角 3、800 番台の nonbutton 群
+    assert t[2] == "[中学生]"  # ConsoleSpacePart.cs:160–173：空文字、寬度21px。
+    assert out.lines[2].parts[0].space_px == 21
     assert t[3] == ""
 
 

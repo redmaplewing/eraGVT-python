@@ -20,11 +20,16 @@ def test_print_printl_printw():
     assert texts(o.lines) == [("text", "ABC", False), ("text", "待つ", True), ("text", "", False)]
 
 
-def test_drawline_flushes_partial_line():
+def test_drawline_appends_to_partial_logical_line():
     o = TextOutput()
     o.print("x")
     o.drawline()
-    assert texts(o.lines) == [("text", "x", False), ("drawline", "", False)]
+    # Process.ScriptProc.cs:154–172：不先 Flush；MS Gothic 14px × 54 = 756px。
+    from eragvt.text.metrics import measure_text
+    if measure_text(" ") is None:  # 非 Windows 保留原有分隔線偏離。
+        assert texts(o.lines) == [("text", "x", False), ("drawline", "", False)]
+    else:
+        assert texts(o.lines) == [("drawline", "x" + "─" * 54, False)]
 
 
 def test_wait_variants():
@@ -142,10 +147,13 @@ def test_line_to_json():
     o = TextOutput()
     o.printl("[1]はい")
     assert o.lines[0].to_json() == {
-        "parts": [{"segments": [{"text": "[1]はい", "color": None, "bold": False, "italic": False, "font": None}], "button": 1, "title": None}],
+        "parts": [{"segments": [{"text": "[1]はい", "color": None, "bold": False, "italic": False, "font": None}], "button": 1, "title": None, "space_px": None}],
         "kind": "text",
         "wait": False,
         "align": "left",
+        "logical_start": True,
+        "nobr": False,
+        "temporary": False,
     }
 
 

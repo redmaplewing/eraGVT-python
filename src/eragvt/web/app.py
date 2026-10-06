@@ -21,6 +21,7 @@ from pydantic import BaseModel
 from ..data import GameData
 from ..game import shop
 from ..game.session import GameSession
+from ..text.layout import render_lines, segment_style
 from ..state import GameRng
 from ..state.savefile import GameIdentity, GlobalStore
 
@@ -48,6 +49,7 @@ def create_app(
         narration = CatalogNarrationService.from_csv_dir(csv_dir or default_csv_dir(), data)
     app = FastAPI(title="eraGVT")
     templates = Jinja2Templates(directory=str(_HERE / "templates"))
+    templates.env.filters["segment_style"] = segment_style
     app.mount("/static", StaticFiles(directory=str(_HERE / "static")), name="static")
 
     # グローバル変数のメモリはタイトルに戻っても残る（Emuera：ResetData は GLOBAL を初期化しない）→ アプリ単位で 1 つ
@@ -85,7 +87,7 @@ def create_app(
     @app.get("/", response_class=HTMLResponse)
     def index(request: Request) -> HTMLResponse:
         with input_lock:
-            return templates.TemplateResponse(request, "index.html", {"screen": screen_json()})
+            return templates.TemplateResponse(request, "index.html", {"screen": {**screen_json(), "lines": render_lines(app.state.session.screen())}})
 
     @app.post("/input")
     def post_input(value: str = Form(""), input_token: str | None = Form(None)) -> RedirectResponse:

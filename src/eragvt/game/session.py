@@ -99,6 +99,7 @@ class GameSession:
         return lines[start:]
 
     def input(self, value: int | str) -> None:
+        input_text = str(value)
         if self.input_kind == "wait":
             value = ""  # Enter 確認；generator 收到非 None，且不寫結果變數。
         elif self.input_kind == "text":
@@ -119,6 +120,9 @@ class GameSession:
             Phase.SAVE_OVERWRITE: self._save_overwrite_input,
             Phase.LOAD_SELECT: self._load_select_input,
         }[self.phase]
+        if self.phase in (Phase.TITLE, Phase.SAVE_SELECT, Phase.SAVE_OVERWRITE, Phase.LOAD_SELECT):
+            # EmueraConsole.cs:701–735：系統 INPUT 先回顯，無效值才 deleteLine(1)。
+            self.out.printl(input_text)
         handler(value)
 
     # --- タイトル（SystemProc@beginTitle:133–188、@endOpenning:197–231）----------
@@ -164,7 +168,7 @@ class GameSession:
             self.begin_load_game()
         else:
             self.out.clearline(1)
-            self.out.printl("無効な値です")
+            self.out.print_temporary("無効な値です")
 
     def _after_event_first(self) -> None:
         if self._gen_result is False:  # MODE_SELECT [100]：RESETDATA → BEGIN TITLE（オープニング処理.ERB:82–85）
@@ -414,7 +418,7 @@ class GameSession:
             return
         if not 0 <= value < SAVE_DATA_NOS:
             self.out.clearline(1)
-            self.out.printl("無効な値です")
+            self.out.print_temporary("無効な値です")
             return
         self._save_target = value
         if read_save_comment(self._save_path(value)) is not None:
@@ -434,7 +438,7 @@ class GameSession:
             return
         if value != 0:
             self.out.clearline(1)
-            self.out.printl("無効な値です")
+            self.out.print_temporary("無効な値です")
             return
         now = self.now()
         text = now.strftime("%Y/%m/%d %H:%M:%S") + " " + shop.save_info(self.state, self.data, now)
@@ -463,11 +467,10 @@ class GameSession:
             return
         if not (0 <= value < SAVE_DATA_NOS or value == AUTOSAVE_INDEX):
             self.out.clearline(1)
-            self.out.printl("無効な値です")
+            self.out.print_temporary("無効な値です")
             return
         path = self._save_path(value)
         if read_save_comment(path) is None:
-            self.out.printl(str(value))
             self.out.printl("データがありません")
             self.begin_load_game()
             return

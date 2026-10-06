@@ -357,9 +357,7 @@ class Interp:
                 bar = self.eval(s.form, fr)
                 if not bar:
                     raise ErbRuntimeError("空文字列によるDRAWLINEが行われました")
-            # DEVIATION（表示のみ）：DRAWLINEFORM の線の文字列（画面幅まで繰り返し：EmueraConsole.Print.cs@getStBar:543–560）は
-            # 反映せず、DRAWLINE と同じ区切り線を出す（deviations.md「口上 catalog の表示」）
-            self.out.drawline()
+            self.out.drawline(str(bar) if s.form is not None else "─")
         elif t is N.Label:
             pass
         elif t is N.Goto:
@@ -647,9 +645,7 @@ class Interp:
         elif w == "FONTITALIC":
             self.out.set_italic(True)
         elif w == "SETFONT":
-            if s.args and s.args[0] is not None:
-                self.eval(s.args[0], fr)
-            # DEVIATION（表示のみ）：フォント名は反映しない
+            self.out.set_font(self.eval(s.args[0], fr) if s.args and s.args[0] is not None else None)
         elif w == "ALIGNMENT":
             a = s.args[0]
             if a not in ("LEFT", "CENTER", "RIGHT"):

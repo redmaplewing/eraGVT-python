@@ -24,6 +24,7 @@ catalog の 1 回の実行ごとに新しいインスタンスを使っても結
 from __future__ import annotations
 
 from typing import Any, Optional
+from ..text.metrics import installed_font
 
 from .runtime import ErbRuntimeError, NotSupported, cp932_len
 
@@ -220,12 +221,12 @@ def print_tagset_text(out: Any, text: str, exflag: int) -> None:
     """@PRINT_TAGSET_TEXT:287–319 ＋ @PRINT_TAGSET_TEXT_MAIN:384–418。
 
     既定タグ情報は `0x{GETCOLOR():X6}`（呼び出し前の文字色）。ここでは「呼び出し前の色に戻す」として扱う
-    （SETCOLOR で同じ色を明示指定するのと表示は同じ）。フォント指定（@F:）は表示のみなので反映しない
-    （本作の呼び出し元は @F: を使わない）。"""
+    （SETCOLOR で同じ色を明示指定するのと表示は同じ）。字型依原 CHKFONT 結果套用，結尾還原。"""
     saved = out._color
+    saved_font = out._font
     default = object()
     info: list[Any] = [""] * _TAG_SIZE
-    default_info: list[Any] = [default, "", ""] + [""] * (_TAG_SIZE - 3)
+    default_info: list[Any] = [default, "", default] + [""] * (_TAG_SIZE - 3)
 
     def main(s: str, tag: list[Any]) -> None:
         c = tag[0]
@@ -238,6 +239,11 @@ def print_tagset_text(out: Any, text: str, exflag: int) -> None:
                     out.set_color(((v >> 16) & 0xFF, (v >> 8) & 0xFF, v & 0xFF))
                 else:
                     out.reset_color()
+        # ERB/汎用関数/TagSetText.ERB@PRINT_TAGSET_TEXT_MAIN:403–406。
+        if tag[2] is default:
+            out.set_font(saved_font)
+        elif tag[2] and installed_font(tag[2]):
+            out.set_font(tag[2])
         if cp932_len(tag[1]) > 0:
             try:
                 value = int(tag[1])

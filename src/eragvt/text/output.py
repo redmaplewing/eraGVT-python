@@ -17,6 +17,8 @@ import re
 from dataclasses import asdict, dataclass, field
 from typing import Any, Literal
 
+from .metrics import DRAWABLE_WIDTH, FONT_SIZE, measure_text
+
 from ..data.csv_loader import read_int64  # LexicalAnalyzer.ReadInt64 的移植
 
 # LexicalAnalyzer.IsWhiteSpace / SkipAllSpace（Sub/LexicalAnalyzer.cs:707–728）
@@ -42,6 +44,8 @@ class Part:
     button: int | None = None
     title: str | None = None  # HTML_PRINT の <nonbutton title='…'>（ツールチップ）
 
+    space_px: int | None = None  # HTML shape(space) 的整數像素寬。
+
     @property
     def text(self) -> str:
         return "".join(s.text for s in self.segments)
@@ -53,6 +57,10 @@ class Line:
     kind: Literal["text", "drawline"] = "text"
     wait: bool = False  # 顯示到此行後等待玩家輸入（PRINTW／WAIT）
     align: Literal["left", "center", "right"] = "left"  # ALIGNMENT
+
+    logical_start: bool = True  # HTML 的 br 只分實體行，整次 HTML_PRINT 是一個論理行。
+    nobr: bool = False  # HTML nobr 禁止折行。
+    temporary: bool = False  # 下一個已完成行取代本行。
 
     @property
     def text(self) -> str:
@@ -271,10 +279,12 @@ def _parse_html(html: str) -> list[list[Part]]:
     colors: list[str | None] = [None]
     title: str | None = None
     pos = 0
+    button: int | None = None
+    fraction = 0.5
 
     def add(text: str) -> None:
         if text:
-            parts.append(Part([Segment(_html_unescape(text), colors[-1])], title=title))
+            parts.append(Part([Segment(_html_unescape(text), colors[-1])], button=button, title=title))
 
     for m in _HTML_TAG.finditer(html):
         add(html[pos : m.start()])
@@ -285,8 +295,10 @@ def _parse_html(html: str) -> list[list[Part]]:
                 colors.pop()
             else:
                 colors.append(_hex_color(attrs["color"]) if "color" in attrs else colors[-1])
-        elif tag == "nonbutton":
-            title = None if close else attrs.get("title")
+        elif tag in ("nonbutton", "button"):
+            # HtmlManager.cs:853–916：原作實用的數字按鈕與說明。
+            title = None if close else _html_unescape(attrs.get("title", "")) or None
+            button = None if close or tag == "nonbutton" else int(_html_unescape(attrs["value"]))
         elif tag == "br" and not close:  # HtmlManager.cs@tagAnalyze:672–676
             lines.append(parts)
             parts = []
@@ -294,8 +306,11 @@ def _parse_html(html: str) -> list[list[Part]]:
             pass
         elif tag == "shape" and not close and attrs.get("type") == "space" and attrs.get("param", "").isdigit():
             # :784–851 → ConsoleShapePart.cs:40–53：幅 param% × フォントサイズの空白。
-            # DEVIATION（表示のみ）：全角 1 文字 = フォントサイズとして半角空白 param/50 個で近似（deviations「HTML_PRINT 的子集」）
-            parts.append(Part([Segment(" " * (int(attrs["param"]) // 50))], title=title))
+            # ConsoleSpacePart.SetWidth:169–173：截整後的餘數傳給下一個 part。
+            width = fraction + int(attrs["param"]) * FONT_SIZE / 100
+            pixels = int(width)
+            fraction = width - pixels
+            parts.append(Part([], button=button, title=title, space_px=pixels))
         else:
             raise NotImplementedError(f"HTML_PRINT：未対応のタグ <{m.group(0)}>")
     add(html[pos:])
@@ -385,15 +400,21 @@ class TextOutput:
         self._parts.append(Part([Segment(label, self._color, self._bold, self._italic, self._font)], value, title))
 
     def print_lc(self, text: str) -> None:
-        """PRINTLC：左寄せ列。`PRINTCの文字数:25`（emuera.config）に対し、cp932 バイト数で 26 まで空白を補う
-        （GameView/EmueraConsole.Print.cs@CreateTypeCString:383–425）。改行しない。
-        DEVIATION: 原作はさらにフォント幅で末尾空白を削るが、ここでは等幅前提でバイト数のみ（表示のみの差）。"""
+        """PRINTLC：EmueraConsole.Print.cs:363–425；每欄為獨立按鈕判定邊界。"""
         if not text:
-            return  # PrintC:364–365
+            return
         n = len(text.encode("cp932", errors="replace"))
         if n < 26:
             text += " " * (26 - n)
+            limit = measure_text(" " * 26)
+            if limit is not None:
+                while measure_text(text, self._font, self._bold, self._italic) > limit and text.endswith(" "):
+                    text = text[:-1]
+            # DEVIATION：非 Windows 的既有 cp932 補白近似保留，見 metrics.py。
+        # PrintStringBuffer.cs:63–89，force_button 在欄位前後各結算一次。
+        self._resolve_pending()
         self.print(text)
+        self._resolve_pending()
 
     def html_print(self, html: str) -> None:
         """HTML_PRINT（GameProc/Function/Instraction.Child.cs:239–257 → GameView/EmueraConsole.Print.cs@PrintHtml:344–357）：
@@ -401,13 +422,13 @@ class TextOutput:
         HTML 内の `[数字]` は按鈕化されない（按鈕は `<button>` タグのみ：GameView/HtmlManager.cs@Html2DisplayLine:266–）。
         文字は Unescape（HtmlManager.cs@Unescape:398–）以外そのまま（空白を詰めない）。色は HTML 側の既定（SETCOLOR は効かない）。
         対応タグは原作で使う `<font color='#rrggbb'>`・`<nonbutton title='…'>`・`<br>`（行を分ける）・`<nobr>`・
-        `<shape type='space' param='n'>` のみ（他は NotImplementedError）。"""
+        `<shape type='space' param='n'>` 與數字 `<button>`（其他標記停止）。"""
         if not html:
             return
         self._flush_partial()
-        # DEVIATION: HTML タグは原作で使う font／nonbutton／br／nobr／shape(space) のみ（deviations.md「HTML_PRINT 的子集」）
-        for parts in _parse_html(html):
-            self._lines.append(Line(parts))
+        # 實用子集；未知標記停止，不能靜默丟棄。
+        for i, parts in enumerate(_parse_html(html)):
+            self._append_line(Line(parts, logical_start=(i == 0), nobr=bool(re.search(r"<nobr\s*>", html, re.I))))
 
     def printl(self, text: str = "") -> None:
         """PRINTL：輸出後換行。"""
@@ -419,10 +440,38 @@ class TextOutput:
         self.print(text)
         self._newline(wait=True)
 
-    def drawline(self) -> None:
-        """DRAWLINE：水平線（字元由前端決定，原作為 `_Replace.csv` 的 `─`）。"""
+    def drawline(self, pattern: str = "─") -> None:
+        """DRAWLINEFORM：EmueraConsole.Print.cs:513–560；在既有緩衝後加入線再換行。"""
+        if not pattern:
+            raise ValueError("空文字列によるDRAWLINEが行われました")
+        width = measure_text(pattern)
+        if width is None:
+            # DEVIATION：非 Windows 沿用既有分隔線；未取得 GDI 計量不偽造字串數。
+            self._flush_partial()
+            self._append_line(Line(kind="drawline"))
+            return
+        bar, width = pattern, 0
+        while width < DRAWABLE_WIDTH:
+            bar += pattern
+            width = measure_text(bar)
+        while width > DRAWABLE_WIDTH:
+            bar = bar[:-1]
+            width = measure_text(bar)
+        bold, italic = self._bold, self._italic
+        self._bold = self._italic = False
+        self.print(bar)
+        self._bold, self._italic = bold, italic
+        self._newline()
+        self._lines[-1].kind = "drawline"
+
+    def print_temporary(self, text: str) -> None:
+        """PrintTemporaryLine：EmueraConsole.Print.cs:201–204、295–308。"""
+        if not text:
+            return
         self._flush_partial()
-        self._lines.append(Line(kind="drawline"))
+        self.print(text)
+        self._newline()
+        self._lines[-1].temporary = True
 
     def wait(self) -> None:
         """WAIT：在目前位置等待輸入。"""
@@ -435,9 +484,12 @@ class TextOutput:
             self._lines.append(Line(wait=True))
 
     def clearline(self, n: int) -> None:
-        """CLEARLINE n：刪除最後 n 行（已完成的行）。"""
-        if n > 0:
-            del self._lines[-n:]
+        """CLEARLINE：Instraction.Child.cs:488–500 直接 deleteLine、不 Flush。
+        EmueraConsole.Print.cs:156–176 刪論理行；尚未換行的緩衝原本就不刪。
+        """
+        while n > 0 and self._lines:
+            if self._lines.pop().logical_start:
+                n -= 1
 
     # --- 取出 ---------------------------------------------------------------
 
@@ -448,8 +500,10 @@ class TextOutput:
 
     @property
     def linecount(self) -> int:
-        """era `LINECOUNT` 的對應（已完成行數）。"""
-        return len(self._lines)
+        """LINECOUNT：VariableToken.cs:1537 → EmueraConsole.Print.cs:103、140–141。
+        回傳論理行數，不是實體折行數。
+        """
+        return sum(line.logical_start for line in self._lines)
 
     def drain(self) -> list[Line]:
         """取出並清空已完成的行，交給前端。未換行的部分留著。"""
@@ -467,8 +521,14 @@ class TextOutput:
         if wait:
             self.wait_count += 1
         self._resolve_pending()
-        self._lines.append(Line(self._parts, wait=wait, align=self._align))
+        self._append_line(Line(self._parts, wait=wait, align=self._align))
         self._parts = []
+
+    def _append_line(self, line: Line) -> None:
+        # EmueraConsole.Print.cs:110–114；PRINT 本身不會刪暫時行，只有完成行會。
+        if self._lines and self._lines[-1].temporary:
+            self.clearline(1)
+        self._lines.append(line)
 
     def _flush_partial(self) -> None:
         if self._pending or self._parts:

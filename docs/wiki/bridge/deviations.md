@@ -69,31 +69,29 @@ S56現況歸屬：各未勾選項的W編號指向`docs/PLAN.md`；仍待實作�
   `YANDERE_FIRST_SETTING` 到 INPUT（預設 34 局 5,399 次；S29 的程式碼同 seed 也會發生，非 S30 新增）。
   **S31 裁決（2026-10-04）**：TURNEND／SHOP 口上遇到 INPUT 依原作顯示選項並等待，選完續行，不再回復為「找不到」。
   輸入後才發現不可執行內容時停止；其他同步呼叫的失敗回復仍待裁決。詳見 narration wiki 的 S31 節。
-- [ ] `W07／W08` **口上 catalog 的顯示簡化**（S07 新增，只影響顯示）：`SETFONT`（字型名）不反映（`FONTITALIC` 斜體 S20 起反映：`TextOutput.set_italic`）；`CLEARLINE` 只刪已完成的行；
-  S41角色強化重繪沿用共用CLEARLINE（`ERB/インターミッション画面/SHOP_CHARA_POWERUP.ERB@CHARA_POWERUP:343–346`）；不影響分配、扣款及共享RESULT(S)。
+- [ ] `W07／W08` **口上 catalog 的顯示簡化**（S07新增，S87收斂）：Windows已接SETFONT、原GDI計量／PRINTLC尾空白裁切與按鈕邊界、DRAWLINEFORM指定圖樣、論理行折行／CLEARLINE。原CLEARLINE本來就不清未換行緩衝，舊項誤判已更正；HTML的br續行整組刪除。非Windows仍沿既有近似，Web字形光柵化未宣稱等同GDI像素，COUNT與以下個別精簡排版仍保留。詳[共用文字](../python/text-rendering.md)。
+  S41角色強化重繪使用共用CLEARLINE；S87補此呼叫端INPUT數值回顯，25行面板加回顯恰為原26行，結界另加1＋結界數，不再每次誤刪前文一行（`ERB/インターミッション画面/SHOP_CHARA_POWERUP.ERB@CHARA_POWERUP:62、92–346`；`reference/emuera-1824/Emuera/GameView/EmueraConsole.cs:733–734`）。原角色列表保留歷史，不全面清除；不影響分配、扣款及共享RESULT(S)。
   S60隨機命名沿用精簡按鈕列，重繪依實際輸出行數清除配置／候選頁，對應原文CLEARLINE 16／25；不改狀態與亂數次序。
-  S61一般身體頁兩形態依序顯示，數值、提示、可選項與原文INPUT模式保留；固定欄寬／字型仍本項W07。色盤保留32×32及軸／明度列，依實際輸出行數清除舊按鈕，對應`ERB/汎用関数/COLOR_TABLE.ERB@COLOR_TABLE:156`固定40行；不是新增全域CLEARLINE語意。
-  S45設施擴充、S49武器自訂沿用同一CLEARLINE偏離；局部回顯數值輸入並在繼續時移除Enter操作提示，避免誤刪選項，未修改全域顯示語意（見`docs/wiki/era/facilities.md`）。
+  S61一般身體頁兩形態依序顯示，數值、提示、可選項與原文INPUT模式保留；S87已接Windows共用字型／欄寬計量，非Windows與個別精簡排版仍留本項W07。色盤保留32×32及軸／明度列，依實際輸出行數清除舊按鈕，對應`ERB/汎用関数/COLOR_TABLE.ERB@COLOR_TABLE:156`固定40行；不是新增全域CLEARLINE語意。
+  S45設施擴充、S49武器自訂的共用CLEARLINE已由S87核對；局部回顯數值輸入並在繼續時移除Enter操作提示，避免誤刪選項，未修改全域顯示語意（見`docs/wiki/era/facilities.md`）。
   COUNT 放在口上專用的暫存（`state.temp.narr`），與 Python 移植部分不共用（原作是全域變數；Python 未模型化 COUNT）。RESULT（S21）・RESULTS（S22）
   已改為共用（`GameState.result`／`results`，`docs/wiki/python/result.md`）；Python 移植部分只同步寫 RESULT:1／RESULTS:1 以後的來源與「之後有人讀
   呼叫前值」的 RESULT:0／RESULTS:0。S22 全件確認：RESULTS:0 沒有讀呼叫前值的地方；RESULT:0 只有不發的 TRYCALL(FORM) 之後會讀，已移植者全部同步
   （S22 追加 `BATTLE_COM_AFTER.ERB`:1159）。hook 的 CALL（SET_TENTACLE_SIZE_BY_MESSAGE 等）之後地の文不讀 RESULT（grep）。因此在已確認的讀取位置 RESULT／RESULTS 與原作一致，殘留差異是 COUNT。S60姓名生成僅重現本函式COUNT終值20用於LOCAL30索引，仍不寫catalog的共用COUNT；沿本項W07，未新增批准。S62的RAND_CHOOSE_KOJO_SEIKAKU:462–475同樣只保留局部FOR終值19，不寫catalog共用COUNT；仍沿本項。S64 LOADCSV的REPEAT4清SAVESTR同樣不寫catalog共用COUNT，沿本項W07。
   （Python：`eragvt.narration.runtime`）
-  S14：`DRAWLINEFORM 文字列` 畫成與 DRAWLINE 相同的區切線（原作以該字串重複到畫面寬：`GameView/EmueraConsole.Print.cs@getStBar`:543–560；
-  動画サイト :1335 的 `―`）；動画サイトの `PRINT_TAGSET_TEXT` 的 `@F:` フォント指定不反映（本作未使用），既定色的 `SETCOLOR 0x{GETCOLOR}`
-  以「回到呼叫前的顏色」表示（顯示相同）。（Python：`eragvt.narration.runtime`、`eragvt.narration.windowlib`）
-- [ ] `W07` **SHOW_SHOP 簡化**：S86已接回狀態標記、出場第二行／候補的4格資源條、原姓名／數字欄寬、NG紅色殘值；主資源20格漸層先前已由S25接回。數值／標記範圍結案，剩餘共用字型及PRINTLC精確視覺欄寬沿本頁文字顯示原項留W07，沒有視為批准。來源與邊界見[決策資訊](../era/decision-information.md)。
+  S87：Windows的DRAWLINEFORM依`EmueraConsole.Print.cs@getStBar:543–560`計算指定字串重複數；`PRINT_TAGSET_TEXT`的`@F:`依原CHKFONT套用／還原。非Windows仍保留原近似；既定色的`SETCOLOR 0x{GETCOLOR}`仍以回到呼叫前顏色表示，顯示相同。
+- [ ] `W07` **SHOW_SHOP 簡化**：S86已接回狀態標記、出場第二行／候補的4格資源條、原姓名／數字欄寬、NG紅色殘值；主資源20格漸層先前已由S25接回。數值／標記範圍結案，S87已接Windows共用字型與PRINTLC原GDI欄寬，剩餘非Windows／字形像素及個別精簡排版沿本頁文字顯示原項留W07，沒有視為批准。來源與邊界見[決策資訊](../era/decision-information.md)。
 - [x] **SHOP[800]未實作**（S57解決）：成就4頁／紀錄2頁、切換、循環換頁、返回均接通；紀錄寫入仍見W01上項。
 - [ ] `W07` **WAIT／PRINTW 不阻塞**：Web 一次顯示到下一個 INPUT 為止，WAIT 位置以虛線標示，不需按鍵繼續。（Python：`eragvt.game.session`、`eragvt.web`）S44引退名簿／報告、S45設施擴充、S49武器自訂已依原作局部補上PRINTW／WAIT等待；S85已將成就、ENDLESS新紀錄、SCORE保存前／收尾共四處同步包裝改為明確Enter確認，確認期間保留歷史標籤並停用舊選項按鈕；RESULT(S)與RNG不因等待改變。此四處不再要求數字；其餘舊等待尚未全面遷移，不能勾選結案，詳[共用輸入](generic-input.md)。其他系統的既有簡化仍保留，見`docs/wiki/era/retirement.md`與`facilities.md`。
   S70首次事件`ERB/地の文/MESSAGE_PRISON.ERB@MESSAGE_PRISON_PRISENTENCE_FIRST`與`ERB/ヒロイン関連/TRANS_SEX.ERB@TS_NORMAL:361`錯誤路徑的舊PRINTW仍沿本項等待簡化，未新增批准；TS選單文字與尾端全形空白已按原文保留。
 - [ ] `W08` **存檔格式與檔名**：JSON（`saves/saveNN.json`），不是 Emuera 的 `.sav`；存檔說明文字（日時＋`@SAVEINFO`）與一覽格式照原作。
 - [ ] `W08` **Web 專用按鈕**：頁尾「タイトルに戻る」（重建 session）是原作沒有的。
-- [ ] `W07` **無效輸入訊息**：Emuera 以「刪一行＋暫時行」顯示「無効な値です」，這裡以一般行輸出。
+- [x] `W07` **無效輸入訊息**（S87）：標題／存檔選槽／覆寫／讀檔選槽現先回顯原輸入字串，再刪該輸入行並顯示暫時行；重複錯誤只留一行，下次完成行取代訊息，不再刪最後一個選項。依`EmueraConsole.cs:701–735`、`EmueraConsole.Print.cs:110–114、201–204`及SystemProc對應輸入處，詳[共用文字](../python/text-rendering.md)。
 - [ ] `W08` **SHOW_SHOP 的 TARGET == CHARANUM**：原作會因越界參照報錯，這裡視為「編成外」重新選擇 TARGET（`eragvt.game.shop.show_shop`）。
 
-- [ ] `W07` **鍛錬畫面**：（S25 起素質一覧 `SHOW_STATUS_TALENT` 與 COLORSENTENCE_BAR 已照原文移植，以下只剩 PRINTLC）`PRINTLC` 以 cp932 位元組數補空白到 26，不做原作依字型寬度削減尾端空白（`GameView/EmueraConsole.Print.cs@CreateTypeCString`:383–425）。（Python：`eragvt.game.action.show_status_base_training`、`eragvt.text.TextOutput.print_lc`）
+- [ ] `W07` **鍛錬畫面**：素質一覧與COLORSENTENCE_BAR已於S25移植；S87在Windows依原GDI字型／粗斜體裁去PRINTLC過寬尾空白，欄位前後按鈕邊界也已補齊（`EmueraConsole.Print.cs@CreateTypeCString:383–425`、`PrintStringBuffer.cs:63–89`）。非Windows保留原cp932補白近似，Web字形像素沿共用文字原項，不視為批准。
 - [ ] `W07` **戰鬥畫面簡略顯示**：S86已接距離適性／style、衣裝耐久與原catalog改造標籤、EX／SP／AIR／CHARGE、feat、狀態／囚禁名單、敵資源解析與距離視窗，及SHOW_USERCOM六種分類分支；原不分類路徑仍保留。PALAM開閉／移位沿既有原生實作，CHARGE每次SHOW_STATUS恰寫一次TCVARn206。
-  先前「只有206寫入、其餘無副作用」結論撤回：PALAM開啟可能經GAPING初始化CFLAG35／36及抽RNG，S86保持原次數；支援衣裝查詢更新SAVESTR0／RESULTS0，TENTACLE_ACCESS每key先留診斷字串，顯示呼叫邊界已同步，RESULT(S)尾格保留。數值／決策資訊範圍結案；字型／PRINTLC與共用排版近似仍留W07原項，未宣稱圖像完全等同原引擎。詳[決策資訊](../era/decision-information.md)。
+  先前「只有206寫入、其餘無副作用」結論撤回：PALAM開啟可能經GAPING初始化CFLAG35／36及抽RNG，S86保持原次數；支援衣裝查詢更新SAVESTR0／RESULTS0，TENTACLE_ACCESS每key先留診斷字串，顯示呼叫邊界已同步，RESULT(S)尾格保留。數值／決策資訊範圍結案；S87已接Windows字型／PRINTLC原GDI計量；非Windows、字形像素及個別精簡排版仍留W07原項，未宣稱圖像完全等同原引擎。詳[決策資訊](../era/decision-information.md)。
 - [ ] `W07` **性攻擊的地の文**（S06 新增、S07 更新）：S07 起 `地の文/MESSAGE_SEX*.ERB`、敗北 `MESSAGE_BATTLE_END_LOSS`、射精・處女喪失・
   ヒロイン側性攻撃的地の文由 catalog 輸出本文，其中的狀態變化行經 `narration/hooks.py`（140 行，對照 sexmsg）依 ERB 順序執行、
   RAND 也照 ERB 順序抽（亂數序列與 S06 不同）。S14 起 `MESSAGE_SEX_SPCOM7`（含 INPUTS 與動画サイト）也由 catalog 執行。catalog 不可執行或 Null 時才印
@@ -106,9 +104,7 @@ S56現況歸屬：各未勾選項的W編號指向`docs/PLAN.md`；仍待實作�
   （Python：`eragvt.game.prison.*` 的 `run_chinobun`、`eragvt.game.tattoo.print_tattoo`）
 - [x] **INPUTS 只能輸入整數**（S11／S14；S35 已消除）：Web 與既有 catalog 等待通道現接受任意字串／空字串；
   命名、影片及巢狀呼叫共用文字請求標記。數字選單仍接收整數。詳見 `docs/wiki/python/naming.md`。
-- [ ] `W07` **HTML_PRINT 的子集**（S11 新增，只影響顯示）：只支援原作用到的 `<font color>`／`<nonbutton title>`（tooltip 以 Web 的
-  title 屬性顯示）；S25 加 `<br>`（照 `GameView/HtmlManager.cs`:672–676、`PrintStringBuffer.cs`:189–196 分行）、`<nobr>`（Web 不折行，
-  無差）、`<shape type='space' param='n'>`（原作寬 n% × 字型大小：`ConsoleShapePart.cs`:40–53；**近似為半角空白 n/50 個**）。其他タグ停止。（Python：`eragvt.text.TextOutput.html_print`）
+- [x] `W07` **HTML_PRINT 的實用子集**（S87）：原font color／nonbutton title／br／nobr及數字button已接共用輸出；shape space依原14px×param/100與0.5初始餘數／截整，現在使用幾何空白而非半形空白近似。原14處HTML_PRINT實用標記已查；未知標記仍停止，不宣稱完整任意HTML（含任意button包shape）相容。來源、測試與平台限制見[共用文字](../python/text-rendering.md)。
 - [ ] `W07` **子供設定的說明回落**（S13新增；W02預設代按已解除）：フィート選擇畫面（[0]はい）已移植，種族／フィート說明（`ERB/ヒロイン関連/CHARA_SYUZOKU.ERB@SYUZOKU_INFO`／`ERB/ヒロイン関連/CHARA_SYUZOKU.ERB@FEAT_INFO`）走catalog，不可執行時印「〈SYUZOKU_INFO n〉」的既有回落仍待W07收口（Python：`eragvt.game.firstsetting.feat_select_ui`）。
   S61接狀態PAGE5[20]、S67補完SIZE_SETTING操作；S68接`ERB/ヒロイン関連/PREGNANT_CHILD_BIRTH.ERB@ADD_CHILD:515`一人稱，S69接同函式:1075–1107實際身體收尾並刪除`size_setting_default`。兩處均等待真實輸入，原W02代按差異已消除；S69僅25歲人工尾段函式邊界驗收，不代表完整出生／加入流程。見[身體編輯](../era/body-editor.md)。
 - [ ] `W08` **Web 停止狀態**：遇到未移植處理時顯示「（未實作のため停止しました：…）」並停住，是原作沒有的畫面（見上「S04 未翻的行動」）。
