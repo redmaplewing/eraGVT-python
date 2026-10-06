@@ -1,6 +1,6 @@
 # 完整遊玩現況盤點
 
-停止點與搜尋統計基線：S55 `8a77ee8`；系統現況包含S77狀態／救出／存讀連續驗收（25歲人工基線，最終驗收範圍見STATUS）。下一工作與順序只看[PLAN](PLAN.md)，本頁不另排優先序。
+停止點與搜尋統計基線：S55 `8a77ee8`；系統現況包含S78十二套組與動態說明（25歲人工基線，最終驗收範圍見STATUS）。下一工作與順序只看[PLAN](PLAN.md)，本頁不另排優先序。
 範圍是本機瀏覽器與原作已完成、可達功能；「已接通」表示有實作與測試，**不等於全瀏覽器驗收完成**。沒有完成比例。
 
 ## 系統現況與證據
@@ -12,7 +12,7 @@ Python路徑以下相對`src/eragvt/`；測試相對`tests/`。原作路徑相�
 | 啟動／存讀 | `__main__.py`、`web/app.py`、`game/session.py:381–492`；`test_main.py`／`test_web.py`／`test_state_game.py` | 乾淨安裝、新程序讀回、損毀／版本限制、瀏覽器實測矩陣尚未完成 | W08、W09 |
 | 開局／模式 | 共通角色製作、HEROINE_PRESET 0–3、關係、說明；`opening.py`／`creation_menu.py`；`test_creation_menu.py`／`test_tutorial.py` | 新局二擇捷徑固定NORMAL、完整模式與序章；`opening.py:83–98` | W04、W06 |
 | 角色製作 | 主題命名、生成設定、姓名／變身命名、一人稱、武器、關係；各同名測試 | S60共用入口及12項子選單已接開局／招募／醫療／引繼；S61一般身體／外貌、S62性格／精神素質、S63種族／feat／變身能力／基礎點、S64共用CSV模板、S65性別、S66初始狀態／人數及GLOBAL權限、S67身體其餘操作已接通。經歷仍缺；S68子供獨立一人稱、S69實際身體收尾入口均已接真實輸入；S69僅25歲人工尾段函式邊界驗收，不代表完整出生／加入，見[角色編輯](wiki/era/character-editor.md) | W02 |
-| 套組 | 0_特捜戦隊；`opening.py:334`、`test_opening.py` | 其餘1–11與14（12套）、6／7／8動態說明；不能由缺號推測待實作12／13 | W04 |
+| 套組 | S78接0–9、11、14共12套，含6／7／8動態AA；`test_initial_presets.py`、[依據](wiki/era/initial-presets.md) | 10的固定性經驗初始化涉及未成年模板，保留明確停止；序章另續。不能新增缺號12／13或宣稱13套完成 | W04 |
 | SHOP／日常 | 8類行動、編成／排程、衣裝購買／穿戴、強化／醫療／設施／招募引退；`session.py:214–302`、各模組／測試 | 決策資訊、各子選單預設代按與特殊條件（SHOP[800]已於S57接通） | W01–W03、W07 |
 | 成就／紀錄 | S57共用取得／保存、GET_STATE判定、catalog／原生呼叫者、SHOP[800]六頁；S58的20欄紀錄、模式通關數、ENDLESS紀錄與六觸發；[證據](wiki/era/achievements.md) | S59已按裁決修正新全域版本／最高總評113；未移植解鎖互動端屬W02 | W01 |
 | 戰鬥／事件 | 普通戰、雜魚／市民／悪堕ち、襲擊／救援；`test_battle.py`／`test_mob_battle.py`／`test_citizen_battle.py`／`test_raid.py`；S73變身零件、S74裝備506／507／509、S75外衣199與真COM0回合、`test_transformation_parts.py`／`test_special_equipment.py`／`test_tentacle_suit.py` | 觀眾妨礙、返り血、部分救出、ISGIRLY、動態敵方安全網與模式分支 | W03、W05、W06 |
@@ -59,10 +59,10 @@ Python路徑以下相對`src/eragvt/`；測試相對`tests/`。原作路徑相�
 - `battle/enemy.py:660–661`末王回復固定除2，原文`ERB/ゲーム内_戦闘処理/LASTBOSS_POWERUP.ERB@LASTBOSS_REST:16–22`強化時回8；W05／W08核對呼叫可達性與測試，詳見unresolved新增項。這是無raise的待查證差異。
 - 過時說明例：`commands.py:1458`仍提COM47，但`restraint.py`已有COM47分派；`core.py:566`仍稱雜魚未移植。W05只核對遺留guard可達性；已完成系統不能由舊註解重新算成缺口。
 
-## 停止語句的完整歸屬（S55基線118，S76現為105）
+## 停止語句的完整歸屬（S55基線118，S78現為103）
 
 M＝已知移植／互動缺口；O＝已證實原作未完成且已有處置；G＝通用抽象介面；U＝可達性、原作錯誤或資料／catalog失敗尚需逐項核對。U不是豁免。
-一行主歸屬一包；共享依賴看PLAN。S60移除兩處個別入口停止、新增一處細分子選單分派與兩處姓名原作錯誤安全網；S61新增一般身體頁剩餘分支一處停止；S66移除初始狀態與人數兩處停止；S67移除SIZE_SETTING選項停止；S68移除已無呼叫者的selfcall_default及兩個停止。S70移除幽閉首次事件／TS hook兩處停止；S71移除妊娠TS兩處停止；S72移除女體受容一處停止，並將誤列的YOBAI候選索引原作錯誤由W03改歸W08。S73移除變身衣裝零件描寫一處停止，依據見[衣裝](wiki/era/clothing.md)。S74移除特殊裝備一處停止；S75移除外衣199的運動／回合兩處停止；S76移除初始無內衣一處停止。合計W02=1、W03=0、W04=3、W05=22、W06=6、W07=20、W08=53，總數105；W01原先沒有raise的成就／紀錄缺口已接通，最終驗收見STATUS。
+一行主歸屬一包；共享依賴看PLAN。S60移除兩處個別入口停止、新增一處細分子選單分派與兩處姓名原作錯誤安全網；S61新增一般身體頁剩餘分支一處停止；S66移除初始狀態與人數兩處停止；S67移除SIZE_SETTING選項停止；S68移除已無呼叫者的selfcall_default及兩個停止。S70移除幽閉首次事件／TS hook兩處停止；S71移除妊娠TS兩處停止；S72移除女體受容一處停止，並將誤列的YOBAI候選索引原作錯誤由W03改歸W08。S73移除變身衣裝零件描寫一處停止，依據見[衣裝](wiki/era/clothing.md)。S74移除特殊裝備一處停止；S75移除外衣199的運動／回合兩處停止；S76移除初始無內衣一處停止。S78移除動態說明／一般套組缺口，10具體範圍保留一處停止。合計W02=1、W03=0、W04=1、W05=22、W06=6、W07=20、W08=53，總數103；W01原先沒有raise的成就／紀錄缺口已接通，最終驗收見STATUS。
 
 | Python檔案@函式 | 行號 | 工作包／分類 | 內容 |
 |---|---|---|---|
@@ -71,7 +71,6 @@ M＝已知移植／互動缺口；O＝已證實原作未完成且已有處置；
 | `game/akuoti.py@self_call` | 75 | W08／U | 非法值／原作錯誤或版本限制；逐項核對 |
 | `game/chara_make.py@initialize_personality` | 86,94,114 | W07／U | catalog／文字支援或缺資料的失敗路徑 |
 | `game/config.py@update` | 189 | W08／U | 非法值／原作錯誤或版本限制；逐項核對 |
-| `game/creation_menu.py@preset_menu` | 221,232 | W04／M | 動態說明／其他套組 |
 | `game/character_editor.py@character_editor` | 經歷停止 | W02／M | [8]經歷維持未移植；S65已接[0]性別，具體範圍阻塞一次記於[角色編輯](wiki/era/character-editor.md)；非原作未完成 |
 | `game/character_name.py@character_name、random_character_name` | CHARANUM／空姓守衛 | W08／U | 姓名原作越界及無窮重抽；[具體依據](wiki/era/character-editor.md) |
 | `game/drug_preparation.py@drug_preparation_gen` | 320 | W08／O | AMPUTEE已裁決保留截斷 |
@@ -81,7 +80,7 @@ M＝已知移植／互動缺口；O＝已證實原作未完成且已有處置；
 | `game/flashnews.py@flash_viralmedia` | 321 | W08／U | 非法值／原作錯誤或版本限制；逐項核對 |
 | `game/flashnews.py@flashnews_chooseidol` | 376,402 | W08／U | 非法值／原作錯誤或版本限制；逐項核對 |
 | `game/gather.py@_citizen_encount_text` | 377 | W08／M | 除錯輸入／顯示 |
-| `game/opening.py@chara_make_main_preset` | 334 | W04／M | 其他套組載入 |
+| `game/opening.py@shokiset_select` | 套組10 | W04／M | 固定性經驗初始化的具體未成年模板範圍阻塞；[依據](wiki/era/initial-presets.md)，非原作未完成 |
 | `game/opening.py@decode_weapon_data` | 411 | W08／U | 非法值／原作錯誤或版本限制；逐項核對 |
 | `game/pastime.py@_fb_pool` | 184 | W07／U | catalog／文字支援或缺資料的失敗路徑 |
 | `game/pastime.py@fb` | 196 | W07／U | catalog／文字支援或缺資料的失敗路徑 |

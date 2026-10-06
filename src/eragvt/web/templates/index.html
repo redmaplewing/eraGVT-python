@@ -16,11 +16,11 @@
     {%- for part in line.parts -%}
       {%- if part.button is not none -%}
       <form method="post" action="/input" class="btn"><input type="hidden" name="input_token" value="{{ screen.input_token }}"><button type="submit" name="value" value="{{ part.button }}"{% if part.title %} title="{{ part.title }}"{% endif %}>
-        {%- for seg in part.segments -%}<span style="{% if seg.color %}color: {{ seg.color }};{% endif %}{% if seg.bold %}font-weight: bold;{% endif %}{% if seg.italic %}font-style: italic;{% endif %}">{{ seg.text }}</span>{%- endfor -%}
+        {%- for seg in part.segments -%}<span style="{% if seg.color %}color: {{ seg.color }};{% endif %}{% if seg.bold %}font-weight: bold;{% endif %}{% if seg.italic %}font-style: italic;{% endif %}{% if seg.font %}font-family: '{{ seg.font }}';{% endif %}">{{ seg.text }}</span>{%- endfor -%}
       </button></form>
       {%- else -%}
         {%- if part.title %}<span title="{{ part.title }}">{% endif -%}
-        {%- for seg in part.segments -%}<span style="{% if seg.color %}color: {{ seg.color }};{% endif %}{% if seg.bold %}font-weight: bold;{% endif %}{% if seg.italic %}font-style: italic;{% endif %}">{{ seg.text }}</span>{%- endfor -%}
+        {%- for seg in part.segments -%}<span style="{% if seg.color %}color: {{ seg.color }};{% endif %}{% if seg.bold %}font-weight: bold;{% endif %}{% if seg.italic %}font-style: italic;{% endif %}{% if seg.font %}font-family: '{{ seg.font }}';{% endif %}">{{ seg.text }}</span>{%- endfor -%}
         {%- if part.title %}</span>{% endif -%}
       {%- endif -%}
     {%- endfor -%}&#8203;</div>

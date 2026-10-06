@@ -142,7 +142,7 @@ def test_line_to_json():
     o = TextOutput()
     o.printl("[1]はい")
     assert o.lines[0].to_json() == {
-        "parts": [{"segments": [{"text": "[1]はい", "color": None, "bold": False, "italic": False}], "button": 1, "title": None}],
+        "parts": [{"segments": [{"text": "[1]はい", "color": None, "bold": False, "italic": False, "font": None}], "button": 1, "title": None}],
         "kind": "text",
         "wait": False,
         "align": "left",

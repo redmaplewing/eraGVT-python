@@ -330,14 +330,14 @@ def chara_make_main_default(state: GameState, data: GameData, store: GlobalStore
 
 def chara_make_main_preset(state: GameState, data: GameData, preset: int, store: GlobalStore | None = None, *, ctx=None) -> None:
     """`CHARA_MAKE.ERB@CHARA_MAKE_MAIN`:5 で [200] → 初期セット → [1000] と進んだ場合の状態変化。"""
-    if preset != PRESET_TOKUSOU:
-        raise NotImplementedError("初期セットは 0_特捜戦隊 のみ移植")
+    from .initial_preset_data import PRESET_DATA
+    if preset not in PRESET_DATA:raise ValueError(preset)
     _chara_make_load_global(state, store or GlobalStore())
     # :316–322 [200] → SHOKISET.ERB@CHARA_MAKE_FINALIZE_KAI:5–45 → [0] → [1]はい
     for _ in range(state.charanum - 1):
         state.del_chara(1)
         state.flag[8] -= 1
-    shokiset_select_0(state, data)
+    shokiset_select(state, data, preset)
     shokiset_csvfix(state, data)  # SHOKISET.ERB:45
     # :206–209 [1000] キャラメイクを完了する
     chara_make_finalize(state, data, ctx=ctx)
@@ -345,14 +345,26 @@ def chara_make_main_preset(state: GameState, data: GameData, preset: int, store:
 
 def shokiset_select_0(state: GameState, data: GameData) -> None:
     """`SYSTEM/キャラメイキング関連/初期セット/0_特捜戦隊.ERB@SHOKISET_SELECT_0`:18–32。"""
-    state.flag[5] = 1
-    state.savestr[10] = "特装戦隊"
-    state.flag[7] = 1
-    state.savestr[12] = "特命特捜!"
-    for no in (301, 302, 303):
-        state.add_chara(data, no)
-        state.flag[8] += 1
-    shokiset_csvfix(state, data)
+    shokiset_select(state, data, 0)
+
+
+def shokiset_select(state: GameState, data: GameData, preset: int) -> None:
+    """各初期セット/*.ERB@SHOKISET_SELECT_n；固定字串與編號由原文抽取。"""
+    from .initial_preset_data import PRESET_DATA
+    if preset == 10:
+        # 固定經驗初始化直接引用未成年模板；具體來源見wiki/era/initial-presets.md。
+        raise NotImplementedError('SHOKISET_SELECT_10 固定經驗初始化涉及未成年模板，保留未實作')
+    ids,title,call=PRESET_DATA[preset]
+    state.flag[5]=1
+    state.savestr[10]=title
+    # 沒有寫FLAG:7／SAVESTR:12的套組保留上次設定，不能重設。
+    if call is not None:
+        state.flag[7]=1
+        state.savestr[12]=call
+    for no in ids:
+        state.add_chara(data,no)
+        state.flag[8]+=1
+    shokiset_csvfix(state,data)
 
 
 def shokiset_csvfix(state: GameState, data: GameData) -> None:

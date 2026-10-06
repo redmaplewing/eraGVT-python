@@ -32,7 +32,7 @@ def extract():
                 m=re.fullmatch(r'\s*PRINTL(?: (.*))?',line)
                 if m:presets.setdefault(func,[]).append(m[1] or '')
                 elif line.strip() and not line.lstrip().startswith(';'):dynamic.add(func)
-    # 不把含 RNG／樣式／條件的說明冒充固定文字；它們在實際呼叫處停止。
+    # 動態AA另由extract_initial_presets抽取；RNG與字型流程由creation_menu手翻。
     assert dynamic=={('SETUMEI',6),('SETUMEI',7),('SETUMEI',8)},dynamic
     for func in dynamic:presets.pop(func,None)
     dim=(ROOT/'source/earGVP/ERB/DIM.ERH').read_text(encoding='utf-8-sig')
@@ -42,6 +42,6 @@ def extract():
     calls=tuple(re.findall(r'^DATAFORM (.*)$',calls,re.M))
     return ('# 由 tools/extract_creation_menu.py 產生；來源 SYSTEM/キャラメイキング関連 與 DIM.ERH。\n'
             +f'TEXT = {pformat(text,sort_dicts=False)}\nPRESETS = {pformat(presets,sort_dicts=False)}\n'
-            +f'UNPORTED_DESCRIPTIONS = (6, 7, 8)\nARRAYS = {pformat(arrays,sort_dicts=False)}\nCALLS = {pformat(calls)}\n')
+            +f'ARRAYS = {pformat(arrays,sort_dicts=False)}\nCALLS = {pformat(calls)}\n')
 if __name__=='__main__':
     (ROOT/'src/eragvt/game/creation_text.py').write_text(extract(),encoding='utf-8',newline='\n')

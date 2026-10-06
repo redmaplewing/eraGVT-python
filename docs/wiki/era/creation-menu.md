@@ -16,9 +16,8 @@ Python 為 `game.creation_menu.creation_menu`，接在現有開局二擇之後�
 模式選擇二擇與略過序章仍是既有偏離。本階段縮小範圍，沒有把它們改成新的規則。
 S60已將個別角色編輯接到共用`character_editor.character_editor`與12項子選單；初始角色狀態切換、人數變更及其餘個別子選單仍未移植，保留原入口並明確停止，詳見[角色編輯](character-editor.md)。
 男性個別製作先依 `CHARA_MAKE.ERB@CHARA_MAKE_MAIN:142–145` 寫性別素質與名字，再進入同一編輯器；已存在角色依:202–204進入。
-`[200]` 初期セット可查看固定原文說明、取消，或確認載入 `[0]`；其他固定說明套組確認後，
-先依原作刪除舊角色，再在未移植載入呼叫停止。6／7／8 的說明含 RAND:4／SETFONT／AA，
-選入未移植說明函式時就停止，不假裝已呈現完整說明。
+S78已接`[200]`的12套組0–9／11／14，含選擇、否決、確認、互換與編輯重入。
+6／7／8的RAND:4／SETFONT／AA已手翻控制與字型，固定資料由工具抽取；套組10具體範圍仍停止，見[套組](initial-presets.md)。
 初期套組依 `ERB/SYSTEM/キャラメイキング関連/SHOKISET.ERB@CHARA_MAKE_FINALIZE_KAI:5–45`。
 全域與共通設定可完整操作；`event_first` 與 `tools/sim.py` 多送一次 `[1000]`，其他預設選擇不變。
 
@@ -39,7 +38,7 @@ S60已將個別角色編輯接到共用`character_editor.character_editor`與12�
 語言與種族名稱抽取 `ERB/DIM.ERH:282–314`；固定說明、選項、套組說明由
 `tools/extract_creation_menu.py` 產生 `creation_text.py`，不在執行時解譯 ERB。
 原文判斷、等待、重抽、取消均在 Python 手寫。所有 26 個套組名稱／說明函式已檢查，
-只有 SETUMEI 6／7／8 含非 PRINTL 指令；抽取工具斷言此集合並排除它們。
+只有SETUMEI 6／7／8含非PRINTL指令；一般抽取工具排除它們，S78另以extract_initial_presets.py抽取AA並原生處理亂數與字型。
 
 ## 保留的原作特性
 
@@ -76,5 +75,5 @@ S60已將個別角色編輯接到共用`character_editor.character_editor`與12�
 ## 驗收
 
 `tests/test_creation_menu.py` 覆蓋共通設定、原作特性、取消／重抽／非法輸入、RNG、全域跨程序存讀、
-開局返回、套組取消與停止、抽取重現、Web 完成與遊戲存讀檔。完整 pytest 與標準 500 局見 STATUS。
+開局返回、套組取消／載入與10停止、抽取重現、Web 完成與遊戲存讀檔。完整 pytest 與標準 500 局見 STATUS。
 無新增 UNVERIFIED／DEVIATION；原作已查明的特性保留，不自行修正。

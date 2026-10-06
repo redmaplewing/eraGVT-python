@@ -232,7 +232,6 @@ PRESETS = {('NAME', 0): ['[ 0]３人：特装戦隊'],
                   '',
                   '\u3000\u3000\u3000多分中級者向け※バランス未調整',
                   '']}
-UNPORTED_DESCRIPTIONS = (6, 7, 8)
 ARRAYS = {'transnamegenre': ('マジカル的な単語',
                     '天体の名前',
                     '色の名前',

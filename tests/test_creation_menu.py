@@ -166,28 +166,15 @@ def test_main_invalid_and_buttons(ctx):
     count=len(ctx.out.lines);g.send(-1)
     assert len(ctx.out.lines)==count+1 and ctx.state.result[0]==-1
 
-def test_preset_cancel_zero_and_other_halt(ctx):
+def test_preset_cancel_zero_and_other(ctx):
     g=creation_menu(ctx);next(g);g.send(200);g.send(99)
     assert all(c.no==0 for c in ctx.state.charas[1:])
-    g.send(200);g.send(0);g.send(0) # 拒絕後再選
+    g.send(200);g.send(0);g.send(0)
     g.send(0);g.send(-1);g.send(1)
     assert [c.no for c in ctx.state.charas[1:]]==[301,302,303]
-    from eragvt.game.creation_text import PRESETS
-    other=next(i for kind,i in PRESETS if kind=='SETUMEI' and i!=0)
-    g.send(200);g.send(other)
-    with pytest.raises(NotImplementedError,match='SHOKISET_SELECT'):g.send(1)
-    assert ctx.state.charanum==1 # SHOKISET:31–35 先刪除原角色再呼叫套組。
+    g.send(200);g.send(14);g.send(1)
+    assert [c.no for c in ctx.state.charas[1:]]==[3081,3080,3082,3083]
 
-@pytest.mark.parametrize('choice',[6,7,8])
-def test_dynamic_preset_description_stops_before_rng(ctx,choice):
-    # 三個 SHOKISET_SETUMEI:8 都 SELECTCASE RAND:4；不可冒充純文字抽取。
-    from eragvt.game.creation_text import PRESETS
-    assert ('NAME',choice) in PRESETS and ('SETUMEI',choice) not in PRESETS
-    before=ctx.state.rng.snapshot()
-    g=creation_menu(ctx);next(g);g.send(200)
-    with pytest.raises(NotImplementedError,match=f'SHOKISET_SETUMEI_{choice}'):
-        g.send(choice)
-    assert ctx.state.rng.snapshot()==before and ctx.state.charanum==4
 
 def test_main_named_character_display_results(ctx):
     # CHARA_MAKE:95–116 呼叫兩個 STRING 查詢；:120–124 最後覆寫汎用人數。

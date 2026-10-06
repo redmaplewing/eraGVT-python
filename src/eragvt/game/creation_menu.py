@@ -1,5 +1,5 @@
 """S55：SYSTEM/キャラメイキング関連/CHARA_MAKE.ERB@CHARA_MAKE_MAIN 手翻 UI。"""
-from .creation_text import TEXT, ARRAYS, PRESETS, CALLS, UNPORTED_DESCRIPTIONS
+from .creation_text import TEXT, ARRAYS, PRESETS, CALLS
 from .input_request import input_number, inputs, TextInputRequest
 from .naming import random_naming
 from .chara_common import is_male, seikaku_check, syuzoku_check, talent
@@ -265,31 +265,35 @@ def preset_menu(ctx):
         out.printl('[99]読み込まずに戻る')
         r=yield from number(ctx)
         if r==99:st.result[0]=-1;return -1
-        if r in UNPORTED_DESCRIPTIONS:
-            # 初期セット/6_リリカルハンターAs.ERB@SHOKISET_SETUMEI_6:8–157；
-            # 7_リリカルハンターStS.ERB@SHOKISET_SETUMEI_7:8–160；8_リリカルハンターViVid.ERB@SHOKISET_SETUMEI_8:8–173。
-            raise NotImplementedError(f'SHOKISET_SETUMEI_{r} 隨機 AA 說明尚未移植')
-        if not 0<=r<99 or ('SETUMEI',r) not in PRESETS:continue
-        for text in PRESETS['SETUMEI',r]:out.printl(text)
+        from .initial_preset_data import PRESET_DATA, DESCRIPTIONS
+        if r not in PRESET_DATA:continue
+        if r in DESCRIPTIONS:
+            # 各SHOKISET_SETUMEI:8 RAND:4，只在進說明時抽一次；否決重入再抽。
+            variants,tail=DESCRIPTIONS[r]
+            out.printl()
+            for text,font in variants[st.rng.rand(4)]:
+                out.set_font(font);out.printl(text)
+            out.set_font()
+            for text in tail:out.printl(text)
+        else:
+            for text in PRESETS['SETUMEI',r]:out.printl(text)
+        st.result[0]=0  # 說明函式自然RETURN，RESULTS不變。
         out.printl('よろしいですか？');out.printl('[0]いいえ');out.printl('[1]はい')
         while True:
             confirm=yield from number(ctx)
             if confirm in (0,1):break
         if confirm==0:continue
-        if r!=0:
-            # @CHARA_MAKE_FINALIZE_KAI:31–35：呼叫未移植套組前已移除舊角色。
-            for _ in range(st.charanum-1):st.del_chara(1);st.flag[8]-=1
-            raise NotImplementedError(f'SHOKISET_SELECT_{r} 尚未移植')
-        _preset_zero(ctx)
+        _load_preset(ctx,r)
         st.result[0]=0
         return 0
 
-def _preset_zero(ctx):
-    from .opening import shokiset_select_0,shokiset_csvfix
+def _load_preset(ctx,preset):
+    from .opening import shokiset_select,shokiset_csvfix
     for _ in range(ctx.state.charanum-1):
         ctx.state.del_chara(1);ctx.state.flag[8]-=1
-    shokiset_select_0(ctx.state,ctx.data)
+    shokiset_select(ctx.state,ctx.data,preset)
     shokiset_csvfix(ctx.state,ctx.data)
+
 
 def creation_menu(ctx,initial_preset=None,bonus=0):
     """CHARA_MAKE.ERB@CHARA_MAKE_MAIN:5–363；[1000] 完成後 EVENTFIRST 再 FINALIZE 一次。"""
@@ -297,7 +301,7 @@ def creation_menu(ctx,initial_preset=None,bonus=0):
     from .character_editor import character_editor
     st,out=ctx.state,ctx.out
     load_common(ctx)
-    if initial_preset is not None:_preset_zero(ctx)
+    if initial_preset is not None:_load_preset(ctx,initial_preset)
     while True:
         _main(ctx)
         while True:
