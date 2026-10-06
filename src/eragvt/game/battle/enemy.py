@@ -638,9 +638,12 @@ def _enemy_action_once(ctx: Ctx) -> Generator[None, int, bool]:
                 c.base[1] -= l3
             loc[2] = l2  # :446–525 LOCAL:2（:934 HANGEKI_TO_TENTACLE の ARG:2）
             if game_option(st, GameOption.STAT_DECLINE):
-                raise NotImplementedError("ステ低下有りオプションは未移植")
+                out.printl(f"{ctx.data.names['BASE'].get(1, '')}基礎が{div(l3, 2)}減った！")
             out.set_bold(False)
             out.printl()
+            # ENEMY_ACTION.ERB@ENEMY_ACTION:532–540：完全防禦也經過此處，且不鉗制基礎值。
+            if game_option(st, GameOption.STAT_DECLINE):
+                c.base[51] -= div(l3, 2)
             cloth_battle_damage(ctx, 15)
             if v[14] > 0:
                 state_change_extraeffect(ctx)

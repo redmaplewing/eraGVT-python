@@ -263,8 +263,16 @@ def _victory(ctx: Ctx):
                 st.flag[18] = 0
             st.flag[st.flag[11] + 300] = 0
             if game_option(st, GameOption.ENDLESS) and st.flag[11] > 0:
-                raise NotImplementedError("エンドレスモードのボス撃破は未移植")
-            if st.flag[11] > 0:
+                from ..tentacle import tentacle_survive_num
+
+                st.flag[3] += 1
+                st.result[0] = tentacle_survive_num(st)
+                # BATTLE_COM_AFTER.ERB@SOURCE_CHECK:150–158：RAND:RESULT原樣含0，不加1。
+                while True:
+                    st.flag[18] = st.rng.rand(st.result[0])
+                    if st.flag[18] != st.flag[11]:
+                        break
+            elif st.flag[11] > 0:
                 st.flag.set_bit(100, st.flag[11] - 1, False)
             # :165 TRYCALL SUPART_BLOOD（返り血）
             yield from _supart_blood(ctx)

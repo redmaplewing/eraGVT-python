@@ -20,7 +20,7 @@ Python路徑以下相對`src/eragvt/`；測試相對`tests/`。原作路徑相�
 | 身體／生命週期 | 身體／裏プロフィール、妊娠出産／子供、幽閉／救出、寄生／悪堕ち、夜間與強制事件；對應測試 | S70三種TS／首次事件、S71妊娠TS與共用結算／幽閉／catalog等待、S72女體受容五分支及夜間／戰後入口已接通；S74特殊裝備、S75外衣199與原生妊娠等待已接，S76初始無內衣判定已接；S77兩條25歲編輯TS→幽閉／既有救出→SHOP／新session存讀鏈通過，見[證據](sessions/S77-adult-lifecycle-evidence.md)。W03範圍完成，不含出生／自然遭遇或B05整列 | W02、W03、W05 |
 | 設定 | config 1–3、各開關／篩選、GLOBAL；`test_config.py` | 分類指令、男女平等OFF、能力降低等開啟後的分支，逐項ON/OFF與相依組合驗收 | W03、W05–W08 |
 | 口上／顯示 | catalog 13,384函式可執行，另有雜魚194／市民10；INPUT／INPUTS已有；`test_kojo_input.py`／`test_narration*.py` | S79已接開局MESSAGE_FIRST共用分派／等待；其餘COUNT、同步失敗回復、字型／HTML／圖樣、WAIT、SHOP／戰鬥資訊簡化；可執行率不保證呼叫成功 | W04、W07 |
-| 非NORMAL與除錯 | S79新局與引繼共用MODE_SELECT；新局七模式，保留引繼SOLO／SANDBOX限制；GameMode／GameOption已有 | ENDLESS／能力降低等仍停止；除錯輸入／顯示未完成；不能說目前不可到達而排除 | W06、W08 |
+| 非NORMAL與除錯 | S79新局與引繼共用MODE_SELECT；S83接回ENDLESS擊破／期限、能力降低與INSTANT真等待；[依據](wiki/era/mode-rules.md) | 七模式完整生命週期／周回驗收仍留W06；除錯輸入／顯示未完成；不能說目前不可到達而排除 | W06、W08 |
 
 ## 原作未完成與原作錯誤：只保留有證據的範圍
 
@@ -59,10 +59,10 @@ Python路徑以下相對`src/eragvt/`；測試相對`tests/`。原作路徑相�
 - S81已核對並修正`battle/enemy.py@_enemy_action_once`行動4：末王4%、雜魚16%、其他8%，非悪堕ち除2+LASTBOSS_REST；兩末王可達性與ON/OFF已測，詳[分派與回復](wiki/era/battle-dispatch.md)。
 - 過時說明例：`commands.py:1458`仍提COM47，但`restraint.py`已有COM47分派；`core.py:566`仍稱雜魚未移植。W05只核對遺留guard可達性；已完成系統不能由舊註解重新算成缺口。
 
-## 停止語句的完整歸屬（S55基線118，S81現為100）
+## 停止語句的完整歸屬（S55基線118，S83現為94）
 
 M＝已知移植／互動缺口；O＝已證實原作未完成且已有處置；G＝通用抽象介面；U＝可達性、原作錯誤或資料／catalog失敗尚需逐項核對。U不是豁免。
-一行主歸屬一包；共享依賴看PLAN。S60移除兩處個別入口停止、新增一處細分子選單分派與兩處姓名原作錯誤安全網；S61新增一般身體頁剩餘分支一處停止；S66移除初始狀態與人數兩處停止；S67移除SIZE_SETTING選項停止；S68移除已無呼叫者的selfcall_default及兩個停止。S70移除幽閉首次事件／TS hook兩處停止；S71移除妊娠TS兩處停止；S72移除女體受容一處停止，並將誤列的YOBAI候選索引原作錯誤由W03改歸W08。S73移除變身衣裝零件描寫一處停止，依據見[衣裝](wiki/era/clothing.md)。S74移除特殊裝備一處停止；S75移除外衣199的運動／回合兩處停止；S76移除初始無內衣一處停止。S78移除動態說明／一般套組缺口，10具體範圍保留一處停止。S79新增序章觀看具體範圍一處停止。S80接通觀眾妨礙、返血及失去角色發現三處停止。S81接回ISHOLE移除1處；其餘18處已核對合法路由，保留非法資料／catalog失敗／舊安全網，不代表18個未翻功能，逐項結論見[分派](wiki/era/battle-dispatch.md)。合計W02=1、W03=0、W04=2、W05=18、W06=6、W07=20、W08=53，總數100；W01原先沒有raise的成就／紀錄缺口已接通，最終驗收見STATUS。
+一行主歸屬一包；共享依賴看PLAN。S60移除兩處個別入口停止、新增一處細分子選單分派與兩處姓名原作錯誤安全網；S61新增一般身體頁剩餘分支一處停止；S66移除初始狀態與人數兩處停止；S67移除SIZE_SETTING選項停止；S68移除已無呼叫者的selfcall_default及兩個停止。S70移除幽閉首次事件／TS hook兩處停止；S71移除妊娠TS兩處停止；S72移除女體受容一處停止，並將誤列的YOBAI候選索引原作錯誤由W03改歸W08。S73移除變身衣裝零件描寫一處停止，依據見[衣裝](wiki/era/clothing.md)。S74移除特殊裝備一處停止；S75移除外衣199的運動／回合兩處停止；S76移除初始無內衣一處停止。S78移除動態說明／一般套組缺口，10具體範圍保留一處停止。S79新增序章觀看具體範圍一處停止。S80接通觀眾妨礙、返血及失去角色發現三處停止。S81接回ISHOLE移除1處；其餘18處已核對合法路由，保留非法資料／catalog失敗／舊安全網，不代表18個未翻功能，逐項結論見[分派](wiki/era/battle-dispatch.md)。S83移除ENDLESS／能力降低／INSTANT六處停止，詳[模式規則](wiki/era/mode-rules.md)。合計W02=1、W03=0、W04=2、W05=18、W06=0、W07=20、W08=53，總數94；W01原先沒有raise的成就／紀錄缺口已接通，最終驗收見STATUS。
 
 | Python檔案@函式 | 行號 | 工作包／分類 | 內容 |
 |---|---|---|---|
@@ -98,7 +98,6 @@ M＝已知移植／互動缺口；O＝已證實原作未完成且已有處置；
 | `game/turnend.py@raid_hantei` | 487 | W08／M | 除錯輸入／顯示 |
 | `game/yobai.py@_callname_at` | 142 | W08／U | 非法值／原作錯誤或版本限制；逐項核對 |
 | `game/yobai.py@yobai` | 204 | W08／U | YOBAI_SELECT_PLAY覆寫共用候選列表，REROLL抽到不存在的TARGET；原作錯誤，沿用deviations的S18紀錄 |
-| `game/battle/after.py@event_end` | 406 | W06／M | ENDLESS期限 |
 | `game/battle/angel_tree.py@show` | 185 | W07／U | catalog／文字支援或缺資料的失敗路徑 |
 | `game/battle/cheers.py@perform_cheers_first_hantei` | 52 | W08／M | 除錯輸入／顯示 |
 | `game/battle/commands.py@run_com` | 1460 | W05／U | S81已驗原38個COM全部可分派（含47）；保留非法指令守衛，詳[依據](wiki/era/battle-dispatch.md) |
@@ -108,7 +107,6 @@ M＝已知移植／互動缺口；O＝已證實原作未完成且已有處置；
 | `game/battle/encount.py@encount_boss` | 254,312 | W08／M | 除錯輸入／顯示 |
 | `game/battle/encount.py@encount_boss` | 310 | W08／U | 非法值／原作錯誤或版本限制；逐項核對 |
 | `game/battle/enemy.py@msg_karamituku` | 206 | W05／U | S81已核對合法資料範圍與分派；保留範圍外／catalog守衛，詳[逐項結論](wiki/era/battle-dispatch.md) |
-| `game/battle/enemy.py@_enemy_action_once` | 641 | W06／M | 能力降低選項 |
 | `game/battle/enemy.py@_enemy_action_once` | 826 | W05／U | S81已核對合法資料範圍與分派；保留範圍外／catalog守衛，詳[逐項結論](wiki/era/battle-dispatch.md) |
 | `game/battle/enemy.py@attack_place_decision` | 1014 | W08／M | 除錯輸入／顯示 |
 | `game/battle/func.py@act_limit` | 220 | W08／U | 非法值／原作錯誤或版本限制；逐項核對 |
@@ -126,8 +124,6 @@ M＝已知移植／互動缺口；O＝已證實原作未完成且已有處置；
 | `game/battle/ninsin.py@after_pill` | 452 | W08／M | 除錯輸入／顯示 |
 | `game/battle/palam.py@palam_up_enemy_reaction` | 544 | W08／M | 除錯輸入／顯示 |
 | `game/battle/palam.py@endure_ecstasy` | 608 | W08／M | 除錯輸入／顯示 |
-| `game/battle/palam.py@palam_kiryokudown` | 984 | W06／M | 能力降低選項 |
-| `game/battle/palam.py@palam_seitaiseidown` | 1043 | W06／M | 能力降低選項 |
 | `game/battle/palam.py@palam_up` | 1088 | W08／M | 除錯輸入／顯示 |
 | `game/battle/restraint.py@com103` | 1303 | W08／M | 除錯輸入／顯示 |
 | `game/battle/sexcom.py@_no_mob` | 106 | W05／U | S81已核對合法資料範圍與分派；保留範圍外／catalog守衛，詳[逐項結論](wiki/era/battle-dispatch.md) |
@@ -135,11 +131,9 @@ M＝已知移植／互動缺口；O＝已證實原作未完成且已有處置；
 | `game/battle/sexcom.py@lastboss_sex_routine` | 2488 | W05／U | S81已核對合法資料範圍與分派；保留範圍外／catalog守衛，詳[逐項結論](wiki/era/battle-dispatch.md) |
 | `game/battle/sexcom.py@lastboss_reaction_ref` | 2500 | W05／U | S81已核對合法資料範圍與分派；保留範圍外／catalog守衛，詳[逐項結論](wiki/era/battle-dispatch.md) |
 | `game/battle/sexcom.py@boss_reaction_ref` | 2514 | W05／U | S81已核對合法資料範圍與分派；保留範圍外／catalog守衛，詳[逐項結論](wiki/era/battle-dispatch.md) |
-| `game/battle/source_check.py@_victory` | 268 | W06／M | ENDLESS擊破 |
 | `game/battle/source_check.py@_timeup` | 875 | W08／U | 救出時間切れ；既有查證TFLAG:9無寫入 |
 | `game/battle/source_check.py@_hatujou_to_hairan` | 1053 | W07／U | catalog／文字支援或缺資料的失敗路徑 |
 | `game/battle/train.py@show_usercom` | 474 | W07／M | 分類指令顯示 |
-| `game/battle/train.py@event_comend` | 978 | W06／M | INSTANT能力降低 |
 | `game/battle/train.py@run_train` | 999 | W08／U | NEXTCOM；原作全ERB/ERH搜尋0筆 |
 | `game/prison/event.py@_boss_prison_routine` | 87 | W05／U | S81已核對合法資料範圍與分派；保留範圍外／catalog守衛，詳[逐項結論](wiki/era/battle-dispatch.md) |
 | `game/prison/event.py@tentacle_access_prison` | 122,141 | W05／U | S81已核對合法資料範圍與分派；保留範圍外／catalog守衛，詳[逐項結論](wiki/era/battle-dispatch.md) |

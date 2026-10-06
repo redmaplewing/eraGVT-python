@@ -245,7 +245,7 @@ def test_event_comend_analysis_and_decay(ctx):
     st.temp.selectcom = 4
     set_local(st, "EVENTCOMEND", 1, 2)  # 前回 :957–968 で 2 人避難した
     st.rng = FixedRng([3])  # :895 RAND:5（:858 は NOWEX 合計 > 0 だが CFLAG:1 == 0 なので RAND を引かない）
-    train.event_comend(ctx)
+    _drive(train.event_comend(ctx))
     assert st.rng._values == []
     lv = tentacle_level(st)
     # :883–898 LOCAL = CALC_CHISEI_SHIEN(2)（支援なし 0）→ RAND:5(3) + 0/4 + LOCAL:1(2) = 5、Lv < 10 → + 10 - Lv/3

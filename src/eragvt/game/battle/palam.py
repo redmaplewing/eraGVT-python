@@ -982,12 +982,16 @@ def palam_kiryokudown(ctx: Ctx, arg0: int, arg1: int, arg2: int) -> None:
     if local > 0:
         out.set_bold(True)
         if game_option(st, GameOption.STAT_DECLINE):
-            raise NotImplementedError("ステ低下有りオプションは未移植")
-        out.printl(f"{ctx.data.names['BASE'].get(1, '')}が{local}減った！")
+            name = ctx.data.names['BASE'].get(1, '')
+            out.printl(f"{name}が{local} {name}基礎が{div(local, 2)}減った！")
+        else:
+            out.printl(f"{ctx.data.names['BASE'].get(1, '')}が{local}減った！")
         out.set_bold(False)
     if palam_guts(ctx, "KIRYOKU", local) > 0:
         local -= 1
     c.base[1] -= local
+    if game_option(st, GameOption.STAT_DECLINE):  # PALAM_UP.ERB@PALAM_KIRYOKUDOWN:1558–1561，GUTS之後。
+        c.base[51] -= div(local, 2)
 
 
 def palam_seitaiseidown(ctx: Ctx, arg0: int, arg1: int) -> None:
@@ -1041,8 +1045,10 @@ def palam_seitaiseidown(ctx: Ctx, arg0: int, arg1: int) -> None:
     if local > 0:
         out.set_bold(True)
         if game_option(st, GameOption.STAT_DECLINE):
-            raise NotImplementedError("ステ低下有りオプションは未移植")
-        out.printl(f"{ctx.data.names['BASE'].get(2, '')}が{local}減った！")
+            name = ctx.data.names['BASE'].get(2, '')
+            out.printl(f"{name}が{local} {name}基礎が{div(local, 2)}減った！")
+        else:
+            out.printl(f"{ctx.data.names['BASE'].get(2, '')}が{local}減った！")
         out.set_bold(False)
     if t(ctx, c, "避妊結界") > 0 and c.base[2] > 0 and c.base[2] - local < 1:  # :1659–1663
         out.printw()
@@ -1055,6 +1061,8 @@ def palam_seitaiseidown(ctx: Ctx, arg0: int, arg1: int) -> None:
         out.printl()
         out.printw()
     c.base[2] -= local
+    if game_option(st, GameOption.STAT_DECLINE):  # PALAM_UP.ERB@PALAM_SEITAISEIDOWN:1665–1668。
+        c.base[52] -= div(local, 2)
 
 
 # --- @PALAM_UP（PALAM_UP.ERB:13–367）-------------------------------------------------

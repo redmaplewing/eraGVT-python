@@ -34,6 +34,26 @@ from .rape import after_train_rape  # 戦闘イベント.ERB@AFTER_TRAIN_RAPE:96
 from .self_kind import self_battleend  # FORCE_夜間自慰.ERB（S15）
 
 
+def _endless_deadline(ctx: Ctx) -> None:
+    """ERB/ゲーム内_戦闘処理/BATTLE_TRAIN_AFTER.ERB@EVENTEND:311–333。"""
+    st = ctx.state
+    st.result[0] = tentacle_survive_num(st)
+    kills = st.flag[3] - st.result[0]
+    reduction = div(st.day[0], 14) + div(kills, 10)
+    for day, count in ((90, 20), (135, 40), (180, 60)):
+        if st.day[0] >= day or kills >= count:
+            reduction += 1
+    st.day[1] -= min(reduction, st.flag[2])
+    remaining = (kills + 1) * st.flag[2] - st.day[0] + st.day[1]
+    # 原文只有最後的ELSEIF含GOTO；大幅負值只補一次100或10，不能改成全部循環。
+    if remaining < -1000:
+        st.day[1] += 100
+    elif remaining < -100:
+        st.day[1] += 10
+    elif remaining < 0:
+        st.day[1] -= remaining
+
+
 def mission_check(ctx: Ctx, default: int) -> None:
     """イベント戦の特殊ミッション判定（S20：`raid.mission_check`）。"""
     from ..raid import mission_check as _mc
@@ -403,7 +423,7 @@ def event_end(ctx: Ctx) -> Generator[None, int, Step]:
         _transform_enemy_off(ctx)
         event_battle_reset_costume(ctx, st.target)
         if game_option(st, GameOption.ENDLESS):  # :311–333
-            raise NotImplementedError("エンドレスモードの期日短縮は未移植")
+            _endless_deadline(ctx)
     elif st.tflag[98] == 2:  # :335–422 敗北
         yield from _event_end_lose(ctx)
     # :425–440 勝てなかったボスの蓄積ダメージと解析度を保持

@@ -26,6 +26,7 @@ from ..action import Ctx, Step, config_check_event, config_check_screen, print_c
 from ...state.constants import GameOption
 from ..era import div, format_curly, format_percent, isqrt, limit
 from ..opening import game_option
+from ..input_request import WaitInputRequest
 from ..shop import _bar
 from ..tentacle import enemy_type_check, tentacle_survive_num
 from .cheers import perform_cheers_first_hantei
@@ -697,7 +698,7 @@ def do_train(ctx: Ctx, com: int) -> Generator[None, int, None]:
         return
     yield from source_check(ctx)
     before = out.wait_count
-    event_comend(ctx)
+    yield from event_comend(ctx)
     if out.wait_count == before:  # NeedWaitToEventComEnd（Process.SystemProc.cs:476、515–517）
         out.wait()
 
@@ -779,7 +780,7 @@ def _shinkyou_random(ctx: Ctx) -> None:
         shinkyou_change(ctx, "KOUYOU_SYOUTIN")
 
 
-def event_comend(ctx: Ctx) -> None:
+def event_comend(ctx: Ctx) -> Generator[WaitInputRequest, object, None]:
     """`BATTLE_COM.ERB@EVENTCOMEND`:685–986。LOCAL:1 は関数の静的 LOCAL（:895 は前回 :957–968 の値を読む）。"""
     st, out = ctx.state, ctx.out
     c = tc(ctx)
@@ -975,7 +976,28 @@ def event_comend(ctx: Ctx) -> None:
     event_battle_turnend(ctx)
     # :984–986
     if game_option(st, GameOption.STAT_DECLINE):
-        raise NotImplementedError("インスタントモードの能力低下（INSTANT_ARG_DOWN）は未移植")
+        yield from instant_arg_down(ctx)
+
+
+def instant_arg_down(ctx: Ctx) -> Generator[WaitInputRequest, object, None]:
+    """ERB/ゲーム内_戦闘処理/INSTANT_ARG_DOWN.ERB@INSTANT_ARG_DOWN:1–32。
+
+    PRINTFORMW先等待再抽選；Enter不寫RESULT(S)：
+    reference/emuera-1824/Emuera/GameView/EmueraConsole.cs:497–508、707–734。
+    """
+    st, c = ctx.state, tc(ctx)
+    count = 5 if c.cflag[1] == 0 else 2
+    set_local(st, "INSTANT_ARG_DOWN", 1, count)
+    ctx.out.printw("敵の纏う瘴気が体に染み込む……" if c.cflag[1] == 0 else "敵の纏う瘴気が辺りに撒き散らされている……")
+    yield WaitInputRequest()
+    while count > 0:
+        roll = st.rng.rand(5)
+        set_local(st, "INSTANT_ARG_DOWN", 2, roll)
+        c.base[10 + roll if roll < 4 else 50] -= 1 if roll < 4 else 10
+        count -= 1
+        set_local(st, "INSTANT_ARG_DOWN", 1, count)
+    # 函式落底：reference/emuera-1824/Emuera/GameProc/Process.ScriptProc.cs:61–67。
+    st.result[0] = 0
 
 
 def _tofull(n: int) -> str:
