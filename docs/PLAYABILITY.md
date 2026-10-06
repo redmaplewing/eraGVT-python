@@ -1,6 +1,6 @@
 # 完整遊玩現況盤點
 
-停止點與搜尋統計基線：S55 `8a77ee8`；系統現況包含S76初始衣裝判定（25歲人工基線，最終驗收範圍見STATUS）。下一工作與順序只看[PLAN](PLAN.md)，本頁不另排優先序。
+停止點與搜尋統計基線：S55 `8a77ee8`；系統現況包含S77狀態／救出／存讀連續驗收（25歲人工基線，最終驗收範圍見STATUS）。下一工作與順序只看[PLAN](PLAN.md)，本頁不另排優先序。
 範圍是本機瀏覽器與原作已完成、可達功能；「已接通」表示有實作與測試，**不等於全瀏覽器驗收完成**。沒有完成比例。
 
 ## 系統現況與證據
@@ -17,7 +17,7 @@ Python路徑以下相對`src/eragvt/`；測試相對`tests/`。原作路徑相�
 | 成就／紀錄 | S57共用取得／保存、GET_STATE判定、catalog／原生呼叫者、SHOP[800]六頁；S58的20欄紀錄、模式通關數、ENDLESS紀錄與六觸發；[證據](wiki/era/achievements.md) | S59已按裁決修正新全域版本／最高總評113；未移植解鎖互動端屬W02 | W01 |
 | 戰鬥／事件 | 普通戰、雜魚／市民／悪堕ち、襲擊／救援；`test_battle.py`／`test_mob_battle.py`／`test_citizen_battle.py`／`test_raid.py`；S73變身零件、S74裝備506／507／509、S75外衣199與真COM0回合、`test_transformation_parts.py`／`test_special_equipment.py`／`test_tentacle_suit.py` | 觀眾妨礙、返り血、部分救出、ISGIRLY、動態敵方安全網與模式分支 | W03、W05、W06 |
 | 末王／終局 | Ｋ触手、天使の樹、SCORE、結局1–6函式及引繼；`test_lastboss.py`／`test_angel_tree.py`／`test_succession.py` | 不等於六結局全能自然到達；原作ENDING_6前置停用。末王強化已有HP／回合回復，敵行動回復待核對；全模式終局待驗 | W05、W06、W08 |
-| 身體／生命週期 | 身體／裏プロフィール、妊娠出産／子供、幽閉／救出、寄生／悪堕ち、夜間與強制事件；對應測試 | S70三種TS／首次事件、S71妊娠TS與共用結算／幽閉／catalog等待、S72女體受容五分支及夜間／戰後入口已接通；S74特殊裝備、S75外衣199與原生妊娠等待已接，S76初始無內衣判定已接，不宣稱全TS生命週期或B05完成 | W02、W03、W05 |
+| 身體／生命週期 | 身體／裏プロフィール、妊娠出産／子供、幽閉／救出、寄生／悪堕ち、夜間與強制事件；對應測試 | S70三種TS／首次事件、S71妊娠TS與共用結算／幽閉／catalog等待、S72女體受容五分支及夜間／戰後入口已接通；S74特殊裝備、S75外衣199與原生妊娠等待已接，S76初始無內衣判定已接；S77兩條25歲編輯TS→幽閉／既有救出→SHOP／新session存讀鏈通過，見[證據](sessions/S77-adult-lifecycle-evidence.md)。W03範圍完成，不含出生／自然遭遇或B05整列 | W02、W03、W05 |
 | 設定 | config 1–3、各開關／篩選、GLOBAL；`test_config.py` | 分類指令、返り血、男女平等OFF、能力降低等開啟後的分支，逐項ON/OFF與相依組合驗收 | W03、W05–W08 |
 | 口上／顯示 | catalog 13,384函式可執行，另有雜魚194／市民10；INPUT／INPUTS已有；`test_kojo_input.py`／`test_narration*.py` | 開局MESSAGE_FIRST、COUNT、同步失敗回復、字型／HTML／圖樣、WAIT、SHOP／戰鬥資訊簡化；可執行率不保證呼叫成功 | W04、W07 |
 | 非NORMAL與除錯 | 引繼`succession.py:463–495`已可選SOLO／HARDCORE／SURVIVAL／FREEPLAY／INSTANT；GameMode／GameOption已有 | ENDLESS／能力降低等仍停止；除錯輸入／顯示未完成；不能說目前不可到達而排除 | W06、W08 |

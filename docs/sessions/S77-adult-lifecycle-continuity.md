@@ -20,3 +20,10 @@
 - 定向測試／fixture最後自查後凍結，主代理獨立全pytest及真瀏覽器。若修改產品遊戲流程，另跑兩入口各seed0–249、max-shop200、actions101–108、前景50局一批，比對S76正式基線；只有測試／文件改動則沿用S76而明記未重跑。
 - 更新必要wiki／PLAYABILITY／bridge；STATUS／PLAN由主代理收口。繁體中文、LF／UTF-8無BOM、source／reference唯讀。
 - 子代理核對git status／diff後回報成果／依據／裁決與測試摘要，不commit/push；主代理驗收後明確stage並推main。
+
+## 完成驗收
+- 新增2條Web連續案例，定向338案；主代理全pytest：`5021 passed, 1 warning in 160.53s (0:02:40)`。
+- 主代理兩路真瀏覽器完成編輯／無效重試／幽閉／原生救出／SHOP／新session讀回續行，全角色保存內容一致，四年齡欄25，console錯誤0。
+- 一般角色回隊，妊娠角色留病棟；TARGET選取限制、換位／關係欄、列表原生輸出正確。列表畫面停留仍W07，未冒充顯示通過。
+- 僅測試／文件，正式500沿用S76未重跑；source／reference未動，無新增UNVERIFIED／DEVIATION。人工前態及操作見S77-adult-lifecycle-evidence.md。
+- W03範圍完成，W02及完整B矩陣不標完成；依固定佇列下一成果S78完整初期套組，仍需保留原作預設與取消路徑。
