@@ -44,11 +44,11 @@
 - :1560 `CHARA_MAKE_MAIN, LOCAL:16`於S60接到`creation_menu`，等待玩家編輯或按[1000]完成，不再自動代按。
   `ERB/SYSTEM/キャラメイキング関連/CHARA_MAKE.ERB@CHARA_MAKE_MAIN:145、203`將周回獎勵傳入共用個別編輯器；:207–210完成時呼叫CHARA_MAKE_FINALIZE。
   獎勵已在SUCCESSION加入JUEL；`ERB/SYSTEM/キャラメイキング関連/FIRSTSETTING_CHARA.ERB@FIRSTSETTING_CHARA_MAIN:323–324`僅於CSV重載後補回獎勵，進入／確認／重入均不重複加點。
-  共用12項子選單已接通，CSV重載等其餘子選單仍未移植，詳見[角色編輯](character-editor.md)。
+  共用12項子選單與S64的CSV重載均已接通；S61–S67補齊一般身體／性格／種族／性別等編輯，經歷的具體阻塞仍見[角色編輯](character-editor.md)。
 - :1563–1622 設口上號、恢復結界、MESSAGE_FIRST（使用現有可等待的口上呼叫）、前排名單、
   衣裝所持品、HEROINE_PRESET 設定選單、探索目標及 FLASHNEWS 文字；FLAG:64=-1 後 BEGIN SHOP。
   必須立即終止舊 TURNEND；EVENTSHOP 把繼承標記清0並進第1天白天，再依引擎規則自動存檔。
-- 天使の樹仍為後續獨立系統；選 HARDCORE 可能在後續周回遇到既有停止點，不繞過。
+- 天使の樹已接通；周回HARDCORE的Ｋ触手勝利按原作增加末王數／總期限並轉入天使樹。S82已驗兩末王各終端，S84續驗新周增援門檻及結局存讀鏈，見[模式生命週期](mode-lifecycle.md)。
 
 ## 引擎查證
 

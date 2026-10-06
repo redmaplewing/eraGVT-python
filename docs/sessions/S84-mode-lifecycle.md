@@ -23,3 +23,14 @@
 - 明列W06 DoD各項證據與剩餘缺口；主代理確認後才可在STATUS／PLAN改完成，下一包按既有固定佇列W07。
 - 繁體中文、LF／UTF-8無BOM、source／reference唯讀；子代理自查git範圍、不commit/push；STATUS／PLAN由主代理收口。
 - 最後三段報告成果／查證依據／UNVERIFIED與DEVIATION，附測試摘要、實際路徑及必要操作。
+
+## 子代理成果與驗證
+- 無產品改動；新增32案完整catalog模式生命週期測試及獨立2案ENDLESS全滅八體進評分，詳[模式生命週期](../wiki/era/mode-lifecycle.md)。
+- 原32案加既有相關定向：`523 passed, 1 warning in 32.88s`；後補獨立2案：`2 passed in 0.99s`。主代理全pytest與後補定向分開記錄，不重跑已通過全套。
+- `tmp/s84/browser_fixture.py`六路原生新局／明示人工前態已備；一般新局輸入→SHOP→施前態→開始行動HTTP通過，不能代替主代理真瀏覽器。
+- NORMAL／SOLO／HARDCORE／INSTANT有限通關及六種可選新周都有定向連續存讀；SURVIVAL按7／8體分流，FREEPLAY／SANDBOX期限持續；周回HARDCORE K勝利才增援天使樹。
+- FREEPLAY的「引継ぎ無し」只有常數定義，原全滅>=8仍進評分；保留原控制流。ENDING_6維持無入口。沒有新增UNVERIFIED／DEVIATION。
+- 主代理瀏覽器／完整pytest與結包500、W06狀態由主代理收口；既有W02／W04阻塞及W09完整B矩陣不變。
+
+- 主代理六路真瀏覽器通過：NORMAL新局至結局存槽5、新session讀回引繼SHOP；SURVIVAL7／8期限分流；FREEPLAY／SANDBOX持續；HARDCORE增援回SHOP。完整catalog失敗0、console0、年齡25／原生未設定哨兵保留。
+- 主全pytest `5396 passed, 1 warning in 384.36s (0:06:24)`；後補獨立2案 `2 passed in 0.90s`，沒有重跑整套。W06結包500十批通過：default247上限／3回標題、tokusou250上限，catalog／fixture0，所有輸出欄位逐seed同S82；證據tmp/s84/adult25-v1/audit.json。

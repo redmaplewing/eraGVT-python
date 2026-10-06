@@ -1,6 +1,6 @@
 # 完整遊玩現況盤點
 
-停止點與搜尋統計基線：S55 `8a77ee8`；系統現況包含S82戰鬥終端／正常入口驗收、S81條件／回復／分派核對及S80側事件（25歲人工基線，最終驗收範圍見STATUS）。下一工作與順序只看[PLAN](PLAN.md)，本頁不另排優先序。
+停止點與搜尋統計基線：S55 `8a77ee8`；系統現況包含S84模式生命週期定向、S83模式規則及S82戰鬥終端／正常入口驗收（25歲人工基線，最終驗收範圍見STATUS）。下一工作與順序只看[PLAN](PLAN.md)，本頁不另排優先序。
 範圍是本機瀏覽器與原作已完成、可達功能；「已接通」表示有實作與測試，**不等於全瀏覽器驗收完成**。沒有完成比例。
 
 ## 系統現況與證據
@@ -10,17 +10,17 @@ Python路徑以下相對`src/eragvt/`；測試相對`tests/`。原作路徑相�
 | 系統 | 已接通與現有證據 | 剩餘內容／驗收缺口 | 工作包 |
 |---|---|---|---|
 | 啟動／存讀 | `__main__.py`、`web/app.py`、`game/session.py:381–492`；`test_main.py`／`test_web.py`／`test_state_game.py` | 乾淨安裝、新程序讀回、損毀／版本限制、瀏覽器實測矩陣尚未完成 | W08、W09 |
-| 開局／模式 | 共通角色製作、HEROINE_PRESET 0–3、關係、說明；`opening.py`／`creation_menu.py`；`test_creation_menu.py`／`test_tutorial.py` | S79已接新局／引繼七模式入口、角色製作返回與序章略過；觀看具體範圍停止，完整模式生命週期待W06；[依據](wiki/era/opening-sequence.md) | W04、W06 |
+| 開局／模式 | 共通角色製作、HEROINE_PRESET 0–3、關係、說明；`opening.py`／`creation_menu.py`；`test_creation_menu.py`／`test_tutorial.py` | S79已接新局／引繼七模式入口、角色製作返回與序章略過；觀看具體範圍停止；S84已補七模式生命週期定向，主驗收依STATUS；[依據](wiki/era/opening-sequence.md) | W04、W06 |
 | 角色製作 | 主題命名、生成設定、姓名／變身命名、一人稱、武器、關係；各同名測試 | S60共用入口及12項子選單已接開局／招募／醫療／引繼；S61一般身體／外貌、S62性格／精神素質、S63種族／feat／變身能力／基礎點、S64共用CSV模板、S65性別、S66初始狀態／人數及GLOBAL權限、S67身體其餘操作已接通。經歷仍缺；S68子供獨立一人稱、S69實際身體收尾入口均已接真實輸入；S69僅25歲人工尾段函式邊界驗收，不代表完整出生／加入，見[角色編輯](wiki/era/character-editor.md) | W02 |
 | 套組 | S78接0–9、11、14共12套，含6／7／8動態AA；`test_initial_presets.py`、[依據](wiki/era/initial-presets.md) | 10的固定性經驗初始化涉及未成年模板，保留明確停止；序章觀看具體範圍另見開局控制。不能新增缺號12／13或宣稱13套完成 | W04 |
 | SHOP／日常 | 8類行動、編成／排程、衣裝購買／穿戴、強化／醫療／設施／招募引退；`session.py:214–302`、各模組／測試 | 決策資訊、各子選單預設代按與特殊條件（SHOP[800]已於S57接通） | W01–W03、W07 |
 | 成就／紀錄 | S57共用取得／保存、GET_STATE判定、catalog／原生呼叫者、SHOP[800]六頁；S58的20欄紀錄、模式通關數、ENDLESS紀錄與六觸發；[證據](wiki/era/achievements.md) | S59已按裁決修正新全域版本／最高總評113；未移植解鎖互動端屬W02 | W01 |
 | 戰鬥／事件 | 普通戰、雜魚／市民／悪堕ち、襲擊／救援；`test_battle.py`／`test_mob_battle.py`／`test_citizen_battle.py`／`test_raid.py`；S73變身零件、S74裝備506／507／509、S75外衣199與真COM0回合、`test_transformation_parts.py`／`test_special_equipment.py`／`test_tentacle_suit.py`；S80觀眾妨礙、返血與失去角色發現，見[側事件](wiki/era/battle-side-events.md) | S81接回ISHOLE／ISGIRLY、修正敵回復並核對合法分派；S82補四類ACTION_MAIN實抽與事件4接受／拒絕、勝敗／超時至SHOP，16案及16路真瀏覽器通過；[連續鏈與限制](wiki/era/battle-lifecycle.md)，W05結包依STATUS，模式分支仍屬W06 | W03、W05、W06 |
-| 末王／終局 | Ｋ触手、天使の樹、SCORE、結局1–6函式及引繼；`test_lastboss.py`／`test_angel_tree.py`／`test_succession.py` | 不等於六結局全能自然到達；原作ENDING_6前置停用。S81已驗末王回復與強化ON/OFF；S82兩末王各勝／敗／撤退／超時八路通過，勝利按原作交接W06，非勝利回SHOP；全模式終局仍待W06 | W05、W06、W08 |
+| 末王／終局 | Ｋ触手、天使の樹、SCORE、結局1–6函式及引繼；`test_lastboss.py`／`test_angel_tree.py`／`test_succession.py` | 不等於六結局全能自然到達；原作ENDING_6前置停用。S81已驗末王回復與強化ON/OFF；S82兩末王各勝／敗／撤退／超時八路通過，勝利按原作交接W06，非勝利回SHOP；S84補有限模式通關存讀／六模式新周與ENDLESS終局對照；[模式生命週期](wiki/era/mode-lifecycle.md)，主驗收依STATUS | W05、W06、W08 |
 | 身體／生命週期 | 身體／裏プロフィール、妊娠出産／子供、幽閉／救出、寄生／悪堕ち、夜間與強制事件；對應測試 | S70三種TS／首次事件、S71妊娠TS與共用結算／幽閉／catalog等待、S72女體受容五分支及夜間／戰後入口已接通；S74特殊裝備、S75外衣199與原生妊娠等待已接，S76初始無內衣判定已接；S77兩條25歲編輯TS→幽閉／既有救出→SHOP／新session存讀鏈通過，見[證據](sessions/S77-adult-lifecycle-evidence.md)。W03範圍完成，不含出生／自然遭遇或B05整列 | W02、W03、W05 |
 | 設定 | config 1–3、各開關／篩選、GLOBAL；`test_config.py` | 分類指令、男女平等OFF、能力降低等開啟後的分支，逐項ON/OFF與相依組合驗收 | W03、W05–W08 |
 | 口上／顯示 | catalog 13,384函式可執行，另有雜魚194／市民10；INPUT／INPUTS已有；`test_kojo_input.py`／`test_narration*.py` | S79已接開局MESSAGE_FIRST共用分派／等待；其餘COUNT、同步失敗回復、字型／HTML／圖樣、WAIT、SHOP／戰鬥資訊簡化；可執行率不保證呼叫成功 | W04、W07 |
-| 非NORMAL與除錯 | S79新局與引繼共用MODE_SELECT；S83接回ENDLESS擊破／期限、能力降低與INSTANT真等待；[依據](wiki/era/mode-rules.md) | 七模式完整生命週期／周回驗收仍留W06；除錯輸入／顯示未完成；不能說目前不可到達而排除 | W06、W08 |
+| 非NORMAL與除錯 | S79新局與引繼共用MODE_SELECT；S83接回ENDLESS擊破／期限、能力降低與INSTANT真等待；[依據](wiki/era/mode-rules.md) | S84七模式日期／權限／終局與周回定向已完成，主驗收依STATUS；除錯輸入／顯示未完成；不能說目前不可到達而排除 | W06、W08 |
 
 ## 原作未完成與原作錯誤：只保留有證據的範圍
 
@@ -52,7 +52,7 @@ Python路徑以下相對`src/eragvt/`；測試相對`tests/`。原作路徑相�
 
 ## 無操作與略過：不能被停止點統計遮住
 
-- 真缺口：新UI解鎖消費端→W02（W01成就／紀錄與S59兩項已裁決修正已接通）；S60已消除共用編輯入口／引繼代按；S68／S69子供一人稱及身體代按已消除；[8]經歷具體範圍阻塞→W02；序章觀看具體範圍→W04、模式完整生命週期→W06；資訊與WAIT／圖樣→W07。
+- 真缺口：新UI解鎖消費端→W02（W01成就／紀錄與S59兩項已裁決修正已接通）；S60已消除共用編輯入口／引繼代按；S68／S69子供一人稱及身體代按已消除；[8]經歷具體範圍阻塞→W02；序章觀看具體範圍→W04；S84模式生命週期證據見對應wiki，W06結包依STATUS；資訊與WAIT／圖樣→W07。
 - AST找到的`pass`多為原作空分支、條件不改值、例外捕捉與標記類別。例如`body.py:94,108`保持成長值，`input_request.py:7`請求標記，`narration/nodes.py:241,246`節點類別，`battle/train.py:1007`捕捉流程轉移；不計作待翻功能。
 - `battle/restraint.py@_need_boss:79`是雜魚／市民接通後的空守衛；不能據此重做整套戰鬥。`battle/sexmsg.py`多處空分支只保留狀態fallback，原文顯示已有catalog；W07檢查fallback與缺資料行為。
 - `narration/runtime.py:203`對CALL方法型別的空分支與註解不一致→W08核對合法呼叫與引擎規則，不在本次擅自定義修正。

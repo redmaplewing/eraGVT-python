@@ -30,5 +30,5 @@ S79七模式新局／引繼共用入口維持；S83接回六處停止。MODE_OPT
 - 瀏覽器前態：`tmp/s83/browser_fixture.py`；必要代表為survival-win、normal-win、instant-human、instant-sp、instant-hit、instant-palam。主代理六路已實際操作通過；四年齡欄25、catalog失敗0、console警告／錯誤0，證據tmp/s83/browser-summary.json／browser-instant-wait.png。
 - ENDLESS真TRAIN勝利→EVENTEND→TURNEND→SHOP；INSTANT真TRAIN輸入→EVENTCOMEND→確認→再顯示選單；PALAM_UP直接入口驗兩項扣基礎。人工HP／攻擊／日期／下一敵行動明示，不宣稱自然完整通關。
 - 主代理全pytest：`5364 passed, 1 warning in 178.06s (0:02:58)`。局部模式規則未改共用排程／RNG／存讀檔，依分級裁決不跑500；最近完整基線仍為S82，未冒充重驗。
-- 下一完整成果S84仍是W06：七模式日期／增援／招募／禁止條件與終局或持續規則、至少一條新局到結局存檔／讀回／引繼新周連續流程；B06整列及W06結包未完成。
+- S84已補七模式日期／增援／招募／禁止條件、終局或持續規則，以及新局→結局存檔／新session讀回／引繼新周連續驗收；[原文對照及範圍](mode-lifecycle.md)。W06結包依主代理STATUS驗收，W09完整B矩陣仍保留。
 - 無新增UNVERIFIED／DEVIATION，既有W02／W04阻塞與W07舊WAIT範圍不變。
