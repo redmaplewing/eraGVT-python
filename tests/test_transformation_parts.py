@@ -244,6 +244,9 @@ def prepare_battle(ctx):
     st.flag[2] = 100
     st.savestr[13] = "BOSS"
     st.flag[11],st.flag[12],st.flag[13] = 3,10000,3000
+    # S86 顯示原 COLOR_BAR 需要完整遭遇前態；ENCOUNT.ERB@ENCOUNT_BOSS:284–289。
+    from eragvt.game.battle.core import tentacle_access
+    st.flag[14],st.flag[15] = int(tentacle_access(ctx,"SYASEI")),0
     st.flag[46],st.flag[47],st.flag[100] = 28,36,127
     c.equip[601] = c.equip[602] = c.equip[661] = 1  # 200有三槽，組合無互斥。
     st.rng = FixedRng([0]*500)

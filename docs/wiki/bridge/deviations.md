@@ -82,8 +82,7 @@ S56現況歸屬：各未勾選項的W編號指向`docs/PLAN.md`；仍待實作�
   S14：`DRAWLINEFORM 文字列` 畫成與 DRAWLINE 相同的區切線（原作以該字串重複到畫面寬：`GameView/EmueraConsole.Print.cs@getStBar`:543–560；
   動画サイト :1335 的 `―`）；動画サイトの `PRINT_TAGSET_TEXT` 的 `@F:` フォント指定不反映（本作未使用），既定色的 `SETCOLOR 0x{GETCOLOR}`
   以「回到呼叫前的顏色」表示（顯示相同）。（Python：`eragvt.narration.runtime`、`eragvt.narration.windowlib`）
-- [ ] `W07` **SHOW_SHOP 簡化**：狀態條（`COLOR_BAR` 的色階與長度）以 20 格單色近似；`SHOW_SHOP_STATUS_SIGN`（生理周期・疲勞等標記）、隊伍列表的欄寬對齊與第 2 行詳細未移植；`SHOP_NG_ACTION_INFO` 的紅字在函式結尾重設顏色（原作不重設）。（Python：`eragvt.game.shop`）
-  S46 已接通出場／候補列表與編成選擇，候補列表沿用相同欄寬、數值條與狀態標記簡化；來源 `ERB/インターミッション画面/SHOP_SHOW_STATUS_LIST.ERB@SHOP_SHOW_STATUS_RESERVE_LIST:52–86`。
+- [ ] `W07` **SHOW_SHOP 簡化**：S86已接回狀態標記、出場第二行／候補的4格資源條、原姓名／數字欄寬、NG紅色殘值；主資源20格漸層先前已由S25接回。數值／標記範圍結案，剩餘共用字型及PRINTLC精確視覺欄寬沿本頁文字顯示原項留W07，沒有視為批准。來源與邊界見[決策資訊](../era/decision-information.md)。
 - [x] **SHOP[800]未實作**（S57解決）：成就4頁／紀錄2頁、切換、循環換頁、返回均接通；紀錄寫入仍見W01上項。
 - [ ] `W07` **WAIT／PRINTW 不阻塞**：Web 一次顯示到下一個 INPUT 為止，WAIT 位置以虛線標示，不需按鍵繼續。（Python：`eragvt.game.session`、`eragvt.web`）S44引退名簿／報告、S45設施擴充、S49武器自訂已依原作局部補上PRINTW／WAIT等待；S85已將成就、ENDLESS新紀錄、SCORE保存前／收尾共四處同步包裝改為明確Enter確認，確認期間保留歷史標籤並停用舊選項按鈕；RESULT(S)與RNG不因等待改變。此四處不再要求數字；其餘舊等待尚未全面遷移，不能勾選結案，詳[共用輸入](generic-input.md)。其他系統的既有簡化仍保留，見`docs/wiki/era/retirement.md`與`facilities.md`。
   S70首次事件`ERB/地の文/MESSAGE_PRISON.ERB@MESSAGE_PRISON_PRISENTENCE_FIRST`與`ERB/ヒロイン関連/TRANS_SEX.ERB@TS_NORMAL:361`錯誤路徑的舊PRINTW仍沿本項等待簡化，未新增批准；TS選單文字與尾端全形空白已按原文保留。
@@ -93,12 +92,8 @@ S56現況歸屬：各未勾選項的W編號指向`docs/PLAN.md`；仍待實作�
 - [ ] `W08` **SHOW_SHOP 的 TARGET == CHARANUM**：原作會因越界參照報錯，這裡視為「編成外」重新選擇 TARGET（`eragvt.game.shop.show_shop`）。
 
 - [ ] `W07` **鍛錬畫面**：（S25 起素質一覧 `SHOW_STATUS_TALENT` 與 COLORSENTENCE_BAR 已照原文移植，以下只剩 PRINTLC）`PRINTLC` 以 cp932 位元組數補空白到 26，不做原作依字型寬度削減尾端空白（`GameView/EmueraConsole.Print.cs@CreateTypeCString`:383–425）。（Python：`eragvt.game.action.show_status_base_training`、`eragvt.text.TextOutput.print_lc`）
-- [ ] `W07` **戰鬥畫面簡略顯示**（S05 新增）：`@SHOW_STATUS`（`ゲーム内_戦闘処理/BATTLE_SHOW_STATUS.ERB`:3–351，含
-  `ヒロイン関連/CHARA_STATUS.ERB@SHOW_STATUS_BASE_DISPBATTLE`、`SHOW_TRAIN_PALAM_STATUS`、`CLOTH_BATTLE_DISPHP`、
-  `SHOW_DISTANCE_WINDOW`）只顯示名稱・Lv・體力／氣力／性耐性條・EX 值・狀態・心境・敵名 Lv・距離・剩餘回合・
-  敵體力／射精（解析度不足時 ？？？）・油斷・敵能力・解析度；距離適性、スタイル、衣裝耐久、PALAM 表、距離視窗未顯示。
-  這些函式內沒有 RAND；代入只有 `STATUS_PRINT_CHARGE`（CHARA_STATUS.ERB:1477–1489，每回合無條件）的 TCVARn:206（[反撃]バースト的蓄積限度），S16 起照原文計算（`train.status_charge_limit`），其餘不影響狀態。`[800]` ステータス畫面 S25 起照原文移植（`eragvt.game.status_screen`）。`SHOW_USERCOM` 只移植「不分類」版（`BATTLE_COM.ERB`:379–568，基本設定 FLAG:801 bit2 = 0），
-  《危険度》的顏色照 `FORECAST_OUTPUT_SETCOLOR`。（Python：`eragvt.game.battle.train.show_status`／`show_usercom`／`usercom`）
+- [ ] `W07` **戰鬥畫面簡略顯示**：S86已接距離適性／style、衣裝耐久與原catalog改造標籤、EX／SP／AIR／CHARGE、feat、狀態／囚禁名單、敵資源解析與距離視窗，及SHOW_USERCOM六種分類分支；原不分類路徑仍保留。PALAM開閉／移位沿既有原生實作，CHARGE每次SHOW_STATUS恰寫一次TCVARn206。
+  先前「只有206寫入、其餘無副作用」結論撤回：PALAM開啟可能經GAPING初始化CFLAG35／36及抽RNG，S86保持原次數；支援衣裝查詢更新SAVESTR0／RESULTS0，TENTACLE_ACCESS每key先留診斷字串，顯示呼叫邊界已同步，RESULT(S)尾格保留。數值／決策資訊範圍結案；字型／PRINTLC與共用排版近似仍留W07原項，未宣稱圖像完全等同原引擎。詳[決策資訊](../era/decision-information.md)。
 - [ ] `W07` **性攻擊的地の文**（S06 新增、S07 更新）：S07 起 `地の文/MESSAGE_SEX*.ERB`、敗北 `MESSAGE_BATTLE_END_LOSS`、射精・處女喪失・
   ヒロイン側性攻撃的地の文由 catalog 輸出本文，其中的狀態變化行經 `narration/hooks.py`（140 行，對照 sexmsg）依 ERB 順序執行、
   RAND 也照 ERB 順序抽（亂數序列與 S06 不同）。S14 起 `MESSAGE_SEX_SPCOM7`（含 INPUTS 與動画サイト）也由 catalog 執行。catalog 不可執行或 Null 時才印

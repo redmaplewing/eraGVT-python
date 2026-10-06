@@ -131,6 +131,9 @@ def begin_rescue(s):
     st.flag[10], st.flag[11], st.flag[12], st.flag[13] = 0, 3, 10000, 1
     st.flag[46], st.flag[47], st.flag[100] = 28, 36, 127
     st.savestr[13] = "BOSS"
+    # ENCOUNT.ERB@ENCOUNT_BOSS:283–285：完整敵第二資源前態。
+    from eragvt.game.battle.core import tentacle_access
+    st.flag[14],st.flag[15] = int(tentacle_access(s._ctx(),"SYASEI")),0
     st.rng = FixedRng([0] * 1000)
 
     def chain():

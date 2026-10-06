@@ -280,7 +280,7 @@ def check_can_retreat(ctx: Ctx) -> int:
 # --- @CALC_CHISEI_SHIEN（BATTLE_SHOW_STATUS.ERB:467–505）--------------------------------
 
 
-def calc_chisei_shien(ctx: Ctx, arg: int) -> int:
+def calc_chisei_shien(ctx: Ctx, arg: int, *, registers: bool = False) -> int:
     st, data = ctx.state, ctx.data
     total = 0
     for i in range(st.charanum):
@@ -299,7 +299,7 @@ def calc_chisei_shien(ctx: Ctx, arg: int) -> int:
             cal = div(max(c.base[13] - 100, 2), 2)
         else:
             raise ValueError(arg)
-        cal = div(cal * cloth_battle_hosei(ctx, "CHISEI", i), 100)
+        cal = div(cal * cloth_battle_hosei(ctx, "CHISEI", i, registers=registers), 100)
         if c.cflag[43] == 511:
             cal = div(cal * 110, 100) + 5
         if t(ctx, c, "献身的") > 0:

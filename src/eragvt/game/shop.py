@@ -505,7 +505,8 @@ def shop_show_status_target(state: GameState, data: GameData, out: TextOutput) -
     if c.cstr[0] != "" and c.cstr[0] != c.name:
         out.print(f"《{c.cstr[0]}》")
     out.print(f" Lv.{c.abl[data.index_of('ABL', 'レベル')]}")
-    # DEVIATION: SHOW_SHOP_STATUS_SIGN（生理周期・疲労等のマーク）は未移植
+    from .shop_status import show_shop_status_sign
+    show_shop_status_sign(state, data, out, state.target)
     out.printl()
     base_names = data.names["BASE"]
     for idx in (0, 1, 2):
@@ -521,9 +522,10 @@ def shop_show_status_target(state: GameState, data: GameData, out: TextOutput) -
 def shop_show_status_party_list(state: GameState, data: GameData, out: TextOutput, form_mode: bool = False) -> None:
     """`インターミッション画面/SHOP_SHOW_STATUS_LIST.ERB@SHOP_SHOW_STATUS_PARTY_LIST`:9–39。
 
-    DEVIATION: 各列の最大幅合わせ（SHOP_SHOW_STATUS_COUNT_MAXLEN）と 2 行目の詳細表示
-    （SHOW_SHOP_STATUS_BASE_ONELINE・SIGN）は簡略化。
+    S86 接回最大欄寬、第二行數值條及原作狀態標記。
     """
+    from .shop_status import list_widths, show_base_oneline, show_shop_status_sign
+    widths = list_widths(state, False)
     for i in range(1, state.charanum):
         c = state.charas[i]
         if c.cflag[999] == 0 or c.cflag[0] != CharaState.SAFE:
@@ -533,22 +535,24 @@ def shop_show_status_party_list(state: GameState, data: GameData, out: TextOutpu
             out.print("◆")
         else:
             out.print("◇")
-        out.print(f"[{format_curly(i, 2)}] {c.name} 　　　")
+        out.print(f"[{format_curly(i, 2)}] {format_percent(c.name, widths[0], True)} 　　　")
         shop_print_actionplan(out, c.cflag[100])
         out.printl()
         out.print_plain("　　　　 ")
-        out.print_plain(f"体力 {c.base[0]}/{c.maxbase[0]}　気力 {c.base[1]}/{c.maxbase[1]}　性耐性 {c.base[2]}/{c.maxbase[2]}")
-        out.reset_color()  # COLORSENTENCE_MINIBAR 終端；顯示細節仍沿用已登記簡化。
+        show_base_oneline(state, data, out, i, widths[2:])
+        show_shop_status_sign(state, data, out, i)
         out.printl()
 
 
 def shop_show_status_reserve_list(state: GameState, data: GameData, out: TextOutput, form_mode: bool = False) -> None:
     """ERB/インターミッション画面/SHOP_SHOW_STATUS_LIST.ERB@SHOP_SHOW_STATUS_RESERVE_LIST:52–86。
 
-    DEVIATION: 沿用既有隊伍列表的欄寬、數值條與狀態標記簡化，見 bridge/deviations.md。
+    S86 接回原作欄寬、數值條與狀態標記。
     """
     out.printl()
     out.printl('<< 控えメンバー >>')
+    from .shop_status import list_widths, show_base_oneline, show_shop_status_sign
+    widths = list_widths(state, True)
     for i, c in enumerate(state.charas):
         if i == state.MASTER or c.cflag[999] != 0 or c.cflag[0] not in (0, 10, 11):
             continue
@@ -557,11 +561,11 @@ def shop_show_status_reserve_list(state: GameState, data: GameData, out: TextOut
             out.print('◆')
         else:
             out.print('◇')
-        out.print(f'[{format_curly(i, 2)}]{c.callname} 　')
+        out.print(f'[{format_curly(i, 2)}]{format_percent(c.callname, widths[1], True)} 　')
         shop_print_actionplan(out, c.cflag[100])
         out.print(' 　')
-        out.print_plain(f'体力 {c.base[0]}/{c.maxbase[0]}　気力 {c.base[1]}/{c.maxbase[1]}　性耐性 {c.base[2]}/{c.maxbase[2]}')
-        out.reset_color()  # COLORSENTENCE_MINIBAR 終端。
+        show_base_oneline(state, data, out, i, widths[2:])
+        show_shop_status_sign(state, data, out, i)
         out.printl()
 
 
@@ -586,8 +590,7 @@ def shop_ng_action_info(state: GameState, data: GameData, out: TextOutput) -> No
                 out.printl(f"「生粋の戦士」なため、{name}ができません")
             if is_action_incapable(data, state, a, i, C_HP):
                 out.printl(f"{name}に必要な体力がありません")
-            # 原作は SETCOLORBYNAME RED の後 RESETCOLOR しない（色は次の SETCOLOR まで残る）
-    out.reset_color()
+            # SHOP.ERB@SHOP_NG_ACTION_INFO:347–381：紅字保留到下一個 SET／RESETCOLOR。
 
 
 _DAY_OF_WEEK = ("日", "月", "火", "水", "木", "金", "土")

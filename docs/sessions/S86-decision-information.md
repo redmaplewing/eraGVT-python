@@ -24,3 +24,12 @@
 - 更新既有deviations原項、PLAYABILITY與必要wiki；已解／仍保留的簡化範圍分清，有新偏離或UNVERIFIED依規則記錄，不自行裁決。
 - STATUS／PLAN由主代理收口；下一成果仍留W07剩餘文字／COUNT／catalog失敗／舊等待，不宣稱W07或B矩陣完成。
 - 繁體中文、LF／UTF-8無BOM，source／reference唯讀；自查git範圍、不commit/push；三段回報成果／依據／需要使用者決定。
+
+## 主代理驗收（2026-10-07）
+- 完成SHOP標記／隊伍小條、戰鬥距離適性／style／衣裝／資源／敵方解析資訊及六分類；原文與副作用見wiki/era/decision-information.md。
+- 全pytest：`5443 passed, 1 warning in 197.40s (0:03:17)`；新增39案，定向與先紅證據見wiki，產品／測試凍結後才跑主全套。
+- 三路真瀏覽器shop／flat／grouped：60展收候補、衣裝橙色／原catalog標籤、距離／解析遮蔽、820／830分類及898／899開閉／移位、兩入口實際防禦4均通過。
+- 切換不耗RNG、不推回合；實際4後prevcom4／EX12／先制3→2／turn0、回number選單。原作先制期間不增加TFLAG0；不是畫面假續行。
+- 全新25歲人工局部前態、完整catalog；四欄年齡25、catalog／console失敗0、journal0；不是自然遭遇或完整開局。證據tmp/s86/browser-summary.json與三張browser-*.png；臨時頁籤／伺服器已關。
+- 抽查已確認PALAM／CHARGE次數、衣裝與敵方CALL殘值、原名單僅比ID及重複72；無新增UNVERIFIED／DEVIATION，source／reference未動。
+- 局部顯示呼叫沒有新增跨系統排程／RNG／存讀規則，沿S84最近500基線，不重跑；W07未結包，下一S87共用文字／排版／重繪。

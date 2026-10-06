@@ -10,7 +10,7 @@
 - [x] 角色 CSV 省略值 — 省略或無法解析一律 1，不限素質（`GameData/ConstantData.cs`:1276–1277）。已照改 `csv_loader`。
 - [x] `フラグ,40,100.` — `tryToInt64` 讀到非數字即停止 → 100（`ConstantData.cs@tryToInt64`:1064–1104、`Sub/LexicalAnalyzer.cs@ReadInt64`:133）。
 - [x] `基礎,40,xx`／`素質,200,変身能力` — 值無法解析 → 1（同上 :1276–1277），**不是**略過。已照改。
-- [x] `_Replace.csv` `BAR文字1, ` — 值 trim 後為空 → 該行不生效，BAR 字元維持預設 `*`（`Config/ConfigData.cs@LoadReplaceFile`:539–551、:129）。
+- [x] `_Replace.csv` `BAR文字1, ` — 值 trim 後為空 → 該行不生效，BAR 字元維持預設 `*`（`Config/ConfigData.cs@LoadReplaceFile`:539–551、:129）。S86衣裝空BAR另外核對文字2未被覆寫，沿`:130`預設點；無新增未決，見[決策資訊](../era/decision-information.md)。
 - [x] 新遊戲的初始角色列表 — SystemProc@endOpenning:197–209：`ResetData` → 依檔名番號加入角色 0 → 加入「最初からいるキャラ」（999）→ `@EVENTFIRST`。`GameState.new` 已照此建立 [0, 999]。
 - [x] TARGET／ASSI 初始值 — `ResetData` → `SetDefaultValue` 設 TARGET=1、ASSI=-1（`GameData/Variable/VariableData.cs`:644–647）。
 - [x] 存檔包含哪些變數 — 內建整數陣列 0x00–0x3B（含 **TFLAG**）、SAVESTR、TSTR、RANDDATA、角色全部內建變數、SAVEDATA 的 `#DIM`；`#DIM CHARADATA`（無 SAVEDATA）的 **TCVARn 不存**（`VariableCode.cs`:31–175、`VariableData.cs`:663–760、`CharacterData.cs`:289–350、`GameProc/UserDefinedVariable.cs`:150–152、315–320）。已改 `Character` 不存 TCVARn。RANDDATA 雖會存，但只在 `INITRAND`／`DUMPRAND` 使用（`GameProc/Function/Instraction.Child.cs`:1252、1266），本作 ERB 沒用到（grep 0 件）。

@@ -136,7 +136,7 @@ RESULTS:0 だけの書き込み（`RESULTS = …`、命令としての式中関�
 エラー文字列を書いてから TRYCALLFORM、TATTOO_ACCESS "POSITION_STR"・SEIKAKU_CHECK "STRING"（CHARA_SEIKAKU.ERB:17–31 どの経路も書く）・TOFULL・SUBSTRING(U)・INPUTS 等）を読んでいて、
 呼び出し前の値を読む箇所は無い（**S26 訂正**：`SHOP_FLASHNEWS.ERB`:75–87 の `LOCALS'=RESULTS` は TRYCALLFORM 先が書かない場合に前回値を読む。
 下節参照）。例外として同期しているもの：STRMATCH・NANORI_FINAL の REPLACE（:794–807）、TATTOO_ACCESS "POSITION_STR"、
-WINDOW_*、PRINT_TATTOO（上表）、**@SAVEINFO**（S26b：`shop.save_info`）。
+WINDOW_*、PRINT_TATTOO（上表）、**@SAVEINFO**（S26b：`shop.save_info`），以及S86的SHOW_STATUS顯示邊界（下節）。
 
 ### 事件戰ニュースの前回値（S26b）
 
@@ -159,8 +159,14 @@ WINDOW_*、PRINT_TATTOO（上表）、**@SAVEINFO**（S26b：`shop.save_info`）
   TENTACLE_ACCESS:201＋各 `_GETNAME`（全 ARGS で エラー文字列 → NAME／GETNAME は名前）、疲労表示 TOFULL（BATTLE_COM_AFTER:17–18、
   BATTLE_COM:804–805、BATTLE_TRAIN_AFTER:469–470）、COM_ATTACK_COMMON:160／292・COMF6・COMF47 の TOFULL、RAID_ATTACK:84／RAID_RESCUE:76 の
   TINPUTS（既定路 "WARNING"）、CLOTH_HOSEI:71–87 の SUBSTRING と 3004 の BATTLE_EVENT_CLOTH_STATUS:9（CLOTH_STATUS_990〜992 経由）、
-  SEIKAKU_CHECK／SYUZOKU_CHECK "STRING"、口上・地の文（catalog が同期）。**模型化したのは @SAVEINFO だけ**（他は上書きされ読まれない）。
+  SEIKAKU_CHECK／SYUZOKU_CHECK "STRING"、口上・地の文（catalog が同期）。S86前，此處只以@SAVEINFO同步新聞消費值；S86新增SHOW_STATUS顯示邊界的TENTACLE_ACCESS與支援CLOTH_HOSEI同步，其他呼叫者沿既有範圍，不能解讀成整個戰鬥殘值已全面同步。
   今後「前回の RESULTS:0」を読む箇所が戰鬥中に見つかったら、上の書き込み元の同期が必要。
+
+### S86 顯示呼叫邊界
+
+- 原作`ERB/ゲーム内_戦闘処理/COMMON_TENTACLE_DATA.ERB@TENTACLE_ACCESS:201`對所有key先寫診斷字串；NAME／GETNAME覆寫姓名，數值key保留診斷文字。SHOW_STATUS一般最後CHISEI，解析100最後HOLD；只本畫面的CALL由`display_enemy_access`同步，沒有改共用`tentacle_access`契約。
+- 新增支援顯示沿CALC_CHISEI_SHIEN→CLOTH_BATTLE_HOSEI→CLOTH_HOSEI；顯示邊界傳`registers=True`保留原SUBSTRING對RESULTS0的寫入，SAVESTR0仍為最後衣裝狀態字串。角色敵沒有其後的TENTACLE_ACCESS，故可保留該SUBSTRING結果。原文及入口／出口前態見[決策資訊](../era/decision-information.md)。
+- SHOW_STATUS最後RESULT0=0，RESULT與RESULTS尾格均保留。分類／PALAM控制的USERCOM沒有讀RESULTS；戰後至FLASHNEWS仍由SAVEINFO覆寫。這是已查證的局部原殘值同步，未新增跨系統讀取或RNG，不因共用暫存本身擴大模擬範圍。
 
 ## 限界（deviations「口上 catalog の表示簡化」・unresolved）
 

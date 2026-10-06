@@ -144,3 +144,17 @@ def colorchip(out: TextOutput, color: str) -> None:
     else:
         out.set_color(original)
     out.print("]")
+
+
+def colorsentence_minibar(out: TextOutput, name: str, cur: int, mx: int, length: int, padding: int = 0) -> None:
+    """ERB/汎用関数/コモン関数.ERB@COLORSENTENCE_MINIBAR:118–142。
+
+    :139 原文確實以最大值／長度呼叫色階，不改為目前值／最大值。
+    """
+    colorsentence_barcolor(out, cur, mx)
+    out.print(name + "₍")
+    rgb = {"体力": (245,135,60), "気力": (90,105,245), "性耐性": (255,120,150)}.get(name,(0,0,0))
+    color_bar(out, cur, mx, length, *rgb, -160,10,18,6,1,"▂","▁")
+    colorsentence_barcolor(out, mx, length)
+    out.print("₎" + f"({cur}/{mx})" + " " * max(padding,0))
+    out.reset_color()

@@ -277,7 +277,7 @@ def initiative_loop(ctx: Ctx, initiative: int) -> None:
 
 def status_charge_limit(ctx: Ctx) -> int:
     """`ヒロイン関連/CHARA_STATUS.ERB@STATUS_PRINT_CHARGE`:1477–1489 の代入部：消耗度（体力＋気力＋疲労度×150）で
-    TCVARn:206（[反撃]バーストの蓄積ダメージ限度値）を決める。表示部（:1491–1525）は省略（deviations「戦闘画面の簡略表示」）。"""
+    TCVARn:206（[反撃]バーストの蓄積ダメージ限度値）を決める。S86 的 status_display.status_gauges 在原呼叫點計算一次並顯示。"""
     c = tc(ctx)
     p = percent_cal(c.base[0] + c.base[1] + c.cflag[99] * 150, c.maxbase[0] + c.maxbase[1])
     local = 80 if 0 <= p <= 39 else 100 if 40 <= p <= 74 else 120  # SELECTCASE 0 TO 39／40 TO 74／CASEELSE
@@ -286,56 +286,19 @@ def status_charge_limit(ctx: Ctx) -> int:
 
 
 def show_status(ctx: Ctx) -> None:
-    """`@SHOW_STATUS` の簡略表示。
+    """ERB/ゲーム内_戦闘処理/BATTLE_SHOW_STATUS.ERB@SHOW_STATUS:3–349。
 
-    DEVIATION（表示のみ）：原作の SHOW_STATUS（BATTLE_SHOW_STATUS.ERB:3–351、CHARA_STATUS.ERB@SHOW_STATUS_BASE_DISPBATTLE:18–、
-    SHOW_TRAIN_PALAM_STATUS、CLOTH_BATTLE_DISPHP、SHOW_DISTANCE_WINDOW）は COLOR_BAR 等を多用するため、同じ情報の一部を
-    単純なバーと文字で表示する（deviations.md「戦闘画面の簡略表示」）。SHOW_STATUS とその下位関数には
-    RAND が無く、代入は STATUS_PRINT_CHARGE（CHARA_STATUS.ERB:1477–1489、SHOW_STATUS_BASE_DISPBATTLE:205 から
-    毎回無条件に呼ばれる）の TCVARn:206（蓄積ダメージ限度値）だけ（S16 で確認・移植：`status_charge_limit`）。
-    S34 補上原作 SHOW_TRAIN_PALAM_STATUS；打開列表可經 PRINTFORM_GAPING_NOW 初始化 CFLAG:35／36 並消耗 RNG。
+    PALAM 顯示沿原上下部位置；既有 GAPING 副作用不可重複執行。
     """
     from .palam_display import show_train_palam_status
-
+    from .status_display import show_base, show_distance_window, enemy_bar, status_signs, display_enemy_access
     st, data, out = ctx.state, ctx.data, ctx.out
-    status_charge_limit(ctx)  # 表示より前に置いても結果は同じ（表示部に代入なし）
     c = tc(ctx)
     v = c.tcvarn
     out.reset_color()
-    out.drawline()
+    show_base(ctx)
     out.printl()
-    head = f"{c.name if c.cflag[1] == 0 else print_transcallname(st, st.target)} Lv.{c.abl[data.index_of('ABL', 'レベル')]}"
-    if t(ctx, c, "変身能力") == 1 and c.cflag[1] == 0:
-        head += "　<<未変身>>"
-    out.printl(head)
-    show_train_palam_status(ctx, "上部")  # CHARA_STATUS.ERB@SHOW_STATUS_BASE_DISPBATTLE:41
-    for label, idx in (("体力", 0), ("気力", 1), ("性耐性", 2)):
-        _bar(out, label, c.base[idx], c.maxbase[idx])
-        out.printl()
-    # EX ゲージ（TCVARn:4、SP 変身中は TCVARn:5）
-    if c.cflag[1] == 2:
-        out.printl(f"S.P.　（{v[5]}/500）")
-    else:
-        out.printl(f"E.X.　（{v[4]}/500）")
-    # :18–66 状態
-    out.print("状態　　　")
-    if c.cflag[1] == 1:
-        out.print("[変身]")
-    if c.cflag[1] == 2:
-        out.print("[SP変身]")
-    if v[40] > 0:
-        out.print("[絶頂禁止]")
-    if c.cflag[99]:
-        out.print(f"[疲労 {c.cflag[99]}]")
-    if st.flag[70]:
-        out.print(f"[観衆 {st.flag[70]}人]")
-    if st.flag[71]:
-        out.print(f"[動画撮影者 {st.flag[71]}人]")
-    for bit, label in ((KIZETU, "気絶"), (HAIRAN, "排卵"), (HATUJOU, "発情"), (MAHI, "麻痺"), (BETOBETO, "べとべと"),
-                       (KOSHIKUDAKE, "腰くだけ"), (KOUKOTSU, "恍惚")):
-        if v[12] & bit:
-            out.print(f"[{label}]")
-    out.printl()
+    status_signs(ctx)
     # :134–137
     out.print("心境　　　")
     shinkyou_check(ctx, "PRINT", 0)
@@ -343,7 +306,7 @@ def show_status(ctx: Ctx) -> None:
     out.printl()
     akuoti = enemy_type_check(st, "AKUOTI") == 1
     if not akuoti:  # :145–156
-        tentacle_access(ctx, "NAME")
+        display_enemy_access(ctx, "NAME")
         if enemy_type_check(st, "BOSS") == 1:
             out.print("(ＢＯＳＳ)")
         elif enemy_type_check(st, "LASTBOSS") >= 1:
@@ -367,23 +330,35 @@ def show_status(ctx: Ctx) -> None:
             else:
                 out.print(f"悪堕ちした{print_transcallname(st, st.flag[111])}")
         out.printl(f" Lv.{e.abl[ctx.data.index_of('ABL', 'レベル')]} ")
-    # 距離（SHOW_DISTANCE_WINDOW の代わりに PRINT_DISTANCE）
-    out.print("距離　　　")
-    print_distance(ctx)
+    # BATTLE_SHOW_STATUS.ERB@SHOW_STATUS:177–217：被此敵幽閉／洗腦的人員。
+    # 原作只對 CFLAG21，不以 CFLAG20 區分敵類。
+    held, controlled = [], []
+    enemy_id = st.flag[111] if akuoti else st.flag[11]
+    for i, other in enumerate(st.charas[1:], 1):
+        if akuoti and i == st.flag[111]:
+            continue
+        if other.cflag[21] == enemy_id:
+            if other.cflag[0] == 2:
+                controlled.append("[" + other.callname + "]")
+            elif other.cflag[0] == 1:
+                held.append("[" + other.callname + "]")
+    if held: out.print("　幽閉中：" + "".join(held))
+    if controlled: out.print("　洗脳中：" + "".join(controlled))
     out.printl()
+    show_distance_window(ctx)
     show_train_palam_status(ctx, "下部")  # BATTLE_SHOW_STATUS.ERB@SHOW_STATUS:223
-    # :232–242
+    from ..colorbar import color_bar
     lim_ = st.temp.turn_limit
+    out.print("残り時間₍")
     if lim_ > 0:
-        out.printl(f"残り時間　（{format_curly(lim_ - st.tflag[0], 5)}/{format_curly(lim_, 5)}）")
+        rgb = (210,40,70) if get_battle_situation(st,"追撃戦") or get_battle_situation(st,"脱出戦") else (70,210,40)
+        delta = (18,6,10) if rgb[0] == 210 else (10,18,6)
+        color_bar(out,lim_-st.tflag[0],lim_,20,*rgb,-160,*delta,2,"▮","▮")
+        out.printl(f"₎（{format_curly(lim_-st.tflag[0],5)}/{format_curly(lim_,5)}）")
     else:
-        out.printl("残り時間　（-----/-----）")
-    # :256 COLORSENTENCE_ENEMYBAR（コモン関数.ERB:146–190）：解析度 50％未満は現在値、25％未満は最大値を伏せる
-    known_cur = st.flag[999] == 1 or st.flag[20] >= 50
-    known_max = st.flag[999] == 1 or st.flag[20] >= 25
-    cur = format_curly(st.flag[13], 5) if known_cur else "？？？"
-    mx = format_curly(st.flag[12], 5) if known_max else "？？？"
-    out.print(f"{ctx.data.str_defaults.get(2500, '')}体力（{cur}/{mx}）")
+        color_bar(out,0,1,20,40,40,40,-160,0,0,0,2,"▮","▮")
+        out.printl("₎（-----/-----）")
+    enemy_bar(ctx,"敵体力",st.flag[13],st.flag[12])
     # :258–265
     if st.tflag[2] >= 1:
         out.print("　<<油断中>> ")
@@ -392,33 +367,39 @@ def show_status(ctx: Ctx) -> None:
     elif st.tflag[24] > 0:
         out.print(f"先制攻撃可能！(残り{st.tflag[24]}ターン)")
     out.printl()
-    # :274–276
-    # :269–284 射精ゲージの見出し（悪堕ちキャラはペニスか寄生があれば「敵射精」、無ければ「敵絶頂」）
-    if akuoti:
-        e = st.charas[st.flag[111]]
-        head = "敵射精" if (is_penis(ctx, st.flag[111]) or t(ctx, e, "寄生") > 0) else "敵絶頂"
+    # BATTLE_SHOW_STATUS.ERB@SHOW_STATUS:268–284：原文 901 優先於市民。
+    if not akuoti and st.flag[11] == 901:
+        head, bar_name = "敵絶頂", "敵絶頂"
+    elif st.flag[73] > 0:
+        head, bar_name = "敵射精", "敵射精"
+    elif not akuoti:
+        head, bar_name = f"{data.str_defaults.get(2500, '')}射精", "敵射精"
     else:
-        head = f"{ctx.data.str_defaults.get(2500, '')}射精"
-    out.printl(f"{head}（{format_curly(st.flag[15], 5) if known_cur else '？？？'}/"
-               f"{format_curly(st.flag[14], 5) if known_max else '？？？'}）")
+        e = st.charas[st.flag[111]]
+        head = "敵射精" if is_penis(ctx,st.flag[111]) or t(ctx,e,"寄生") > 0 else "敵絶頂"
+        bar_name = head
+    out.print(head)
+    enemy_bar(ctx,bar_name,st.flag[15],st.flag[14])
+    out.printl()
     if akuoti:  # :319–328
         e = st.charas[st.flag[111]]
         out.printl(f"攻：{e.maxbase[10]:>3} 防：{e.maxbase[11]:>3} 敏：{e.maxbase[12]:>3} 知：{e.maxbase[13]:>3} ")
         out.printl(f"近：{e.abl[30]:>3} 中：{e.abl[31]:>3} 遠：{e.abl[32]:>3} ")
     # :286–331
     elif st.flag[999] == 1 or st.flag[20] >= 75:
-        vals = [max(int(tentacle_access(ctx, k)), 0) for k in ("KOUGEKI", "BOUGYO", "BINSYOU", "CHISEI")]
+        vals = [max(int(display_enemy_access(ctx, k)), 0) for k in ("KOUGEKI", "BOUGYO", "BINSYOU", "CHISEI")]
         out.printl(f"攻：{vals[0]:>3} 防：{vals[1]:>3} 敏：{vals[2]:>3} 知：{vals[3]:>3} ")
         if st.flag[20] >= 100:
             out.printl(
-                f"近：{int(tentacle_access(ctx, 'SHORT')):>3} 中：{int(tentacle_access(ctx, 'MIDDLE')):>3} "
-                f"遠：{int(tentacle_access(ctx, 'LONG')):>3} 捕：{tentacle_access(ctx, 'HOLD')} "
+                f"近：{int(display_enemy_access(ctx, 'SHORT')):>3} 中：{int(display_enemy_access(ctx, 'MIDDLE')):>3} "
+                f"遠：{int(display_enemy_access(ctx, 'LONG')):>3} 捕：{display_enemy_access(ctx, 'HOLD')} "
             )
         else:
             out.printl(f"解析度：{st.flag[20]}％")
     else:
         out.printl(f"解析度：{st.flag[20]}％")
-    # :335–349
+    # :335–349；一般函式終端只寫 RESULT0，reference/emuera-1824/Emuera/GameProc/Process.ScriptProc.cs:61–67。
+    st.result[0] = 0
     if config_check_screen(st, 2) > 0:
         return
     out.drawline()
@@ -472,7 +453,8 @@ def show_usercom(ctx: Ctx) -> None:
     out.reset_color()
     out.printl()
     if config_check_screen(st, 2) > 0:
-        raise NotImplementedError("コマンドのカテゴリ分け表示（CONFIG_CHECK_SCREEN_F(2)）は未移植")
+        _show_usercom_categories(ctx)
+        return
     v[8] += 10  # :380
     if v[0] == 0:
         _show_usercom_restraint(ctx)
@@ -490,6 +472,58 @@ def show_usercom(ctx: Ctx) -> None:
     print_comname(ctx, 99)
     v[8] -= 10
     out.printl()
+
+
+def _show_usercom_categories(ctx: Ctx) -> None:
+    """ERB/ゲーム内_戦闘処理/BATTLE_COM.ERB@SHOW_USERCOM:8–377。
+
+    六個分支的四排原順序；PRINT_COMNAME 本身保留可用條件／色彩。
+    """
+    st,out=ctx.state,ctx.out
+    v=tc(ctx).tcvarn
+    category,held=v[8],v[0]==0
+    out.printl("　┌──────"+("─" if category==0 else "┬")+"─────────────────────────────────────┐")
+    out.print_plain("　│");out.print(" [810] 特殊 ")
+    if category in (0,1,2):
+        v[8]+=10
+        if category==0 and held:
+            # :25–41 與 :99–105 的 72 重複，沿原文保留。
+            rows=((44,45,46),(72,73,47),(69,-1,99),(70,71,72))
+        elif category==0:
+            if com_able(ctx,0)[0]:
+                first=(201,202,203) if com_able(ctx,201)[0] else (0,-1,-1)
+            else:
+                first=(11 if com_able(ctx,11)[0] else -1,-1,-1)
+            rows=(first,(-1,-1,-1),(16,17,99),(69,71,72))
+        elif category==1 and held:
+            rows=((100,101,102),(103,104,-1),(-1,-1,-1),(70,71,72))
+        elif category==1:
+            rows=((1,2,3),(-1,-1,-1),(16,17,-1),(74,71,72))
+        elif held:
+            rows=((40 if v[12]&KYOUKOUSOKU else 8,9,10),(11,12,13),(14,15,-1),(70,71,72))
+        else:
+            rows=((6,7,5),(4,-1,-1),(16,17,-1),(-1,71,72))
+        prefixes=("　" if category==0 else "│",
+                  "　├──────"+("┐" if category==0 else "┘" if category==1 else "┤"),
+                  "　│", "　├──────"+("┤" if category==0 else "┐" if category==1 else "┘"))
+        for row_index,row in enumerate(rows):
+            out.print_plain(prefixes[row_index])
+            if row_index==2:
+                out.print(" [820] "+("性技" if held else "攻撃")+" ")
+                out.print_plain("　" if category==1 else "│")
+            for i,n in enumerate(row):
+                print_comname(ctx,n)
+                if i<2:out.print_plain("　 ")
+            out.print_plain("　│");out.printl()
+        out.print_plain("　│");out.print(" [830] "+("拘束" if held else "補助")+" ")
+        out.print_plain("　" if category==2 else "│")
+        v[8]-=10
+    out.print_plain("　　　　　　　　　　　　　　");out.print("ステータス表示[800]");out.print_plain(" 　　　　　　　 ")
+    if check_can_retreat(ctx)==0:out.set_color((128,128,128))
+    out.print(format_percent("撤退[999]" if _can_try_retreat(ctx) else "",9,False))
+    out.reset_color();out.print_plain("　│");out.printl()
+    out.printl("　└──────"+("─" if category==2 else "┴")+"─────────────────────────────────────┘")
+    st.result[0]=0
 
 
 def _show_usercom_restraint(ctx: Ctx) -> None:

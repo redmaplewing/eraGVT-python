@@ -222,21 +222,25 @@ def test_calculation_ecstasy_and_suppression(ctx,rank,flag,expected):
     assert ctx.out.lines[0].text.endswith(expected)
 
 
-def test_battle_status_top_bottom_and_controls(ctx):
+def test_battle_status_top_bottom_and_controls(data):
+    # S86 完整畫面用全新25歲人工角色與完整敵資源，不沿用局部PALAM前態。
+    from test_decision_display import make_context
+    from tools.sim_adult import adult_data
+    ctx=make_context(adult_data(data))
     c=ctx.state.target_chara
     c.cflag[34]=0
     ctx.state.flag[801]=160
     ctx.state.flag[13]=100
     train.show_status(ctx)
     lines=[l.text for l in ctx.out.lines]
-    assert next(i for i,l in enumerate(lines) if "Lv.0" in l)<next(i for i,l in enumerate(lines) if "距離　　　" in l)
+    assert next(i for i,l in enumerate(lines) if "Lv.0" in l)<next(i for i,l in enumerate(lines) if "[中距離]" in l)
     list(train.usercom(ctx,899))
     assert ctx.state.flag[801]==224
     from eragvt.text import TextOutput
     ctx.out=TextOutput()
     train.show_status(ctx)
     lines=[l.text for l in ctx.out.lines]
-    assert next(i for i,l in enumerate(lines) if "Lv.0" in l)>next(i for i,l in enumerate(lines) if "距離　　　" in l)
+    assert next(i for i,l in enumerate(lines) if "Lv.0" in l)>next(i for i,l in enumerate(lines) if "[中距離]" in l)
     list(train.usercom(ctx,898))
     assert ctx.state.flag[801]==480
 

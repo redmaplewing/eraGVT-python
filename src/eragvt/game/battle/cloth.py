@@ -251,7 +251,7 @@ def customize_commonparts_cal(ctx: Ctx, value: int, mode: str) -> int:
     return value
 
 
-def cloth_battle_hosei(ctx: Ctx, mode: str, who: int = -999) -> int:
+def cloth_battle_hosei(ctx: Ctx, mode: str, who: int = -999, *, registers: bool = False) -> int:
     """`CLOTH_BATTLE.ERB@CLOTH_BATTLE_HOSEI, ARGS, ARG`:331–383。"""
     st = ctx.state
     keep = st.target
@@ -271,15 +271,15 @@ def cloth_battle_hosei(ctx: Ctx, mode: str, who: int = -999) -> int:
 
         if c.cflag[1] == 0:
             if not (st.flag[700] and (v[21] == 0 or percent_cal(v[21], v[20]) < 1) and keep == st.target):
-                apply(cloth_hosei(ctx, st.target, c.cflag[40], mode))
+                apply(cloth_hosei(ctx, st.target, c.cflag[40], mode, registers=registers))
         else:
             if not (st.flag[700] and (v[23] == 0 or percent_cal(v[23], v[22]) < 1) and keep == st.target):
-                apply(cloth_hosei(ctx, st.target, c.cflag[41], mode))
+                apply(cloth_hosei(ctx, st.target, c.cflag[41], mode, registers=registers))
         # :366 `FLAG:700 && (...) || CLOTH_NO_INNER > 0 && KEEP_TARGET == TARGET`
         # （&&・|| は同優先度で左結合：((A && B) || C) && D）
         broken = st.flag[700] and (v[25] == 0 or percent_cal(v[25], v[24]) < 1)
         if not ((broken or st.temp.cloth[NO_INNER] > 0) and keep == st.target):
-            apply(cloth_hosei(ctx, st.target, c.cflag[42], mode))
+            apply(cloth_hosei(ctx, st.target, c.cflag[42], mode, registers=registers))
         if c.cflag[1] > 0 and (mode != "HP" or local != -1):
             local = customize_commonparts_cal(ctx, local, mode)
         return local

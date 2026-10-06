@@ -203,6 +203,9 @@ def prepare_battle(ctx):
     st.flag[2] = 100
     st.savestr[13] = "BOSS"
     st.flag[11],st.flag[12],st.flag[13] = 3,10000,3000
+    # ENCOUNT.ERB@ENCOUNT_BOSS:284–289：真遭遇會初始化第二資源最大值。
+    from eragvt.game.battle.core import tentacle_access
+    st.flag[14],st.flag[15] = int(tentacle_access(ctx,"SYASEI")),0
     st.flag[46],st.flag[47],st.flag[100] = 28,36,127
     put(ctx,"TALENT",{"性別変化":0,"オトコ":1,"変身時ＴＳ":1,"変身能力":1})
     put(ctx,"EXP",{"魅了経験":200})
@@ -230,7 +233,8 @@ def test_real_battle_retreat_to_ability_update(ctx):
     assert ctx.state.target_chara.cflag[1] == 0
     assert ctx.state.result[0] == 0
     assert ctx.state.result[8] == 765
-    assert (ctx.state.results[0],ctx.state.results[8]) == ("保留字串","尾格")
+    # S86 SHOW_DISTANCE_WINDOW 最後 TENTACLE_ACCESS(CHISEI) 留診斷字串；後續無新字串寫入。
+    assert (ctx.state.results[0],ctx.state.results[8]) == ("【エラー：BOSS_3に対するTENTACLE_ACCESS('CHISEI')関数失敗】","尾格")
     assert_ages(ctx.state)
 
 
