@@ -284,6 +284,22 @@ def _option_gen(ctx, options, current, blocked, inner=False):
             return r
 
 
+def _read_custom(ctx, value, number):
+    """各CLOTH_CUSTOMIZE_OPTION_*及共通処理@COPY91:538–545的REPEAT。
+
+    FIGURE_SPLIT使用LOCAL，不改COUNT；仍於CALL前設定、CALL後以共享COUNT
+    寫入及步進（reference/emuera-1824/Emuera/GameProc/Function/
+    Instraction.Child.cs:2054–2161）。
+    """
+    st = ctx.state
+    custom = [0] * number
+    st.count[0] = 0
+    while st.count[0] < number:
+        custom[st.count[0]] = figure_split(value, st.count[0] + 1)
+        st.count[0] += 1
+    return custom
+
+
 def custom_clothing_gen(ctx, who, slot):
     """CLOTH_WEAR.ERB@CLOTH_CUSTOMIZE_OUTER:668–937／INNER:1293–1533。
 
@@ -302,11 +318,11 @@ def custom_clothing_gen(ctx, who, slot):
     menu = MENUS[cid]
     eid = cid - 100 if cid < 200 and c.cflag[1] == 0 else cid
     while True:
-        custom = [figure_split(c.equip[eid], i+1) for i in range(menu["count"])]
         out.printl("カスタマイズ項目を選んでください" + ("（変身時）" if slot == 41 else ""))
         out.drawline()
         out.printl(_name(ctx, cid))
         _performance(ctx,who,cid,slot)
+        custom = _read_custom(ctx, c.equip[eid], menu["count"])
         for field, variants in menu["choices"].items():
             variant = 0 if cid != 115 or 4 <= custom[1] <= 7 else len(variants)-1
             choices = variants[variant]
@@ -367,7 +383,7 @@ def custom_clothing_gen(ctx, who, slot):
                 break
             if r == 91 and same and cid < 300:
                 other = eid - 100 if c.cflag[1] > 0 else eid + 100
-                custom = [figure_split(c.equip[other], i+1) for i in range(menu["count"])]
+                custom = _read_custom(ctx, c.equip[other], menu["count"])
                 break
             if r == 92 and same and cid < 300:
                 other = eid - 100 if c.cflag[1] > 0 else eid + 100
@@ -392,7 +408,7 @@ def custom_clothing_gen(ctx, who, slot):
             change_custom(cid, field, choice, custom)
             break
         if r != 92:
-            c.equip[eid] = encode_custom(cid, custom)
+            c.equip[eid] = encode_custom(cid, custom, state=st)
         st.result[0] = -1
 
 
@@ -414,12 +430,23 @@ def custom_parts_gen(ctx, who, slot=41):
             out.printl("避妊効果")
         if _hosei(ctx,who,cid,"NOINNER") > 0:
             out.printl("インナー兼用")
+        # CLOTH_WEAR.ERB@CLOTH_CUSTOMIZE_OUTER2:983–989：先兩個REPEAT，
+        # 再CALL各補正；零／負上限的第二輪也先把COUNT清零。
+        out.print("スロット数：")
+        st.count[0] = 0
+        while st.count[0] < used:
+            out.print("●")
+            st.count[0] += 1
+        st.count[0] = 0
+        while st.count[0] < maximum - used:
+            out.print("〇")
+            st.count[0] += 1
+        out.printl()
         _performance(ctx,who,cid,slot,True)
         hp = _hosei(ctx,who,cid,"HP")
         if hp != -1:
             hp = customize_commonparts_cal(ctx,hp,"HP")
         out.printl(f"【耐久力】{hp if hp>0 else '─'}")
-        out.printl("スロット数：" + "●" * used + "〇" * max(maximum-used, 0))
         blocked = set()
         for label, lo, hi in (("汎用",600,660),("羽織",660,670),("胸部",670,680),("腕部",680,690),("脚部",690,700)):
             out.printl(f"【{label}】")

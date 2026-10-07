@@ -20,3 +20,12 @@
 - 若發現COUNT覆寫會改跨系統開局／排程／共用RNG或存讀控制流，先列具體消費來源與影響再決定擴大；不可用共用檔名作理由。
 - 更新count wiki群組與deviations既有原項，對未接／不可達／catalog已承接分開；新未決依規則回填，不擅自裁決。
 - STATUS／PLAN交主代理收口；LF／UTF-8無BOM、繁體中文、唯讀目錄未動；不commit/push，最後三段回報。
+
+## 執行結果
+- 衣裝63及汎用／武器5行收斂：62行接原生迴圈本體、NEXT／BREAK及CALL時序；6行catalog既有路徑補驗。共用COUNT尚餘206行分七群續查，非206個獨立缺口。
+- 首輪來源expected測試67紅／10綠；實作後收斂等價入口為31案，受影響定向最後`505 passed, 1 warning in 8.10s`；警告為既有Starlette/httpx相容性。
+- `tmp/s89/browser_fixture.py`兩路session預檢完成：cloth `[5,74]`→`[1,74]`，weapon `[1,74]`，每段dump/load一致，catalog失敗0；這只是fixture可用證據，真瀏覽器及全pytest由主代理填入。
+- 衣裝不耗RNG；武器正常生成耗RNG，演算法與抽選順序不變。未變更跨系統核心流程／存檔格式、未結W07，依規格不跑500。
+- 無新增UNVERIFIED／DEVIATION；既有未接COUNT與WAIT／排版差異未擅自結案。STATUS／PLAN與最終驗收由主代理收口。
+
+- 主代理驗收：`5558 passed, 1 warning in 202.66s (0:03:22)`；兩路真瀏覽器依上述操作完成並回標題，COUNT／存讀一致、catalog及console錯誤0、journal0、無worker。證據tmp/s89/browser-summary.json與兩張browser截圖；中斷後沿用全測結果，未重跑500。

@@ -75,7 +75,8 @@ S56現況歸屬：各未勾選項的W編號指向`docs/PLAN.md`；仍待實作�
   S61一般身體頁兩形態依序顯示，數值、提示、可選項與原文INPUT模式保留；S87已接Windows共用字型／欄寬計量，非Windows與個別精簡排版仍留本項W07。色盤保留32×32及軸／明度列，依實際輸出行數清除舊按鈕，對應`ERB/汎用関数/COLOR_TABLE.ERB@COLOR_TABLE:156`固定40行；不是新增全域CLEARLINE語意。
   S45設施擴充、S49武器自訂的共用CLEARLINE已由S87核對；局部回顯數值輸入並在繼續時移除Enter操作提示，避免誤刪選項，未修改全域顯示語意（見`docs/wiki/era/facilities.md`）。
   S88已建立`GameState.count`，catalog與原生共用，按引擎保存COUNT的證據加入JSON v4及v1–3遷移；姓名、一人稱、性格亂數、LOADCSV、單詞命名、個別編輯主入口與模式選單／判定17處迴圈已同步。CALL色函式若改COUNT，候選及NEXT實讀新值；不再只補終值。
-  **COUNT整項仍未結案**：全作291個REPEAT／COUNT迴圈行扣本次17處後，274行需按衣裝63、攻擊數值61、ABL16、狀態19、製作／除錯22、SHOP11、事件41、其他戰鬥36、汎用／武器5群組續查／同步（含不可達及已由catalog接通者，不等同274個缺口）。完整來源、引擎行號與驗證邊界見[共用COUNT](../python/count.md)。未接原生函式仍可能留下不同殘值，存檔亦可觀測，不視為已批准。
+  S89完成衣裝63行（57個CUSTOM_NUM、COPY91兩分支、SAVE、DRAW及外衣slot兩處）與汎用／武器5行群組：62行接原生本體／步進，6行既有catalog補驗，包含精確色名RETURN及空設施早退。保留CALL可覆寫COUNT的時序；武器字表BREAK後COUNT=1，不改其RNG抽法。
+  **COUNT整項仍未結案**：全作291個REPEAT／COUNT迴圈行扣S88的17及S89的68後，206行需按攻擊數值61、ABL16、狀態19、製作／除錯22、SHOP11、事件41、其他戰鬥36群組續查／同步（含不可達及已由catalog接通者，不等同206個缺口）。完整來源、引擎行號與驗證邊界見[共用COUNT](../python/count.md)。未接原生函式仍可能留下不同殘值，存檔亦可觀測，不視為已批准。
   RESULT（S21）／RESULTS（S22）沿既有共用與局部同步範圍，詳[共用回傳值](../python/result.md)；此項不擴張為所有RESULT殘值均已一致。
   （Python：`eragvt.narration.runtime`）
   S87：Windows的DRAWLINEFORM依`EmueraConsole.Print.cs@getStBar:543–560`計算指定字串重複數；`PRINT_TAGSET_TEXT`的`@F:`依原CHKFONT套用／還原。非Windows仍保留原近似；既定色的`SETCOLOR 0x{GETCOLOR}`仍以回到呼叫前顏色表示，顯示相同。

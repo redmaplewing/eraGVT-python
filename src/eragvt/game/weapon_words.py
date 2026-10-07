@@ -271,7 +271,24 @@ def addition(
     st = ctx.state
     rand = st.rng.rand
     # SPLIT 空字串仍有一項空值（Creator.Method.cs／SPLIT 命令）。
-    counts = {i: len(ADD_WORDS.get(i, [""])) for i in range(55)}
+    counts = {}
+    words_by_group = {}
+    # GENERATE_ADD_STR.ERB@GENERATE_ADD_STR:159–169：LCOUNT不碰COUNT，
+    # 每組REPEAT100複製字詞，遇空字串BREAK仍步進一次。
+    # reference/emuera-1824/Emuera/GameProc/Function/Instraction.Child.cs:1997–2023。
+    for i in range(55):
+        words = ADD_WORDS.get(i, [""])
+        counts[i] = len(words)
+        copied = [""] * len(words)
+        st.count[0] = 0
+        while st.count[0] < 100:
+            index = st.count[0]
+            if index >= len(words) or not words[index]:
+                st.count[0] += 1
+                break
+            copied[index] = words[index]
+            st.count[0] += 1
+        words_by_group[i] = copied
     total = 1 + sum(n for i, n in counts.items() if not 11 <= i < 20)
     at_total = 1 + sum(counts[i] for i in range(11, 20))
     length = max(2, min(3, rand(4) + int(bool(kind) and position != 2)))
@@ -281,7 +298,7 @@ def addition(
     chars = ["", "", ""]
 
     def group(index):
-        return ADD_WORDS.get(index, [""])
+        return words_by_group.get(index, [""])
 
     while count < length:
         number = total

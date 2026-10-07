@@ -9,8 +9,20 @@ CLOTHDATAアウター_特殊.ERB、CLOTHDATAインナー.ERB 各
 """
 
 
-def encode_custom(cid: int, custom: list[int]) -> int:
+def encode_custom(cid: int, custom: list[int], *, state=None) -> int:
     """保存低位外觀與高位補正；不正規化超過9的補正（原作直接加算）。"""
+    if state is None:
+        low = sum(x * 10**i for i, x in enumerate(custom))
+    else:
+        # 共通処理@CLOTH_CUSTOMIZE_OPTION_SAVE:566–572：COUNT0的CONTINUE
+        # 仍步進，另在REND後加第0格；純算式呼叫者可不帶遊戲狀態。
+        low = 0
+        state.count[0] = 0
+        while state.count[0] < len(custom):
+            if state.count[0] != 0:
+                low += custom[state.count[0]] * 10**state.count[0]
+            state.count[0] += 1
+        low += custom[0]
     c = list(custom) + [0] * (9 - len(custom))
 
     def v(i, *values):
@@ -169,7 +181,7 @@ def encode_custom(cid: int, custom: list[int]) -> int:
         oil_up = v(1, 0, 0, 2, 1, 1, 1, 1) + (c[3] == 2)
     elif cid not in (199, 306, 309, 314):
         raise ValueError(f"不存在自訂保存函式：{cid}")
-    return (sum(x * 10**i for i, x in enumerate(custom))
+    return (low
             + max(-w, 0) * 10**9 + max(w, 0) * 10**10
             + down * 10**11 + up * 10**12 + (noinner + oil_down) * 10**13 + oil_up * 10**14)
 
