@@ -16,6 +16,8 @@
 
 from __future__ import annotations
 
+from .counting import count_loop
+
 from collections.abc import Generator
 
 from ..state import GameState
@@ -419,7 +421,8 @@ def _shields(ctx: Ctx, arg: int) -> None:
     printed = 0
     if any(c.talent[s] for s, _ in seals):
         out.print("◆結界" + Z * 2)
-        for s, d in seals:
+        for n in count_loop(ctx.state, len(seals)):
+            s, d = seals[n]
             if c.talent[s] == 0:
                 continue
             if printed:
@@ -574,7 +577,8 @@ def _abl(ctx: Ctx, arg: int) -> None:
     c = ctx.state.charas[arg]
     names = ctx.data.names["ABL"]
     out.printl("◆開発")
-    for n, name in enumerate(_ABLS):
+    for n in count_loop(ctx.state, len(_ABLS)):
+        name = _ABLS[n]
         k = _ix(ctx, "ABL", name)
         v = c.abl[k]
         rank = 0 if v == 0 else 1 if v <= 3 else 2 if v <= 5 else 3 if v <= 9 else 4
@@ -598,7 +602,8 @@ def _mark(ctx: Ctx, arg: int) -> None:
     c = ctx.state.charas[arg]
     names = ctx.data.names["MARK"]
     out.printl("◆刻印")
-    for n, name in enumerate(_MARKS):
+    for n in count_loop(ctx.state, len(_MARKS)):
+        name = _MARKS[n]
         k = _ix(ctx, "MARK", name)
         v = c.mark[k]
         rank = 0 if v == 0 else 1 if v <= 2 else 2 if v <= 3 else 3 if v <= 4 else 4
@@ -620,7 +625,8 @@ def _exp(ctx: Ctx, arg: int) -> None:
     names = data.names["EXP"]
     non_combatant = t(ctx, c, "変身能力") == -1
     out.printl("◆経験")
-    for name in _EXPS:
+    for n in count_loop(st, len(_EXPS)):
+        name = _EXPS[n]
         if name is None:
             out.printl()
             continue
@@ -650,7 +656,7 @@ def _juel(ctx: Ctx, arg: int) -> None:
     c = ctx.state.charas[arg]
     names = ctx.data.names["PALAM"]
     out.print("◆珠" + Z)
-    for n in range(12):
+    for n in count_loop(ctx.state, 12):
         k = n + 6 if n > 3 else n
         if n in (4, 8):
             out.print(Z * 3)
@@ -948,8 +954,8 @@ def _page5(ctx: Ctx, arg: int, sc: _Screen) -> None:
     _shortline(ctx)
     _personality(ctx, arg)
     _sexual_personality(ctx, arg)
-    out.printl()
-    out.printl()
+    for _ in count_loop(st, 2):
+        out.printl()
     out.drawline()
 
 
@@ -1094,7 +1100,7 @@ def _personality(ctx: Ctx, arg: int) -> None:
         out.printl(Z + "＊＊＊" + Z + "パーソナリティ ＊＊＊")
     else:
         out.printl()
-    for i in range(3):
+    for i in count_loop(ctx.state, 3):
         if c.cstr[40 + i] != "":
             out.printl(f"{Z * 2}『{c.cstr[40 + i]}』")
         else:
@@ -1110,7 +1116,7 @@ def _sexual_personality(ctx: Ctx, arg: int) -> None:
         _shortline(ctx)
         out.printl(Z + "＊＊＊" + Z + "裏パーソナリティ ＊＊＊")
         n = 0
-        for i in range(4):
+        for i in count_loop(st, 4):
             if c.cstr[45 + i] != "":
                 lv = limit(c.abl[i], 0, 10)
                 setcolor(out, 255, 255 - 23 * lv, 255 - 11 * lv)
@@ -1118,10 +1124,10 @@ def _sexual_personality(ctx: Ctx, arg: int) -> None:
                 out.printl("♥" * limit(div(c.abl[i], 2), 0, 5) + "』")
                 out.reset_color()
                 n += 1
-        for _ in range(4 - n):
+        for _ in count_loop(st, 4 - n):
             out.printl()
     else:
-        for _ in range(6):
+        for _ in count_loop(st, 6):
             out.printl()
 
 

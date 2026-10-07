@@ -19,6 +19,8 @@
 
 from __future__ import annotations
 
+from ..counting import count_loop
+
 from collections.abc import Generator
 
 from ...state import GameState
@@ -887,13 +889,13 @@ def event_comend(ctx: Ctx) -> Generator[WaitInputRequest, object, None]:
     v[6] = 0
     v[7] = 0
     # :818–824 触手の太さと数を保存
-    for i in range(4):
+    for i in count_loop(st, 4):
         st.tflag[101 + i] = st.temp.tentacle_size[(0, i)]
         st.tflag[105 + i] = st.temp.tentacle_num[(1, i)]
     st.tflag[109] = st.temp.insert
     st.temp.tentacle_size.clear()
     # :827–834
-    l2 = sum(c.nowex[i] for i in range(4))
+    l2 = sum(c.nowex[i] for i in count_loop(st, 4))
     # :831–832 LOCAL:4 = 気力の残量％（以後使われない）
     result = percent_cal(c.base[2], c.maxbase[2])
     l3 = 100 - div(result * 4, 3)
@@ -963,7 +965,7 @@ def event_comend(ctx: Ctx) -> Generator[WaitInputRequest, object, None]:
             st.flag[20] = 100
         out.printl()
     # :929–931
-    for i in range(4):
+    for i in count_loop(st, 4):
         c.ex[i] += c.nowex[i]
     st.temp.prevcom = st.temp.selectcom  # :933
     if v[0] == 0 and v[40] > 0:  # :936–937

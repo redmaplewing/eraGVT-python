@@ -1,4 +1,6 @@
 """S55：SYSTEM/キャラメイキング関連/CHARA_MAKE.ERB@CHARA_MAKE_MAIN 手翻 UI。"""
+
+from .counting import count_loop
 from .creation_text import TEXT, ARRAYS, PRESETS, CALLS
 from .input_request import input_number, inputs, TextInputRequest
 from .naming import random_naming
@@ -248,10 +250,12 @@ def _count_setting(ctx):
         # reference/emuera-1824/Emuera/GameData/Variable/VariableEvaluator.cs:1026–1067：
         # ADDCHARA尾端加入；DELCHARA移除該索引，不調TARGET/ASSI，命令不寫RESULT。
         # reference/emuera-1824/Emuera/GameProc/Function/Instraction.Child.cs:934–965。
-        while st.charanum-1<count:
-            st.add_chara(ctx.data,0);st.flag[8]+=1
-        while st.charanum-1>count:
-            st.del_chara(st.charanum-1);st.flag[8]-=1
+        if st.charanum-1<count:
+            for _ in count_loop(st, count-(st.charanum-1)):
+                st.add_chara(ctx.data,0);st.flag[8]+=1
+        elif st.charanum-1>count:
+            for _ in count_loop(st, (st.charanum-1)-count):
+                st.del_chara(st.charanum-1);st.flag[8]-=1
         return
 
 def preset_menu(ctx):
@@ -260,7 +264,7 @@ def preset_menu(ctx):
     out.printl()
     while True:
         out.printl('ロードする初期セットを選んでください')
-        for i in range(99):
+        for i in count_loop(st, 99):
             for text in PRESETS.get(('NAME',i),()):out.printl(text)
         out.printl('[99]読み込まずに戻る')
         r=yield from number(ctx)
@@ -289,7 +293,7 @@ def preset_menu(ctx):
 
 def _load_preset(ctx,preset):
     from .opening import shokiset_select,shokiset_csvfix
-    for _ in range(ctx.state.charanum-1):
+    for _ in count_loop(ctx.state, ctx.state.charanum-1):
         ctx.state.del_chara(1);ctx.state.flag[8]-=1
     shokiset_select(ctx.state,ctx.data,preset)
     shokiset_csvfix(ctx.state,ctx.data)

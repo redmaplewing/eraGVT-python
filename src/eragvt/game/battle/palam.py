@@ -6,6 +6,8 @@
 """
 
 from __future__ import annotations
+
+from ..counting import count_loop
 from collections.abc import Generator
 
 from ..action import Ctx, config_check_maniac, config_check_screen, kojo_root, print_transcallname
@@ -282,7 +284,8 @@ def palam_tijou(ctx: Ctx, ups: tuple[int, int, int, int]) -> int:
     """`@PALAM_TIJOU`:1035–1059。"""
     c = tc(ctx)
     local = 0
-    for i, u in enumerate(ups):
+    for i in count_loop(ctx.state, 4):
+        u = ups[i]
         local += _steps(u, (100, 1000, 2000, 5000), (50, 100, 200, 500, 1000))
         local += _nowex_add(c.nowex[i], (500, 1000, 2000))
     return local
@@ -301,7 +304,8 @@ def palam_yokujou(ctx: Ctx, ups: tuple[int, int, int, int], shame: int, pain: in
     """`@PALAM_YOKUJOU`:1063–1227。"""
     c = tc(ctx)
     local = 0
-    for i, u in enumerate(ups):
+    for i in count_loop(ctx.state, 4):
+        u = ups[i]
         local += _steps(u, (100, 500, 1000, 2000, 5000, 7500), (500, 900, 1200, 1500, 2000, 3500, 5000))
         local += _nowex_add(c.nowex[i], (1000, 2000, 5000))
     ro = abl(ctx, c, "露出癖")
@@ -322,7 +326,8 @@ def palam_kyoujun(ctx: Ctx, ups: tuple[int, int, int, int]) -> int:
     """`@PALAM_KYOUJUN`:1251–1275。"""
     c = tc(ctx)
     local = 0
-    for i, u in enumerate(ups):
+    for i in count_loop(ctx.state, 4):
+        u = ups[i]
         local += _steps(u, (4000, 8000, 12000, 20000), (50, 100, 200, 400, 800))
         local += _nowex_add(c.nowex[i], (500, 1000, 2000))
     return local
@@ -1169,7 +1174,7 @@ def palam_up(ctx: Ctx) -> Generator[None, int, None]:
         for pid in (11, 12, 13, 14):
             up[pid] = times(up[pid], "1.25")
     # :231–246 絶頂回数と珠
-    local = sum(1 for i in range(4) if c.nowex[i] > 0)
+    local = sum(1 for i in count_loop(st, 4) if c.nowex[i] > 0)
     for i, jname in enumerate(("快Ｃ", "快Ｖ", "快Ａ", "快Ｂ")):
         add_exp(ctx, c, "絶頂経験", c.nowex[i] * local)
         c.juel[ctx.data.index_of("JUEL", jname)] += 1000 * c.nowex[i] * local

@@ -22,6 +22,8 @@ RAND・状態変化なし：grep 確認）。fallback は末尾の `TRYCALLFORM 
 """
 
 from __future__ import annotations
+
+from ..counting import count_loop
 from collections.abc import Generator
 
 from ..action import Ctx, kojo_root, kojo_root_full
@@ -180,7 +182,7 @@ def self_n(ctx: Ctx, arg: int, arg1: int) -> Generator[None, int, None]:
     data = ctx.data
     c = ctx.state.charas[arg]
     a = lambda n: c.abl[data.index_of("ABL", n)]  # noqa: E731
-    L = [0] * 13  # :255–257
+    L = [0 for _ in count_loop(ctx.state, 12)] + [0]  # :255–257
     c.exp[data.index_of("EXP", "自慰経験")] += 1  # :260
     L[0] = _tbl(a("Ｃ感覚"), (200, 1000, 2000, 4000, 10000, 20000))  # :262–274
     L[3] = _tbl(a("Ｂ感覚"), (200, 400, 1000, 2000, 4000, 10000))  # :277–289
@@ -200,7 +202,7 @@ def self_b(ctx: Ctx, arg: int, arg1: int) -> Generator[None, int, None]:
     data = ctx.data
     c = ctx.state.charas[arg]
     a = lambda n: c.abl[data.index_of("ABL", n)]  # noqa: E731
-    L = [0] * 13  # :413–415
+    L = [0 for _ in count_loop(ctx.state, 12)] + [0]  # :413–415
     c.exp[data.index_of("EXP", "自慰経験")] += 1  # :418
     L[3] = _tbl(a("Ｂ感覚"), (200, 400, 1000, 2000, 4000, 10000))  # :421–433
     L[3] = _gikou(a("技巧"), L[3])  # :436–446
@@ -215,7 +217,7 @@ def self_a(ctx: Ctx, arg: int, arg1: int) -> Generator[None, int, None]:
     data = ctx.data
     c = ctx.state.charas[arg]
     a = lambda n: c.abl[data.index_of("ABL", n)]  # noqa: E731
-    L = [0] * 13  # :533–535
+    L = [0 for _ in count_loop(ctx.state, 12)] + [0]  # :533–535
     c.exp[data.index_of("EXP", "自慰経験")] += 1  # :538
     c.exp[data.index_of("EXP", "Ａ経験")] += 1  # :539
     L[2] = _a_table(a("Ａ感覚"), (2000, 4000, 10000, 20000))  # :541–549
@@ -239,7 +241,7 @@ def self_v(ctx: Ctx, arg: int, arg1: int) -> Generator[None, int, None]:
     c = ctx.state.charas[arg]
     a = lambda n: c.abl[data.index_of("ABL", n)]  # noqa: E731
     vexp = data.index_of("EXP", "Ｖ経験")
-    L = [0] * 13  # :649–651
+    L = [0 for _ in count_loop(ctx.state, 12)] + [0]  # :649–651
     c.exp[data.index_of("EXP", "自慰経験")] += 1  # :654
     if t(ctx, c, "処女") >= 1:  # :656–669 処女：減少、経験なし
         L[1] = _tbl(a("Ｖ感覚"), (100, 200, 500, 2000, 4000, 10000))

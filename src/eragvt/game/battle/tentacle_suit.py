@@ -5,6 +5,8 @@
 TIMES截斷：reference/emuera-1824/Emuera/GameProc/Function/Instraction.Child.cs:893–916。
 落尾RESULT0=0：reference/emuera-1824/Emuera/GameProc/Process.ScriptProc.cs:61–67。
 """
+
+from ..counting import count_loop
 from ..action import kojo_root_gen
 from ..chara_common import is_female, is_male, seikaku_check
 from ..era import div, times
@@ -67,9 +69,11 @@ def act_tentacle_suit(ctx):
     else:
         ctx.out.printl()
         result = sex_comex(ctx, 0, 0, 15)
-        local = [div(x * (100 + strength * 20), 100) for x in result] + [0]
-        if mode in (1, 2):
-            local = [times(x, "1.1" if mode == 1 else "1.2") for x in local]
+        local = [0] * 13
+        for i in count_loop(st, 12):
+            local[i] = div(result[i] * (100 + strength * 20), 100)
+            if mode in (1, 2):
+                local[i] = times(local[i], "1.1" if mode == 1 else "1.2")
         # :358 地の文含KOJO_ROOT；用S71事件通道等待，不能同步代答。
         if not (yield from ctx.narration.run_event_gen(ctx, "MESSAGE_SUBEVENT_BATTLE_ACTTENTACLESUIT")):
             yield from kojo_root_gen(ctx, "SUBEVENT_BATTLE_ACTTENTACLESUIT")

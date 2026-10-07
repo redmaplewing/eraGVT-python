@@ -3,6 +3,8 @@
 逐欄保留／重置，沒有 RESETDATA；BEGIN SHOP 亦不清空狀態
 （reference/emuera-1824/Emuera/GameProc/Process.SystemProc.cs:614–640）。
 """
+
+from .counting import count_loop
 from dataclasses import dataclass, field
 
 from ..state.constants import GameMode, GameOption, PARTY_MAX
@@ -115,9 +117,9 @@ class Selection:
 
 def facility_value(st) -> int:
     from .ending import _FACILITY_REFUND
-    return (sum(5000*i+5000 for i in range(1,st.flag[50]))
-            +sum(1000*i+1000 for i in range(1,st.flag[51]))
-            +sum(10000*i+10000 for i in range(st.flag[52]))
+    return (sum(5000*i+5000 for i in count_loop(st, st.flag[50]) if i != 0)
+            +sum(1000*i+1000 for i in count_loop(st, st.flag[51]) if i != 0)
+            +sum(10000*i+10000 for i in count_loop(st, st.flag[52]))
             +sum(amount for bit,amount in _FACILITY_REFUND if st.flag[53]&bit))
 
 
@@ -263,7 +265,9 @@ def reset_data(ctx: Ctx, selection: Selection) -> None:
         st.flag[52]=st.flag[53]=0
     st.result[0]=st.flag[3]=BOSS_ERB_NUM
     st.flag[4]=1
-    st.flag[100]=(1<<BOSS_ERB_NUM)-1
+    st.flag[100]=0
+    for i in count_loop(st, st.flag[3]):
+        st.flag[100] |= 1 << i
     st.flag[101]=0
     who=1
     local=31  # :1072 FOR LOCAL,21,31 的末值。
@@ -477,9 +481,10 @@ def succession_gen(ctx: Ctx, rank: int):
         while not (0<=q<=3 and s.values[10]+q<7 or q==-1 and s.values[10]<3):
             q=yield from _input(ctx)
         number=2 if q==-1 else number+q
-    for _ in range(max(0,number-s.values[10])):
-        st.add_chara(ctx.data,0)
-        st.flag[8]+=1
+    if number-s.values[10] > 0:  # @SUCCESSION:1479，零人不進REPEAT。
+        for _ in count_loop(st, number-s.values[10]):
+            st.add_chara(ctx.data,0)
+            st.flag[8]+=1
     set_limit_day(st)
     _training_points(ctx,s.values[16])
     st.target=st.charanum-1

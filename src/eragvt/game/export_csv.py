@@ -7,6 +7,8 @@ TARGET のキャラ CSV 相当の文字列を画面に印字するだけ（代�
 
 from __future__ import annotations
 
+from .counting import count_loop
+
 from collections.abc import Generator
 
 from ..state import GameState
@@ -65,15 +67,17 @@ def export_csv(ctx: Ctx) -> Gen:
     out.printl("重複しないキャラクター番号を検索します。")
     out.printl("（連続してキャラクターデータを作製している場合、CSVの再読み込みが必要です）")
     no = 0
-    for k in range(200):  # :20–35
+    for k in count_loop(st, 200):  # :20–35
         no = k + 101
         if exist_csv(ctx, no) != 1:
             out.printl(f"キャラクター番号を「{no}」で出力します。")
+            st.count[0] += 1
             break
         if no == 300:
             out.printl("101〜300番の間に空いているキャラクター番号がないようです。")
             out.printl("キャラクター番号を「101」で出力しますが、重複しているので後から変更をしてください。")
             no = 101
+            st.count[0] += 1
             break
     out.printl()
     keep = 0  # LOCAL:2
@@ -136,7 +140,7 @@ def export_csv(ctx: Ctx) -> Gen:
     if out.linecount > n0:
         pl()
     pl(";-------素質--------------------")  # :129–200
-    for i in range(1000):
+    for i in count_loop(st, 1000):
         v = c.talent[i]
         if v != 0 and i != 200 and i < 900 and (i < 250 or i > 299):
             out.print(f"素質,{names['TALENT'].get(i, '')},{v},")
@@ -151,27 +155,27 @@ def export_csv(ctx: Ctx) -> Gen:
     if keep >= 1:  # :207–229
         pl()
         pl(";-------感覚など----------------")
-        for i in range(25):
+        for i in count_loop(st, 25):
             if c.abl[i] >= 1:
                 pl(f"能力,{names['ABL'].get(i, '')},{c.abl[i]},")
         pl()
         pl(";-------経験--------------------")
-        for i in range(60):
+        for i in count_loop(st, 60):
             if c.exp[i] >= 1:
                 pl(f"経験,{names['EXP'].get(i, '')},{c.exp[i]},")
         if config_check_maniac(st, 16) == 1:
-            for k in (35, 36):
+            for k in count_loop(st, 37, 35):
                 head = names["ABL"].get(k - 34, "")[:1]  # SUBSTRINGU ABLNAME:(COUNT - 34), 0, 1
                 pl(f"フラグ,{k},{c.cflag[k]},;　{head}拡張度")
     if keep >= 2:  # :231–245
         pl()
         pl(";-------刻印--------------------")
-        for i in range(100):
+        for i in count_loop(st, 100):
             if c.mark[i] >= 1:
                 pl(f"MARK,{i},{c.mark[i]},")
         pl()
         pl(";-------珠----------------------")
-        for i in range(20):
+        for i in count_loop(st, 20):
             if c.juel[i] >= 1:
                 pl(f"JUEL,{i},{c.juel[i]},")
     pl()
@@ -284,14 +288,14 @@ def export_csv(ctx: Ctx) -> Gen:
                 if c.cflag[base + k]:
                     pl(f"フラグ,{base + k},{c.cflag[base + k]},;{labels[k]}")
             pl()
-    if any(c.talent[i] != 0 for i in range(250, 260)):  # :461–473（PRINTL なしで終わる：原作どおり）
+    if sum(c.talent[i] != 0 for i in count_loop(st, 260, 250)) > 0:  # :461–473（PRINTL なしで終わる：原作どおり）
         pl(";-------オプション系素質----------")
-        for i in range(250, 260):
+        for i in count_loop(st, 260, 250):
             if c.talent[i] != 0:
                 pl(f"素質,{names['TALENT'].get(i, '')},{c.talent[i]},")
-    if any(c.talent[i] != 0 for i in range(260, 272)):  # :474–487
+    if sum(c.talent[i] != 0 for i in count_loop(st, 272, 260)) > 0:  # :474–487
         pl(";-------体型数値指定----------")
-        for i in range(260, 272):
+        for i in count_loop(st, 272, 260):
             if c.talent[i] != 0:
                 pl(f"素質,{names['TALENT'].get(i, '')},{c.talent[i]},")
         pl()
@@ -312,9 +316,9 @@ def export_csv(ctx: Ctx) -> Gen:
             v = c.talent[i] if c.talent[i] > 0 else mod(c.cflag[33], m) + 1
             pl(f"素質,{names['TALENT'].get(i, '')},{v},")
         pl()
-    elif any(c.talent[i] != 0 for i in range(280, 289)):
+    elif sum(c.talent[i] != 0 for i in count_loop(st, 289, 280)) > 0:
         pl(";-------体型乱数指定----------")
-        for i in range(280, 289):
+        for i in count_loop(st, 289, 280):
             if c.talent[i] != 0:
                 pl(f"素質,{names['TALENT'].get(i, '')},{c.talent[i]},")
         pl()

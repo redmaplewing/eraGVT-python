@@ -7,6 +7,8 @@ TALENT_INFO の表は ERB の SELECTCASE（`CASE n`／`CASE a TO b` → `RETURNF
 
 from __future__ import annotations
 
+from .counting import count_loop
+
 from .action import Ctx, config_check_screen
 from .battle.core import is_girly
 from .battle.ninsin import check_pregnant
@@ -240,7 +242,7 @@ def show_status_talent(ctx: Ctx, who: int, arg1: int = 0, arg2: int = 0) -> None
         s += f"<nonbutton title='{talent_info(403)}'>[女体受容]</nonbutton>"
     if T("変身時男の娘") == 1:
         s += f"<nonbutton title='{talent_info(406)}'>[変身時男の娘]</nonbutton>"
-    for i in range(201, 250):  # :691–694 種族
+    for i in count_loop(ctx.state, 250, 201):  # :691–694 種族
         if c.talent[i] > 0:
             s += f"<nonbutton title='{talent_info(i)}'>[{names.get(i, '')}]</nonbutton>"
     if arg1 == 0:  # :695–698 SEIKAKU_CHECK "STRING"（該当なしは「ランダム」）
@@ -348,7 +350,7 @@ def _show_talent_list(ctx: Ctx, who: int, arg1: int, arg2: int) -> None:
             buf[0] += f"<nonbutton title='{talent_info(tag[2])}'>{tag[0]}</nonbutton>"
         else:
             out.print(tag[1])
-    for i in range(1000):  # :324–473
+    for i in count_loop(ctx.state, 1000):  # :324–473
         v = c.talent[i]
         if v > 0:
             if _skip_talent(i):
@@ -392,16 +394,16 @@ def _show_talent_list(ctx: Ctx, who: int, arg1: int, arg2: int) -> None:
         out.printl()
     if arg1 == 2:
         out.print("　　　　　")  # :480
-    has600 = any(c.talent[i] > 0 for i in range(600, 700))  # :482–486
+    has600 = sum(c.talent[i] > 0 and 600 <= i <= 699 for i in count_loop(ctx.state, 1000)) > 0  # :482–486
     if arg1 != 1 and has600:
         if arg2:
             buf[0] += "<shape type='space' param='150'>"
         else:
             out.print("   ")  # :491
-        for i in range(600, 700):
-            if c.talent[i] > 0:
+        for i in count_loop(ctx.state, 1000):
+            if 600 <= i <= 699 and c.talent[i] > 0:
                 add(f"[{names.get(i, '')}]", talent_info(i))
-    has800 = any(c.talent[i] > 0 for i in range(800, 900))  # :504–508
+    has800 = sum(c.talent[i] > 0 and 800 <= i <= 899 for i in count_loop(ctx.state, 1000)) > 0  # :504–508
     if arg1 != 1 and has800:
         if arg2 and not has600:
             buf[0] += f"<shape type='space' param='150'><nonbutton title='{talent_info(800)}'>"
@@ -438,14 +440,14 @@ def _show_talent_list(ctx: Ctx, who: int, arg1: int, arg2: int) -> None:
         out.printl()
     if arg1 == 2:
         out.print("　　　　　　 ")  # :612
-    has_feat = any(c.talent[1000 + i] > 0 for i in range(100, 299))  # :614–618（REPEAT 299：COUNT 0〜298）
+    has_feat = sum(c.talent[1000 + i] > 0 and 100 <= i <= 299 for i in count_loop(ctx.state, 299)) > 0  # :614–618（REPEAT 299：COUNT 0〜298）
     if arg1 != 1 and has_feat:
         if arg2:
             buf[0] += "<shape type='space' param='300'>"
         else:
             out.print("      ")  # :623
-        for i in range(100, 299):
-            if c.talent[1000 + i] > 0:
+        for i in count_loop(ctx.state, 299):
+            if 100 <= i <= 299 and c.talent[1000 + i] > 0:
                 add(f"[{names.get(1000 + i, '')}]", talent_info(1000 + i))
     if arg2:  # :634–639
         buf[0] += "<br>"

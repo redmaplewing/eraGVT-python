@@ -20,6 +20,8 @@ config・性嗜好フィルタ・雑魚敵フィルタを反映）、失敗時�
 
 from __future__ import annotations
 
+from .counting import count_loop
+
 from collections.abc import Generator
 
 from ..data.csv_loader import GameData
@@ -210,11 +212,11 @@ def event_first_gen(
         state.flag[51] = 1
         state.flag[3] = BOSS_ERB_NUM
         state.flag[4] = 1
-        for i in range(state.flag[3]):
+        for i in count_loop(state, state.flag[3]):
             state.flag.set_bit(100, i)
         state.flag[101] = 0
         # :111–122 モードに応じたデフォルト人数の汎用キャラ
-        for _ in range(1 if game_option(state, GameOption.SOLO) else 3):
+        for _ in count_loop(state, 1 if game_option(state, GameOption.SOLO) else 3):
             state.add_chara(data, 0)
             state.flag[8] += 1
         # :127 CALL CHARA_MAKE_MAIN, 0
@@ -223,7 +225,7 @@ def event_first_gen(
         from .creation_menu import creation_menu
         result = yield from creation_menu(generation_ctx)
         if result == -1:  # EVENTFIRST:128–132：清除角色但不歸零 FLAG:8。
-            for _ in range(state.charanum - 1):
+            for _ in count_loop(state, state.charanum - 1):
                 state.del_chara(1)
             continue
         break
@@ -388,7 +390,7 @@ def chara_make_main_preset(state: GameState, data: GameData, preset: int, store:
     if preset not in PRESET_DATA:raise ValueError(preset)
     _chara_make_load_global(state, store or GlobalStore())
     # :316–322 [200] → SHOKISET.ERB@CHARA_MAKE_FINALIZE_KAI:5–45 → [0] → [1]はい
-    for _ in range(state.charanum - 1):
+    for _ in count_loop(state, state.charanum - 1):
         state.del_chara(1)
         state.flag[8] -= 1
     shokiset_select(state, data, preset)

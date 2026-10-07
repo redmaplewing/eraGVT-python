@@ -16,6 +16,8 @@ SEX_COMEX.ERB、AUTO_V_DEFENCE.ERB）と `ENEMY_ACTION.ERB@ENEMY_ACTION_SEX_ROUT
 
 from __future__ import annotations
 
+from ..counting import count_loop
+
 from collections.abc import Generator
 
 from ..action import Ctx, config_check_maniac, config_check_other, kojo_root
@@ -121,7 +123,10 @@ def _penis_pos(ctx: Ctx, part: int) -> None:
 
 def _begin(ctx: Ctx) -> list[int]:
     """`REPEAT 12 / LOCAL:COUNT = 0`：LOCAL:0〜11 は 0、LOCAL:12 は保持（呼び出し側で読む）。"""
-    return [0] * 13
+    L = [0] * 13
+    for i in count_loop(ctx.state, 12):
+        L[i] = 0
+    return L
 
 
 def _finish(ctx: Ctx, fname: str, L: list[int], add12: int) -> Generator[None, int, None]:
@@ -139,7 +144,7 @@ def _comex(ctx: Ctx, L: list[int], part: int, strength: int) -> None:
     st = ctx.state
     if st.temp.ex_com:
         r = sex_comex(ctx, part, strength, st.temp.ex_com | st.temp.sh_com)
-        for i in range(12):
+        for i in count_loop(st, 12):
             L[i] += r[i]
 
 
@@ -355,7 +360,13 @@ def sex_comex_random(ctx: Ctx, arg: int, arg1: int = 0) -> tuple[int, int]:
         if c.base[30 + i] > 0:
             shielded |= 1 << i
     if (at & ~shielded) == 0 and arg1 == 0:  # :98–121
-        cands = [k for k in range(4) if not ((at >> k) & 1) and (t(ctx, c, "オトコ") < 1 or k != 1)]
+        local = [0] * 4
+        for k in count_loop(st, 4):
+            local[k] = 0
+        cands = []
+        for k in count_loop(st, 4):
+            if not ((at >> k) & 1) and (t(ctx, c, "オトコ") < 1 or k != 1):
+                cands.append(k)
         if cands:
             at |= 1 << cands[rand(len(cands))]
     st.set_result_x(at & ~shielded, at & shielded)  # SEX_COMEX.ERB:123（共用 RESULT:0〜1）

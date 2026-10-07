@@ -10,6 +10,8 @@ SELECT_ENEMY_ACTION）と `FORECAST.ERB@ATTACK_PLACE_DECISION`。
 
 from __future__ import annotations
 
+from ..counting import count_loop
+
 from collections.abc import Generator
 
 from ..action import Ctx, kojo_root, print_transcallname
@@ -380,7 +382,7 @@ def _restraint_sex(ctx: Ctx) -> Generator[None, int, None]:
         c.exp[ctx.data.index_of("EXP", "被姦経験")] += 1  # :993
         if l3 and st.flag[13] > 0:  # :995–1006
             l3 -= 1
-            for i in range(4):
+            for i in count_loop(st, 4):
                 c.ex[i] += c.nowex[i]
             c.nowex.clear()
             out.printw()

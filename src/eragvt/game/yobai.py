@@ -34,6 +34,8 @@ YOBAI_EVENT 内のローカルなリストで表す。GFLAG:100+n／200+n／300+
 
 from __future__ import annotations
 
+from .counting import count_loop
+
 from collections.abc import Generator
 
 from ..state import GameState
@@ -454,25 +456,25 @@ def yobai_select_play(ctx: Ctx, arg: int, gflag: list[int]) -> None:
                 l1 = div(l1, 3)
                 if tl("淫核") + tl("淫尻") + tl("淫乳") > 0:
                     l1 = div(l1, 2)
-            for _ in range(l1):  # REPEAT（0 以下なら回らない）
+            for _ in count_loop(st, l1):  # REPEAT（0 以下なら回らない）
                 if st.rng.rand(10) < a("Ｃ感覚") + a("射精中毒"):
                     add_randchoose(st, 16)
                 else:
                     add_randchoose(st, 32)
         if tl("淫核") * 3 + a("Ｃ感覚") >= 3 and tl("ふたなり") < 1 and is_girly(ctx):  # :578–584
-            for _ in range(a("Ｃ感覚")):
+            for _ in count_loop(st, a("Ｃ感覚")):
                 add_randchoose(st, 1)
         if tl("淫壷") * 3 + a("Ｖ感覚") >= 3 and is_female(data, c):  # :586–595
             l1 = a("Ｖ感覚")
             if t(ctx, o, "ふたなり") > 0 or is_male(data, o):
                 l1 *= 2
-            for _ in range(l1):
+            for _ in count_loop(st, l1):
                 add_randchoose(st, 2)
         if tl("淫尻") * 3 + a("Ａ感覚") >= 3 and is_girly(ctx):  # :598–604
-            for _ in range(a("Ａ感覚")):
+            for _ in count_loop(st, a("Ａ感覚")):
                 add_randchoose(st, 4)
         if tl("淫乳") * 3 + a("Ｂ感覚") >= 3 and is_girly(ctx):  # :607–613
-            for _ in range(a("Ｂ感覚")):
+            for _ in count_loop(st, a("Ｂ感覚")):
                 add_randchoose(st, 8)
         base = {1: 200, 10: 300, 11: 400}.get(arg, 100)  # :616–624
         if choicecount(st) > 0:  # :625–626

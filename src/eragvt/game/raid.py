@@ -29,6 +29,8 @@
 
 from __future__ import annotations
 
+from .counting import count_loop
+
 from collections.abc import Generator
 
 from ..state.constants import ActionPlan
@@ -87,7 +89,7 @@ def _warning_loop(ctx: Ctx, text: str, color) -> None:
     out.printl()
     if st.flag[999] == 0:
         l1, l2 = 0, 0
-        for _ in range(30):  # REPEAT 30
+        for _ in count_loop(st, 30):  # REPEAT 30
             if l2 == 0:
                 l1 += 50
                 if l1 == 250:

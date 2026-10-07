@@ -1,4 +1,6 @@
 """S34 狀態顯示；路徑相對 source/earGVP/ERB/。"""
+
+from ..counting import count_loop
 from ..action import Ctx, config_check_screen, config_check_maniac
 from ..colorbar import color_bar, percent_cal
 from ..era import div, format_curly, limit
@@ -37,7 +39,7 @@ def show_status_palam(ctx: Ctx) -> None:
         printform_gaping_now(ctx, st.target, c.cflag[1])
     else:
         out.printl()
-    for count in range(12):
+    for count in count_loop(ctx.state, 12):
         pid = count if count < 4 else count + 6
         shield = count < 4 and c.base[count + 30] > 0
         if shield:

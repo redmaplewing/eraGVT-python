@@ -6,6 +6,8 @@ TFLAG:98 は戦闘の結果（0＝時間切れ／撤退、1＝勝利、2＝敗�
 
 from __future__ import annotations
 
+from ..counting import count_loop
+
 from collections.abc import Generator
 
 from ...state.constants import ActionPlan, GameOption
@@ -127,7 +129,7 @@ def subevent_release_ecstasy(ctx: Ctx) -> None:
     c.nowex.clear()  # :169 VARSET NOWEX
     for i in range(4):  # :170–173 FOR LCOUNT, 0, 感覚数（DIM.ERH:154 感覚数 = 4）
         c.nowex[i] = calc_ecstasy(ctx, i, 0)
-    local = sum(1 for i in range(4) if c.nowex[i] > 0)  # :176–180
+    local = sum(1 for i in count_loop(st, 4) if c.nowex[i] > 0)  # :176–180
     zecchou = data.index_of("EXP", "絶頂経験")
     for i in range(4):  # :181–188 JUEL:快Ｃ〜快Ｂ = 0〜3
         c.exp[zecchou] += c.nowex[i] * local

@@ -1,5 +1,7 @@
 """雜魚特殊指令：原作 触手データ/雑魚敵/TENTACLE_MOB_SPCOM.ERB 的原生 Python 翻寫。"""
 
+from ..counting import count_loop
+
 from ..action import Ctx
 from ..era import div, times
 from . import core, mob, sexcom
@@ -19,12 +21,12 @@ def create_com(ctx: Ctx, a: list[int]):
     if core.t(ctx,c,"清純派") > 0 and c.tcvarn[2] != 100 and a[8] > 0:
         yield from sexcom.auto_v_defence(ctx,st.target)
     if a[4] > 0: st.tflag[4] = a[4]
+    L = [0 for _ in count_loop(st, 12)] + [0]  # @MOB_CREATE_COM:51–53，敘事前清零。
     if a[3] > 0: st.tflag[3] += a[3]
     if a[5] > 0: tentacle_syasei_up(ctx,a[5])
     sexcom._size(ctx,a[0])
     mob.message(ctx,f"MESSAGE_MOB_{st.flag[11]}_COM{a[0]}",[st.temp.ex_com,st.temp.sh_com])
     if a[6] > 0: cloth_battle_damage(ctx,a[6])
-    L = [0]*13
     can_v = base("Ｖ結界耐久力") <= 0 and (c.tcvarn[2] != core.P_V_GUARD or a[9]&1)
     if a[8] in (1,2) and core.t(ctx,c,"処女") > 0 and can_v:
         L[10] = 10000

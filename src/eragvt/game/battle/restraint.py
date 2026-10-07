@@ -9,6 +9,8 @@ COM47 説得する）の分岐を移植（雑魚・市民は停止）。
 
 from __future__ import annotations
 
+from ..counting import count_loop
+
 from collections.abc import Generator
 
 from ..action import Ctx, kojo_root, print_transcallname
@@ -870,8 +872,9 @@ def _kiryoku_recover(ctx: Ctx, factor: tuple[str, str, str]) -> int:
 def _fatigue_decay(ctx: Ctx, l1: int, stamina: str, normal: str) -> int:
     """COMF45:39–48 `REPEAT CFLAG:99 / SIF LOCAL:1 <= 1 BREAK / TIMES`。"""
     c = tc(ctx)
-    for _ in range(max(c.cflag[99], 0)):
+    for _ in count_loop(ctx.state, c.cflag[99]):
         if l1 <= 1:
+            ctx.state.count[0] += 1
             break
         l1 = times(l1, stamina if t(ctx, c, "スタミナ") > 0 else normal)
     return l1

@@ -8,6 +8,8 @@ COMn はジェネレータ（INPUT を含むのは COM0 の変身方法選択の
 
 from __future__ import annotations
 
+from ..counting import count_loop
+
 from collections.abc import Generator
 
 from ..action import Ctx, config_check_other, kojo_root, print_transcallname, sengiup
@@ -890,8 +892,9 @@ def com5(ctx: Ctx) -> ComGen:
         l0 = times(l0, "1.04")
     if c.base[1] == 0:
         l0 = div(l0, 2)
-    for _ in range(max(c.cflag[99], 0)):
+    for _ in count_loop(st, c.cflag[99]):
         if l0 <= 1:
+            st.count[0] += 1
             break
         l0 = times(l0, "0.985" if tt("スタミナ") > 0 else "0.97")
     if tt("スタミナ") > 0:
@@ -917,8 +920,9 @@ def com5(ctx: Ctx) -> ComGen:
     l1 = times(l1, "0.22" if tt("回復早い") == 1 else "0.18" if tt("回復遅い") == 1 else "0.20")
     if c.base[1] + l1 >= c.maxbase[1]:
         l1 = c.maxbase[1] - c.base[1]
-    for _ in range(max(c.cflag[99], 0)):
+    for _ in count_loop(st, c.cflag[99]):
         if l1 <= 1:
+            st.count[0] += 1
             break
         l1 = times(l1, "0.995" if tt("スタミナ") > 0 else "0.99")
     c.base[1] += l1
@@ -1061,8 +1065,9 @@ def com7(ctx: Ctx) -> ComGen:
         l0 = times(l0, "1.02")
     if c.base[1] == 0:
         l0 = div(l0, 2)
-    for _ in range(max(c.cflag[99], 0)):  # :69–78
+    for _ in count_loop(st, c.cflag[99]):  # :69–78
         if l0 <= 1:
+            st.count[0] += 1
             break
         l0 = times(l0, "0.985" if tt("スタミナ") > 0 else "0.97")
     if tt("スタミナ") > 0:  # :80–92
@@ -1088,8 +1093,9 @@ def com7(ctx: Ctx) -> ComGen:
     l1 = times(l1, "0.11" if tt("回復早い") == 1 else "0.09" if tt("回復遅い") == 1 else "0.10")
     if c.base[1] + l1 >= c.maxbase[1]:
         l1 = c.maxbase[1] - c.base[1]
-    for _ in range(max(c.cflag[99], 0)):  # :120–129
+    for _ in count_loop(st, c.cflag[99]):  # :120–129
         if l1 <= 1:
+            st.count[0] += 1
             break
         l1 = times(l1, "0.995" if tt("スタミナ") > 0 else "0.99")
     c.base[1] += l1

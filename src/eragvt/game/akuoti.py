@@ -20,6 +20,8 @@
 """
 
 from __future__ import annotations
+
+from .counting import count_loop
 from collections.abc import Generator
 
 from .action import Ctx, config_check_screen, print_callname, print_transcallname
@@ -614,7 +616,7 @@ def _drug_shop(ctx: Ctx, loc: dict[int, int]) -> None:
     dot_after(ctx, 2)
     loc[0] = 0  # :513
     tm = st.time
-    for count in range(rand(5) + 5 + tm * 3):  # :514 REPEAT（回数は開始時に 1 回だけ評価）
+    for count in count_loop(st, lambda: rand(5) + 5 + tm * 3):  # :514 REPEAT（回数は開始時に 1 回だけ評価）
         if rand(3) != 0:  # :515
             pl("しばらくは誰も来そうにない。")
             # :517–543（`&&` の短絡：前の条件が真のときだけ RAND を引く）
@@ -726,15 +728,15 @@ def _video(ctx: Ctx, loc: dict[int, int]) -> None:
         ex = o.exp[data.index_of("EXP", "被姦経験")]
         if ex:
             st.result[1] = min(ex, 500)  # :706–708 RESULT:1 への直接代入（共用 RESULT）
-            for _ in range(min(ex, 500)):
+            for _ in count_loop(st, min(ex, 500)):
                 add_randchoose(st, i * 100 + 10)
         ex = o.exp[data.index_of("EXP", "幽閉経験")]
         if ex:
             st.result[1] = min(ex, 100)  # :714–716
-            for _ in range(min(ex, 100) * 5):
+            for _ in count_loop(st, min(ex, 100) * 5):
                 add_randchoose(st, i * 100 + 11)
     loc[0] = max(st.charanum, 1)  # FOR 終了後の LOCAL（= CHARANUM：開始値 1 以上の場合）
-    for _ in range(div(choicecount(st), 4) + 1):  # :722–724
+    for _ in count_loop(st, lambda: div(choicecount(st), 4) + 1):  # :722–724
         add_randchoose(st, 0)
     sel = randchoose_f(st)  # :726
     who = div(sel, 100)
@@ -869,8 +871,9 @@ def _video(ctx: Ctx, loc: dict[int, int]) -> None:
                 l3 = l1
             ls = [""] * 7  # VARSET LOCALS
             for k, base in ((1, 5), (2, 0), (3, 10), (4, 0), (5, 15)):  # :919–933
-                ls[k] += " " * (rand(50) + base)
-            for count in range(5):  # :934–992 REPEAT 5 → LOCALS:COUNT（0〜4 に足す：原作どおり）
+                for _ in count_loop(st, lambda: rand(50) + base):
+                    ls[k] += " "
+            for count in count_loop(st, 5):  # :934–992 REPEAT 5 → LOCALS:COUNT（0〜4 に足す：原作どおり）
                 for nmax, cond, text in _COMMENTS:
                     if rand(nmax) == 0 and (cond is None or (cond == 0 and sel == 0) or (cond == 1 and sel != 0)):
                         ls[count] += text if text is not None else f"{cname}たんハァハァ"

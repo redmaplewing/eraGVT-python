@@ -1,4 +1,6 @@
 """S86 戰鬥決策資訊；所有狀態規則為原生 Python，衣裝標籤讀既有 catalog。"""
+
+from ..counting import count_loop
 from ..action import config_check_event, print_transname, print_transcallname
 from ..opening import is_female
 from ..era import div, mod, limit, format_curly, format_percent, cp932_len
@@ -137,13 +139,20 @@ def _ex_stock(ctx,mode):
     out.set_bold();out.set_italic()
     value=v[5] if mode==1 else v[4]
     count=div(value,100)
-    if mode==2:out.set_color((64,64,64));out.print("□□□□□ ")
+    if mode==2:
+        out.set_color((64,64,64))
+        for _ in count_loop(ctx.state, 5):out.print("□")
+        out.print(" ")
     elif mode==1 or 0<=count<=5:
         for i in range(min(max(count,0),5)):
             threshold=(-500+i*100) if mode==1 else -(count-i)*100
             shade=(210+i*10,210+i*10,80+i*10) if mode==1 else ((160,170,180,200,220)[i],)*3
             out.set_color((255,255,0) if v[6]<=threshold and c.cflag[1]!=2 else shade);out.print("■")
-        out.set_color((128,128,128));out.print("□"*max(0,5-count)+" ")
+        out.set_color((128,128,128))
+        if mode==1:
+            for _ in count_loop(ctx.state, max(0,5-count)):out.print("□")
+            out.print(" ")
+        else:out.print("□"*max(0,5-count)+" ")
     out.reset_color();_regular(out)
 
 
@@ -276,15 +285,22 @@ def show_distance_window(ctx):
         out.print("♀" if is_female(ctx.data,c) else "♂");out.reset_color()
     if v[0]==0:out.set_color("#ff69b4")
     if noair:
-        out.printl("┏"+"┳"*20+"┓");out.printl("┣"+"╋"*20+"┫【危険予測】")
+        out.printl("┏"+"┳"*20+"┓");out.print("┣")
+        for _ in count_loop(st,20):out.print("╋")
+        out.printl("┫【危険予測】")
         out.print("┣┻┻┻┻┻┻┻┻┻┻╋╋╋╋╋╋┻┻┻┻┫" if nofar else "┣"+"┻"*20+"┫")
     else:
         out.printl("┏"+"━"*20+"┓")
-        if not airgood:out.printl("┃"+"　"*20+"┃【危険予測】")
-        out.print("┃"+" "*max(dist+7,0))
+        if not airgood:
+            out.print("┃")
+            for _ in count_loop(st,20):out.print("　")
+            out.printl("┃【危険予測】")
+        out.print("┃")
+        for _ in count_loop(st,dist+7):out.print(" ")
         if v.get_bit(216,1):mark()
         else:out.print("　")
-        out.print(" "*max(31-dist,0)+"┃")
+        for _ in count_loop(st,31-dist):out.print(" ")
+        out.print("┃")
         if v[0]==0:out.set_color("#ff69b4")
         if airgood:
             out.printl("【危険予測】")
@@ -303,13 +319,13 @@ def show_distance_window(ctx):
     if v[0]==0:
         out.reset_color();mark();out.set_color("#ffa500")
     out.print("≫");out.reset_color()
-    out.print("".join("_" if n%2==0 else "-" for n in range(max(dist,0))))
+    for n in count_loop(st,dist):out.print("_" if n%2==0 else "-")
     out.set_color("#ff69b4")
     if v[0]==0:out.reset_color()
     elif not v.get_bit(216,1):mark()
     else:out.print("-_" if dist%2 else "_-")
     out.reset_color()
-    out.print("".join("_" if n%2 else "-" for n in range(max((11 if nofar else 22)-dist,0))))
+    for n in count_loop(st,(11 if nofar else 22)-dist):out.print("_" if n%2 else "-")
     if nofar:
         if v[0]==0:out.set_color("#ff69b4")
         out.print("┣╋╋╋╋┫")

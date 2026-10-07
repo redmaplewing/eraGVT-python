@@ -12,6 +12,8 @@ CHARA_SIZE_DEFAULT（CHARA_SIZE_UI.ERB:2157）・CHARA_MAKE_BASE_PROFILE:980 で
 
 from __future__ import annotations
 
+from ..counting import count_loop
+
 from ..action import Ctx, config_check_maniac
 from ..era import div, format_curly, format_percent, isqrt, limit, mod, power, times
 from .core import is_penis, t, tc, tentacle_level
@@ -390,7 +392,7 @@ def print_tentacle_size(ctx: Ctx, l0: int, l1: int, l2: int, l3: int) -> None:
     c = tc(ctx)
     sz, num = _sz(st), _num(st)
     args = (l0, l1, l2, l3)
-    for i in range(4):  # REPEAT 感覚数（DIM.ERH:154 = 4）
+    for i in count_loop(st, 4):  # REPEAT 感覚数（DIM.ERH:154 = 4）
         if not (sz[(0, i)] > 0 or sz[(1, i)] > 0):
             continue
         r0 = gaping_size_to_rank(ctx, sz[(0, i)])
@@ -675,7 +677,7 @@ def set_tentacle_pool(ctx: Ctx) -> int:
 
 def _size_r(st) -> None:
     sz, num = _sz(st), _num(st)
-    for i in range(4):
+    for i in count_loop(st, 4):
         if num[(0, i)] > 2:
             sz[(1, i)] = div(sz[(0, i)] * (num[(0, i)] + 4), 3)
         else:
@@ -686,7 +688,7 @@ def set_tentacle_size_r(ctx: Ctx) -> None:
     """`@SET_TENTACLE_SIZE_R`:1341–1385。"""
     st = ctx.state
     sz, num = _sz(st), _num(st)
-    for i in range(4):  # :1342–1360
+    for i in count_loop(st, 4):  # :1342–1360
         if num[(0, i)] > 2:
             sz[(1, i)] = div(sz[(0, i)] * (num[(0, i)] + 4), 3)
         else:
@@ -701,7 +703,7 @@ def set_tentacle_size_r(ctx: Ctx) -> None:
                     sz[(0, i)] = div(l1, num[(0, i)])
     tf = st.tflag
     if 15 <= tf[10] <= 20 and st.flag[700]:  # :1362–1369
-        for i in range(4):
+        for i in count_loop(st, 4):
             if (i == 1 and (tf[109] & V_BIT) and (st.temp.insert & V_BIT)) or (
                 i == 2 and (tf[109] & A_BIT) and (st.temp.insert & A_BIT)
             ):

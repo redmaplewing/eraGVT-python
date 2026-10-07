@@ -54,21 +54,40 @@ catalog失敗可回復時連COUNT一起回復；原生hook後不可回復的失�
 
 `FIGURE_SPLIT`實際使用LOCAL（`ERB/汎用関数/FIGURE_SPLIT.ERB@FIGURE_SPLIT:4–11`），不覆寫COUNT；測試另用探針確認若被呼叫者覆寫，賦值及NEXT仍讀共享新值。賦值右側先於左側索引寫入的新增查證：`reference/emuera-1824/Emuera/GameProc/Function/Instraction.Child.cs:459–463`；其餘迴圈／CALL規則沿用S88證據。
 
-## 下一成果仍留同一 COUNT 項
+## S90 其餘七群：既有原生邊界已同步
 
-2026-10-07精確搜尋：`rg --pcre2 '(?<![A-Za-z_])COUNT(?![A-Za-z_])' source/earGVP/ERB --stats`得到795 matches、570行、76檔；`^\s*(REPEAT\b|FOR\s+COUNT(?:\s|:|,))`得到291迴圈行、90檔。原始搜尋含不可達／原作未完成函式；**不等同291個產品缺口**。
+2026-10-07精確搜尋：`rg --pcre2 '(?<![A-Za-z_])COUNT(?![A-Za-z_])' source/earGVP/ERB --stats`為795 matches、570行、76檔；`^\s*(REPEAT\b|FOR\s+COUNT(?:\s|:|,))`為291迴圈行、90檔。扣S88的17及S89的68後206行分類如下；搜尋行不是獨立功能數。
 
-扣S88的17處及S89的68行後，206行按原檔互斥分組如下；這是後續查證／同步範圍，不把未查群組認定無影響。COUNT會存檔，因此即使沒有立即的分支讀取，殘值仍可觀測；既有COUNT偏離保持未結案。
+| 群組 | 搜尋行 | S90原生同步 | catalog已承接 | 無呼叫者／不可達 | 未移植除錯入口 |
+|---|---:|---:|---:|---:|---:|
+| 攻擊數值 | 61 | 61 | 0 | 0 | 0 |
+| ABL升級 | 16 | 16 | 0 | 0 | 0 |
+| 狀態顯示 | 19 | 19 | 0 | 0 | 0 |
+| 製作／除錯 | 22 | 17 | 0 | 2 | 3 |
+| SHOP | 11 | 11 | 0 | 0 | 0 |
+| 開局／結局／其他事件 | 41 | 37 | 0 | 2 | 2 |
+| 其他戰鬥 | 36 | 34 | 1 | 1 | 0 |
+| 合計 | **206** | **195** | **1** | **5** | **5** |
 
-| 群組 | 迴圈行數 | 對應原檔／目錄與下一步 |
-|---|---:|---|
-| 攻擊數值 | 61 | `ERB/ゲーム内_戦闘処理/戦闘コマンド(性攻撃)/`；LOCAL清12格及RESULT合併可沿共用Python函式同步 |
-| ABL升級 | 16 | `ERB/ヒロイン関連/ABL_UP_CHECK.ERB`；起始清空與各5次迴圈 |
-| 狀態顯示 | 19 | `ERB/ヒロイン関連/CHARA_STATUS.ERB`及`ステータス画面/`，包括編輯畫面呼叫的SHOW_STATUS_TALENT |
-| 製作／除錯 | 22 | `ERB/SYSTEM/キャラメイキング関連/`扣本次項目，及`SYSTEM_DEBUG_口上色設定.ERB`；EXPORT、人数／套組、主題（其WHILE條件不可達已另有原作證據） |
-| SHOP | 11 | `ERB/インターミッション画面/SHOP*.ERB`，包括FLASHNEWS_CHOOSEIDOL與決策資訊 |
-| 開局／結局／其他事件 | 41 | `ERB/ゲーム内_イベント発生/`扣本次三個模式函式；初始化、引繼、幽閉與夜間各原生邊界 |
-| 其他戰鬥 | 36 | `ERB/ゲーム内_戦闘処理/`扣攻擊數值；含1個已由catalog共用承接的中性化驗證未涵蓋訊息迴圈，不能全稱未接 |
+`game.counting.count_loop`只用於上述明示REPEAT／FOR COUNT，開始時寫0（FOR指定起點除外），每次NEXT讀共享值再加1；CALL不還原、RETURN／關閉generator不加，BREAK呼叫端明示加1。上限含CALL／RAND時延後到開始值設定後求值。沒有以函式尾常數代替本體時序；FOR LOCAL／CCOUNT及原作展開IF仍不碰COUNT。
+
+| 原作來源（`ERB/`以下） | 原生邊界及可觀測結果 |
+|---|---|
+| `ゲーム内_戦闘処理/戦闘コマンド(性攻撃)/SEX_COM0.ERB@SEX_COM0:29–31、85–87`及同群37個COM／SPCOM；`SEX_COMEX.ERB@SEX_COMEX_RANDOM:100–111` | `sexcom._begin`37個清零、`_comex`22個RESULT合併，均12；額外選取兩個4輪。無追加分支不改COUNT；CALL完成後才開始合併迴圈 |
+| `ヒロイン関連/ABL_UP_CHECK.ERB@_ABLUP:15–37`、`@ABL_UP_20:495`至`@ABL_UP_3:1156` | `ablup`12格兌換及15個升級的共用5輪；刻印不足RETURN不初始化，感覺上限BREAK仍加1 |
+| `ヒロイン関連/CHARA_STATUS.ERB@SHOW_STATUS_TALENT:324–633、691–694`、`@STATUS_PRINT_EX:1203–1209`；`ステータス画面/SHOW_STATUS_CHARA_SELECT_PAGE1.ERB@SHOW_STATUS_CHARA_SHIELDS:375`、PAGE2各SHOW函式、PAGE5各SHOW函式 | TALENT七個檢查／顯示迴圈不能用any提早停，舊式尾299、分類尾250；EX只有ARG1／2有REPEAT。PAGE2三個原陣列長度15／5／37，JUEL12；PAGE5人格3／裏人格4及補空行／非顯示6、頁尾2；SHIELDS無結界不進迴圈 |
+| `SYSTEM/キャラメイキング関連/EXPORT_CSV.ERB@EXPORT_CSV:21–35、130–242、465–574`；`CHARA_MAKE.ERB@CHARA_MAKE_MAIN:344–352`；`SHOKISET.ERB@CHARA_MAKE_FINALIZE_KAI:10–32` | 匯出13個迴圈，搜尋號碼BREAK含步進，身體已製作末值272、尚未製作289；人數增加／減少固定進入時上限，相等不碰COUNT；套組列表99及清空舊角色 |
+| `インターミッション画面/SHOP.ERB@SHOW_SHOP:115`、`SHOP_SHOW_BOSS_INFO.ERB@SHOP_SHOW_BOSS_INFO:56、106`、`SHOP_SHOW_SITUATION_LIST.ERB@SHOP_SHOW_SITUATION_LIST:16、29`、`SHOP_FLASHNEWS.ERB@FLASHNEWS_CHOOSEIDOL:942–990` | 訊息補空行、敵列表逐次CALL、六個新聞權重迴圈；候選抽RNG前留下最後一組COUNT |
+| `ゲーム内_イベント発生/オープニング処理.ERB@EVENTFIRST:101、121、129`；`エンディング/ENDING.ERB@ENDING:32–44`、`SUCCESSION.ERB@SUCCESSION:278–290、1093–1095、1479–1484` | 初始化bit、新增／刪除角色與設施返款均同步；引繼新增0人原有IF不進REPEAT，保留前值；未改初始化／排程／RNG／存讀控制流 |
+| `ゲーム内_イベント発生/イベントから派生する特殊戦闘/●イベント戦闘_襲撃共通.ERB@RAID_ATTACK:68`及救援共通`@RAID_RESCUE:60`；`敗北幽閉中イベント/COMMON_PRISON.ERB@COMMON_PRISON_EXP_SH:44`、`PRISON_COMABLE.ERB@PRISON_COMABLE:15、19`；`強制発生イベント/FORCE_夜間自慰.ERB@SELF_N:255`及SELF_B／A／V；`FORCE_いちゃラブセックス.ERB@SEX_V:165`、`@SEX_A:345`；`FORCE_夜這い.ERB@YOBAI_SELECT_PLAY:566–611`；`FORCE_悪堕ちキャラの淫謀.ERB@AKUOTI_EVENT:514、709–724、919–992` | 沿既有數值／候選／顯示本體同步；警示30輪，清零12格，候選4輪與經驗2輪；十個事件迴圈含開始上限的RAND及末組5輪。不新增任何敘事或經歷生成 |
+| `ゲーム内_戦闘処理/BATTLE_SHOW_STATUS.ERB@SHOW_STATUS_PALAM:363`、`@SHOW_DISTANCE_WINDOW:542–740`；`BATTLE_COM.ERB@EVENTCOMEND:818、828、929`；`COMMON_BATTLE_FUNC.ERB@ACT_LIMIT:296–390`；`ENEMY_ACTION.ERB@ENEMY_ACTION:996`；`ENCOUNT.ERB@ENCOUNT_BOSS:230`；`GAPING.ERB@PRINT_TENTACLE_SIZE:757`、`@SET_TENTACLE_SIZE_R:1342–1384`；`PALAM_UP.ERB@PALAM_UP:232`、`@PALAM_TIJOU:1037`、`@PALAM_YOKUJOU:1065`、`@PALAM_KYOUJUN:1253` | 資源12、距離七個顯示迴圈、其餘感覺4及ACT_LIMIT5；ACT_LIMIT訊息CALL之後RETURN保留CALL留下的值；捕獲敵加權內層LOCAL的BREAK不步進COUNT |
+| `ゲーム内_戦闘処理/SUBEVENT_BATTLEE.ERB@SUBEVENT_BATTLE_RAPED_ENEMY:28`、`@SUBEVENT_BATTLE_ACTTENTACLECLOTH:101`、`@SUBEVENT_RELEASE_ECSTASY:176`、`@SUBEVENT_BATTLE_ACTTENTACLESUIT:347`；`触手データ/雑魚敵/TENTACLE_MOB_SPCOM.ERB@MOB_CREATE_COM:51、326`；`戦闘コマンド(ヒロイン)/COMF5.ERB@COM5:53、103`、`COMF7.ERB@COM7:65、115`、`COMF45.ERB@COM45:39`、`COMF46.ERB@COM46:36` | 清零／合併12，釋放統計4；MOB的初始化移至原文敘事前；六個疲勞迴圈含零次與BREAK步進 |
+
+其餘11行的邊界：
+
+- 1行已由catalog執行：`ゲーム内_戦闘処理/触手データ/雑魚敵/TENTACLE_MOB_801_物質（カージャッカー）.ERB@MESSAGE_MOB_801_COM2:383`。測試中性化PRINT但保留原控制流、亂數及狀態寫入；兩個0骰值得到COUNT2。
+- 5行沒有可達原生呼叫者：`SHOKISET.ERB@GROUP_SELECT_CSV:66`；`オープニング処理_カスタムGAMEMODE.ERB@GAME_OPTION_SET:80`、`@GAME_OPTION_CHECK_MULTI_F:99`；`FORECAST.ERB@MAJORITY_VOTING_PROBABILITY_NUM:240`僅被同檔未被呼叫的`@MAJORITY_VOTING_PROBABILITY`使用；`FIRSTSETTING_TITLE.ERB@FIRSTSETTING_TITLE_RANDOM:115`被:83清RESULTS及:85的WHILE排除。精確名稱全ERB搜尋已核對，不新增無呼叫者模組；主題證據沿[製作選單](../era/creation-menu.md)。
+- **5行除錯缺口保留W08**：`SYSTEM/SYSTEM_DEBUG_口上色設定.ERB@KOJO_COLOR_LIST:43、69、139`與`オープニング処理_カスタムGAMEMODE.ERB@GAME_OPTION_CUSTUM:24、35`。唯一入口在`オープニング処理.ERB@MODE_SELECT:381–390`的`[IF_DEBUG]`負數-1／-2；現有Python沒有這兩入口，不把它們稱原作未完成或一般情況不可達。S90範圍只同步既有原生流程，COUNT整項及W07不因此宣告完成。
 
 ## 驗證
 
@@ -83,3 +102,13 @@ S88新增存讀狀態，因此依分級裁決交主代理跑一次全pytest、�
 S89的`tests/test_count_equipment.py`共31案：11種CUSTOM_NUM／種類代表、COPY91兩分支／COPY92、缺函式、CALL本體讀值與覆寫、SAVE、剩餘槽0／正／負上限、武器RNG前COUNT及真選單／存讀／中性catalog、既有共用選取與色名RETURN邊界。首次測試先紅，再收斂等價入口避免57件重複測試；最終受影響定向`505 passed, 1 warning in 8.10s`。
 
 `tmp/s89/browser_fixture.py`提供25歲人工局部前態兩路：cloth編輯／複製／貼上／重置後COUNT`[5,74]`，移除1槽部件後`[1,74]`；weapon追加字串／生成／選取後`[1,74]`。每段接中性catalog顯示及dump/load核對；不宣稱完整開局或存檔選單驗收。實際瀏覽器與主代理全pytest結果見S89 session；本次不改開局／排程／RNG演算法或存檔格式，也未結W07，依分級驗證不另跑500局。
+
+S90定向新增`tests/test_count_remaining.py`：來源等價類、CALL→RETURN、NEXT覆寫、巢狀／上限求值、BREAK、零次、分支不進REPEAT、匯出存讀與既有catalog中性驗證。首次缺模組collection error；EX／疲勞案例先紅`7 failed, 6 passed`再綠。原OUTPUT_ABLS／MARKS／EXPS完整陣列為15／5／37，含EXPS的-1換行欄。
+
+`tmp/s90/browser_fixture.py`為全新25歲人工局部前態：status `2000→5000→999→88`，PAGE2依原:31–35非debug略JUEL故COUNT37、PAGE5及返回後2；export `1→1→0→88`，末值272；COUNT1均74，dump/load一致、RNG不變。主代理執行真瀏覽器後回填session；fixture直驅不是瀏覽器證據。
+
+S90不改開局／排程控制流、RNG抽法或存檔格式；初始化REPEAT內只有原有bit／增刪角色，沒有新跨CALL消費者；既有ACT_LIMIT的CALL後直接RETURN。依分級驗證不另跑500，亦未結W07。全pytest及真瀏覽器交主代理。
+
+S90子代理最終受影響26檔定向：`1406 passed, 1 warning in 17.33s`，其中新增COUNT40案。`git diff --check`通過，source／reference未動；主代理驗收前產品／測試／fixture已凍結。
+
+S90驗收修正：主全pytest的12個套組取消案例原本要求COUNT也保持載入後值；依`ERB/SYSTEM/キャラメイキング関連/SHOKISET.ERB@CHARA_MAKE_FINALIZE_KAI:10–12、38–39`，重入列表先完成FOR至99，取消RETURN不還原，因此只修正expected的COUNT0=99，保留其他狀態完整比較，未改產品。套組全檔及COUNT剩餘／共用定向：`136 passed, 1 warning in 1.66s`；其餘驗收沿主代理已有證據。

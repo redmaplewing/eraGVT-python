@@ -23,6 +23,8 @@
 
 from __future__ import annotations
 
+from .counting import count_loop
+
 from ..data.csv_loader import GameData
 from ..state import GameState
 from ..text import TextOutput
@@ -356,7 +358,7 @@ def flashnews_chooseheroine(st: GameState, data: GameData, mode: str) -> tuple[i
 def flashnews_chooseidol(st: GameState, data: GameData, mode: str, num: int = 0) -> int:
     """`@FLASHNEWS_CHOOSEIDOL(mode,num)`:927–1000：`return LOCAL`（RESULT:0）。RESULT:1 は候補数の計算に使う（共用 RESULT に書く）。
 
-    REPEAT のカウンタ COUNT は模型化しない（result.md「限界」）。
+    S90：REPEAT本體／步進使用共用COUNT，抽選前保留末組候選數。
     """
     if mode == "標的":
         clear_randchoose(st)
@@ -366,11 +368,11 @@ def flashnews_chooseidol(st: GameState, data: GameData, mode: str, num: int = 0)
                 continue
             if e >= 200:  # :938–944 売れっ子は 1.5 倍
                 st.result[1] = min(div(e, 12), 100)
-                for _ in range(st.result[1]):
+                for _ in count_loop(st, st.result[1]):
                     add_randchoose(st, i)
             elif e >= 100:  # :945–949
                 st.result[1] = div(e, 18)
-                for _ in range(st.result[1]):
+                for _ in count_loop(st, st.result[1]):
                     add_randchoose(st, i)
         if choicecount(st) <= 0:
             raise NotImplementedError("FLASHNEWS_CHOOSEIDOL 標的：候補なしの RAND:0（原作でもエラー）")
@@ -379,23 +381,23 @@ def flashnews_chooseidol(st: GameState, data: GameData, mode: str, num: int = 0)
         c = _chara(st, num)
         popular = _exp(data, c, "魅了経験") >= 200
         clear_randchoose(st)
-        for _ in range(50):  # :959–961 普通の広告
+        for _ in count_loop(st, 50):  # :959–961 普通の広告
             add_randchoose(st, 0)
         if c.cflag[283]:  # :963–972 枕営業
             st.result[1] = min(c.cflag[283], 100)
             if popular:
                 st.result[1] *= 2
-            for _ in range(st.result[1]):
+            for _ in count_loop(st, st.result[1]):
                 add_randchoose(st, 1)
         if c.cflag[284]:  # :974–983 動画流出
             st.result[1] = min(power(div(c.cflag[284], 4) + 1, 2) + 10, 100)
             if popular:
                 st.result[1] *= 2
-            for _ in range(st.result[1]):
+            for _ in count_loop(st, st.result[1]):
                 add_randchoose(st, 2)
         if c.cflag[287]:  # :986–993 ダークウェブ流出（対応イベント未実装：原作コメント）
             st.result[1] = min(power(div(c.cflag[287], 4) + 1, 2) + 30, 100)
-            for _ in range(st.result[1]):
+            for _ in count_loop(st, st.result[1]):
                 add_randchoose(st, 3)
         local = randchoose_f(st)  # :996
     else:

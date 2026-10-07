@@ -59,6 +59,8 @@ def test_confirm_cancel_and_load(ctx,preset,ids,title,call):
  with pytest.raises(StopIteration) as done:g.send(99)
  assert done.value.value==-1 and st.result[0]==-1
  before['result']['0']=-1
+ # ERB/SYSTEM/キャラメイキング関連/SHOKISET.ERB@CHARA_MAKE_FINALIZE_KAI:10–12、38–39：列表FOR終值99，取消RETURN不還原COUNT。
+ before['count']['0']=99
  assert st.to_json()==before
 
 @pytest.mark.parametrize('preset', [6,7,8])

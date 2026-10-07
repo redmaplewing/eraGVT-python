@@ -10,6 +10,8 @@ FLAG:999 = -998 は次の `@PRISON`（PRISON.ERB:5–8）で 0 に戻る目印�
 
 from __future__ import annotations
 
+from .counting import count_loop
+
 from collections.abc import Generator
 
 from .input_request import WaitInputRequest
@@ -324,15 +326,15 @@ def start_succession(ctx: Ctx):
     REPEAT の COUNT は 0 から（Instraction.Child.cs@REPEAT_Instruction）。"""
     st = ctx.state
     f = st.flag
-    for count in range(f[50]):  # :32–36
+    for count in count_loop(st, f[50]):  # :32–36
         if count == 0:
             continue
         st.money += 5000 * count + 5000
-    for count in range(f[51]):  # :37–41
+    for count in count_loop(st, f[51]):  # :37–41
         if count == 0:
             continue
         st.money += 1000 * count + 1000
-    for count in range(f[52]):  # :42–44
+    for count in count_loop(st, f[52]):  # :42–44
         st.money += 10000 * count + 10000
     for bit, yen in _FACILITY_REFUND:  # :45–68
         if f[53] & bit:

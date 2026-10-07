@@ -19,6 +19,8 @@ MESSAGE_KATAOMOI_NIGHT:1489）は S07 catalog（`core.run_chinobun`）。KATAOMO
 
 from __future__ import annotations
 
+from .counting import count_loop
+
 from collections.abc import Generator
 
 from .action import Ctx, config_check_event, print_callname
@@ -182,7 +184,7 @@ def sex_v(ctx: Ctx, arg: int, arg1: int = 0) -> InputGen:
         pass
     elif config_check_event(st, 6) == 1:
         l100 = yield from sex_v_condom(ctx, arg)
-    L = [0] * 13  # :165–167 REPEAT 12（LOCAL:12 は :322 で代入）
+    L = [0 for _ in count_loop(ctx.state, 12)] + [0]  # :165–167 REPEAT 12（LOCAL:12 は :322 で代入）
     ex = lambda n: data.index_of("EXP", n)  # noqa: E731
     if check_holyvirgin(ctx) == 0:  # :170–171
         c.exp[ex("Ｖ経験")] += 1
@@ -240,7 +242,7 @@ def sex_a(ctx: Ctx, arg: int) -> Generator[None, int, None]:
     """`@SEX_A, ARG`:341–447。"""
     st, data = ctx.state, ctx.data
     c = st.charas[arg]
-    L = [0] * 13  # :345–347
+    L = [0 for _ in count_loop(ctx.state, 12)] + [0]  # :345–347
     ex = lambda n: data.index_of("EXP", n)  # noqa: E731
     c.exp[ex("精液経験")] += 1  # :350
     c.exp[ex("Ａ経験")] += 1  # :351

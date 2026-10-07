@@ -5,6 +5,8 @@
 
 from __future__ import annotations
 
+from ..counting import count_loop
+
 from collections.abc import Generator
 
 from ..action import Ctx, config_check_maniac, kojo_root, print_callname, print_transcallname
@@ -762,7 +764,7 @@ def _subevent_battle_raped_enemy(ctx: Ctx) -> Generator[None, int, None]:
 
     st = ctx.state
     c = tc(ctx)
-    loc = [0] * 12
+    loc = [0 for _ in count_loop(ctx.state, 12)]
     loc[8] = 2000  # 屈服
     loc[9] = 2000  # 恥情
     e = st.charas[st.flag[111]]
@@ -928,7 +930,7 @@ def _acttentaclecloth(ctx: Ctx) -> None:
     st, data = ctx.state, ctx.data
     c = tc(ctx)
     r = sex_comex(ctx, 0, 0, 15)  # :101 → RESULT:0〜11
-    local = [div(r[i], 2) for i in range(12)] + [0]  # :102–104（LOCAL:12 は常に 0）
+    local = [div(r[i], 2) for i in count_loop(st, 12)] + [0]  # :102–104（LOCAL:12 は常に 0）
     if is_male(data, c):  # :105–106
         local[1] = 0
     # :109 地の文（地の文/MESSAGE_SUBEVENT.ERB:53–61、末尾 :60 KOJO_ROOT・:61 PRINTW）

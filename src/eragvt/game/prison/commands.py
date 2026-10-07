@@ -10,6 +10,8 @@ catalog で実行できないとき（Null など）は佔位 1 行＋末尾の 
 """
 
 from __future__ import annotations
+
+from ..counting import count_loop
 from collections.abc import Generator
 
 from ..body import set_profile
@@ -52,7 +54,7 @@ def common_prison_exp_sh(ctx: Ctx, a0: int, a1: int, a2: int, a3: int) -> tuple[
     """`@COMMON_PRISON_EXP_SH, ARG:0〜3`:42–71（:44 `FOR COUNT, 0, 2` は ARG:0／ARG:1 のみ）。"""
     st = ctx.state
     a = [a0, a1, a2, a3]
-    for i in range(2):
+    for i in count_loop(ctx.state, 2):
         a[i] = a[i] * 9 + st.rng.rand(a[i] + 1)
         if a[i] > 20:
             a[i] = 20 + div(a[i] - 20, 4)
@@ -756,7 +758,10 @@ def prison_comable(ctx: Ctx, arg: int) -> Generator[None, int, None]:
     shielded = arg == -1
     while True:
         if shielded:  # :99–116
-            cand = [i for i in range(KANKAKU_NUM) if c.base[i + 30] < 1]
+            local = [0] * KANKAKU_NUM
+            for i in count_loop(st, KANKAKU_NUM):
+                local[i] = 0
+            cand = [i for i in count_loop(st, KANKAKU_NUM) if c.base[i + 30] < 1]
             arg = cand[st.rng.rand(len(cand))] if cand else st.rng.rand(KANKAKU_NUM)
             shielded = False
         if arg == 0:  # :131–132

@@ -9,6 +9,8 @@
 
 from __future__ import annotations
 
+from ..counting import count_loop
+
 from ...state.constants import ActionPlan, GameOption
 from ..action import Ctx, config_check_event, get_exp, get_syuren, kojo_root, print_callname
 from ..chara_common import charatalent
@@ -243,7 +245,7 @@ def encount_boss(ctx: Ctx) -> int:
             select = 0
         # :226–239 捕まっているキャラを捕獲している触手の出現率アップ
         if config_check_balance(st, 0) > 0 and not defense and f[45] == 0 and per > 0:
-            for count in range(BOSS_ERB_NUM):
+            for count in count_loop(st, BOSS_ERB_NUM):
                 for i in range(st.charanum):
                     ch = st.charas[i]
                     if ch.cflag[0] == 1 and ch.cflag[21] == count and st.rng.rand(100) < 50:

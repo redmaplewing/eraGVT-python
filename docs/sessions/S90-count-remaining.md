@@ -18,3 +18,11 @@
 - 產品／測試／fixture凍結後通知主代理；主代理獨立驗收與提交，子代理不commit/push。
 - 更新count wiki及既有deviations項；有新UNVERIFIED列具體查證，不自行裁決。STATUS／PLAN交主代理。
 - source／reference唯讀；LF／UTF-8無BOM；最後回報做了什麼、已查證依據、需要使用者決定。
+
+## 驗收結果
+- 206行分195原生、1catalog、5無呼叫／不可達及5未移植除錯；既有一般流程已同步，除錯留W08，不稱COUNT整項或W07完成。
+- 新增40案，子代理定向`1406 passed, 1 warning in 17.33s`；主全pytest `12 failed, 5586 passed, 1 warning in 204.75s (0:03:24)`。
+- 第一輪修正僅套組取消expected：原FOR列表終99，RETURN不還原；完整state比較保留。新子代理定向136過；主代理受影響整檔`54 passed, 1 warning in 0.92s`，無剩餘失敗，產品未改故沿用其餘5586案／瀏覽器，不稱單次5598全測。
+- 兩路真瀏覽器status 2000→5000→999→88（37→2）及export 1→1→0→88（272）通過；COUNT1=74、dump/load一致、RNG不變、四年齡欄25、catalog／console0、journal0、無worker，均回標題。
+- tmp/s90/browser-summary.json與browser-status／export.png保存證據；局部人工前態非完整開局／存檔選單；服務及頁籤已關。
+- 開局／引繼REPEAT僅原有bit與角色增刪、無新CALL消費者；本次不改核心控制流程／RNG／存讀格式且未結W07，不跑500，沿S88基線。source／reference未動，無新增裁決。

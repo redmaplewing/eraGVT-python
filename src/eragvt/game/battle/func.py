@@ -6,6 +6,8 @@
 
 from __future__ import annotations
 
+from ..counting import count_loop
+
 from ...state.constants import ActionPlan
 from ..action import Ctx, config_check_event, config_check_screen, kojo_root, print_transcallname
 from ..chara_common import charatalent, is_male, seikaku_check
@@ -220,7 +222,7 @@ def act_limit(ctx: Ctx) -> int:
                 run_chinobun(ctx, "MESSAGE_AUDIENCE_INTERFERENCE")
             st.result[0] = 1
             return 1
-    for count in range(5):
+    for count in count_loop(st, 5):
         m = c.mark[count]
         base = {0: 0, 1: 60, 2: 120, 3: 180, 4: 240, 5: 300}.get(m)
         if base is None:

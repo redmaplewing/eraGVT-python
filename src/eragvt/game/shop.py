@@ -5,6 +5,8 @@
 
 from __future__ import annotations
 
+from .counting import count_loop
+
 from datetime import datetime
 
 from ..data.csv_loader import GameData
@@ -321,7 +323,7 @@ def show_shop_gen(state: GameState, data: GameData, out: TextOutput, narration: 
         from .action import Ctx, kojo_root_gen
 
         result = yield from kojo_root_gen(Ctx(state, data, out, narration), "HITOKUTI_SHOP")
-        for _ in range(limit(4 - result, 0, 4)):
+        for _ in count_loop(state, limit(4 - result, 0, 4)):
             out.printl()
     else:
         for _ in range(4):
@@ -430,7 +432,7 @@ def shop_show_boss_info(state: GameState, data: GameData, out: TextOutput) -> No
     out.print("　　　")
     if not lastboss:
         state.savestr[13] = "BOSS"
-    for _ in range(f[4] if lastboss else f[3]):
+    for _ in count_loop(state, f[4] if lastboss else f[3]):
         no = tentacle_survive_check(state, bit)
         if no == 0:
             out.set_color((96, 96, 96))
@@ -936,7 +938,7 @@ def shop_show_situation_list(state: GameState, data: GameData, out: TextOutput, 
         out.printl(f"現在活動中の{data.str_defaults.get(2502, '')}")
         state.savestr[13] = "BOSS"
         out.drawline()
-        for _ in range(f[3]):
+        for _ in count_loop(state, f[3]):
             r = tentacle_survive_check(state, bit)
             if r > 0:
                 f[11] = r
@@ -948,7 +950,7 @@ def shop_show_situation_list(state: GameState, data: GameData, out: TextOutput, 
     elif get_lastboss_phase(state) >= 1:  # :26–38（S27）：SAVESTR:13 は設定しない、FLAG:11 は戻さない
         out.printl(f"現在活動中の{data.str_defaults.get(2503, '')}")
         out.drawline()
-        for _ in range(f[4]):
+        for _ in count_loop(state, f[4]):
             r = tentacle_survive_check(state, bit)
             if r > 0:
                 f[11] = r

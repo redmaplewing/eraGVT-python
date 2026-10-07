@@ -5,6 +5,8 @@
 
 from __future__ import annotations
 
+from ..counting import count_loop
+
 from ..action import Ctx, config_check_other, kojo_root, print_callname, print_transcallname
 from ..chara_common import is_female, is_male
 from ..era import div, mod
@@ -65,7 +67,7 @@ def _abl_up_addiction(ctx: Ctx, c: Character, abl_name: str) -> int:
     local = _abl(ctx, c, abl_name)
     if mark(ctx, c, mark_name) < need:
         return local
-    for _ in range(5):  # REPEAT 5
+    for _ in count_loop(ctx.state, 5):  # REPEAT 5
         if 0 <= local <= 4:
             if local >= 3 and exp(ctx, c, "異常経験") == 0:  # Lv3→4、4→5 は `ELSEIF LOCAL == n && EXP:異常経験`
                 continue
@@ -94,7 +96,7 @@ def _csvbase(ctx: Ctx, c: Character, index: int) -> int:
 def _abl_up_emit(ctx: Ctx, c: Character, abl_name: str) -> int:
     juel_name, exp_name, base_idx, steps = _EMIT[abl_name]
     local = _abl(ctx, c, abl_name)
-    for _ in range(5):
+    for _ in count_loop(ctx.state, 5):
         if 0 <= local <= 4 and not (local >= 3 and exp(ctx, c, "異常経験") == 0):
             need, min_exp = steps[local]
             if _juel(ctx, c, juel_name) >= need and exp(ctx, c, exp_name) >= min_exp:
@@ -126,7 +128,7 @@ _SINGLE = {
 def _abl_up_single(ctx: Ctx, c: Character, abl_name: str) -> int:
     juel_name, steps, exp_name, toriko_ok = _SINGLE[abl_name]
     local = _abl(ctx, c, abl_name)
-    for _ in range(5):
+    for _ in count_loop(ctx.state, 5):
         if 0 <= local <= 4:
             need, min_exp = steps[local]
             if min_exp is not None and not (
@@ -142,7 +144,7 @@ def _abl_up_single(ctx: Ctx, c: Character, abl_name: str) -> int:
 def _abl_up_juujun(ctx: Ctx, c: Character) -> int:
     """`@ABL_UP_10` 従順:881–933：屈服を優先、足りなければ恐怖。"""
     local = _abl(ctx, c, "従順")
-    for _ in range(5):
+    for _ in count_loop(ctx.state, 5):
         if 0 <= local <= 4:
             need = (1000, 3000, 6000, 12000, 25000)[local]
             if _juel(ctx, c, "屈服") >= need:
@@ -166,13 +168,14 @@ _SENSE = {
 def _abl_up_sense(ctx: Ctx, c: Character, abl_name: str) -> int:
     juel_name, needs = _SENSE[abl_name]
     local = _abl(ctx, c, abl_name)
-    for _ in range(5):
+    for _ in count_loop(ctx.state, 5):
         # :1026 など：`ABL:Ｖ感覚 + ABL:Ａ感覚 + ABL:Ｂ感覚 + LOCAL >= 35 && ABL:自分 >= 5` で BREAK
         # （4 関数とも同じ式：Ｃ以外では自分の ABL と LOCAL を二重に数える。原作どおり）
         if (
             _abl(ctx, c, "Ｖ感覚") + _abl(ctx, c, "Ａ感覚") + _abl(ctx, c, "Ｂ感覚") + local >= 35
             and _abl(ctx, c, abl_name) >= 5
         ):
+            ctx.state.count[0] += 1
             break
         if 0 <= local <= 4:
             need = needs[local]
@@ -297,7 +300,7 @@ def _juel_from_palam(ctx: Ctx, c: Character) -> None:
     out.set_color((105, 105, 105))
     if st.flag[999] == 1:
         out.printl(" * DEGUG　珠の入手 *")
-    for count in range(12):
+    for count in count_loop(ctx.state, 12):
         idx = count + 6 if count > 3 else count
         p = c.palam[idx]
         for bound, got in ((100, 0), (300, 1), (600, 2), (1500, 10), (3000, 20), (6000, 100), (10000, 200),
